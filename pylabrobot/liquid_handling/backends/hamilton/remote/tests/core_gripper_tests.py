@@ -83,3 +83,57 @@ class TestCoreGripperRPCs:
       z_position_at_the_command_end=3600,
       return_tool=True,
     )
+
+  @pytest.mark.asyncio
+  async def test_core_move_plate_to_position(self, star_service: StarServiceFixture):
+    star_service.backend.core_move_plate_to_position = unittest.mock.AsyncMock()
+    await star_service.remote.core_move_plate_to_position(
+      x_position=1200,
+      x_direction=0,
+      x_acceleration_index=4,
+      y_position=2500,
+      z_position=1800,
+      z_speed=500,
+      minimum_traverse_height_at_beginning_of_a_command=3600,
+    )
+    star_service.backend.core_move_plate_to_position.assert_called_once_with(
+      x_position=1200,
+      x_direction=0,
+      x_acceleration_index=4,
+      y_position=2500,
+      z_position=1800,
+      z_speed=500,
+      minimum_traverse_height_at_beginning_of_a_command=3600,
+    )
+
+  @pytest.mark.asyncio
+  async def test_get_core(self, star_service: StarServiceFixture):
+    star_service.backend.get_core = unittest.mock.AsyncMock()
+    await star_service.remote.get_core(p1=1, p2=2)
+    star_service.backend.get_core.assert_called_once_with(p1=1, p2=2)
+
+  @pytest.mark.asyncio
+  async def test_put_core(self, star_service: StarServiceFixture):
+    star_service.backend.put_core = unittest.mock.AsyncMock()
+    await star_service.remote.put_core()
+    star_service.backend.put_core.assert_called_once()
+
+  @pytest.mark.asyncio
+  async def test_core_read_barcode_of_picked_up_resource(self, star_service: StarServiceFixture):
+    star_service.backend.core_read_barcode_of_picked_up_resource = unittest.mock.AsyncMock()
+    await star_service.remote.core_read_barcode_of_picked_up_resource(
+      rails=5,
+      reading_direction="horizontal",
+      minimal_z_position=220.0,
+      traverse_height_at_beginning_of_a_command=275.0,
+      z_speed=128.7,
+      allow_manual_input=False,
+    )
+    star_service.backend.core_read_barcode_of_picked_up_resource.assert_called_once_with(
+      rails=5,
+      reading_direction="horizontal",
+      minimal_z_position=220.0,
+      traverse_height_at_beginning_of_a_command=275.0,
+      z_speed=128.7,
+      allow_manual_input=False,
+    )

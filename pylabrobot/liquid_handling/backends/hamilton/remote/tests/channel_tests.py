@@ -50,6 +50,52 @@ class TestChannelMovementRPCs:
     await star_service.remote.move_all_channels_in_z_safety()
     star_service.backend.move_all_channels_in_z_safety.assert_called_once()
 
+  @pytest.mark.asyncio
+  async def test_prepare_for_manual_channel_operation(self, star_service: StarServiceFixture):
+    star_service.backend.prepare_for_manual_channel_operation = unittest.mock.AsyncMock()
+    await star_service.remote.prepare_for_manual_channel_operation(channel=2)
+    star_service.backend.prepare_for_manual_channel_operation.assert_called_once_with(2)
+
+  @pytest.mark.asyncio
+  async def test_position_single_pipetting_channel_in_z_direction(
+    self, star_service: StarServiceFixture
+  ):
+    star_service.backend.position_single_pipetting_channel_in_z_direction = (
+      unittest.mock.AsyncMock()
+    )
+    await star_service.remote.position_single_pipetting_channel_in_z_direction(
+      pipetting_channel_index=3, z_position=1500
+    )
+    star_service.backend.position_single_pipetting_channel_in_z_direction.assert_called_once_with(
+      pipetting_channel_index=3, z_position=1500
+    )
+
+  @pytest.mark.asyncio
+  async def test_position_max_free_y_for_n(self, star_service: StarServiceFixture):
+    star_service.backend.position_max_free_y_for_n = unittest.mock.AsyncMock()
+    await star_service.remote.position_max_free_y_for_n(pipetting_channel_index=4)
+    star_service.backend.position_max_free_y_for_n.assert_called_once_with(
+      pipetting_channel_index=4
+    )
+
+  @pytest.mark.asyncio
+  async def test_position_channels_in_y_direction(self, star_service: StarServiceFixture):
+    star_service.backend.position_channels_in_y_direction = unittest.mock.AsyncMock()
+    await star_service.remote.position_channels_in_y_direction(
+      ys={0: 100.0, 1: 200.0}, make_space=True
+    )
+    star_service.backend.position_channels_in_y_direction.assert_called_once_with(
+      ys={0: 100.0, 1: 200.0}, make_space=True
+    )
+
+  @pytest.mark.asyncio
+  async def test_position_channels_in_z_direction(self, star_service: StarServiceFixture):
+    star_service.backend.position_channels_in_z_direction = unittest.mock.AsyncMock()
+    await star_service.remote.position_channels_in_z_direction(zs={0: 50.0, 2: 75.0})
+    star_service.backend.position_channels_in_z_direction.assert_called_once_with(
+      zs={0: 50.0, 2: 75.0}
+    )
+
 
 class TestChannelQueryRPCs:
   @pytest.mark.asyncio
@@ -72,6 +118,15 @@ class TestChannelQueryRPCs:
     assert result == 78.9
 
   @pytest.mark.asyncio
+  async def test_request_tip_bottom_z_position(self, star_service: StarServiceFixture):
+    star_service.backend.request_tip_bottom_z_position = unittest.mock.AsyncMock(
+      return_value=12.3
+    )
+    result = await star_service.remote.request_tip_bottom_z_position(channel_idx=5)
+    assert result == 12.3
+    star_service.backend.request_tip_bottom_z_position.assert_called_once_with(channel_idx=5)
+
+  @pytest.mark.asyncio
   async def test_position_single_pipetting_channel_in_y_direction(
     self, star_service: StarServiceFixture
   ):
@@ -92,6 +147,14 @@ class TestChannelQueryRPCs:
     )
     result = await star_service.remote.get_channels_y_positions()
     assert result == {0: 100.0, 1: 200.0}
+
+  @pytest.mark.asyncio
+  async def test_get_channels_z_positions(self, star_service: StarServiceFixture):
+    star_service.backend.get_channels_z_positions = unittest.mock.AsyncMock(
+      return_value={0: 50.0, 3: 80.5}
+    )
+    result = await star_service.remote.get_channels_z_positions()
+    assert result == {0: 50.0, 3: 80.5}
 
   @pytest.mark.asyncio
   async def test_request_pip_channel_version(self, star_service: StarServiceFixture):
