@@ -62,9 +62,7 @@ class TestAutoloadRPCs:
 
   @pytest.mark.asyncio
   async def test_request_autoload_type(self, star_service: StarServiceFixture):
-    star_service.backend.request_autoload_type = unittest.mock.AsyncMock(
-      return_value="iSWAP"
-    )
+    star_service.backend.request_autoload_type = unittest.mock.AsyncMock(return_value="iSWAP")
     result = await star_service.remote.request_autoload_type()
     star_service.backend.request_autoload_type.assert_called_once()
     assert result == "iSWAP"
@@ -82,8 +80,8 @@ class TestAutoloadRPCs:
   async def test_request_presence_of_carriers_on_loading_tray(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.request_presence_of_carriers_on_loading_tray = (
-      unittest.mock.AsyncMock(return_value=[2, 4])
+    star_service.backend.request_presence_of_carriers_on_loading_tray = unittest.mock.AsyncMock(
+      return_value=[2, 4]
     )
     result = await star_service.remote.request_presence_of_carriers_on_loading_tray()
     star_service.backend.request_presence_of_carriers_on_loading_tray.assert_called_once()
@@ -96,9 +94,7 @@ class TestAutoloadRPCs:
     star_service.backend.request_presence_of_single_carrier_on_loading_tray = (
       unittest.mock.AsyncMock(return_value=True)
     )
-    result = await star_service.remote.request_presence_of_single_carrier_on_loading_tray(
-      track=10
-    )
+    result = await star_service.remote.request_presence_of_single_carrier_on_loading_tray(track=10)
     star_service.backend.request_presence_of_single_carrier_on_loading_tray.assert_called_once_with(
       track=10
     )
@@ -123,22 +119,18 @@ class TestAutoloadRPCs:
     )
 
   @pytest.mark.asyncio
-  async def test_request_instrument_initialization_status(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_instrument_initialization_status = (
-      unittest.mock.AsyncMock(return_value=True)
+  async def test_request_instrument_initialization_status(self, star_service: StarServiceFixture):
+    star_service.backend.request_instrument_initialization_status = unittest.mock.AsyncMock(
+      return_value=True
     )
     result = await star_service.remote.request_instrument_initialization_status()
     star_service.backend.request_instrument_initialization_status.assert_called_once()
     assert result is True
 
   @pytest.mark.asyncio
-  async def test_request_autoload_initialization_status(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_autoload_initialization_status = (
-      unittest.mock.AsyncMock(return_value=False)
+  async def test_request_autoload_initialization_status(self, star_service: StarServiceFixture):
+    star_service.backend.request_autoload_initialization_status = unittest.mock.AsyncMock(
+      return_value=False
     )
     result = await star_service.remote.request_autoload_initialization_status()
     star_service.backend.request_autoload_initialization_status.assert_called_once()

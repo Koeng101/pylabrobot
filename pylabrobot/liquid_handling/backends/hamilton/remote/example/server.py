@@ -12,8 +12,8 @@ import asyncio
 
 import uvicorn
 
-from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
 from pylabrobot.liquid_handling.backends.hamilton.remote.server import create_star_app
+from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
 from pylabrobot.resources.hamilton import STARLetDeck
 
 

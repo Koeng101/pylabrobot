@@ -33,9 +33,7 @@ class CoreGripperClientMixin:
       kwargs["front_offset"] = coordinate_to_proto(front_offset)
     if back_offset is not None:
       kwargs["back_offset"] = coordinate_to_proto(back_offset)
-    self._client.pick_up_core_gripper_tools(
-      pb2.PickUpCoreGripperToolsRequest(**kwargs)
-    )
+    self._client.pick_up_core_gripper_tools(pb2.PickUpCoreGripperToolsRequest(**kwargs))
 
   async def return_core_gripper_tools(
     self,
@@ -47,9 +45,7 @@ class CoreGripperClientMixin:
       kwargs["front_offset"] = coordinate_to_proto(front_offset)
     if back_offset is not None:
       kwargs["back_offset"] = coordinate_to_proto(back_offset)
-    self._client.return_core_gripper_tools(
-      pb2.ReturnCoreGripperToolsRequest(**kwargs)
-    )
+    self._client.return_core_gripper_tools(pb2.ReturnCoreGripperToolsRequest(**kwargs))
 
   async def core_open_gripper(self) -> None:
     self._client.core_open_gripper(pb2.CoreOpenGripperRequest())
@@ -160,14 +156,12 @@ class CoreGripperClientMixin:
       front_channel=front_channel,
     )
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if minimum_z_position_at_the_command_end is not None:
       kwargs["minimum_z_position_at_the_command_end"] = minimum_z_position_at_the_command_end
-    self._client.core_pick_up_resource(
-      pb2.CorePickUpResourceRequest(**kwargs)
-    )
+    self._client.core_pick_up_resource(pb2.CorePickUpResourceRequest(**kwargs))
 
   async def core_move_picked_up_resource(
     self,
@@ -182,12 +176,10 @@ class CoreGripperClientMixin:
       z_speed=z_speed,
     )
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
-    self._client.core_move_picked_up_resource(
-      pb2.CoreMovePickedUpResourceRequest(**kwargs)
-    )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
+    self._client.core_move_picked_up_resource(pb2.CoreMovePickedUpResourceRequest(**kwargs))
 
   async def core_release_picked_up_resource(
     self,
@@ -205,14 +197,12 @@ class CoreGripperClientMixin:
       return_tool=return_tool,
     )
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if z_position_at_the_command_end is not None:
       kwargs["z_position_at_the_command_end"] = z_position_at_the_command_end
-    self._client.core_release_picked_up_resource(
-      pb2.CoreReleasePickedUpResourceRequest(**kwargs)
-    )
+    self._client.core_release_picked_up_resource(pb2.CoreReleasePickedUpResourceRequest(**kwargs))
 
   async def core_check_resource_exists_at_location_center(
     self,

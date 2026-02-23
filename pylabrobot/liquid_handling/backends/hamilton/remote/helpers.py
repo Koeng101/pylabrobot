@@ -24,10 +24,10 @@ from pylabrobot.liquid_handling.standard import (
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.container import Container
 from pylabrobot.resources.hamilton import HamiltonTip, TipPickupMethod, TipSize
-from pylabrobot.resources.tip_rack import TipRack, TipSpot
-from pylabrobot.resources.well import Well
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.tip import Tip
+from pylabrobot.resources.tip_rack import TipRack, TipSpot
+from pylabrobot.resources.well import Well
 
 from . import star_service_pb2 as pb2
 
@@ -285,9 +285,7 @@ def _tips_to_proto(
   return tip_msgs, present
 
 
-def _tips_from_proto(
-  tip_msgs: list[pb2.TipData], present: list[bool]
-) -> list[Optional[Tip]]:
+def _tips_from_proto(tip_msgs: list[pb2.TipData], present: list[bool]) -> list[Optional[Tip]]:
   """Convert parallel proto lists back to Optional[Tip] sequence."""
   result: list[Optional[Tip]] = []
   for msg, is_present in zip(tip_msgs, present):

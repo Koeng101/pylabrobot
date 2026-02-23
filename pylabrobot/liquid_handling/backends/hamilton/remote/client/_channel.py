@@ -58,7 +58,9 @@ class ChannelClientMixin:
   # -- single-channel positioning --
 
   async def position_single_pipetting_channel_in_y_direction(
-    self, pipetting_channel_index: int, y_position: int,
+    self,
+    pipetting_channel_index: int,
+    y_position: int,
   ) -> None:
     self._client.position_single_pipetting_channel_in_y_direction(
       pb2.PositionSinglePipettingChannelInYDirectionRequest(
@@ -68,7 +70,9 @@ class ChannelClientMixin:
     )
 
   async def position_single_pipetting_channel_in_z_direction(
-    self, pipetting_channel_index: int, z_position: int,
+    self,
+    pipetting_channel_index: int,
+    z_position: int,
   ) -> None:
     self._client.position_single_pipetting_channel_in_z_direction(
       pb2.PositionSinglePipettingChannelInZDirectionRequest(
@@ -115,7 +119,9 @@ class ChannelClientMixin:
     return dict(resp.positions.entries)
 
   async def position_channels_in_y_direction(
-    self, ys: Dict[int, float], make_space: bool = True,
+    self,
+    ys: Dict[int, float],
+    make_space: bool = True,
   ) -> None:
     self._client.position_channels_in_y_direction(
       pb2.PositionChannelsInYDirectionRequest(

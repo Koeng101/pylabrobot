@@ -51,21 +51,23 @@ class TestFirmwareCmdFoilPiercing:
       one_by_one=False,
     )
 
-    star_service_foil.backend._write_and_read_command.assert_has_calls([
-      _any_write_and_read_command_call("C0JXid0003xs03702"),
-      _any_write_and_read_command_call("C0RYid0004"),
-      _any_write_and_read_command_call("C0JYid0005yp1530 1399 1297 1196 1095 0994 0892 0755"),
-      _any_write_and_read_command_call("C0RZid0006"),
-      _any_write_and_read_command_call("C0JZid0007zp2476 2083 2083 2083 2083 2083 2083 2476"),
-      _any_write_and_read_command_call("C0RYid0008"),
-      _any_write_and_read_command_call("C0JYid0009yp1530 1399 1297 1196 1095 0994 0892 0755"),
-      _any_write_and_read_command_call("C0KZid0010pn08zj2256"),
-      _any_write_and_read_command_call("C0KZid0011pn01zj2256"),
-      _any_write_and_read_command_call("C0RZid0012"),
-      _any_write_and_read_command_call("C0RZid0013"),
-      _any_write_and_read_command_call("C0JZid0014zp2256 2406 2406 2406 2406 2406 2406 2256"),
-      _any_write_and_read_command_call("C0ZAid0015"),
-    ])
+    star_service_foil.backend._write_and_read_command.assert_has_calls(
+      [
+        _any_write_and_read_command_call("C0JXid0003xs03702"),
+        _any_write_and_read_command_call("C0RYid0004"),
+        _any_write_and_read_command_call("C0JYid0005yp1530 1399 1297 1196 1095 0994 0892 0755"),
+        _any_write_and_read_command_call("C0RZid0006"),
+        _any_write_and_read_command_call("C0JZid0007zp2476 2083 2083 2083 2083 2083 2083 2476"),
+        _any_write_and_read_command_call("C0RYid0008"),
+        _any_write_and_read_command_call("C0JYid0009yp1530 1399 1297 1196 1095 0994 0892 0755"),
+        _any_write_and_read_command_call("C0KZid0010pn08zj2256"),
+        _any_write_and_read_command_call("C0KZid0011pn01zj2256"),
+        _any_write_and_read_command_call("C0RZid0012"),
+        _any_write_and_read_command_call("C0RZid0013"),
+        _any_write_and_read_command_call("C0JZid0014zp2256 2406 2406 2406 2406 2406 2406 2256"),
+        _any_write_and_read_command_call("C0ZAid0015"),
+      ]
+    )
 
   @pytest.mark.asyncio
   async def test_pierce_foil_tight(self, star_service_foil: StarServiceFoilFixture):
@@ -98,21 +100,23 @@ class TestFirmwareCmdFoilPiercing:
       one_by_one=False,
     )
 
-    star_service_foil.backend._write_and_read_command.assert_has_calls([
-      _any_write_and_read_command_call("C0JXid0003xs03702"),
-      _any_write_and_read_command_call("C0RYid0004"),
-      _any_write_and_read_command_call("C0JYid0005yp1530 1370 1280 1190 1100 1010 0920 0755"),
-      _any_write_and_read_command_call("C0RZid0006"),
-      _any_write_and_read_command_call("C0JZid0007zp2476 2083 2083 2083 2083 2083 2083 2476"),
-      _any_write_and_read_command_call("C0RYid0008"),
-      _any_write_and_read_command_call("C0JYid0009yp1530 1370 1280 1190 1100 1010 0920 0755"),
-      _any_write_and_read_command_call("C0KZid0010pn08zj2256"),
-      _any_write_and_read_command_call("C0KZid0011pn01zj2256"),
-      _any_write_and_read_command_call("C0RZid0012"),
-      _any_write_and_read_command_call("C0RZid0013"),
-      _any_write_and_read_command_call("C0JZid0014zp2256 2406 2406 2406 2406 2406 2406 2256"),
-      _any_write_and_read_command_call("C0ZAid0015"),
-    ])
+    star_service_foil.backend._write_and_read_command.assert_has_calls(
+      [
+        _any_write_and_read_command_call("C0JXid0003xs03702"),
+        _any_write_and_read_command_call("C0RYid0004"),
+        _any_write_and_read_command_call("C0JYid0005yp1530 1370 1280 1190 1100 1010 0920 0755"),
+        _any_write_and_read_command_call("C0RZid0006"),
+        _any_write_and_read_command_call("C0JZid0007zp2476 2083 2083 2083 2083 2083 2083 2476"),
+        _any_write_and_read_command_call("C0RYid0008"),
+        _any_write_and_read_command_call("C0JYid0009yp1530 1370 1280 1190 1100 1010 0920 0755"),
+        _any_write_and_read_command_call("C0KZid0010pn08zj2256"),
+        _any_write_and_read_command_call("C0KZid0011pn01zj2256"),
+        _any_write_and_read_command_call("C0RZid0012"),
+        _any_write_and_read_command_call("C0RZid0013"),
+        _any_write_and_read_command_call("C0JZid0014zp2256 2406 2406 2406 2406 2406 2406 2256"),
+        _any_write_and_read_command_call("C0ZAid0015"),
+      ]
+    )
 
   @pytest.mark.asyncio
   async def test_pierce_foil_portrait_wide(self, star_service_foil: StarServiceFoilFixture):
@@ -149,21 +153,23 @@ class TestFirmwareCmdFoilPiercing:
         one_by_one=False,
       )
 
-      star_service_foil.backend._write_and_read_command.assert_has_calls([
-        _any_write_and_read_command_call("C0JXid0003xs02634"),
-        _any_write_and_read_command_call("C0RYid0004"),
-        _any_write_and_read_command_call("C0JYid0005yp1667 1577 1487 1397 1307 1217 1127 0755"),
-        _any_write_and_read_command_call("C0RZid0006"),
-        _any_write_and_read_command_call("C0JZid0007zp2476 2083 2083 2083 2083 2083 2083 2476"),
-        _any_write_and_read_command_call("C0RYid0008"),
-        _any_write_and_read_command_call("C0JYid0009yp1953 1735 1582 1429 1275 1122 0969 0755"),
-        _any_write_and_read_command_call("C0KZid0010pn08zj2256"),
-        _any_write_and_read_command_call("C0KZid0011pn01zj2256"),
-        _any_write_and_read_command_call("C0RZid0012"),
-        _any_write_and_read_command_call("C0RZid0013"),
-        _any_write_and_read_command_call("C0JZid0014zp2256 2406 2406 2406 2406 2406 2406 2256"),
-        _any_write_and_read_command_call("C0ZAid0015"),
-      ])
+      star_service_foil.backend._write_and_read_command.assert_has_calls(
+        [
+          _any_write_and_read_command_call("C0JXid0003xs02634"),
+          _any_write_and_read_command_call("C0RYid0004"),
+          _any_write_and_read_command_call("C0JYid0005yp1667 1577 1487 1397 1307 1217 1127 0755"),
+          _any_write_and_read_command_call("C0RZid0006"),
+          _any_write_and_read_command_call("C0JZid0007zp2476 2083 2083 2083 2083 2083 2083 2476"),
+          _any_write_and_read_command_call("C0RYid0008"),
+          _any_write_and_read_command_call("C0JYid0009yp1953 1735 1582 1429 1275 1122 0969 0755"),
+          _any_write_and_read_command_call("C0KZid0010pn08zj2256"),
+          _any_write_and_read_command_call("C0KZid0011pn01zj2256"),
+          _any_write_and_read_command_call("C0RZid0012"),
+          _any_write_and_read_command_call("C0RZid0013"),
+          _any_write_and_read_command_call("C0JZid0014zp2256 2406 2406 2406 2406 2406 2406 2256"),
+          _any_write_and_read_command_call("C0ZAid0015"),
+        ]
+      )
     finally:
       plate.rotate(z=-90)
 
@@ -202,20 +208,22 @@ class TestFirmwareCmdFoilPiercing:
         one_by_one=False,
       )
 
-      star_service_foil.backend._write_and_read_command.assert_has_calls([
-        _any_write_and_read_command_call("C0JXid0003xs02634"),
-        _any_write_and_read_command_call("C0RYid0004"),
-        _any_write_and_read_command_call("C0JYid0005yp1953 1577 1487 1397 1307 1217 1127 0755"),
-        _any_write_and_read_command_call("C0RZid0006"),
-        _any_write_and_read_command_call("C0JZid0007zp2476 2083 2083 2083 2083 2083 2083 2476"),
-        _any_write_and_read_command_call("C0RYid0008"),
-        _any_write_and_read_command_call("C0JYid0009yp1953 1577 1487 1397 1307 1217 1127 0755"),
-        _any_write_and_read_command_call("C0KZid0010pn08zj2256"),
-        _any_write_and_read_command_call("C0KZid0011pn01zj2256"),
-        _any_write_and_read_command_call("C0RZid0012"),
-        _any_write_and_read_command_call("C0RZid0013"),
-        _any_write_and_read_command_call("C0JZid0014zp2256 2406 2406 2406 2406 2406 2406 2256"),
-        _any_write_and_read_command_call("C0ZAid0015"),
-      ])
+      star_service_foil.backend._write_and_read_command.assert_has_calls(
+        [
+          _any_write_and_read_command_call("C0JXid0003xs02634"),
+          _any_write_and_read_command_call("C0RYid0004"),
+          _any_write_and_read_command_call("C0JYid0005yp1953 1577 1487 1397 1307 1217 1127 0755"),
+          _any_write_and_read_command_call("C0RZid0006"),
+          _any_write_and_read_command_call("C0JZid0007zp2476 2083 2083 2083 2083 2083 2083 2476"),
+          _any_write_and_read_command_call("C0RYid0008"),
+          _any_write_and_read_command_call("C0JYid0009yp1953 1577 1487 1397 1307 1217 1127 0755"),
+          _any_write_and_read_command_call("C0KZid0010pn08zj2256"),
+          _any_write_and_read_command_call("C0KZid0011pn01zj2256"),
+          _any_write_and_read_command_call("C0RZid0012"),
+          _any_write_and_read_command_call("C0RZid0013"),
+          _any_write_and_read_command_call("C0JZid0014zp2256 2406 2406 2406 2406 2406 2406 2256"),
+          _any_write_and_read_command_call("C0ZAid0015"),
+        ]
+      )
     finally:
       plate.rotate(z=-90)

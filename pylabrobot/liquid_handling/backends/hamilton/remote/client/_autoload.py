@@ -38,19 +38,13 @@ class AutoloadClientMixin:
   # -- movement --
 
   async def move_autoload_to_safe_z_position(self) -> None:
-    self._client.move_autoload_to_safe_z_position(
-      pb2.MoveAutoloadToSafeZPositionRequest()
-    )
+    self._client.move_autoload_to_safe_z_position(pb2.MoveAutoloadToSafeZPositionRequest())
 
   async def move_autoload_to_slot(self, slot_number: int) -> None:
-    self._client.move_autoload_to_slot(
-      pb2.MoveAutoloadToSlotRequest(slot_number=slot_number)
-    )
+    self._client.move_autoload_to_slot(pb2.MoveAutoloadToSlotRequest(slot_number=slot_number))
 
   async def move_autoload_to_track(self, track: int) -> None:
-    self._client.move_autoload_to_track(
-      pb2.MoveAutoloadToTrackRequest(track=track)
-    )
+    self._client.move_autoload_to_track(pb2.MoveAutoloadToTrackRequest(track=track))
 
   async def park_autoload(self) -> None:
     self._client.park_autoload(pb2.ParkAutoloadRequest())
@@ -78,7 +72,8 @@ class AutoloadClientMixin:
     return list(resp.carriers)
 
   async def request_presence_of_single_carrier_on_loading_tray(
-    self, track: int,
+    self,
+    track: int,
   ) -> bool:
     resp = self._client.request_presence_of_single_carrier_on_loading_tray(
       pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest(track=track)
@@ -93,24 +88,19 @@ class AutoloadClientMixin:
     )
 
   async def load_carrier(self, carrier: Carrier) -> None:
-    self._client.load_carrier(
-      pb2.LoadCarrierRequest(carrier_name=carrier.name)
-    )
+    self._client.load_carrier(pb2.LoadCarrierRequest(carrier_name=carrier.name))
 
   async def unload_carrier(self, carrier: Carrier) -> None:
-    self._client.unload_carrier(
-      pb2.UnloadCarrierRequest(carrier_name=carrier.name)
-    )
+    self._client.unload_carrier(pb2.UnloadCarrierRequest(carrier_name=carrier.name))
 
   # -- barcode --
 
   async def set_1d_barcode_type(
-    self, barcode_symbology: Optional[Barcode1DSymbology],
+    self,
+    barcode_symbology: Optional[Barcode1DSymbology],
   ) -> None:
     proto_sym = _BARCODE_SYMBOLOGY_TO_PROTO.get(barcode_symbology, pb2.BARCODE_UNKNOWN)  # type: ignore[arg-type]
-    self._client.set_barcode_type(
-      pb2.SetBarcodeTypeRequest(barcode_symbology=proto_sym)
-    )
+    self._client.set_barcode_type(pb2.SetBarcodeTypeRequest(barcode_symbology=proto_sym))
 
   async def load_carrier_from_tray_and_scan_carrier_barcode(
     self,
@@ -149,7 +139,9 @@ class AutoloadClientMixin:
     )
 
   async def set_loading_indicators(
-    self, bit_pattern: List[bool], blink_pattern: List[bool],
+    self,
+    bit_pattern: List[bool],
+    blink_pattern: List[bool],
   ) -> None:
     self._client.set_loading_indicators(
       pb2.SetLoadingIndicatorsRequest(

@@ -51,24 +51,20 @@ class MiscClientMixin:
   # =========================================================================
 
   async def send_hhs_command(self, index: int, command: str) -> str:
-    resp = self._client.send_hhs_command(
-      pb2.SendHhsCommandRequest(index=index, command=command)
-    )
+    resp = self._client.send_hhs_command(pb2.SendHhsCommandRequest(index=index, command=command))
     return resp.response
 
   async def check_type_is_hhc(self, device_number: int) -> None:
-    self._client.check_type_is_hhc(
-      pb2.CheckTypeIsHhcRequest(device_number=device_number)
-    )
+    self._client.check_type_is_hhc(pb2.CheckTypeIsHhcRequest(device_number=device_number))
 
   async def initialize_hhc(self, device_number: int) -> str:
-    resp = self._client.initialize_hhc(
-      pb2.InitializeHhcRequest(device_number=device_number)
-    )
+    resp = self._client.initialize_hhc(pb2.InitializeHhcRequest(device_number=device_number))
     return resp.response
 
   async def start_temperature_control_at_hhc(
-    self, device_number: int, temperature: float,
+    self,
+    device_number: int,
+    temperature: float,
   ) -> None:
     self._client.start_temperature_control_at_hhc(
       pb2.StartTemperatureControlAtHhcRequest(
@@ -110,9 +106,7 @@ class MiscClientMixin:
     self._client.request_master_status(pb2.RequestMasterStatusRequest())
 
   async def request_device_serial_number(self) -> str:
-    resp = self._client.request_device_serial_number(
-      pb2.RequestDeviceSerialNumberRequest()
-    )
+    resp = self._client.request_device_serial_number(pb2.RequestDeviceSerialNumberRequest())
     return resp.serial_number
 
   # =========================================================================
@@ -149,17 +143,14 @@ class MiscClientMixin:
   # =========================================================================
 
   async def position_left_x_arm(self, x_position: int = 0) -> None:
-    self._client.position_left_x_arm(
-      pb2.PositionLeftXArmRequest(x_position=x_position)
-    )
+    self._client.position_left_x_arm(pb2.PositionLeftXArmRequest(x_position=x_position))
 
   async def position_right_x_arm(self, x_position: int = 0) -> None:
-    self._client.position_right_x_arm(
-      pb2.PositionRightXArmRequest(x_position=x_position)
-    )
+    self._client.position_right_x_arm(pb2.PositionRightXArmRequest(x_position=x_position))
 
   async def move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(
-    self, x_position: int = 0,
+    self,
+    x_position: int = 0,
   ) -> None:
     self._client.move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(
       pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest(
@@ -168,7 +159,8 @@ class MiscClientMixin:
     )
 
   async def move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position(
-    self, x_position: int = 0,
+    self,
+    x_position: int = 0,
   ) -> None:
     self._client.move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position(
       pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest(
@@ -177,15 +169,11 @@ class MiscClientMixin:
     )
 
   async def request_left_x_arm_position(self) -> float:
-    resp = self._client.request_left_x_arm_position(
-      pb2.RequestLeftXArmPositionRequest()
-    )
+    resp = self._client.request_left_x_arm_position(pb2.RequestLeftXArmPositionRequest())
     return resp.position
 
   async def request_right_x_arm_position(self) -> float:
-    resp = self._client.request_right_x_arm_position(
-      pb2.RequestRightXArmPositionRequest()
-    )
+    resp = self._client.request_right_x_arm_position(pb2.RequestRightXArmPositionRequest())
     return resp.position
 
   async def request_right_x_arm_last_collision_type(self) -> bool:
@@ -199,9 +187,7 @@ class MiscClientMixin:
   # =========================================================================
 
   async def request_pump_settings(self, pump_station: int = 1) -> None:
-    self._client.request_pump_settings(
-      pb2.RequestPumpSettingsRequest(pump_station=pump_station)
-    )
+    self._client.request_pump_settings(pb2.RequestPumpSettingsRequest(pump_station=pump_station))
 
   async def initialize_dual_pump_station_valves(self, pump_station: int = 1) -> None:
     self._client.initialize_dual_pump_station_valves(
@@ -218,9 +204,7 @@ class MiscClientMixin:
   # =========================================================================
 
   async def violently_shoot_down_tip(self, channel_idx: int) -> None:
-    self._client.violently_shoot_down_tip(
-      pb2.ViolentlyShootDownTipRequest(channel_idx=channel_idx)
-    )
+    self._client.violently_shoot_down_tip(pb2.ViolentlyShootDownTipRequest(channel_idx=channel_idx))
 
   def can_pick_up_tip(self, channel_idx: int, tip: Tip) -> bool:
     resp = self._client.can_pick_up_tip(

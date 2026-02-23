@@ -120,9 +120,7 @@ class TestChannelQueryRPCs:
 
   @pytest.mark.asyncio
   async def test_request_tip_bottom_z_position(self, star_service: StarServiceFixture):
-    star_service.backend.request_tip_bottom_z_position = unittest.mock.AsyncMock(
-      return_value=12.3
-    )
+    star_service.backend.request_tip_bottom_z_position = unittest.mock.AsyncMock(return_value=12.3)
     result = await star_service.remote.request_tip_bottom_z_position(channel_idx=5)
     assert result == 12.3
     star_service.backend.request_tip_bottom_z_position.assert_called_once_with(channel_idx=5)
@@ -159,8 +157,6 @@ class TestChannelQueryRPCs:
 
   @pytest.mark.asyncio
   async def test_request_pip_channel_version(self, star_service: StarServiceFixture):
-    star_service.backend.request_pip_channel_version = unittest.mock.AsyncMock(
-      return_value="A1.02"
-    )
+    star_service.backend.request_pip_channel_version = unittest.mock.AsyncMock(return_value="A1.02")
     result = await star_service.remote.request_pip_channel_version(channel=0)
     assert result == "A1.02"

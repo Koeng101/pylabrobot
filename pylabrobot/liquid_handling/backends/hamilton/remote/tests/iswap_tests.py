@@ -26,12 +26,8 @@ class TestIswapRPCs:
     star_service.backend.initialize_iswap.assert_called_once()
 
   @pytest.mark.asyncio
-  async def test_position_components_for_free_iswap_y_range(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.position_components_for_free_iswap_y_range = (
-      unittest.mock.AsyncMock()
-    )
+  async def test_position_components_for_free_iswap_y_range(self, star_service: StarServiceFixture):
+    star_service.backend.position_components_for_free_iswap_y_range = unittest.mock.AsyncMock()
     await star_service.remote.position_components_for_free_iswap_y_range()
     star_service.backend.position_components_for_free_iswap_y_range.assert_called_once()
 
@@ -48,9 +44,7 @@ class TestIswapRPCs:
     )
 
   @pytest.mark.asyncio
-  async def test_move_iswap_x_relative_with_splitting(
-    self, star_service: StarServiceFixture
-  ):
+  async def test_move_iswap_x_relative_with_splitting(self, star_service: StarServiceFixture):
     star_service.backend.move_iswap_x_relative = unittest.mock.AsyncMock()
     await star_service.remote.move_iswap_x_relative(step_size=200, allow_splitting=True)
     star_service.backend.move_iswap_x_relative.assert_called_once_with(
@@ -66,9 +60,7 @@ class TestIswapRPCs:
     )
 
   @pytest.mark.asyncio
-  async def test_move_iswap_y_relative_with_splitting(
-    self, star_service: StarServiceFixture
-  ):
+  async def test_move_iswap_y_relative_with_splitting(self, star_service: StarServiceFixture):
     star_service.backend.move_iswap_y_relative = unittest.mock.AsyncMock()
     await star_service.remote.move_iswap_y_relative(step_size=250, allow_splitting=True)
     star_service.backend.move_iswap_y_relative.assert_called_once_with(
@@ -84,9 +76,7 @@ class TestIswapRPCs:
     )
 
   @pytest.mark.asyncio
-  async def test_move_iswap_z_relative_with_splitting(
-    self, star_service: StarServiceFixture
-  ):
+  async def test_move_iswap_z_relative_with_splitting(self, star_service: StarServiceFixture):
     star_service.backend.move_iswap_z_relative = unittest.mock.AsyncMock()
     await star_service.remote.move_iswap_z_relative(step_size=75, allow_splitting=True)
     star_service.backend.move_iswap_z_relative.assert_called_once_with(
@@ -350,18 +340,16 @@ class TestIswapRPCs:
   async def test_request_iswap_rotation_drive_position_increments(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.request_iswap_rotation_drive_position_increments = (
-      unittest.mock.AsyncMock(return_value=4200)
+    star_service.backend.request_iswap_rotation_drive_position_increments = unittest.mock.AsyncMock(
+      return_value=4200
     )
     result = await star_service.remote.request_iswap_rotation_drive_position_increments()
     assert result == 4200
 
   @pytest.mark.asyncio
-  async def test_request_iswap_rotation_drive_orientation(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_iswap_rotation_drive_orientation = (
-      unittest.mock.AsyncMock(return_value=RotationDriveOrientation.FRONT)
+  async def test_request_iswap_rotation_drive_orientation(self, star_service: StarServiceFixture):
+    star_service.backend.request_iswap_rotation_drive_orientation = unittest.mock.AsyncMock(
+      return_value=RotationDriveOrientation.FRONT
     )
     result = await star_service.remote.request_iswap_rotation_drive_orientation()
     assert result == RotationDriveOrientation.FRONT
@@ -370,8 +358,8 @@ class TestIswapRPCs:
   async def test_request_iswap_rotation_drive_orientation_left(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.request_iswap_rotation_drive_orientation = (
-      unittest.mock.AsyncMock(return_value=RotationDriveOrientation.LEFT)
+    star_service.backend.request_iswap_rotation_drive_orientation = unittest.mock.AsyncMock(
+      return_value=RotationDriveOrientation.LEFT
     )
     result = await star_service.remote.request_iswap_rotation_drive_orientation()
     assert result == RotationDriveOrientation.LEFT
@@ -380,8 +368,8 @@ class TestIswapRPCs:
   async def test_request_iswap_rotation_drive_orientation_right(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.request_iswap_rotation_drive_orientation = (
-      unittest.mock.AsyncMock(return_value=RotationDriveOrientation.RIGHT)
+    star_service.backend.request_iswap_rotation_drive_orientation = unittest.mock.AsyncMock(
+      return_value=RotationDriveOrientation.RIGHT
     )
     result = await star_service.remote.request_iswap_rotation_drive_orientation()
     assert result == RotationDriveOrientation.RIGHT
@@ -390,28 +378,24 @@ class TestIswapRPCs:
   async def test_request_iswap_wrist_drive_position_increments(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.request_iswap_wrist_drive_position_increments = (
-      unittest.mock.AsyncMock(return_value=1234)
+    star_service.backend.request_iswap_wrist_drive_position_increments = unittest.mock.AsyncMock(
+      return_value=1234
     )
     result = await star_service.remote.request_iswap_wrist_drive_position_increments()
     assert result == 1234
 
   @pytest.mark.asyncio
-  async def test_request_iswap_wrist_drive_orientation(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_iswap_wrist_drive_orientation = (
-      unittest.mock.AsyncMock(return_value=WristDriveOrientation.STRAIGHT)
+  async def test_request_iswap_wrist_drive_orientation(self, star_service: StarServiceFixture):
+    star_service.backend.request_iswap_wrist_drive_orientation = unittest.mock.AsyncMock(
+      return_value=WristDriveOrientation.STRAIGHT
     )
     result = await star_service.remote.request_iswap_wrist_drive_orientation()
     assert result == WristDriveOrientation.STRAIGHT
 
   @pytest.mark.asyncio
-  async def test_request_iswap_wrist_drive_orientation_left(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_iswap_wrist_drive_orientation = (
-      unittest.mock.AsyncMock(return_value=WristDriveOrientation.LEFT)
+  async def test_request_iswap_wrist_drive_orientation_left(self, star_service: StarServiceFixture):
+    star_service.backend.request_iswap_wrist_drive_orientation = unittest.mock.AsyncMock(
+      return_value=WristDriveOrientation.LEFT
     )
     result = await star_service.remote.request_iswap_wrist_drive_orientation()
     assert result == WristDriveOrientation.LEFT
@@ -420,35 +404,27 @@ class TestIswapRPCs:
   async def test_request_iswap_wrist_drive_orientation_reverse(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.request_iswap_wrist_drive_orientation = (
-      unittest.mock.AsyncMock(return_value=WristDriveOrientation.REVERSE)
+    star_service.backend.request_iswap_wrist_drive_orientation = unittest.mock.AsyncMock(
+      return_value=WristDriveOrientation.REVERSE
     )
     result = await star_service.remote.request_iswap_wrist_drive_orientation()
     assert result == WristDriveOrientation.REVERSE
 
   @pytest.mark.asyncio
-  async def test_request_iswap_in_parking_position(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_iswap_in_parking_position = (
-      unittest.mock.AsyncMock()
-    )
+  async def test_request_iswap_in_parking_position(self, star_service: StarServiceFixture):
+    star_service.backend.request_iswap_in_parking_position = unittest.mock.AsyncMock()
     await star_service.remote.request_iswap_in_parking_position()
     star_service.backend.request_iswap_in_parking_position.assert_called_once()
 
   @pytest.mark.asyncio
   async def test_request_plate_in_iswap_true(self, star_service: StarServiceFixture):
-    star_service.backend.request_plate_in_iswap = unittest.mock.AsyncMock(
-      return_value=True
-    )
+    star_service.backend.request_plate_in_iswap = unittest.mock.AsyncMock(return_value=True)
     result = await star_service.remote.request_plate_in_iswap()
     assert result is True
 
   @pytest.mark.asyncio
   async def test_request_plate_in_iswap_false(self, star_service: StarServiceFixture):
-    star_service.backend.request_plate_in_iswap = unittest.mock.AsyncMock(
-      return_value=False
-    )
+    star_service.backend.request_plate_in_iswap = unittest.mock.AsyncMock(return_value=False)
     result = await star_service.remote.request_plate_in_iswap()
     assert result is False
 
@@ -461,48 +437,38 @@ class TestIswapRPCs:
     assert result == Coordinate(x=100.0, y=200.0, z=300.0)
 
   @pytest.mark.asyncio
-  async def test_iswap_rotation_drive_request_y(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.iswap_rotation_drive_request_y = (
-      unittest.mock.AsyncMock(return_value=456.5)
+  async def test_iswap_rotation_drive_request_y(self, star_service: StarServiceFixture):
+    star_service.backend.iswap_rotation_drive_request_y = unittest.mock.AsyncMock(
+      return_value=456.5
     )
     result = await star_service.remote.iswap_rotation_drive_request_y()
     assert result == 456.5
 
   @pytest.mark.asyncio
-  async def test_request_iswap_initialization_status_true(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_iswap_initialization_status = (
-      unittest.mock.AsyncMock(return_value=True)
+  async def test_request_iswap_initialization_status_true(self, star_service: StarServiceFixture):
+    star_service.backend.request_iswap_initialization_status = unittest.mock.AsyncMock(
+      return_value=True
     )
     result = await star_service.remote.request_iswap_initialization_status()
     assert result is True
 
   @pytest.mark.asyncio
-  async def test_request_iswap_initialization_status_false(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_iswap_initialization_status = (
-      unittest.mock.AsyncMock(return_value=False)
+  async def test_request_iswap_initialization_status_false(self, star_service: StarServiceFixture):
+    star_service.backend.request_iswap_initialization_status = unittest.mock.AsyncMock(
+      return_value=False
     )
     result = await star_service.remote.request_iswap_initialization_status()
     assert result is False
 
   @pytest.mark.asyncio
   async def test_request_iswap_version(self, star_service: StarServiceFixture):
-    star_service.backend.request_iswap_version = unittest.mock.AsyncMock(
-      return_value="2.1.0"
-    )
+    star_service.backend.request_iswap_version = unittest.mock.AsyncMock(return_value="2.1.0")
     result = await star_service.remote.request_iswap_version()
     assert result == "2.1.0"
 
   @pytest.mark.asyncio
   async def test_get_iswap_version(self, star_service: StarServiceFixture):
-    star_service.backend.get_iswap_version = unittest.mock.AsyncMock(
-      return_value="3.0.1"
-    )
+    star_service.backend.get_iswap_version = unittest.mock.AsyncMock(return_value="3.0.1")
     result = await star_service.remote.get_iswap_version()
     assert result == "3.0.1"
 

@@ -104,9 +104,7 @@ class TestHHSRPCs:
   @pytest.mark.asyncio
   async def test_start_temperature_control_at_hhc(self, star_service: StarServiceFixture):
     star_service.backend.start_temperature_control_at_hhc = unittest.mock.AsyncMock()
-    await star_service.remote.start_temperature_control_at_hhc(
-      device_number=1, temperature=37.5
-    )
+    await star_service.remote.start_temperature_control_at_hhc(device_number=1, temperature=37.5)
     star_service.backend.start_temperature_control_at_hhc.assert_called_once_with(
       device_number=1, temperature=37.5
     )
@@ -121,12 +119,8 @@ class TestHHSRPCs:
     star_service.backend.get_temperature_at_hhc.assert_called_once_with(device_number=1)
 
   @pytest.mark.asyncio
-  async def test_query_whether_temperature_reached_at_hhc(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.query_whether_temperature_reached_at_hhc = (
-      unittest.mock.AsyncMock()
-    )
+  async def test_query_whether_temperature_reached_at_hhc(self, star_service: StarServiceFixture):
+    star_service.backend.query_whether_temperature_reached_at_hhc = unittest.mock.AsyncMock()
     await star_service.remote.query_whether_temperature_reached_at_hhc(device_number=1)
     star_service.backend.query_whether_temperature_reached_at_hhc.assert_called_once_with(
       device_number=1
@@ -136,9 +130,7 @@ class TestHHSRPCs:
   async def test_stop_temperature_control_at_hhc(self, star_service: StarServiceFixture):
     star_service.backend.stop_temperature_control_at_hhc = unittest.mock.AsyncMock()
     await star_service.remote.stop_temperature_control_at_hhc(device_number=1)
-    star_service.backend.stop_temperature_control_at_hhc.assert_called_once_with(
-      device_number=1
-    )
+    star_service.backend.stop_temperature_control_at_hhc.assert_called_once_with(device_number=1)
 
 
 class TestConfigRPCs:
@@ -182,9 +174,7 @@ class TestConfigRPCs:
   async def test_set_deck_data(self, star_service: StarServiceFixture):
     star_service.backend.set_deck_data = unittest.mock.AsyncMock()
     await star_service.remote.set_deck_data(data_index=2, data_stream="abc123")
-    star_service.backend.set_deck_data.assert_called_once_with(
-      data_index=2, data_stream="abc123"
-    )
+    star_service.backend.set_deck_data.assert_called_once_with(data_index=2, data_stream="abc123")
 
 
 class TestXArmRPCs:
@@ -202,26 +192,20 @@ class TestXArmRPCs:
 
   @pytest.mark.asyncio
   async def test_request_left_x_arm_position(self, star_service: StarServiceFixture):
-    star_service.backend.request_left_x_arm_position = unittest.mock.AsyncMock(
-      return_value=1500.0
-    )
+    star_service.backend.request_left_x_arm_position = unittest.mock.AsyncMock(return_value=1500.0)
     result = await star_service.remote.request_left_x_arm_position()
     assert result == 1500.0
 
   @pytest.mark.asyncio
   async def test_request_right_x_arm_position(self, star_service: StarServiceFixture):
-    star_service.backend.request_right_x_arm_position = unittest.mock.AsyncMock(
-      return_value=2500.0
-    )
+    star_service.backend.request_right_x_arm_position = unittest.mock.AsyncMock(return_value=2500.0)
     result = await star_service.remote.request_right_x_arm_position()
     assert result == 2500.0
 
   @pytest.mark.asyncio
-  async def test_request_right_x_arm_last_collision_type(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_right_x_arm_last_collision_type = (
-      unittest.mock.AsyncMock(return_value=True)
+  async def test_request_right_x_arm_last_collision_type(self, star_service: StarServiceFixture):
+    star_service.backend.request_right_x_arm_last_collision_type = unittest.mock.AsyncMock(
+      return_value=True
     )
     result = await star_service.remote.request_right_x_arm_last_collision_type()
     assert result is True
@@ -235,14 +219,10 @@ class TestPumpRPCs:
     star_service.backend.request_pump_settings.assert_called_once_with(pump_station=2)
 
   @pytest.mark.asyncio
-  async def test_initialize_dual_pump_station_valves(
-    self, star_service: StarServiceFixture
-  ):
+  async def test_initialize_dual_pump_station_valves(self, star_service: StarServiceFixture):
     star_service.backend.initialize_dual_pump_station_valves = unittest.mock.AsyncMock()
     await star_service.remote.initialize_dual_pump_station_valves(pump_station=1)
-    star_service.backend.initialize_dual_pump_station_valves.assert_called_once_with(
-      pump_station=1
-    )
+    star_service.backend.initialize_dual_pump_station_valves.assert_called_once_with(pump_station=1)
 
   @pytest.mark.asyncio
   async def test_drain_dual_chamber_system(self, star_service: StarServiceFixture):

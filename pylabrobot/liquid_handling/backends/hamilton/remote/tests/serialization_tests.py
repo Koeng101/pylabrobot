@@ -3,22 +3,6 @@
 
 import pytest
 
-from pylabrobot.liquid_handling.standard import (
-  Drop,
-  GripDirection,
-  Mix,
-  Pickup,
-  ResourceDrop,
-  ResourceMove,
-  ResourcePickup,
-  SingleChannelAspiration,
-  SingleChannelDispense,
-)
-from pylabrobot.resources import Coordinate, Resource
-from pylabrobot.resources.hamilton import HamiltonTip, TipPickupMethod, TipSize
-from pylabrobot.resources.rotation import Rotation
-from pylabrobot.resources.tip import Tip
-
 from pylabrobot.liquid_handling.backends.hamilton.remote.helpers import (
   aspiration_from_proto,
   aspiration_to_proto,
@@ -45,6 +29,21 @@ from pylabrobot.liquid_handling.backends.hamilton.remote.helpers import (
   tip_from_proto,
   tip_to_proto,
 )
+from pylabrobot.liquid_handling.standard import (
+  Drop,
+  GripDirection,
+  Mix,
+  Pickup,
+  ResourceDrop,
+  ResourceMove,
+  ResourcePickup,
+  SingleChannelAspiration,
+  SingleChannelDispense,
+)
+from pylabrobot.resources import Coordinate, Resource
+from pylabrobot.resources.hamilton import HamiltonTip, TipPickupMethod, TipSize
+from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.tip import Tip
 
 
 class _FakeDeck:
@@ -136,8 +135,14 @@ class TestTipRoundTrip:
 
   @pytest.mark.parametrize(
     "tip_size",
-    [TipSize.UNDEFINED, TipSize.LOW_VOLUME, TipSize.STANDARD_VOLUME,
-     TipSize.HIGH_VOLUME, TipSize.CORE_384_HEAD_TIP, TipSize.XL],
+    [
+      TipSize.UNDEFINED,
+      TipSize.LOW_VOLUME,
+      TipSize.STANDARD_VOLUME,
+      TipSize.HIGH_VOLUME,
+      TipSize.CORE_384_HEAD_TIP,
+      TipSize.XL,
+    ],
   )
   def test_all_tip_sizes(self, tip_size):
     tip = HamiltonTip(

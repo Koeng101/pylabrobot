@@ -60,16 +60,18 @@ class TestAspirateDispenseRPCs:
     well = plate.get_item("A1")
     tip_rack = star_service.deck.get_resource("tip_rack_01")
     tip = tip_rack.get_item("A1").get_tip()
-    ops = [SingleChannelAspiration(
-      resource=well,
-      offset=Coordinate.zero(),
-      tip=tip,
-      volume=100.0,
-      flow_rate=None,
-      liquid_height=None,
-      blow_out_air_volume=None,
-      mix=None,
-    )]
+    ops = [
+      SingleChannelAspiration(
+        resource=well,
+        offset=Coordinate.zero(),
+        tip=tip,
+        volume=100.0,
+        flow_rate=None,
+        liquid_height=None,
+        blow_out_air_volume=None,
+        mix=None,
+      )
+    ]
     await star_service.remote.aspirate(ops=ops, use_channels=[0])
     star_service.backend._write_and_read_command.assert_called()
 
@@ -80,16 +82,18 @@ class TestAspirateDispenseRPCs:
     well = plate.get_item("A1")
     tip_rack = star_service.deck.get_resource("tip_rack_01")
     tip = tip_rack.get_item("A1").get_tip()
-    ops = [SingleChannelDispense(
-      resource=well,
-      offset=Coordinate.zero(),
-      tip=tip,
-      volume=100.0,
-      flow_rate=None,
-      liquid_height=None,
-      blow_out_air_volume=None,
-      mix=None,
-    )]
+    ops = [
+      SingleChannelDispense(
+        resource=well,
+        offset=Coordinate.zero(),
+        tip=tip,
+        volume=100.0,
+        flow_rate=None,
+        liquid_height=None,
+        blow_out_air_volume=None,
+        mix=None,
+      )
+    ]
     await star_service.remote.dispense(ops=ops, use_channels=[0])
     star_service.backend._write_and_read_command.assert_called()
 
@@ -100,16 +104,18 @@ class TestAspirateDispenseRPCs:
     well = plate.get_item("A1")
     tip_rack = star_service.deck.get_resource("tip_rack_01")
     tip = tip_rack.get_item("A1").get_tip()
-    ops = [SingleChannelAspiration(
-      resource=well,
-      offset=Coordinate.zero(),
-      tip=tip,
-      volume=50.0,
-      flow_rate=100.0,
-      liquid_height=None,
-      blow_out_air_volume=None,
-      mix=None,
-    )]
+    ops = [
+      SingleChannelAspiration(
+        resource=well,
+        offset=Coordinate.zero(),
+        tip=tip,
+        volume=50.0,
+        flow_rate=100.0,
+        liquid_height=None,
+        blow_out_air_volume=None,
+        mix=None,
+      )
+    ]
     await star_service.remote.aspirate(
       ops=ops,
       use_channels=[0],
@@ -134,9 +140,7 @@ class TestProbeRPCs:
   @pytest.mark.asyncio
   async def test_probe_liquid_heights(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
-    star_service.backend.probe_liquid_heights = unittest.mock.AsyncMock(
-      return_value=[15.5, 16.2]
-    )
+    star_service.backend.probe_liquid_heights = unittest.mock.AsyncMock(return_value=[15.5, 16.2])
     plate = star_service.deck.get_resource("plate_01")
     well_a1 = plate.get_item("A1")
     well_a2 = plate.get_item("A2")
@@ -150,9 +154,7 @@ class TestProbeRPCs:
   @pytest.mark.asyncio
   async def test_probe_liquid_heights_with_offsets(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
-    star_service.backend.probe_liquid_heights = unittest.mock.AsyncMock(
-      return_value=[12.0]
-    )
+    star_service.backend.probe_liquid_heights = unittest.mock.AsyncMock(return_value=[12.0])
     plate = star_service.deck.get_resource("plate_01")
     well_a1 = plate.get_item("A1")
     result = await star_service.remote.probe_liquid_heights(
@@ -170,9 +172,7 @@ class TestProbeRPCs:
   @pytest.mark.asyncio
   async def test_probe_liquid_volumes(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
-    star_service.backend.probe_liquid_volumes = unittest.mock.AsyncMock(
-      return_value=[200.0, 150.5]
-    )
+    star_service.backend.probe_liquid_volumes = unittest.mock.AsyncMock(return_value=[200.0, 150.5])
     plate = star_service.deck.get_resource("plate_01")
     well_a1 = plate.get_item("A1")
     well_a2 = plate.get_item("A2")
@@ -186,9 +186,7 @@ class TestProbeRPCs:
   @pytest.mark.asyncio
   async def test_probe_liquid_volumes_with_offsets(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
-    star_service.backend.probe_liquid_volumes = unittest.mock.AsyncMock(
-      return_value=[100.0]
-    )
+    star_service.backend.probe_liquid_volumes = unittest.mock.AsyncMock(return_value=[100.0])
     plate = star_service.deck.get_resource("plate_01")
     well_a1 = plate.get_item("A1")
     result = await star_service.remote.probe_liquid_volumes(
@@ -241,9 +239,7 @@ class TestProbeRPCs:
   @pytest.mark.asyncio
   async def test_request_tip_len_on_channel(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
-    star_service.backend.request_tip_len_on_channel = unittest.mock.AsyncMock(
-      return_value=95.0
-    )
+    star_service.backend.request_tip_len_on_channel = unittest.mock.AsyncMock(return_value=95.0)
     result = await star_service.remote.request_tip_len_on_channel(channel_idx=2)
     assert result == 95.0
     star_service.backend.request_tip_len_on_channel.assert_called_once()
@@ -251,9 +247,7 @@ class TestProbeRPCs:
   @pytest.mark.asyncio
   async def test_request_probe_z_position(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
-    star_service.backend.request_probe_z_position = unittest.mock.AsyncMock(
-      return_value=120.3
-    )
+    star_service.backend.request_probe_z_position = unittest.mock.AsyncMock(return_value=120.3)
     result = await star_service.remote.request_probe_z_position(channel_idx=0)
     assert result == 120.3
     star_service.backend.request_probe_z_position.assert_called_once()
@@ -344,9 +338,7 @@ class TestLowLevelPipRPCs:
   @pytest.mark.asyncio
   async def test_initialize_pipetting_channels(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
-    star_service.backend.initialize_pipetting_channels = unittest.mock.AsyncMock(
-      return_value=None
-    )
+    star_service.backend.initialize_pipetting_channels = unittest.mock.AsyncMock(return_value=None)
     await star_service.remote.initialize_pipetting_channels(
       x_positions=[100, 200],
       y_positions=[300, 400],
@@ -422,8 +414,8 @@ class TestLowLevelPipRPCs:
     self, star_service: StarServiceFixture
   ):
     star_service.backend._write_and_read_command.reset_mock()
-    star_service.backend.move_all_pipetting_channels_to_defined_position = (
-      unittest.mock.AsyncMock(return_value=None)
+    star_service.backend.move_all_pipetting_channels_to_defined_position = unittest.mock.AsyncMock(
+      return_value=None
     )
     await star_service.remote.move_all_pipetting_channels_to_defined_position(
       tip_pattern=True,
@@ -527,8 +519,8 @@ class TestFoilRPCs:
   async def test_pierce_foil(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
     star_service.backend.move_channel_x = unittest.mock.AsyncMock(return_value=None)
-    star_service.backend.position_single_pipetting_channel_in_y_direction = (
-      unittest.mock.AsyncMock(return_value=None)
+    star_service.backend.position_single_pipetting_channel_in_y_direction = unittest.mock.AsyncMock(
+      return_value=None
     )
     star_service.backend.move_channel_z = unittest.mock.AsyncMock(return_value=None)
     await star_service.remote.pierce_foil(
@@ -545,8 +537,8 @@ class TestFoilRPCs:
   async def test_pierce_foil_defaults(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
     star_service.backend.move_channel_x = unittest.mock.AsyncMock(return_value=None)
-    star_service.backend.position_single_pipetting_channel_in_y_direction = (
-      unittest.mock.AsyncMock(return_value=None)
+    star_service.backend.position_single_pipetting_channel_in_y_direction = unittest.mock.AsyncMock(
+      return_value=None
     )
     star_service.backend.move_channel_z = unittest.mock.AsyncMock(return_value=None)
     # Only required param is channel_idx
@@ -558,13 +550,11 @@ class TestFoilRPCs:
   async def test_step_off_foil(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
     star_service.backend.move_channel_x = unittest.mock.AsyncMock(return_value=None)
-    star_service.backend.position_single_pipetting_channel_in_y_direction = (
-      unittest.mock.AsyncMock(return_value=None)
-    )
-    star_service.backend.move_channel_z = unittest.mock.AsyncMock(return_value=None)
-    star_service.backend.move_all_channels_in_z_safety = unittest.mock.AsyncMock(
+    star_service.backend.position_single_pipetting_channel_in_y_direction = unittest.mock.AsyncMock(
       return_value=None
     )
+    star_service.backend.move_channel_z = unittest.mock.AsyncMock(return_value=None)
+    star_service.backend.move_all_channels_in_z_safety = unittest.mock.AsyncMock(return_value=None)
     await star_service.remote.step_off_foil(
       channel_idx=0,
       x_position=1000,
@@ -578,13 +568,11 @@ class TestFoilRPCs:
   async def test_step_off_foil_defaults(self, star_service: StarServiceFixture):
     star_service.backend._write_and_read_command.reset_mock()
     star_service.backend.move_channel_x = unittest.mock.AsyncMock(return_value=None)
-    star_service.backend.position_single_pipetting_channel_in_y_direction = (
-      unittest.mock.AsyncMock(return_value=None)
-    )
-    star_service.backend.move_channel_z = unittest.mock.AsyncMock(return_value=None)
-    star_service.backend.move_all_channels_in_z_safety = unittest.mock.AsyncMock(
+    star_service.backend.position_single_pipetting_channel_in_y_direction = unittest.mock.AsyncMock(
       return_value=None
     )
+    star_service.backend.move_channel_z = unittest.mock.AsyncMock(return_value=None)
+    star_service.backend.move_all_channels_in_z_safety = unittest.mock.AsyncMock(return_value=None)
     await star_service.remote.step_off_foil(channel_idx=2)
     star_service.backend.move_all_channels_in_z_safety.assert_called()
 

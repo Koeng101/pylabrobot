@@ -5,17 +5,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
-from pylabrobot.liquid_handling.standard import GripDirection, ResourceDrop, ResourceMove, ResourcePickup
+from pylabrobot.liquid_handling.standard import (
+  GripDirection,
+  ResourceDrop,
+  ResourceMove,
+  ResourcePickup,
+)
 from pylabrobot.resources import Coordinate
 
 from .. import star_service_pb2 as pb2
 from ..helpers import (
-    coordinate_from_proto,
-    coordinate_to_proto,
-    grip_direction_to_proto,
-    resource_drop_to_proto,
-    resource_move_to_proto,
-    resource_pickup_to_proto,
+  coordinate_from_proto,
+  coordinate_to_proto,
+  grip_direction_to_proto,
+  resource_drop_to_proto,
+  resource_move_to_proto,
+  resource_pickup_to_proto,
 )
 
 RotationDriveOrientation = STARBackend.RotationDriveOrientation
@@ -26,17 +31,17 @@ WristDriveOrientation = STARBackend.WristDriveOrientation
 # ---------------------------------------------------------------------------
 
 _ROT_TO_PROTO = {
-    RotationDriveOrientation.LEFT: pb2.ROT_LEFT,
-    RotationDriveOrientation.FRONT: pb2.ROT_FRONT,
-    RotationDriveOrientation.RIGHT: pb2.ROT_RIGHT,
+  RotationDriveOrientation.LEFT: pb2.ROT_LEFT,
+  RotationDriveOrientation.FRONT: pb2.ROT_FRONT,
+  RotationDriveOrientation.RIGHT: pb2.ROT_RIGHT,
 }
 _PROTO_TO_ROT = {v: k for k, v in _ROT_TO_PROTO.items()}
 
 _WRIST_TO_PROTO = {
-    WristDriveOrientation.RIGHT: pb2.WRIST_RIGHT,
-    WristDriveOrientation.STRAIGHT: pb2.WRIST_STRAIGHT,
-    WristDriveOrientation.LEFT: pb2.WRIST_LEFT,
-    WristDriveOrientation.REVERSE: pb2.WRIST_REVERSE,
+  WristDriveOrientation.RIGHT: pb2.WRIST_RIGHT,
+  WristDriveOrientation.STRAIGHT: pb2.WRIST_STRAIGHT,
+  WristDriveOrientation.LEFT: pb2.WRIST_LEFT,
+  WristDriveOrientation.REVERSE: pb2.WRIST_REVERSE,
 }
 _PROTO_TO_WRIST = {v: k for k, v in _WRIST_TO_PROTO.items()}
 
@@ -68,21 +73,27 @@ class IswapClientMixin:
   # -----------------------------------------------------------------------
 
   async def move_iswap_x_relative(
-    self, step_size: float, allow_splitting: bool = False,
+    self,
+    step_size: float,
+    allow_splitting: bool = False,
   ) -> None:
     self._client.move_iswap_x_relative(
       pb2.MoveIswapXRelativeRequest(step_size=step_size, allow_splitting=allow_splitting)
     )
 
   async def move_iswap_y_relative(
-    self, step_size: float, allow_splitting: bool = False,
+    self,
+    step_size: float,
+    allow_splitting: bool = False,
   ) -> None:
     self._client.move_iswap_y_relative(
       pb2.MoveIswapYRelativeRequest(step_size=step_size, allow_splitting=allow_splitting)
     )
 
   async def move_iswap_z_relative(
-    self, step_size: float, allow_splitting: bool = False,
+    self,
+    step_size: float,
+    allow_splitting: bool = False,
   ) -> None:
     self._client.move_iswap_z_relative(
       pb2.MoveIswapZRelativeRequest(step_size=step_size, allow_splitting=allow_splitting)
@@ -137,9 +148,9 @@ class IswapClientMixin:
     minimum_traverse_height_at_beginning_of_a_command: int = 2840,
   ) -> None:
     kwargs = {}
-    kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-      minimum_traverse_height_at_beginning_of_a_command
-    )
+    kwargs[
+      "minimum_traverse_height_at_beginning_of_a_command"
+    ] = minimum_traverse_height_at_beginning_of_a_command
     self._client.park_iswap(pb2.ParkIswapRequest(**kwargs))
 
   # -----------------------------------------------------------------------
@@ -275,9 +286,7 @@ class IswapClientMixin:
     self,
     orientation: RotationDriveOrientation,
   ) -> None:
-    self._client.iswap_rotate(
-      pb2.IswapRotateRequest(orientation=_ROT_TO_PROTO[orientation])
-    )
+    self._client.iswap_rotate(pb2.IswapRotateRequest(orientation=_ROT_TO_PROTO[orientation]))
 
   async def rotate_iswap_rotation_drive(
     self,
@@ -337,9 +346,7 @@ class IswapClientMixin:
     return _PROTO_TO_WRIST[resp.orientation]
 
   async def request_iswap_in_parking_position(self) -> None:
-    self._client.request_iswap_in_parking_position(
-      pb2.RequestIswapInParkingPositionRequest()
-    )
+    self._client.request_iswap_in_parking_position(pb2.RequestIswapInParkingPositionRequest())
 
   async def request_plate_in_iswap(self) -> bool:
     resp = self._client.request_plate_in_iswap(pb2.RequestPlateInIswapRequest())
@@ -350,9 +357,7 @@ class IswapClientMixin:
     return coordinate_from_proto(resp.position)
 
   async def iswap_rotation_drive_request_y(self) -> float:
-    resp = self._client.iswap_rotation_drive_request_y(
-      pb2.IswapRotationDriveRequestYRequest()
-    )
+    resp = self._client.iswap_rotation_drive_request_y(pb2.IswapRotationDriveRequestYRequest())
     return resp.y
 
   async def request_iswap_initialization_status(self) -> bool:
@@ -400,9 +405,9 @@ class IswapClientMixin:
   ) -> None:
     kwargs = {}
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     self._client.iswap_move_picked_up_resource(
       pb2.IswapMovePickedUpResourceRequest(
         center=coordinate_to_proto(center),
@@ -439,9 +444,9 @@ class IswapClientMixin:
   ) -> None:
     kwargs = {}
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if z_position_at_the_command_end is not None:
       kwargs["z_position_at_the_command_end"] = z_position_at_the_command_end
     if open_gripper_position is not None:
@@ -495,9 +500,9 @@ class IswapClientMixin:
   ) -> None:
     kwargs = {}
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if z_position_at_the_command_end is not None:
       kwargs["z_position_at_the_command_end"] = z_position_at_the_command_end
     if open_gripper_position is not None:

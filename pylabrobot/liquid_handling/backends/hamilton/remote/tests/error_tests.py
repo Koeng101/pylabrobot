@@ -15,7 +15,6 @@ from connectrpc.errors import ConnectError
 
 from .conftest import StarServiceFixture
 
-
 # ============================================================================
 # Misc RPCs
 # ============================================================================
@@ -28,9 +27,7 @@ class TestMiscErrorPropagation:
 
   @pytest.mark.asyncio
   async def test_lock_cover_runtime_error(self, star_service: StarServiceFixture):
-    star_service.backend.lock_cover = unittest.mock.AsyncMock(
-      side_effect=RuntimeError("cover jam")
-    )
+    star_service.backend.lock_cover = unittest.mock.AsyncMock(side_effect=RuntimeError("cover jam"))
     with pytest.raises(ConnectError):
       await star_service.remote.lock_cover()
 
@@ -52,9 +49,7 @@ class TestMiscErrorPropagation:
 
   @pytest.mark.asyncio
   async def test_halt_runtime_error(self, star_service: StarServiceFixture):
-    star_service.backend.halt = unittest.mock.AsyncMock(
-      side_effect=RuntimeError("halt failed")
-    )
+    star_service.backend.halt = unittest.mock.AsyncMock(side_effect=RuntimeError("halt failed"))
     with pytest.raises(ConnectError):
       await star_service.remote.halt()
 
@@ -149,12 +144,13 @@ class TestChannelErrorPropagation:
   async def test_position_single_pipetting_channel_in_y_direction_runtime_error(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.position_single_pipetting_channel_in_y_direction = (
-      unittest.mock.AsyncMock(side_effect=RuntimeError("y-drive failure"))
+    star_service.backend.position_single_pipetting_channel_in_y_direction = unittest.mock.AsyncMock(
+      side_effect=RuntimeError("y-drive failure")
     )
     with pytest.raises(ConnectError):
       await star_service.remote.position_single_pipetting_channel_in_y_direction(
-        pipetting_channel_index=0, y_position=1000,
+        pipetting_channel_index=0,
+        y_position=1000,
       )
 
 
@@ -204,8 +200,8 @@ class TestHead96ErrorPropagation:
   async def test_head96_dispensing_drive_move_to_position_runtime_error(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.head96_dispensing_drive_move_to_position = (
-      unittest.mock.AsyncMock(side_effect=RuntimeError("dispensing drive stall"))
+    star_service.backend.head96_dispensing_drive_move_to_position = unittest.mock.AsyncMock(
+      side_effect=RuntimeError("dispensing drive stall")
     )
     with pytest.raises(ConnectError):
       await star_service.remote.head96_dispensing_drive_move_to_position(position=100.0)

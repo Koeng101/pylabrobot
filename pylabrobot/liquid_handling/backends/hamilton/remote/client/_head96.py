@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, List
 from pylabrobot.resources import Coordinate
 
 from .. import star_service_pb2 as pb2
-from ..helpers import coordinate_to_proto, coordinate_from_proto
+from ..helpers import coordinate_from_proto, coordinate_to_proto
 
 if TYPE_CHECKING:
   from ..star_service_connect import STARServiceClientSync
@@ -23,7 +23,9 @@ class Head96ClientMixin:
   # -- initialization --
 
   async def initialize_core_96_head(
-    self, trash96_name: str, z_position_at_the_command_end: float = 245.0,
+    self,
+    trash96_name: str,
+    z_position_at_the_command_end: float = 245.0,
   ) -> None:
     self._client.initialize_core96_head(
       pb2.InitializeCore96HeadRequest(
@@ -39,9 +41,7 @@ class Head96ClientMixin:
     return resp.initialized
 
   async def head96_request_firmware_version(self) -> str:
-    resp = self._client.head96_request_firmware_version(
-      pb2.Head96RequestFirmwareVersionRequest()
-    )
+    resp = self._client.head96_request_firmware_version(pb2.Head96RequestFirmwareVersionRequest())
     return resp.date
 
   async def head96_request_type(self) -> int:
@@ -81,7 +81,10 @@ class Head96ClientMixin:
     self._client.head96_move_x(pb2.Head96MoveXRequest(x=x))
 
   async def head96_move_y(
-    self, y: float, move_up_before: bool = False, move_down_after: bool = False,
+    self,
+    y: float,
+    move_up_before: bool = False,
+    move_down_after: bool = False,
   ) -> None:
     self._client.head96_move_y(
       pb2.Head96MoveYRequest(
@@ -95,7 +98,10 @@ class Head96ClientMixin:
     self._client.head96_move_z(pb2.Head96MoveZRequest(z=z))
 
   async def move_core_96_head_to_defined_position(
-    self, x: float, y: float, z: float = 342.5,
+    self,
+    x: float,
+    y: float,
+    z: float = 342.5,
   ) -> None:
     self._client.move_core96_head_to_defined_position(
       pb2.MoveCore96HeadToDefinedPositionRequest(x=x, y=y, z=z)
@@ -114,7 +120,10 @@ class Head96ClientMixin:
     )
 
   async def head96_dispensing_drive_move_to_position(
-    self, position: float, speed: float = 261.1, current_protection_limiter: int = 15,
+    self,
+    position: float,
+    speed: float = 261.1,
+    current_protection_limiter: int = 15,
   ) -> None:
     self._client.head96_dispensing_drive_move_to_position(
       pb2.Head96DispensingDriveMoveToPositionRequest(
@@ -139,9 +148,7 @@ class Head96ClientMixin:
   # -- queries --
 
   async def head96_request_tip_presence(self) -> int:
-    resp = self._client.head96_request_tip_presence(
-      pb2.Head96RequestTipPresenceRequest()
-    )
+    resp = self._client.head96_request_tip_presence(pb2.Head96RequestTipPresenceRequest())
     return resp.tip_presence
 
   async def head96_request_position(self) -> Coordinate:

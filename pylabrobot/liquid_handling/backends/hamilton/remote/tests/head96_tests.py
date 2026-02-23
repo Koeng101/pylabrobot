@@ -18,11 +18,9 @@ class TestHead96MovementRPCs:
     star_service.backend.initialize_core_96_head.assert_called_once()
 
   @pytest.mark.asyncio
-  async def test_request_core_96_head_initialization_status(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.request_core_96_head_initialization_status = (
-      unittest.mock.AsyncMock(return_value=True)
+  async def test_request_core_96_head_initialization_status(self, star_service: StarServiceFixture):
+    star_service.backend.request_core_96_head_initialization_status = unittest.mock.AsyncMock(
+      return_value=True
     )
     result = await star_service.remote.request_core_96_head_initialization_status()
     assert result is True
@@ -41,9 +39,7 @@ class TestHead96MovementRPCs:
   async def test_head96_request_type(self, star_service: StarServiceFixture):
     mock_type = unittest.mock.MagicMock()
     mock_type.value = 3
-    star_service.backend.head96_request_type = unittest.mock.AsyncMock(
-      return_value=mock_type
-    )
+    star_service.backend.head96_request_type = unittest.mock.AsyncMock(return_value=mock_type)
     result = await star_service.remote.head96_request_type()
     assert result == 3
     star_service.backend.head96_request_type.assert_called_once()
@@ -107,15 +103,9 @@ class TestHead96MovementRPCs:
     star_service.backend.head96_move_z.assert_called_once_with(z=1500)
 
   @pytest.mark.asyncio
-  async def test_move_core_96_head_to_defined_position(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.move_core_96_head_to_defined_position = (
-      unittest.mock.AsyncMock()
-    )
-    await star_service.remote.move_core_96_head_to_defined_position(
-      x=100.0, y=200.0, z=300.0
-    )
+  async def test_move_core_96_head_to_defined_position(self, star_service: StarServiceFixture):
+    star_service.backend.move_core_96_head_to_defined_position = unittest.mock.AsyncMock()
+    await star_service.remote.move_core_96_head_to_defined_position(x=100.0, y=200.0, z=300.0)
     star_service.backend.move_core_96_head_to_defined_position.assert_called_once_with(
       x=100.0, y=200.0, z=300.0
     )
@@ -133,19 +123,13 @@ class TestHead96MovementRPCs:
   async def test_head96_dispensing_drive_move_to_home_volume(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.head96_dispensing_drive_move_to_home_volume = (
-      unittest.mock.AsyncMock()
-    )
+    star_service.backend.head96_dispensing_drive_move_to_home_volume = unittest.mock.AsyncMock()
     await star_service.remote.head96_dispensing_drive_move_to_home_volume()
     star_service.backend.head96_dispensing_drive_move_to_home_volume.assert_called_once()
 
   @pytest.mark.asyncio
-  async def test_head96_dispensing_drive_move_to_position(
-    self, star_service: StarServiceFixture
-  ):
-    star_service.backend.head96_dispensing_drive_move_to_position = (
-      unittest.mock.AsyncMock()
-    )
+  async def test_head96_dispensing_drive_move_to_position(self, star_service: StarServiceFixture):
+    star_service.backend.head96_dispensing_drive_move_to_position = unittest.mock.AsyncMock()
     await star_service.remote.head96_dispensing_drive_move_to_position(
       position=50.0, speed=300.0, current_protection_limiter=10
     )
@@ -157,8 +141,8 @@ class TestHead96MovementRPCs:
   async def test_head96_dispensing_drive_request_position_mm(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.head96_dispensing_drive_request_position_mm = (
-      unittest.mock.AsyncMock(return_value=12.5)
+    star_service.backend.head96_dispensing_drive_request_position_mm = unittest.mock.AsyncMock(
+      return_value=12.5
     )
     result = await star_service.remote.head96_dispensing_drive_request_position_mm()
     assert result == 12.5
@@ -168,8 +152,8 @@ class TestHead96MovementRPCs:
   async def test_head96_dispensing_drive_request_position_uL(
     self, star_service: StarServiceFixture
   ):
-    star_service.backend.head96_dispensing_drive_request_position_uL = (
-      unittest.mock.AsyncMock(return_value=150.0)
+    star_service.backend.head96_dispensing_drive_request_position_uL = unittest.mock.AsyncMock(
+      return_value=150.0
     )
     result = await star_service.remote.head96_dispensing_drive_request_position_uL()
     assert result == 150.0
@@ -177,9 +161,7 @@ class TestHead96MovementRPCs:
 
   @pytest.mark.asyncio
   async def test_head96_request_tip_presence(self, star_service: StarServiceFixture):
-    star_service.backend.head96_request_tip_presence = unittest.mock.AsyncMock(
-      return_value=1
-    )
+    star_service.backend.head96_request_tip_presence = unittest.mock.AsyncMock(return_value=1)
     result = await star_service.remote.head96_request_tip_presence()
     assert result == 1
     star_service.backend.head96_request_tip_presence.assert_called_once()

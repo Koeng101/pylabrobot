@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..star_service_connect import STARServiceClientSync
 from ._autoload import AutoloadClientMixin
 from ._channel import ChannelClientMixin
 from ._core_gripper import CoreGripperClientMixin
@@ -12,7 +13,6 @@ from ._iswap import IswapClientMixin
 from ._lifecycle import LifecycleClientMixin
 from ._misc import MiscClientMixin
 from ._pipetting import PipettingClientMixin
-from ..star_service_connect import STARServiceClientSync
 
 if TYPE_CHECKING:
   pass

@@ -82,9 +82,9 @@ class PipettingClientMixin:
     if end_tip_pick_up_process is not None:
       kwargs["end_tip_pick_up_process"] = end_tip_pick_up_process
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if pickup_method is not None:
       kwargs["pickup_method"] = pickup_method.value
     self._client.pick_up_tips(pb2.PickUpTipsRequest(**kwargs))
@@ -110,9 +110,9 @@ class PipettingClientMixin:
     if end_tip_deposit_process is not None:
       kwargs["end_tip_deposit_process"] = end_tip_deposit_process
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if z_position_at_end_of_a_command is not None:
       kwargs["z_position_at_end_of_a_command"] = z_position_at_end_of_a_command
     self._client.drop_tips(pb2.DropTipsRequest(**kwargs))
@@ -197,9 +197,7 @@ class PipettingClientMixin:
     if aspirate_position_above_z_touch_off is not None:
       kwargs["aspirate_position_above_z_touch_off"] = aspirate_position_above_z_touch_off
     if detection_height_difference_for_dual_lld is not None:
-      kwargs["detection_height_difference_for_dual_lld"] = (
-        detection_height_difference_for_dual_lld
-      )
+      kwargs["detection_height_difference_for_dual_lld"] = detection_height_difference_for_dual_lld
     if swap_speed is not None:
       kwargs["swap_speed"] = swap_speed
     if settling_time is not None:
@@ -213,19 +211,17 @@ class PipettingClientMixin:
     if use_2nd_section_aspiration is not None:
       kwargs["use_2nd_section_aspiration"] = use_2nd_section_aspiration
     if retract_height_over_2nd_section_to_empty_tip is not None:
-      kwargs["retract_height_over_2nd_section_to_empty_tip"] = (
-        retract_height_over_2nd_section_to_empty_tip
-      )
+      kwargs[
+        "retract_height_over_2nd_section_to_empty_tip"
+      ] = retract_height_over_2nd_section_to_empty_tip
     if dispensation_speed_during_emptying_tip is not None:
       kwargs["dispensation_speed_during_emptying_tip"] = dispensation_speed_during_emptying_tip
     if dosing_drive_speed_during_2nd_section_search is not None:
-      kwargs["dosing_drive_speed_during_2nd_section_search"] = (
-        dosing_drive_speed_during_2nd_section_search
-      )
+      kwargs[
+        "dosing_drive_speed_during_2nd_section_search"
+      ] = dosing_drive_speed_during_2nd_section_search
     if z_drive_speed_during_2nd_section_search is not None:
-      kwargs["z_drive_speed_during_2nd_section_search"] = (
-        z_drive_speed_during_2nd_section_search
-      )
+      kwargs["z_drive_speed_during_2nd_section_search"] = z_drive_speed_during_2nd_section_search
     if cup_upper_edge is not None:
       kwargs["cup_upper_edge"] = cup_upper_edge
     if ratio_liquid_rise_to_tip_deep_in is not None:
@@ -233,9 +229,9 @@ class PipettingClientMixin:
     if immersion_depth_2nd_section is not None:
       kwargs["immersion_depth_2nd_section"] = immersion_depth_2nd_section
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if min_z_endpos is not None:
       kwargs["min_z_endpos"] = min_z_endpos
     if liquid_surface_no_lld is not None:
@@ -326,9 +322,9 @@ class PipettingClientMixin:
     if limit_curve_index is not None:
       kwargs["limit_curve_index"] = limit_curve_index
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if min_z_endpos is not None:
       kwargs["min_z_endpos"] = min_z_endpos
     if jet is not None:
@@ -361,9 +357,9 @@ class PipettingClientMixin:
     if minimum_height_command_end is not None:
       kwargs["minimum_height_command_end"] = minimum_height_command_end
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     self._client.pick_up_tips96(pb2.PickUpTips96Request(**kwargs))
 
   async def drop_tips96(
@@ -380,9 +376,9 @@ class PipettingClientMixin:
     if minimum_height_command_end is not None:
       kwargs["minimum_height_command_end"] = minimum_height_command_end
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     self._client.drop_tips96(pb2.DropTips96Request(**kwargs))
 
   async def aspirate96(
@@ -438,9 +434,9 @@ class PipettingClientMixin:
     else:
       kwargs["container"] = multi_head_aspiration_container_to_proto(aspiration)
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if min_z_endpos is not None:
       kwargs["min_z_endpos"] = min_z_endpos
     if minimum_height is not None:
@@ -502,9 +498,9 @@ class PipettingClientMixin:
     else:
       kwargs["container"] = multi_head_dispense_container_to_proto(dispense)
     if minimum_traverse_height_at_beginning_of_a_command is not None:
-      kwargs["minimum_traverse_height_at_beginning_of_a_command"] = (
-        minimum_traverse_height_at_beginning_of_a_command
-      )
+      kwargs[
+        "minimum_traverse_height_at_beginning_of_a_command"
+      ] = minimum_traverse_height_at_beginning_of_a_command
     if min_z_endpos is not None:
       kwargs["min_z_endpos"] = min_z_endpos
     if minimum_height is not None:
@@ -873,9 +869,7 @@ class PipettingClientMixin:
     self._client.request_tadm_status(pb2.RequestTadmStatusRequest())
 
   async def request_volume_in_tip(self, channel: int) -> float:
-    resp = self._client.request_volume_in_tip(
-      pb2.RequestVolumeInTipRequest(channel=channel)
-    )
+    resp = self._client.request_volume_in_tip(pb2.RequestVolumeInTipRequest(channel=channel))
     return resp.volume
 
   async def request_tip_len_on_channel(self, channel_idx: int) -> float:

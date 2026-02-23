@@ -16,21 +16,21 @@ from dataclasses import dataclass
 import pytest
 import uvicorn
 
-from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
 from pylabrobot.liquid_handling.backends.hamilton.remote.client import RemoteSTARBackend
 from pylabrobot.liquid_handling.backends.hamilton.remote.server import create_star_app
 from pylabrobot.liquid_handling.backends.hamilton.remote.star_service_connect import (
   STARServiceClientSync,
 )
+from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
 from pylabrobot.resources import (
-  AGenBio_1_troughplate_190000uL_Fl,
-  CellTreat_96_wellplate_350ul_Ub,
   PLT_CAR_L5AC_A00,
   PLT_CAR_L5MD_A00,
   PLT_CAR_P3AC_A01,
   TIP_CAR_480_A00,
-  Coordinate,
+  AGenBio_1_troughplate_190000uL_Fl,
+  CellTreat_96_wellplate_350ul_Ub,
   Container,
+  Coordinate,
   Cor_96_wellplate_360ul_Fb,
   Lid,
   hamilton_96_tiprack_300uL_filter,
@@ -110,12 +110,27 @@ def _init_backend_state(backend: STARBackend) -> None:
   backend._iswap_parked = True
 
   backend._extended_conf = {
-    "ka": 0, "ke": 0,
-    "xt": 54, "xa": 30, "xw": 13130,
-    "xl": 0, "xn": 0, "xr": 0, "xo": 0,
-    "xm": 0, "xx": 0, "xu": 0, "xv": 0,
-    "kc": 0, "kr": 0, "ys": 0,
-    "kl": 0, "km": 0, "ym": 0, "yu": 0, "yx": 0,
+    "ka": 0,
+    "ke": 0,
+    "xt": 54,
+    "xa": 30,
+    "xw": 13130,
+    "xl": 0,
+    "xn": 0,
+    "xr": 0,
+    "xo": 0,
+    "xm": 0,
+    "xx": 0,
+    "xu": 0,
+    "xv": 0,
+    "kc": 0,
+    "kr": 0,
+    "ys": 0,
+    "kl": 0,
+    "km": 0,
+    "ym": 0,
+    "yu": 0,
+    "yx": 0,
   }
   backend.setup = unittest.mock.AsyncMock()
 
@@ -176,10 +191,15 @@ def _make_mocked_backend() -> tuple[STARBackend, STARLetDeck, Container]:
   return backend, deck, bb
 
 
-def _make_iswap_movement_backend() -> tuple[
-  STARBackend, STARLetDeck, PlateCarrier, PlateCarrier,
-  Plate,
-]:
+def _make_iswap_movement_backend() -> (
+  tuple[
+    STARBackend,
+    STARLetDeck,
+    PlateCarrier,
+    PlateCarrier,
+    Plate,
+  ]
+):
   """Deck: PLT_CAR_L5MD_A00 at rails=15, PLT_CAR_P3AC_A01 at rails=3."""
   backend = STARBackend()
   _init_backend_state(backend)
@@ -245,8 +265,12 @@ def star_service_iswap():
     client = STARServiceClientSync(address=f"http://127.0.0.1:{_PORT_ISWAP}")
     remote = RemoteSTARBackend(client)
     yield StarServiceIswapFixture(
-      backend=backend, remote=remote, deck=deck,
-      plt_car=plt_car, plt_car2=plt_car2, plate=plate,
+      backend=backend,
+      remote=remote,
+      deck=deck,
+      plt_car=plt_car,
+      plt_car2=plt_car2,
+      plate=plate,
     )
   finally:
     server_thread.stop()

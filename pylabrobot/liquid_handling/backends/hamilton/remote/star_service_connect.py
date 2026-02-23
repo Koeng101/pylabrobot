@@ -11,27 +11,31 @@ from typing import TYPE_CHECKING, Protocol
 from connectrpc.client import ConnectClient, ConnectClientSync
 from connectrpc.method import IdempotencyLevel, MethodInfo
 from connectrpc.server import (
-    ConnectASGIApplication,
-    Endpoint,
+  ConnectASGIApplication,
+  Endpoint,
 )
 
 from . import star_service_pb2 as pb2
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Iterable, Mapping
+  from collections.abc import AsyncGenerator, Iterable, Mapping
 
-    from connectrpc.interceptor import Interceptor
-    from connectrpc.request import Headers, RequestContext
+  from connectrpc.interceptor import Interceptor
+  from connectrpc.request import Headers, RequestContext
 
 
 _SVC = "pylabrobot.liquid_handling.backends.hamilton.remote.STARService"
 
 
-def _method(name: str, input_cls: type, output_cls: type,
-            idempotency: IdempotencyLevel = IdempotencyLevel.UNKNOWN) -> MethodInfo:
-    return MethodInfo(name=name, service_name=_SVC,
-                      input=input_cls, output=output_cls,
-                      idempotency_level=idempotency)
+def _method(
+  name: str,
+  input_cls: type,
+  output_cls: type,
+  idempotency: IdempotencyLevel = IdempotencyLevel.UNKNOWN,
+) -> MethodInfo:
+  return MethodInfo(
+    name=name, service_name=_SVC, input=input_cls, output=output_cls, idempotency_level=idempotency
+  )
 
 
 # All read-only RPCs use NO_SIDE_EFFECTS for idempotency.
@@ -43,11 +47,21 @@ _NS = IdempotencyLevel.NO_SIDE_EFFECTS
 
 _SETUP = _method("Setup", pb2.SetupRequest, pb2.SetupResponse)
 _STOP = _method("Stop", pb2.StopRequest, pb2.StopResponse)
-_GET_NUM_CHANNELS = _method("GetNumChannels", pb2.GetNumChannelsRequest, pb2.GetNumChannelsResponse, _NS)
-_GET_HEAD96_INSTALLED = _method("GetHead96Installed", pb2.GetHead96InstalledRequest, pb2.GetHead96InstalledResponse, _NS)
-_GET_ISWAP_INSTALLED = _method("GetIswapInstalled", pb2.GetIswapInstalledRequest, pb2.GetIswapInstalledResponse, _NS)
-_GET_ISWAP_PARKED = _method("GetIswapParked", pb2.GetIswapParkedRequest, pb2.GetIswapParkedResponse, _NS)
-_GET_CORE_PARKED = _method("GetCoreParked", pb2.GetCoreParkedRequest, pb2.GetCoreParkedResponse, _NS)
+_GET_NUM_CHANNELS = _method(
+  "GetNumChannels", pb2.GetNumChannelsRequest, pb2.GetNumChannelsResponse, _NS
+)
+_GET_HEAD96_INSTALLED = _method(
+  "GetHead96Installed", pb2.GetHead96InstalledRequest, pb2.GetHead96InstalledResponse, _NS
+)
+_GET_ISWAP_INSTALLED = _method(
+  "GetIswapInstalled", pb2.GetIswapInstalledRequest, pb2.GetIswapInstalledResponse, _NS
+)
+_GET_ISWAP_PARKED = _method(
+  "GetIswapParked", pb2.GetIswapParkedRequest, pb2.GetIswapParkedResponse, _NS
+)
+_GET_CORE_PARKED = _method(
+  "GetCoreParked", pb2.GetCoreParkedRequest, pb2.GetCoreParkedResponse, _NS
+)
 _PICK_UP_TIPS = _method("PickUpTips", pb2.PickUpTipsRequest, pb2.PickUpTipsResponse)
 _DROP_TIPS = _method("DropTips", pb2.DropTipsRequest, pb2.DropTipsResponse)
 _ASPIRATE = _method("Aspirate", pb2.AspirateRequest, pb2.AspirateResponse)
@@ -57,180 +71,590 @@ _DROP_TIPS96 = _method("DropTips96", pb2.DropTips96Request, pb2.DropTips96Respon
 _ASPIRATE96 = _method("Aspirate96", pb2.Aspirate96Request, pb2.Aspirate96Response)
 _DISPENSE96 = _method("Dispense96", pb2.Dispense96Request, pb2.Dispense96Response)
 _INITIALIZE_PIP = _method("InitializePip", pb2.InitializePipRequest, pb2.InitializePipResponse)
-_INITIALIZE_PIPETTING_CHANNELS = _method("InitializePipettingChannels", pb2.InitializePipettingChannelsRequest, pb2.InitializePipettingChannelsResponse)
+_INITIALIZE_PIPETTING_CHANNELS = _method(
+  "InitializePipettingChannels",
+  pb2.InitializePipettingChannelsRequest,
+  pb2.InitializePipettingChannelsResponse,
+)
 _PICK_UP_TIP_FW = _method("PickUpTipFw", pb2.PickUpTipFwRequest, pb2.PickUpTipFwResponse)
 _DISCARD_TIP_FW = _method("DiscardTipFw", pb2.DiscardTipFwRequest, pb2.DiscardTipFwResponse)
 _ASPIRATE_PIP = _method("AspiratePip", pb2.AspiratePipRequest, pb2.AspiratePipResponse)
 _DISPENSE_PIP = _method("DispensePip", pb2.DispensePipRequest, pb2.DispensePipResponse)
-_SPREAD_PIP_CHANNELS = _method("SpreadPipChannels", pb2.SpreadPipChannelsRequest, pb2.SpreadPipChannelsResponse)
-_MOVE_ALL_PIPETTING_CHANNELS_TO_DEFINED_POSITION = _method("MoveAllPipettingChannelsToDefinedPosition", pb2.MoveAllPipettingChannelsToDefinedPositionRequest, pb2.MoveAllPipettingChannelsToDefinedPositionResponse)
-_DEFINE_TIP_NEEDLE = _method("DefineTipNeedle", pb2.DefineTipNeedleRequest, pb2.DefineTipNeedleResponse)
-_PROBE_LIQUID_HEIGHTS = _method("ProbeLiquidHeights", pb2.ProbeLiquidHeightsRequest, pb2.ProbeLiquidHeightsResponse)
-_PROBE_LIQUID_VOLUMES = _method("ProbeLiquidVolumes", pb2.ProbeLiquidVolumesRequest, pb2.ProbeLiquidVolumesResponse)
-_REQUEST_TIP_PRESENCE = _method("RequestTipPresence", pb2.RequestTipPresenceRequest, pb2.RequestTipPresenceResponse, _NS)
-_CHANNELS_SENSE_TIP_PRESENCE = _method("ChannelsSenseTipPresence", pb2.ChannelsSenseTipPresenceRequest, pb2.ChannelsSenseTipPresenceResponse, _NS)
-_REQUEST_PIP_HEIGHT_LAST_LLD = _method("RequestPipHeightLastLld", pb2.RequestPipHeightLastLldRequest, pb2.RequestPipHeightLastLldResponse, _NS)
-_REQUEST_TADM_STATUS = _method("RequestTadmStatus", pb2.RequestTadmStatusRequest, pb2.RequestTadmStatusResponse, _NS)
-_REQUEST_VOLUME_IN_TIP = _method("RequestVolumeInTip", pb2.RequestVolumeInTipRequest, pb2.RequestVolumeInTipResponse, _NS)
-_REQUEST_TIP_LEN_ON_CHANNEL = _method("RequestTipLenOnChannel", pb2.RequestTipLenOnChannelRequest, pb2.RequestTipLenOnChannelResponse, _NS)
-_REQUEST_PROBE_Z_POSITION = _method("RequestProbeZPosition", pb2.RequestProbeZPositionRequest, pb2.RequestProbeZPositionResponse, _NS)
-_CLLD_PROBE_Z_HEIGHT_USING_CHANNEL = _method("ClldProbeZHeightUsingChannel", pb2.ClldProbeZHeightUsingChannelRequest, pb2.ClldProbeZHeightUsingChannelResponse)
-_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL = _method("PlldProbeZHeightUsingChannel", pb2.PlldProbeZHeightUsingChannelRequest, pb2.PlldProbeZHeightUsingChannelResponse)
-_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL = _method("ZtouchProbeZHeightUsingChannel", pb2.ZtouchProbeZHeightUsingChannelRequest, pb2.ZtouchProbeZHeightUsingChannelResponse)
+_SPREAD_PIP_CHANNELS = _method(
+  "SpreadPipChannels", pb2.SpreadPipChannelsRequest, pb2.SpreadPipChannelsResponse
+)
+_MOVE_ALL_PIPETTING_CHANNELS_TO_DEFINED_POSITION = _method(
+  "MoveAllPipettingChannelsToDefinedPosition",
+  pb2.MoveAllPipettingChannelsToDefinedPositionRequest,
+  pb2.MoveAllPipettingChannelsToDefinedPositionResponse,
+)
+_DEFINE_TIP_NEEDLE = _method(
+  "DefineTipNeedle", pb2.DefineTipNeedleRequest, pb2.DefineTipNeedleResponse
+)
+_PROBE_LIQUID_HEIGHTS = _method(
+  "ProbeLiquidHeights", pb2.ProbeLiquidHeightsRequest, pb2.ProbeLiquidHeightsResponse
+)
+_PROBE_LIQUID_VOLUMES = _method(
+  "ProbeLiquidVolumes", pb2.ProbeLiquidVolumesRequest, pb2.ProbeLiquidVolumesResponse
+)
+_REQUEST_TIP_PRESENCE = _method(
+  "RequestTipPresence", pb2.RequestTipPresenceRequest, pb2.RequestTipPresenceResponse, _NS
+)
+_CHANNELS_SENSE_TIP_PRESENCE = _method(
+  "ChannelsSenseTipPresence",
+  pb2.ChannelsSenseTipPresenceRequest,
+  pb2.ChannelsSenseTipPresenceResponse,
+  _NS,
+)
+_REQUEST_PIP_HEIGHT_LAST_LLD = _method(
+  "RequestPipHeightLastLld",
+  pb2.RequestPipHeightLastLldRequest,
+  pb2.RequestPipHeightLastLldResponse,
+  _NS,
+)
+_REQUEST_TADM_STATUS = _method(
+  "RequestTadmStatus", pb2.RequestTadmStatusRequest, pb2.RequestTadmStatusResponse, _NS
+)
+_REQUEST_VOLUME_IN_TIP = _method(
+  "RequestVolumeInTip", pb2.RequestVolumeInTipRequest, pb2.RequestVolumeInTipResponse, _NS
+)
+_REQUEST_TIP_LEN_ON_CHANNEL = _method(
+  "RequestTipLenOnChannel",
+  pb2.RequestTipLenOnChannelRequest,
+  pb2.RequestTipLenOnChannelResponse,
+  _NS,
+)
+_REQUEST_PROBE_Z_POSITION = _method(
+  "RequestProbeZPosition", pb2.RequestProbeZPositionRequest, pb2.RequestProbeZPositionResponse, _NS
+)
+_CLLD_PROBE_Z_HEIGHT_USING_CHANNEL = _method(
+  "ClldProbeZHeightUsingChannel",
+  pb2.ClldProbeZHeightUsingChannelRequest,
+  pb2.ClldProbeZHeightUsingChannelResponse,
+)
+_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL = _method(
+  "PlldProbeZHeightUsingChannel",
+  pb2.PlldProbeZHeightUsingChannelRequest,
+  pb2.PlldProbeZHeightUsingChannelResponse,
+)
+_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL = _method(
+  "ZtouchProbeZHeightUsingChannel",
+  pb2.ZtouchProbeZHeightUsingChannelRequest,
+  pb2.ZtouchProbeZHeightUsingChannelResponse,
+)
 _PIERCE_FOIL = _method("PierceFoil", pb2.PierceFoilRequest, pb2.PierceFoilResponse)
-_PIERCE_FOIL_HIGH_LEVEL = _method("PierceFoilHighLevel", pb2.PierceFoilHighLevelRequest, pb2.PierceFoilHighLevelResponse)
+_PIERCE_FOIL_HIGH_LEVEL = _method(
+  "PierceFoilHighLevel", pb2.PierceFoilHighLevelRequest, pb2.PierceFoilHighLevelResponse
+)
 _STEP_OFF_FOIL = _method("StepOffFoil", pb2.StepOffFoilRequest, pb2.StepOffFoilResponse)
 _EMPTY_TIP = _method("EmptyTip", pb2.EmptyTipRequest, pb2.EmptyTipResponse)
 _EMPTY_TIPS = _method("EmptyTips", pb2.EmptyTipsRequest, pb2.EmptyTipsResponse)
 _MOVE_CHANNEL_X = _method("MoveChannelX", pb2.MoveChannelXRequest, pb2.MoveChannelXResponse)
 _MOVE_CHANNEL_Y = _method("MoveChannelY", pb2.MoveChannelYRequest, pb2.MoveChannelYResponse)
 _MOVE_CHANNEL_Z = _method("MoveChannelZ", pb2.MoveChannelZRequest, pb2.MoveChannelZResponse)
-_MOVE_CHANNEL_X_RELATIVE = _method("MoveChannelXRelative", pb2.MoveChannelXRelativeRequest, pb2.MoveChannelXRelativeResponse)
-_MOVE_CHANNEL_Y_RELATIVE = _method("MoveChannelYRelative", pb2.MoveChannelYRelativeRequest, pb2.MoveChannelYRelativeResponse)
-_MOVE_CHANNEL_Z_RELATIVE = _method("MoveChannelZRelative", pb2.MoveChannelZRelativeRequest, pb2.MoveChannelZRelativeResponse)
-_PREPARE_FOR_MANUAL_CHANNEL_OPERATION = _method("PrepareForManualChannelOperation", pb2.PrepareForManualChannelOperationRequest, pb2.PrepareForManualChannelOperationResponse)
-_MOVE_ALL_CHANNELS_IN_Z_SAFETY = _method("MoveAllChannelsInZSafety", pb2.MoveAllChannelsInZSafetyRequest, pb2.MoveAllChannelsInZSafetyResponse)
-_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Y_DIRECTION = _method("PositionSinglePipettingChannelInYDirection", pb2.PositionSinglePipettingChannelInYDirectionRequest, pb2.PositionSinglePipettingChannelInYDirectionResponse)
-_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Z_DIRECTION = _method("PositionSinglePipettingChannelInZDirection", pb2.PositionSinglePipettingChannelInZDirectionRequest, pb2.PositionSinglePipettingChannelInZDirectionResponse)
-_POSITION_MAX_FREE_Y_FOR_N = _method("PositionMaxFreeYForN", pb2.PositionMaxFreeYForNRequest, pb2.PositionMaxFreeYForNResponse)
-_REQUEST_X_POS_CHANNEL_N = _method("RequestXPosChannelN", pb2.RequestXPosChannelNRequest, pb2.RequestXPosChannelNResponse, _NS)
-_REQUEST_Y_POS_CHANNEL_N = _method("RequestYPosChannelN", pb2.RequestYPosChannelNRequest, pb2.RequestYPosChannelNResponse, _NS)
-_REQUEST_Z_POS_CHANNEL_N = _method("RequestZPosChannelN", pb2.RequestZPosChannelNRequest, pb2.RequestZPosChannelNResponse, _NS)
-_REQUEST_TIP_BOTTOM_Z_POSITION = _method("RequestTipBottomZPosition", pb2.RequestTipBottomZPositionRequest, pb2.RequestTipBottomZPositionResponse, _NS)
-_GET_CHANNELS_Y_POSITIONS = _method("GetChannelsYPositions", pb2.GetChannelsYPositionsRequest, pb2.GetChannelsYPositionsResponse, _NS)
-_POSITION_CHANNELS_IN_Y_DIRECTION = _method("PositionChannelsInYDirection", pb2.PositionChannelsInYDirectionRequest, pb2.PositionChannelsInYDirectionResponse)
-_GET_CHANNELS_Z_POSITIONS = _method("GetChannelsZPositions", pb2.GetChannelsZPositionsRequest, pb2.GetChannelsZPositionsResponse, _NS)
-_POSITION_CHANNELS_IN_Z_DIRECTION = _method("PositionChannelsInZDirection", pb2.PositionChannelsInZDirectionRequest, pb2.PositionChannelsInZDirectionResponse)
-_REQUEST_PIP_CHANNEL_VERSION = _method("RequestPipChannelVersion", pb2.RequestPipChannelVersionRequest, pb2.RequestPipChannelVersionResponse, _NS)
-_INITIALIZE_CORE96_HEAD = _method("InitializeCore96Head", pb2.InitializeCore96HeadRequest, pb2.InitializeCore96HeadResponse)
-_REQUEST_CORE96_HEAD_INITIALIZATION_STATUS = _method("RequestCore96HeadInitializationStatus", pb2.RequestCore96HeadInitializationStatusRequest, pb2.RequestCore96HeadInitializationStatusResponse, _NS)
-_HEAD96_REQUEST_FIRMWARE_VERSION = _method("Head96RequestFirmwareVersion", pb2.Head96RequestFirmwareVersionRequest, pb2.Head96RequestFirmwareVersionResponse, _NS)
-_HEAD96_REQUEST_TYPE = _method("Head96RequestType", pb2.Head96RequestTypeRequest, pb2.Head96RequestTypeResponse, _NS)
-_HEAD96_DISPENSING_DRIVE_AND_SQUEEZER_DRIVER_INITIALIZE = _method("Head96DispensingDriveAndSqueezerDriverInitialize", pb2.Head96DispensingDriveAndSqueezerDriverInitializeRequest, pb2.Head96DispensingDriveAndSqueezerDriverInitializeResponse)
-_MOVE_CORE96_TO_SAFE_POSITION = _method("MoveCore96ToSafePosition", pb2.MoveCore96ToSafePositionRequest, pb2.MoveCore96ToSafePositionResponse)
-_HEAD96_MOVE_TO_Z_SAFETY = _method("Head96MoveToZSafety", pb2.Head96MoveToZSafetyRequest, pb2.Head96MoveToZSafetyResponse)
+_MOVE_CHANNEL_X_RELATIVE = _method(
+  "MoveChannelXRelative", pb2.MoveChannelXRelativeRequest, pb2.MoveChannelXRelativeResponse
+)
+_MOVE_CHANNEL_Y_RELATIVE = _method(
+  "MoveChannelYRelative", pb2.MoveChannelYRelativeRequest, pb2.MoveChannelYRelativeResponse
+)
+_MOVE_CHANNEL_Z_RELATIVE = _method(
+  "MoveChannelZRelative", pb2.MoveChannelZRelativeRequest, pb2.MoveChannelZRelativeResponse
+)
+_PREPARE_FOR_MANUAL_CHANNEL_OPERATION = _method(
+  "PrepareForManualChannelOperation",
+  pb2.PrepareForManualChannelOperationRequest,
+  pb2.PrepareForManualChannelOperationResponse,
+)
+_MOVE_ALL_CHANNELS_IN_Z_SAFETY = _method(
+  "MoveAllChannelsInZSafety",
+  pb2.MoveAllChannelsInZSafetyRequest,
+  pb2.MoveAllChannelsInZSafetyResponse,
+)
+_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Y_DIRECTION = _method(
+  "PositionSinglePipettingChannelInYDirection",
+  pb2.PositionSinglePipettingChannelInYDirectionRequest,
+  pb2.PositionSinglePipettingChannelInYDirectionResponse,
+)
+_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Z_DIRECTION = _method(
+  "PositionSinglePipettingChannelInZDirection",
+  pb2.PositionSinglePipettingChannelInZDirectionRequest,
+  pb2.PositionSinglePipettingChannelInZDirectionResponse,
+)
+_POSITION_MAX_FREE_Y_FOR_N = _method(
+  "PositionMaxFreeYForN", pb2.PositionMaxFreeYForNRequest, pb2.PositionMaxFreeYForNResponse
+)
+_REQUEST_X_POS_CHANNEL_N = _method(
+  "RequestXPosChannelN", pb2.RequestXPosChannelNRequest, pb2.RequestXPosChannelNResponse, _NS
+)
+_REQUEST_Y_POS_CHANNEL_N = _method(
+  "RequestYPosChannelN", pb2.RequestYPosChannelNRequest, pb2.RequestYPosChannelNResponse, _NS
+)
+_REQUEST_Z_POS_CHANNEL_N = _method(
+  "RequestZPosChannelN", pb2.RequestZPosChannelNRequest, pb2.RequestZPosChannelNResponse, _NS
+)
+_REQUEST_TIP_BOTTOM_Z_POSITION = _method(
+  "RequestTipBottomZPosition",
+  pb2.RequestTipBottomZPositionRequest,
+  pb2.RequestTipBottomZPositionResponse,
+  _NS,
+)
+_GET_CHANNELS_Y_POSITIONS = _method(
+  "GetChannelsYPositions", pb2.GetChannelsYPositionsRequest, pb2.GetChannelsYPositionsResponse, _NS
+)
+_POSITION_CHANNELS_IN_Y_DIRECTION = _method(
+  "PositionChannelsInYDirection",
+  pb2.PositionChannelsInYDirectionRequest,
+  pb2.PositionChannelsInYDirectionResponse,
+)
+_GET_CHANNELS_Z_POSITIONS = _method(
+  "GetChannelsZPositions", pb2.GetChannelsZPositionsRequest, pb2.GetChannelsZPositionsResponse, _NS
+)
+_POSITION_CHANNELS_IN_Z_DIRECTION = _method(
+  "PositionChannelsInZDirection",
+  pb2.PositionChannelsInZDirectionRequest,
+  pb2.PositionChannelsInZDirectionResponse,
+)
+_REQUEST_PIP_CHANNEL_VERSION = _method(
+  "RequestPipChannelVersion",
+  pb2.RequestPipChannelVersionRequest,
+  pb2.RequestPipChannelVersionResponse,
+  _NS,
+)
+_INITIALIZE_CORE96_HEAD = _method(
+  "InitializeCore96Head", pb2.InitializeCore96HeadRequest, pb2.InitializeCore96HeadResponse
+)
+_REQUEST_CORE96_HEAD_INITIALIZATION_STATUS = _method(
+  "RequestCore96HeadInitializationStatus",
+  pb2.RequestCore96HeadInitializationStatusRequest,
+  pb2.RequestCore96HeadInitializationStatusResponse,
+  _NS,
+)
+_HEAD96_REQUEST_FIRMWARE_VERSION = _method(
+  "Head96RequestFirmwareVersion",
+  pb2.Head96RequestFirmwareVersionRequest,
+  pb2.Head96RequestFirmwareVersionResponse,
+  _NS,
+)
+_HEAD96_REQUEST_TYPE = _method(
+  "Head96RequestType", pb2.Head96RequestTypeRequest, pb2.Head96RequestTypeResponse, _NS
+)
+_HEAD96_DISPENSING_DRIVE_AND_SQUEEZER_DRIVER_INITIALIZE = _method(
+  "Head96DispensingDriveAndSqueezerDriverInitialize",
+  pb2.Head96DispensingDriveAndSqueezerDriverInitializeRequest,
+  pb2.Head96DispensingDriveAndSqueezerDriverInitializeResponse,
+)
+_MOVE_CORE96_TO_SAFE_POSITION = _method(
+  "MoveCore96ToSafePosition",
+  pb2.MoveCore96ToSafePositionRequest,
+  pb2.MoveCore96ToSafePositionResponse,
+)
+_HEAD96_MOVE_TO_Z_SAFETY = _method(
+  "Head96MoveToZSafety", pb2.Head96MoveToZSafetyRequest, pb2.Head96MoveToZSafetyResponse
+)
 _HEAD96_PARK = _method("Head96Park", pb2.Head96ParkRequest, pb2.Head96ParkResponse)
 _HEAD96_MOVE_X = _method("Head96MoveX", pb2.Head96MoveXRequest, pb2.Head96MoveXResponse)
 _HEAD96_MOVE_Y = _method("Head96MoveY", pb2.Head96MoveYRequest, pb2.Head96MoveYResponse)
 _HEAD96_MOVE_Z = _method("Head96MoveZ", pb2.Head96MoveZRequest, pb2.Head96MoveZResponse)
-_MOVE_CORE96_HEAD_TO_DEFINED_POSITION = _method("MoveCore96HeadToDefinedPosition", pb2.MoveCore96HeadToDefinedPositionRequest, pb2.MoveCore96HeadToDefinedPositionResponse)
-_HEAD96_MOVE_TO_COORDINATE = _method("Head96MoveToCoordinate", pb2.Head96MoveToCoordinateRequest, pb2.Head96MoveToCoordinateResponse)
-_HEAD96_DISPENSING_DRIVE_MOVE_TO_HOME_VOLUME = _method("Head96DispensingDriveMoveToHomeVolume", pb2.Head96DispensingDriveMoveToHomeVolumeRequest, pb2.Head96DispensingDriveMoveToHomeVolumeResponse)
-_HEAD96_DISPENSING_DRIVE_MOVE_TO_POSITION = _method("Head96DispensingDriveMoveToPosition", pb2.Head96DispensingDriveMoveToPositionRequest, pb2.Head96DispensingDriveMoveToPositionResponse)
-_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_MM = _method("Head96DispensingDriveRequestPositionMm", pb2.Head96DispensingDriveRequestPositionMmRequest, pb2.Head96DispensingDriveRequestPositionMmResponse, _NS)
-_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_UL = _method("Head96DispensingDriveRequestPositionUl", pb2.Head96DispensingDriveRequestPositionUlRequest, pb2.Head96DispensingDriveRequestPositionUlResponse, _NS)
-_HEAD96_REQUEST_TIP_PRESENCE = _method("Head96RequestTipPresence", pb2.Head96RequestTipPresenceRequest, pb2.Head96RequestTipPresenceResponse, _NS)
-_HEAD96_REQUEST_POSITION = _method("Head96RequestPosition", pb2.Head96RequestPositionRequest, pb2.Head96RequestPositionResponse, _NS)
-_PICK_UP_TIPS_CORE96 = _method("PickUpTipsCore96", pb2.PickUpTipsCore96Request, pb2.PickUpTipsCore96Response)
-_DISCARD_TIPS_CORE96 = _method("DiscardTipsCore96", pb2.DiscardTipsCore96Request, pb2.DiscardTipsCore96Response)
+_MOVE_CORE96_HEAD_TO_DEFINED_POSITION = _method(
+  "MoveCore96HeadToDefinedPosition",
+  pb2.MoveCore96HeadToDefinedPositionRequest,
+  pb2.MoveCore96HeadToDefinedPositionResponse,
+)
+_HEAD96_MOVE_TO_COORDINATE = _method(
+  "Head96MoveToCoordinate", pb2.Head96MoveToCoordinateRequest, pb2.Head96MoveToCoordinateResponse
+)
+_HEAD96_DISPENSING_DRIVE_MOVE_TO_HOME_VOLUME = _method(
+  "Head96DispensingDriveMoveToHomeVolume",
+  pb2.Head96DispensingDriveMoveToHomeVolumeRequest,
+  pb2.Head96DispensingDriveMoveToHomeVolumeResponse,
+)
+_HEAD96_DISPENSING_DRIVE_MOVE_TO_POSITION = _method(
+  "Head96DispensingDriveMoveToPosition",
+  pb2.Head96DispensingDriveMoveToPositionRequest,
+  pb2.Head96DispensingDriveMoveToPositionResponse,
+)
+_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_MM = _method(
+  "Head96DispensingDriveRequestPositionMm",
+  pb2.Head96DispensingDriveRequestPositionMmRequest,
+  pb2.Head96DispensingDriveRequestPositionMmResponse,
+  _NS,
+)
+_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_UL = _method(
+  "Head96DispensingDriveRequestPositionUl",
+  pb2.Head96DispensingDriveRequestPositionUlRequest,
+  pb2.Head96DispensingDriveRequestPositionUlResponse,
+  _NS,
+)
+_HEAD96_REQUEST_TIP_PRESENCE = _method(
+  "Head96RequestTipPresence",
+  pb2.Head96RequestTipPresenceRequest,
+  pb2.Head96RequestTipPresenceResponse,
+  _NS,
+)
+_HEAD96_REQUEST_POSITION = _method(
+  "Head96RequestPosition", pb2.Head96RequestPositionRequest, pb2.Head96RequestPositionResponse, _NS
+)
+_PICK_UP_TIPS_CORE96 = _method(
+  "PickUpTipsCore96", pb2.PickUpTipsCore96Request, pb2.PickUpTipsCore96Response
+)
+_DISCARD_TIPS_CORE96 = _method(
+  "DiscardTipsCore96", pb2.DiscardTipsCore96Request, pb2.DiscardTipsCore96Response
+)
 _ASPIRATE_CORE96 = _method("AspirateCore96", pb2.AspirateCore96Request, pb2.AspirateCore96Response)
 _DISPENSE_CORE96 = _method("DispenseCore96", pb2.DispenseCore96Request, pb2.DispenseCore96Response)
-_INITIALIZE_ISWAP = _method("InitializeIswap", pb2.InitializeIswapRequest, pb2.InitializeIswapResponse)
-_POSITION_COMPONENTS_FOR_FREE_ISWAP_Y_RANGE = _method("PositionComponentsForFreeIswapYRange", pb2.PositionComponentsForFreeIswapYRangeRequest, pb2.PositionComponentsForFreeIswapYRangeResponse)
-_MOVE_ISWAP_X_RELATIVE = _method("MoveIswapXRelative", pb2.MoveIswapXRelativeRequest, pb2.MoveIswapXRelativeResponse)
-_MOVE_ISWAP_Y_RELATIVE = _method("MoveIswapYRelative", pb2.MoveIswapYRelativeRequest, pb2.MoveIswapYRelativeResponse)
-_MOVE_ISWAP_Z_RELATIVE = _method("MoveIswapZRelative", pb2.MoveIswapZRelativeRequest, pb2.MoveIswapZRelativeResponse)
+_INITIALIZE_ISWAP = _method(
+  "InitializeIswap", pb2.InitializeIswapRequest, pb2.InitializeIswapResponse
+)
+_POSITION_COMPONENTS_FOR_FREE_ISWAP_Y_RANGE = _method(
+  "PositionComponentsForFreeIswapYRange",
+  pb2.PositionComponentsForFreeIswapYRangeRequest,
+  pb2.PositionComponentsForFreeIswapYRangeResponse,
+)
+_MOVE_ISWAP_X_RELATIVE = _method(
+  "MoveIswapXRelative", pb2.MoveIswapXRelativeRequest, pb2.MoveIswapXRelativeResponse
+)
+_MOVE_ISWAP_Y_RELATIVE = _method(
+  "MoveIswapYRelative", pb2.MoveIswapYRelativeRequest, pb2.MoveIswapYRelativeResponse
+)
+_MOVE_ISWAP_Z_RELATIVE = _method(
+  "MoveIswapZRelative", pb2.MoveIswapZRelativeRequest, pb2.MoveIswapZRelativeResponse
+)
 _MOVE_ISWAP_X = _method("MoveIswapX", pb2.MoveIswapXRequest, pb2.MoveIswapXResponse)
 _MOVE_ISWAP_Y = _method("MoveIswapY", pb2.MoveIswapYRequest, pb2.MoveIswapYResponse)
 _MOVE_ISWAP_Z = _method("MoveIswapZ", pb2.MoveIswapZRequest, pb2.MoveIswapZResponse)
-_OPEN_NOT_INITIALIZED_GRIPPER = _method("OpenNotInitializedGripper", pb2.OpenNotInitializedGripperRequest, pb2.OpenNotInitializedGripperResponse)
-_ISWAP_OPEN_GRIPPER = _method("IswapOpenGripper", pb2.IswapOpenGripperRequest, pb2.IswapOpenGripperResponse)
-_ISWAP_CLOSE_GRIPPER = _method("IswapCloseGripper", pb2.IswapCloseGripperRequest, pb2.IswapCloseGripperResponse)
+_OPEN_NOT_INITIALIZED_GRIPPER = _method(
+  "OpenNotInitializedGripper",
+  pb2.OpenNotInitializedGripperRequest,
+  pb2.OpenNotInitializedGripperResponse,
+)
+_ISWAP_OPEN_GRIPPER = _method(
+  "IswapOpenGripper", pb2.IswapOpenGripperRequest, pb2.IswapOpenGripperResponse
+)
+_ISWAP_CLOSE_GRIPPER = _method(
+  "IswapCloseGripper", pb2.IswapCloseGripperRequest, pb2.IswapCloseGripperResponse
+)
 _PARK_ISWAP = _method("ParkIswap", pb2.ParkIswapRequest, pb2.ParkIswapResponse)
 _ISWAP_GET_PLATE = _method("IswapGetPlate", pb2.IswapGetPlateRequest, pb2.IswapGetPlateResponse)
 _ISWAP_PUT_PLATE = _method("IswapPutPlate", pb2.IswapPutPlateRequest, pb2.IswapPutPlateResponse)
-_MOVE_PLATE_TO_POSITION = _method("MovePlateToPosition", pb2.MovePlateToPositionRequest, pb2.MovePlateToPositionResponse)
-_COLLAPSE_GRIPPER_ARM = _method("CollapseGripperArm", pb2.CollapseGripperArmRequest, pb2.CollapseGripperArmResponse)
+_MOVE_PLATE_TO_POSITION = _method(
+  "MovePlateToPosition", pb2.MovePlateToPositionRequest, pb2.MovePlateToPositionResponse
+)
+_COLLAPSE_GRIPPER_ARM = _method(
+  "CollapseGripperArm", pb2.CollapseGripperArmRequest, pb2.CollapseGripperArmResponse
+)
 _ISWAP_ROTATE = _method("IswapRotate", pb2.IswapRotateRequest, pb2.IswapRotateResponse)
-_ROTATE_ISWAP_ROTATION_DRIVE = _method("RotateIswapRotationDrive", pb2.RotateIswapRotationDriveRequest, pb2.RotateIswapRotationDriveResponse)
-_ROTATE_ISWAP_WRIST = _method("RotateIswapWrist", pb2.RotateIswapWristRequest, pb2.RotateIswapWristResponse)
-_ISWAP_DANGEROUS_RELEASE_BREAK = _method("IswapDangerousReleaseBreak", pb2.IswapDangerousReleaseBreakRequest, pb2.IswapDangerousReleaseBreakResponse)
-_ISWAP_REENGAGE_BREAK = _method("IswapReengageBreak", pb2.IswapReengageBreakRequest, pb2.IswapReengageBreakResponse)
-_ISWAP_INITIALIZE_Z_AXIS = _method("IswapInitializeZAxis", pb2.IswapInitializeZAxisRequest, pb2.IswapInitializeZAxisResponse)
-_REQUEST_ISWAP_ROTATION_DRIVE_POSITION_INCREMENTS = _method("RequestIswapRotationDrivePositionIncrements", pb2.RequestIswapRotationDrivePositionIncrementsRequest, pb2.RequestIswapRotationDrivePositionIncrementsResponse, _NS)
-_REQUEST_ISWAP_ROTATION_DRIVE_ORIENTATION = _method("RequestIswapRotationDriveOrientation", pb2.RequestIswapRotationDriveOrientationRequest, pb2.RequestIswapRotationDriveOrientationResponse, _NS)
-_REQUEST_ISWAP_WRIST_DRIVE_POSITION_INCREMENTS = _method("RequestIswapWristDrivePositionIncrements", pb2.RequestIswapWristDrivePositionIncrementsRequest, pb2.RequestIswapWristDrivePositionIncrementsResponse, _NS)
-_REQUEST_ISWAP_WRIST_DRIVE_ORIENTATION = _method("RequestIswapWristDriveOrientation", pb2.RequestIswapWristDriveOrientationRequest, pb2.RequestIswapWristDriveOrientationResponse, _NS)
-_REQUEST_ISWAP_IN_PARKING_POSITION = _method("RequestIswapInParkingPosition", pb2.RequestIswapInParkingPositionRequest, pb2.RequestIswapInParkingPositionResponse, _NS)
-_REQUEST_PLATE_IN_ISWAP = _method("RequestPlateInIswap", pb2.RequestPlateInIswapRequest, pb2.RequestPlateInIswapResponse, _NS)
-_REQUEST_ISWAP_POSITION = _method("RequestIswapPosition", pb2.RequestIswapPositionRequest, pb2.RequestIswapPositionResponse, _NS)
-_ISWAP_ROTATION_DRIVE_REQUEST_Y = _method("IswapRotationDriveRequestY", pb2.IswapRotationDriveRequestYRequest, pb2.IswapRotationDriveRequestYResponse, _NS)
-_REQUEST_ISWAP_INITIALIZATION_STATUS = _method("RequestIswapInitializationStatus", pb2.RequestIswapInitializationStatusRequest, pb2.RequestIswapInitializationStatusResponse, _NS)
-_REQUEST_ISWAP_VERSION = _method("RequestIswapVersion", pb2.RequestIswapVersionRequest, pb2.RequestIswapVersionResponse, _NS)
-_GET_ISWAP_VERSION = _method("GetIswapVersion", pb2.GetIswapVersionRequest, pb2.GetIswapVersionResponse, _NS)
+_ROTATE_ISWAP_ROTATION_DRIVE = _method(
+  "RotateIswapRotationDrive",
+  pb2.RotateIswapRotationDriveRequest,
+  pb2.RotateIswapRotationDriveResponse,
+)
+_ROTATE_ISWAP_WRIST = _method(
+  "RotateIswapWrist", pb2.RotateIswapWristRequest, pb2.RotateIswapWristResponse
+)
+_ISWAP_DANGEROUS_RELEASE_BREAK = _method(
+  "IswapDangerousReleaseBreak",
+  pb2.IswapDangerousReleaseBreakRequest,
+  pb2.IswapDangerousReleaseBreakResponse,
+)
+_ISWAP_REENGAGE_BREAK = _method(
+  "IswapReengageBreak", pb2.IswapReengageBreakRequest, pb2.IswapReengageBreakResponse
+)
+_ISWAP_INITIALIZE_Z_AXIS = _method(
+  "IswapInitializeZAxis", pb2.IswapInitializeZAxisRequest, pb2.IswapInitializeZAxisResponse
+)
+_REQUEST_ISWAP_ROTATION_DRIVE_POSITION_INCREMENTS = _method(
+  "RequestIswapRotationDrivePositionIncrements",
+  pb2.RequestIswapRotationDrivePositionIncrementsRequest,
+  pb2.RequestIswapRotationDrivePositionIncrementsResponse,
+  _NS,
+)
+_REQUEST_ISWAP_ROTATION_DRIVE_ORIENTATION = _method(
+  "RequestIswapRotationDriveOrientation",
+  pb2.RequestIswapRotationDriveOrientationRequest,
+  pb2.RequestIswapRotationDriveOrientationResponse,
+  _NS,
+)
+_REQUEST_ISWAP_WRIST_DRIVE_POSITION_INCREMENTS = _method(
+  "RequestIswapWristDrivePositionIncrements",
+  pb2.RequestIswapWristDrivePositionIncrementsRequest,
+  pb2.RequestIswapWristDrivePositionIncrementsResponse,
+  _NS,
+)
+_REQUEST_ISWAP_WRIST_DRIVE_ORIENTATION = _method(
+  "RequestIswapWristDriveOrientation",
+  pb2.RequestIswapWristDriveOrientationRequest,
+  pb2.RequestIswapWristDriveOrientationResponse,
+  _NS,
+)
+_REQUEST_ISWAP_IN_PARKING_POSITION = _method(
+  "RequestIswapInParkingPosition",
+  pb2.RequestIswapInParkingPositionRequest,
+  pb2.RequestIswapInParkingPositionResponse,
+  _NS,
+)
+_REQUEST_PLATE_IN_ISWAP = _method(
+  "RequestPlateInIswap", pb2.RequestPlateInIswapRequest, pb2.RequestPlateInIswapResponse, _NS
+)
+_REQUEST_ISWAP_POSITION = _method(
+  "RequestIswapPosition", pb2.RequestIswapPositionRequest, pb2.RequestIswapPositionResponse, _NS
+)
+_ISWAP_ROTATION_DRIVE_REQUEST_Y = _method(
+  "IswapRotationDriveRequestY",
+  pb2.IswapRotationDriveRequestYRequest,
+  pb2.IswapRotationDriveRequestYResponse,
+  _NS,
+)
+_REQUEST_ISWAP_INITIALIZATION_STATUS = _method(
+  "RequestIswapInitializationStatus",
+  pb2.RequestIswapInitializationStatusRequest,
+  pb2.RequestIswapInitializationStatusResponse,
+  _NS,
+)
+_REQUEST_ISWAP_VERSION = _method(
+  "RequestIswapVersion", pb2.RequestIswapVersionRequest, pb2.RequestIswapVersionResponse, _NS
+)
+_GET_ISWAP_VERSION = _method(
+  "GetIswapVersion", pb2.GetIswapVersionRequest, pb2.GetIswapVersionResponse, _NS
+)
 _SLOW_ISWAP = _method("SlowIswap", pb2.SlowIswapRequest, pb2.SlowIswapResponse)
-_ISWAP_MOVE_PICKED_UP_RESOURCE = _method("IswapMovePickedUpResource", pb2.IswapMovePickedUpResourceRequest, pb2.IswapMovePickedUpResourceResponse)
+_ISWAP_MOVE_PICKED_UP_RESOURCE = _method(
+  "IswapMovePickedUpResource",
+  pb2.IswapMovePickedUpResourceRequest,
+  pb2.IswapMovePickedUpResourceResponse,
+)
 _PICK_UP_RESOURCE = _method("PickUpResource", pb2.PickUpResourceRequest, pb2.PickUpResourceResponse)
-_MOVE_PICKED_UP_RESOURCE = _method("MovePickedUpResource", pb2.MovePickedUpResourceRequest, pb2.MovePickedUpResourceResponse)
+_MOVE_PICKED_UP_RESOURCE = _method(
+  "MovePickedUpResource", pb2.MovePickedUpResourceRequest, pb2.MovePickedUpResourceResponse
+)
 _DROP_RESOURCE = _method("DropResource", pb2.DropResourceRequest, pb2.DropResourceResponse)
-_PICK_UP_CORE_GRIPPER_TOOLS = _method("PickUpCoreGripperTools", pb2.PickUpCoreGripperToolsRequest, pb2.PickUpCoreGripperToolsResponse)
-_RETURN_CORE_GRIPPER_TOOLS = _method("ReturnCoreGripperTools", pb2.ReturnCoreGripperToolsRequest, pb2.ReturnCoreGripperToolsResponse)
-_CORE_OPEN_GRIPPER = _method("CoreOpenGripper", pb2.CoreOpenGripperRequest, pb2.CoreOpenGripperResponse)
+_PICK_UP_CORE_GRIPPER_TOOLS = _method(
+  "PickUpCoreGripperTools", pb2.PickUpCoreGripperToolsRequest, pb2.PickUpCoreGripperToolsResponse
+)
+_RETURN_CORE_GRIPPER_TOOLS = _method(
+  "ReturnCoreGripperTools", pb2.ReturnCoreGripperToolsRequest, pb2.ReturnCoreGripperToolsResponse
+)
+_CORE_OPEN_GRIPPER = _method(
+  "CoreOpenGripper", pb2.CoreOpenGripperRequest, pb2.CoreOpenGripperResponse
+)
 _CORE_GET_PLATE = _method("CoreGetPlate", pb2.CoreGetPlateRequest, pb2.CoreGetPlateResponse)
 _CORE_PUT_PLATE = _method("CorePutPlate", pb2.CorePutPlateRequest, pb2.CorePutPlateResponse)
-_CORE_MOVE_PLATE_TO_POSITION = _method("CoreMovePlateToPosition", pb2.CoreMovePlateToPositionRequest, pb2.CoreMovePlateToPositionResponse)
-_CORE_PICK_UP_RESOURCE = _method("CorePickUpResource", pb2.CorePickUpResourceRequest, pb2.CorePickUpResourceResponse)
-_CORE_MOVE_PICKED_UP_RESOURCE = _method("CoreMovePickedUpResource", pb2.CoreMovePickedUpResourceRequest, pb2.CoreMovePickedUpResourceResponse)
-_CORE_RELEASE_PICKED_UP_RESOURCE = _method("CoreReleasePickedUpResource", pb2.CoreReleasePickedUpResourceRequest, pb2.CoreReleasePickedUpResourceResponse)
-_CORE_CHECK_RESOURCE_EXISTS_AT_LOCATION_CENTER = _method("CoreCheckResourceExistsAtLocationCenter", pb2.CoreCheckResourceExistsAtLocationCenterRequest, pb2.CoreCheckResourceExistsAtLocationCenterResponse)
+_CORE_MOVE_PLATE_TO_POSITION = _method(
+  "CoreMovePlateToPosition", pb2.CoreMovePlateToPositionRequest, pb2.CoreMovePlateToPositionResponse
+)
+_CORE_PICK_UP_RESOURCE = _method(
+  "CorePickUpResource", pb2.CorePickUpResourceRequest, pb2.CorePickUpResourceResponse
+)
+_CORE_MOVE_PICKED_UP_RESOURCE = _method(
+  "CoreMovePickedUpResource",
+  pb2.CoreMovePickedUpResourceRequest,
+  pb2.CoreMovePickedUpResourceResponse,
+)
+_CORE_RELEASE_PICKED_UP_RESOURCE = _method(
+  "CoreReleasePickedUpResource",
+  pb2.CoreReleasePickedUpResourceRequest,
+  pb2.CoreReleasePickedUpResourceResponse,
+)
+_CORE_CHECK_RESOURCE_EXISTS_AT_LOCATION_CENTER = _method(
+  "CoreCheckResourceExistsAtLocationCenter",
+  pb2.CoreCheckResourceExistsAtLocationCenterRequest,
+  pb2.CoreCheckResourceExistsAtLocationCenterResponse,
+)
 _GET_CORE = _method("GetCore", pb2.GetCoreRequest, pb2.GetCoreResponse, _NS)
 _PUT_CORE = _method("PutCore", pb2.PutCoreRequest, pb2.PutCoreResponse)
-_CORE_READ_BARCODE_OF_PICKED_UP_RESOURCE = _method("CoreReadBarcodeOfPickedUpResource", pb2.CoreReadBarcodeOfPickedUpResourceRequest, pb2.CoreReadBarcodeOfPickedUpResourceResponse)
-_INITIALIZE_AUTOLOAD = _method("InitializeAutoload", pb2.InitializeAutoloadRequest, pb2.InitializeAutoloadResponse)
-_MOVE_AUTOLOAD_TO_SAFE_Z_POSITION = _method("MoveAutoloadToSafeZPosition", pb2.MoveAutoloadToSafeZPositionRequest, pb2.MoveAutoloadToSafeZPositionResponse)
-_REQUEST_AUTOLOAD_TRACK = _method("RequestAutoloadTrack", pb2.RequestAutoloadTrackRequest, pb2.RequestAutoloadTrackResponse, _NS)
-_REQUEST_AUTOLOAD_TYPE = _method("RequestAutoloadType", pb2.RequestAutoloadTypeRequest, pb2.RequestAutoloadTypeResponse, _NS)
-_REQUEST_PRESENCE_OF_CARRIERS_ON_DECK = _method("RequestPresenceOfCarriersOnDeck", pb2.RequestPresenceOfCarriersOnDeckRequest, pb2.RequestPresenceOfCarriersOnDeckResponse, _NS)
-_REQUEST_PRESENCE_OF_CARRIERS_ON_LOADING_TRAY = _method("RequestPresenceOfCarriersOnLoadingTray", pb2.RequestPresenceOfCarriersOnLoadingTrayRequest, pb2.RequestPresenceOfCarriersOnLoadingTrayResponse, _NS)
-_REQUEST_PRESENCE_OF_SINGLE_CARRIER_ON_LOADING_TRAY = _method("RequestPresenceOfSingleCarrierOnLoadingTray", pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest, pb2.RequestPresenceOfSingleCarrierOnLoadingTrayResponse, _NS)
-_MOVE_AUTOLOAD_TO_SLOT = _method("MoveAutoloadToSlot", pb2.MoveAutoloadToSlotRequest, pb2.MoveAutoloadToSlotResponse)
-_MOVE_AUTOLOAD_TO_TRACK = _method("MoveAutoloadToTrack", pb2.MoveAutoloadToTrackRequest, pb2.MoveAutoloadToTrackResponse)
+_CORE_READ_BARCODE_OF_PICKED_UP_RESOURCE = _method(
+  "CoreReadBarcodeOfPickedUpResource",
+  pb2.CoreReadBarcodeOfPickedUpResourceRequest,
+  pb2.CoreReadBarcodeOfPickedUpResourceResponse,
+)
+_INITIALIZE_AUTOLOAD = _method(
+  "InitializeAutoload", pb2.InitializeAutoloadRequest, pb2.InitializeAutoloadResponse
+)
+_MOVE_AUTOLOAD_TO_SAFE_Z_POSITION = _method(
+  "MoveAutoloadToSafeZPosition",
+  pb2.MoveAutoloadToSafeZPositionRequest,
+  pb2.MoveAutoloadToSafeZPositionResponse,
+)
+_REQUEST_AUTOLOAD_TRACK = _method(
+  "RequestAutoloadTrack", pb2.RequestAutoloadTrackRequest, pb2.RequestAutoloadTrackResponse, _NS
+)
+_REQUEST_AUTOLOAD_TYPE = _method(
+  "RequestAutoloadType", pb2.RequestAutoloadTypeRequest, pb2.RequestAutoloadTypeResponse, _NS
+)
+_REQUEST_PRESENCE_OF_CARRIERS_ON_DECK = _method(
+  "RequestPresenceOfCarriersOnDeck",
+  pb2.RequestPresenceOfCarriersOnDeckRequest,
+  pb2.RequestPresenceOfCarriersOnDeckResponse,
+  _NS,
+)
+_REQUEST_PRESENCE_OF_CARRIERS_ON_LOADING_TRAY = _method(
+  "RequestPresenceOfCarriersOnLoadingTray",
+  pb2.RequestPresenceOfCarriersOnLoadingTrayRequest,
+  pb2.RequestPresenceOfCarriersOnLoadingTrayResponse,
+  _NS,
+)
+_REQUEST_PRESENCE_OF_SINGLE_CARRIER_ON_LOADING_TRAY = _method(
+  "RequestPresenceOfSingleCarrierOnLoadingTray",
+  pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest,
+  pb2.RequestPresenceOfSingleCarrierOnLoadingTrayResponse,
+  _NS,
+)
+_MOVE_AUTOLOAD_TO_SLOT = _method(
+  "MoveAutoloadToSlot", pb2.MoveAutoloadToSlotRequest, pb2.MoveAutoloadToSlotResponse
+)
+_MOVE_AUTOLOAD_TO_TRACK = _method(
+  "MoveAutoloadToTrack", pb2.MoveAutoloadToTrackRequest, pb2.MoveAutoloadToTrackResponse
+)
 _PARK_AUTOLOAD = _method("ParkAutoload", pb2.ParkAutoloadRequest, pb2.ParkAutoloadResponse)
-_TAKE_CARRIER_OUT_TO_AUTOLOAD_BELT = _method("TakeCarrierOutToAutoloadBelt", pb2.TakeCarrierOutToAutoloadBeltRequest, pb2.TakeCarrierOutToAutoloadBeltResponse)
+_TAKE_CARRIER_OUT_TO_AUTOLOAD_BELT = _method(
+  "TakeCarrierOutToAutoloadBelt",
+  pb2.TakeCarrierOutToAutoloadBeltRequest,
+  pb2.TakeCarrierOutToAutoloadBeltResponse,
+)
 _SET_BARCODE_TYPE = _method("SetBarcodeType", pb2.SetBarcodeTypeRequest, pb2.SetBarcodeTypeResponse)
-_LOAD_CARRIER_FROM_TRAY_AND_SCAN_CARRIER_BARCODE = _method("LoadCarrierFromTrayAndScanCarrierBarcode", pb2.LoadCarrierFromTrayAndScanCarrierBarcodeRequest, pb2.LoadCarrierFromTrayAndScanCarrierBarcodeResponse)
-_SET_CARRIER_MONITORING = _method("SetCarrierMonitoring", pb2.SetCarrierMonitoringRequest, pb2.SetCarrierMonitoringResponse)
+_LOAD_CARRIER_FROM_TRAY_AND_SCAN_CARRIER_BARCODE = _method(
+  "LoadCarrierFromTrayAndScanCarrierBarcode",
+  pb2.LoadCarrierFromTrayAndScanCarrierBarcodeRequest,
+  pb2.LoadCarrierFromTrayAndScanCarrierBarcodeResponse,
+)
+_SET_CARRIER_MONITORING = _method(
+  "SetCarrierMonitoring", pb2.SetCarrierMonitoringRequest, pb2.SetCarrierMonitoringResponse
+)
 _LOAD_CARRIER = _method("LoadCarrier", pb2.LoadCarrierRequest, pb2.LoadCarrierResponse)
-_SET_LOADING_INDICATORS = _method("SetLoadingIndicators", pb2.SetLoadingIndicatorsRequest, pb2.SetLoadingIndicatorsResponse)
+_SET_LOADING_INDICATORS = _method(
+  "SetLoadingIndicators", pb2.SetLoadingIndicatorsRequest, pb2.SetLoadingIndicatorsResponse
+)
 _UNLOAD_CARRIER = _method("UnloadCarrier", pb2.UnloadCarrierRequest, pb2.UnloadCarrierResponse)
-_REQUEST_INSTRUMENT_INITIALIZATION_STATUS = _method("RequestInstrumentInitializationStatus", pb2.RequestInstrumentInitializationStatusRequest, pb2.RequestInstrumentInitializationStatusResponse, _NS)
-_REQUEST_AUTOLOAD_INITIALIZATION_STATUS = _method("RequestAutoloadInitializationStatus", pb2.RequestAutoloadInitializationStatusRequest, pb2.RequestAutoloadInitializationStatusResponse, _NS)
+_REQUEST_INSTRUMENT_INITIALIZATION_STATUS = _method(
+  "RequestInstrumentInitializationStatus",
+  pb2.RequestInstrumentInitializationStatusRequest,
+  pb2.RequestInstrumentInitializationStatusResponse,
+  _NS,
+)
+_REQUEST_AUTOLOAD_INITIALIZATION_STATUS = _method(
+  "RequestAutoloadInitializationStatus",
+  pb2.RequestAutoloadInitializationStatusRequest,
+  pb2.RequestAutoloadInitializationStatusResponse,
+  _NS,
+)
 _LOCK_COVER = _method("LockCover", pb2.LockCoverRequest, pb2.LockCoverResponse)
 _UNLOCK_COVER = _method("UnlockCover", pb2.UnlockCoverRequest, pb2.UnlockCoverResponse)
-_DISABLE_COVER_CONTROL = _method("DisableCoverControl", pb2.DisableCoverControlRequest, pb2.DisableCoverControlResponse)
-_ENABLE_COVER_CONTROL = _method("EnableCoverControl", pb2.EnableCoverControlRequest, pb2.EnableCoverControlResponse)
+_DISABLE_COVER_CONTROL = _method(
+  "DisableCoverControl", pb2.DisableCoverControlRequest, pb2.DisableCoverControlResponse
+)
+_ENABLE_COVER_CONTROL = _method(
+  "EnableCoverControl", pb2.EnableCoverControlRequest, pb2.EnableCoverControlResponse
+)
 _SET_COVER_OUTPUT = _method("SetCoverOutput", pb2.SetCoverOutputRequest, pb2.SetCoverOutputResponse)
 _RESET_OUTPUT = _method("ResetOutput", pb2.ResetOutputRequest, pb2.ResetOutputResponse)
-_REQUEST_COVER_OPEN = _method("RequestCoverOpen", pb2.RequestCoverOpenRequest, pb2.RequestCoverOpenResponse, _NS)
+_REQUEST_COVER_OPEN = _method(
+  "RequestCoverOpen", pb2.RequestCoverOpenRequest, pb2.RequestCoverOpenResponse, _NS
+)
 _SEND_HHS_COMMAND = _method("SendHhsCommand", pb2.SendHhsCommandRequest, pb2.SendHhsCommandResponse)
-_CHECK_TYPE_IS_HHC = _method("CheckTypeIsHhc", pb2.CheckTypeIsHhcRequest, pb2.CheckTypeIsHhcResponse)
+_CHECK_TYPE_IS_HHC = _method(
+  "CheckTypeIsHhc", pb2.CheckTypeIsHhcRequest, pb2.CheckTypeIsHhcResponse
+)
 _INITIALIZE_HHC = _method("InitializeHhc", pb2.InitializeHhcRequest, pb2.InitializeHhcResponse)
-_START_TEMPERATURE_CONTROL_AT_HHC = _method("StartTemperatureControlAtHhc", pb2.StartTemperatureControlAtHhcRequest, pb2.StartTemperatureControlAtHhcResponse)
-_GET_TEMPERATURE_AT_HHC = _method("GetTemperatureAtHhc", pb2.GetTemperatureAtHhcRequest, pb2.GetTemperatureAtHhcResponse, _NS)
-_QUERY_WHETHER_TEMPERATURE_REACHED_AT_HHC = _method("QueryWhetherTemperatureReachedAtHhc", pb2.QueryWhetherTemperatureReachedAtHhcRequest, pb2.QueryWhetherTemperatureReachedAtHhcResponse, _NS)
-_STOP_TEMPERATURE_CONTROL_AT_HHC = _method("StopTemperatureControlAtHhc", pb2.StopTemperatureControlAtHhcRequest, pb2.StopTemperatureControlAtHhcResponse)
-_REQUEST_FIRMWARE_VERSION = _method("RequestFirmwareVersion", pb2.RequestFirmwareVersionRequest, pb2.RequestFirmwareVersionResponse, _NS)
-_REQUEST_ERROR_CODE = _method("RequestErrorCode", pb2.RequestErrorCodeRequest, pb2.RequestErrorCodeResponse, _NS)
-_REQUEST_DEVICE_SERIAL_NUMBER = _method("RequestDeviceSerialNumber", pb2.RequestDeviceSerialNumberRequest, pb2.RequestDeviceSerialNumberResponse, _NS)
-_REQUEST_MASTER_STATUS = _method("RequestMasterStatus", pb2.RequestMasterStatusRequest, pb2.RequestMasterStatusResponse, _NS)
-_SET_SINGLE_STEP_MODE = _method("SetSingleStepMode", pb2.SetSingleStepModeRequest, pb2.SetSingleStepModeResponse)
-_TRIGGER_NEXT_STEP = _method("TriggerNextStep", pb2.TriggerNextStepRequest, pb2.TriggerNextStepResponse)
+_START_TEMPERATURE_CONTROL_AT_HHC = _method(
+  "StartTemperatureControlAtHhc",
+  pb2.StartTemperatureControlAtHhcRequest,
+  pb2.StartTemperatureControlAtHhcResponse,
+)
+_GET_TEMPERATURE_AT_HHC = _method(
+  "GetTemperatureAtHhc", pb2.GetTemperatureAtHhcRequest, pb2.GetTemperatureAtHhcResponse, _NS
+)
+_QUERY_WHETHER_TEMPERATURE_REACHED_AT_HHC = _method(
+  "QueryWhetherTemperatureReachedAtHhc",
+  pb2.QueryWhetherTemperatureReachedAtHhcRequest,
+  pb2.QueryWhetherTemperatureReachedAtHhcResponse,
+  _NS,
+)
+_STOP_TEMPERATURE_CONTROL_AT_HHC = _method(
+  "StopTemperatureControlAtHhc",
+  pb2.StopTemperatureControlAtHhcRequest,
+  pb2.StopTemperatureControlAtHhcResponse,
+)
+_REQUEST_FIRMWARE_VERSION = _method(
+  "RequestFirmwareVersion",
+  pb2.RequestFirmwareVersionRequest,
+  pb2.RequestFirmwareVersionResponse,
+  _NS,
+)
+_REQUEST_ERROR_CODE = _method(
+  "RequestErrorCode", pb2.RequestErrorCodeRequest, pb2.RequestErrorCodeResponse, _NS
+)
+_REQUEST_DEVICE_SERIAL_NUMBER = _method(
+  "RequestDeviceSerialNumber",
+  pb2.RequestDeviceSerialNumberRequest,
+  pb2.RequestDeviceSerialNumberResponse,
+  _NS,
+)
+_REQUEST_MASTER_STATUS = _method(
+  "RequestMasterStatus", pb2.RequestMasterStatusRequest, pb2.RequestMasterStatusResponse, _NS
+)
+_SET_SINGLE_STEP_MODE = _method(
+  "SetSingleStepMode", pb2.SetSingleStepModeRequest, pb2.SetSingleStepModeResponse
+)
+_TRIGGER_NEXT_STEP = _method(
+  "TriggerNextStep", pb2.TriggerNextStepRequest, pb2.TriggerNextStepResponse
+)
 _HALT = _method("Halt", pb2.HaltRequest, pb2.HaltResponse)
-_SAVE_ALL_CYCLE_COUNTERS = _method("SaveAllCycleCounters", pb2.SaveAllCycleCountersRequest, pb2.SaveAllCycleCountersResponse)
+_SAVE_ALL_CYCLE_COUNTERS = _method(
+  "SaveAllCycleCounters", pb2.SaveAllCycleCountersRequest, pb2.SaveAllCycleCountersResponse
+)
 _SET_NOT_STOP = _method("SetNotStop", pb2.SetNotStopRequest, pb2.SetNotStopResponse)
-_CONFIGURE_NODE_NAMES = _method("ConfigureNodeNames", pb2.ConfigureNodeNamesRequest, pb2.ConfigureNodeNamesResponse)
+_CONFIGURE_NODE_NAMES = _method(
+  "ConfigureNodeNames", pb2.ConfigureNodeNamesRequest, pb2.ConfigureNodeNamesResponse
+)
 _SET_DECK_DATA = _method("SetDeckData", pb2.SetDeckDataRequest, pb2.SetDeckDataResponse)
-_POSITION_LEFT_X_ARM = _method("PositionLeftXArm", pb2.PositionLeftXArmRequest, pb2.PositionLeftXArmResponse)
-_POSITION_RIGHT_X_ARM = _method("PositionRightXArm", pb2.PositionRightXArmRequest, pb2.PositionRightXArmResponse)
-_MOVE_LEFT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION = _method("MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPosition", pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest, pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse)
-_MOVE_RIGHT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION = _method("MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPosition", pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest, pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse)
-_REQUEST_LEFT_X_ARM_POSITION = _method("RequestLeftXArmPosition", pb2.RequestLeftXArmPositionRequest, pb2.RequestLeftXArmPositionResponse, _NS)
-_REQUEST_RIGHT_X_ARM_POSITION = _method("RequestRightXArmPosition", pb2.RequestRightXArmPositionRequest, pb2.RequestRightXArmPositionResponse, _NS)
-_REQUEST_RIGHT_X_ARM_LAST_COLLISION_TYPE = _method("RequestRightXArmLastCollisionType", pb2.RequestRightXArmLastCollisionTypeRequest, pb2.RequestRightXArmLastCollisionTypeResponse, _NS)
-_REQUEST_PUMP_SETTINGS = _method("RequestPumpSettings", pb2.RequestPumpSettingsRequest, pb2.RequestPumpSettingsResponse, _NS)
-_INITIALIZE_DUAL_PUMP_STATION_VALVES = _method("InitializeDualPumpStationValves", pb2.InitializeDualPumpStationValvesRequest, pb2.InitializeDualPumpStationValvesResponse)
-_DRAIN_DUAL_CHAMBER_SYSTEM = _method("DrainDualChamberSystem", pb2.DrainDualChamberSystemRequest, pb2.DrainDualChamberSystemResponse)
-_VIOLENTLY_SHOOT_DOWN_TIP = _method("ViolentlyShootDownTip", pb2.ViolentlyShootDownTipRequest, pb2.ViolentlyShootDownTipResponse)
+_POSITION_LEFT_X_ARM = _method(
+  "PositionLeftXArm", pb2.PositionLeftXArmRequest, pb2.PositionLeftXArmResponse
+)
+_POSITION_RIGHT_X_ARM = _method(
+  "PositionRightXArm", pb2.PositionRightXArmRequest, pb2.PositionRightXArmResponse
+)
+_MOVE_LEFT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION = _method(
+  "MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPosition",
+  pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest,
+  pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse,
+)
+_MOVE_RIGHT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION = _method(
+  "MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPosition",
+  pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest,
+  pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse,
+)
+_REQUEST_LEFT_X_ARM_POSITION = _method(
+  "RequestLeftXArmPosition",
+  pb2.RequestLeftXArmPositionRequest,
+  pb2.RequestLeftXArmPositionResponse,
+  _NS,
+)
+_REQUEST_RIGHT_X_ARM_POSITION = _method(
+  "RequestRightXArmPosition",
+  pb2.RequestRightXArmPositionRequest,
+  pb2.RequestRightXArmPositionResponse,
+  _NS,
+)
+_REQUEST_RIGHT_X_ARM_LAST_COLLISION_TYPE = _method(
+  "RequestRightXArmLastCollisionType",
+  pb2.RequestRightXArmLastCollisionTypeRequest,
+  pb2.RequestRightXArmLastCollisionTypeResponse,
+  _NS,
+)
+_REQUEST_PUMP_SETTINGS = _method(
+  "RequestPumpSettings", pb2.RequestPumpSettingsRequest, pb2.RequestPumpSettingsResponse, _NS
+)
+_INITIALIZE_DUAL_PUMP_STATION_VALVES = _method(
+  "InitializeDualPumpStationValves",
+  pb2.InitializeDualPumpStationValvesRequest,
+  pb2.InitializeDualPumpStationValvesResponse,
+)
+_DRAIN_DUAL_CHAMBER_SYSTEM = _method(
+  "DrainDualChamberSystem", pb2.DrainDualChamberSystemRequest, pb2.DrainDualChamberSystemResponse
+)
+_VIOLENTLY_SHOOT_DOWN_TIP = _method(
+  "ViolentlyShootDownTip", pb2.ViolentlyShootDownTipRequest, pb2.ViolentlyShootDownTipResponse
+)
 _CAN_PICK_UP_TIP = _method("CanPickUpTip", pb2.CanPickUpTipRequest, pb2.CanPickUpTipResponse, _NS)
 
 
@@ -238,1952 +662,6433 @@ _CAN_PICK_UP_TIP = _method("CanPickUpTip", pb2.CanPickUpTipRequest, pb2.CanPickU
 # Service protocol
 # ============================================================
 
+
 class STARService(Protocol):
-    async def setup(self, request: pb2.SetupRequest, ctx: RequestContext) -> pb2.SetupResponse:
-        ...
-
-    async def stop(self, request: pb2.StopRequest, ctx: RequestContext) -> pb2.StopResponse:
-        ...
-
-    async def get_num_channels(self, request: pb2.GetNumChannelsRequest, ctx: RequestContext) -> pb2.GetNumChannelsResponse:
-        ...
-
-    async def get_head96_installed(self, request: pb2.GetHead96InstalledRequest, ctx: RequestContext) -> pb2.GetHead96InstalledResponse:
-        ...
-
-    async def get_iswap_installed(self, request: pb2.GetIswapInstalledRequest, ctx: RequestContext) -> pb2.GetIswapInstalledResponse:
-        ...
-
-    async def get_iswap_parked(self, request: pb2.GetIswapParkedRequest, ctx: RequestContext) -> pb2.GetIswapParkedResponse:
-        ...
-
-    async def get_core_parked(self, request: pb2.GetCoreParkedRequest, ctx: RequestContext) -> pb2.GetCoreParkedResponse:
-        ...
-
-    async def pick_up_tips(self, request: pb2.PickUpTipsRequest, ctx: RequestContext) -> pb2.PickUpTipsResponse:
-        ...
-
-    async def drop_tips(self, request: pb2.DropTipsRequest, ctx: RequestContext) -> pb2.DropTipsResponse:
-        ...
-
-    async def aspirate(self, request: pb2.AspirateRequest, ctx: RequestContext) -> pb2.AspirateResponse:
-        ...
-
-    async def dispense(self, request: pb2.DispenseRequest, ctx: RequestContext) -> pb2.DispenseResponse:
-        ...
-
-    async def pick_up_tips96(self, request: pb2.PickUpTips96Request, ctx: RequestContext) -> pb2.PickUpTips96Response:
-        ...
-
-    async def drop_tips96(self, request: pb2.DropTips96Request, ctx: RequestContext) -> pb2.DropTips96Response:
-        ...
-
-    async def aspirate96(self, request: pb2.Aspirate96Request, ctx: RequestContext) -> pb2.Aspirate96Response:
-        ...
-
-    async def dispense96(self, request: pb2.Dispense96Request, ctx: RequestContext) -> pb2.Dispense96Response:
-        ...
-
-    async def initialize_pip(self, request: pb2.InitializePipRequest, ctx: RequestContext) -> pb2.InitializePipResponse:
-        ...
-
-    async def initialize_pipetting_channels(self, request: pb2.InitializePipettingChannelsRequest, ctx: RequestContext) -> pb2.InitializePipettingChannelsResponse:
-        ...
-
-    async def pick_up_tip_fw(self, request: pb2.PickUpTipFwRequest, ctx: RequestContext) -> pb2.PickUpTipFwResponse:
-        ...
-
-    async def discard_tip_fw(self, request: pb2.DiscardTipFwRequest, ctx: RequestContext) -> pb2.DiscardTipFwResponse:
-        ...
-
-    async def aspirate_pip(self, request: pb2.AspiratePipRequest, ctx: RequestContext) -> pb2.AspiratePipResponse:
-        ...
-
-    async def dispense_pip(self, request: pb2.DispensePipRequest, ctx: RequestContext) -> pb2.DispensePipResponse:
-        ...
-
-    async def spread_pip_channels(self, request: pb2.SpreadPipChannelsRequest, ctx: RequestContext) -> pb2.SpreadPipChannelsResponse:
-        ...
-
-    async def move_all_pipetting_channels_to_defined_position(self, request: pb2.MoveAllPipettingChannelsToDefinedPositionRequest, ctx: RequestContext) -> pb2.MoveAllPipettingChannelsToDefinedPositionResponse:
-        ...
-
-    async def define_tip_needle(self, request: pb2.DefineTipNeedleRequest, ctx: RequestContext) -> pb2.DefineTipNeedleResponse:
-        ...
-
-    async def probe_liquid_heights(self, request: pb2.ProbeLiquidHeightsRequest, ctx: RequestContext) -> pb2.ProbeLiquidHeightsResponse:
-        ...
-
-    async def probe_liquid_volumes(self, request: pb2.ProbeLiquidVolumesRequest, ctx: RequestContext) -> pb2.ProbeLiquidVolumesResponse:
-        ...
-
-    async def request_tip_presence(self, request: pb2.RequestTipPresenceRequest, ctx: RequestContext) -> pb2.RequestTipPresenceResponse:
-        ...
-
-    async def channels_sense_tip_presence(self, request: pb2.ChannelsSenseTipPresenceRequest, ctx: RequestContext) -> pb2.ChannelsSenseTipPresenceResponse:
-        ...
-
-    async def request_pip_height_last_lld(self, request: pb2.RequestPipHeightLastLldRequest, ctx: RequestContext) -> pb2.RequestPipHeightLastLldResponse:
-        ...
-
-    async def request_tadm_status(self, request: pb2.RequestTadmStatusRequest, ctx: RequestContext) -> pb2.RequestTadmStatusResponse:
-        ...
-
-    async def request_volume_in_tip(self, request: pb2.RequestVolumeInTipRequest, ctx: RequestContext) -> pb2.RequestVolumeInTipResponse:
-        ...
-
-    async def request_tip_len_on_channel(self, request: pb2.RequestTipLenOnChannelRequest, ctx: RequestContext) -> pb2.RequestTipLenOnChannelResponse:
-        ...
-
-    async def request_probe_z_position(self, request: pb2.RequestProbeZPositionRequest, ctx: RequestContext) -> pb2.RequestProbeZPositionResponse:
-        ...
-
-    async def clld_probe_z_height_using_channel(self, request: pb2.ClldProbeZHeightUsingChannelRequest, ctx: RequestContext) -> pb2.ClldProbeZHeightUsingChannelResponse:
-        ...
-
-    async def plld_probe_z_height_using_channel(self, request: pb2.PlldProbeZHeightUsingChannelRequest, ctx: RequestContext) -> pb2.PlldProbeZHeightUsingChannelResponse:
-        ...
-
-    async def ztouch_probe_z_height_using_channel(self, request: pb2.ZtouchProbeZHeightUsingChannelRequest, ctx: RequestContext) -> pb2.ZtouchProbeZHeightUsingChannelResponse:
-        ...
-
-    async def pierce_foil(self, request: pb2.PierceFoilRequest, ctx: RequestContext) -> pb2.PierceFoilResponse:
-        ...
-
-    async def pierce_foil_high_level(self, request: pb2.PierceFoilHighLevelRequest, ctx: RequestContext) -> pb2.PierceFoilHighLevelResponse:
-        ...
-
-    async def step_off_foil(self, request: pb2.StepOffFoilRequest, ctx: RequestContext) -> pb2.StepOffFoilResponse:
-        ...
-
-    async def empty_tip(self, request: pb2.EmptyTipRequest, ctx: RequestContext) -> pb2.EmptyTipResponse:
-        ...
-
-    async def empty_tips(self, request: pb2.EmptyTipsRequest, ctx: RequestContext) -> pb2.EmptyTipsResponse:
-        ...
-
-    async def move_channel_x(self, request: pb2.MoveChannelXRequest, ctx: RequestContext) -> pb2.MoveChannelXResponse:
-        ...
-
-    async def move_channel_y(self, request: pb2.MoveChannelYRequest, ctx: RequestContext) -> pb2.MoveChannelYResponse:
-        ...
-
-    async def move_channel_z(self, request: pb2.MoveChannelZRequest, ctx: RequestContext) -> pb2.MoveChannelZResponse:
-        ...
-
-    async def move_channel_x_relative(self, request: pb2.MoveChannelXRelativeRequest, ctx: RequestContext) -> pb2.MoveChannelXRelativeResponse:
-        ...
-
-    async def move_channel_y_relative(self, request: pb2.MoveChannelYRelativeRequest, ctx: RequestContext) -> pb2.MoveChannelYRelativeResponse:
-        ...
-
-    async def move_channel_z_relative(self, request: pb2.MoveChannelZRelativeRequest, ctx: RequestContext) -> pb2.MoveChannelZRelativeResponse:
-        ...
-
-    async def prepare_for_manual_channel_operation(self, request: pb2.PrepareForManualChannelOperationRequest, ctx: RequestContext) -> pb2.PrepareForManualChannelOperationResponse:
-        ...
-
-    async def move_all_channels_in_z_safety(self, request: pb2.MoveAllChannelsInZSafetyRequest, ctx: RequestContext) -> pb2.MoveAllChannelsInZSafetyResponse:
-        ...
-
-    async def position_single_pipetting_channel_in_y_direction(self, request: pb2.PositionSinglePipettingChannelInYDirectionRequest, ctx: RequestContext) -> pb2.PositionSinglePipettingChannelInYDirectionResponse:
-        ...
-
-    async def position_single_pipetting_channel_in_z_direction(self, request: pb2.PositionSinglePipettingChannelInZDirectionRequest, ctx: RequestContext) -> pb2.PositionSinglePipettingChannelInZDirectionResponse:
-        ...
-
-    async def position_max_free_y_for_n(self, request: pb2.PositionMaxFreeYForNRequest, ctx: RequestContext) -> pb2.PositionMaxFreeYForNResponse:
-        ...
-
-    async def request_x_pos_channel_n(self, request: pb2.RequestXPosChannelNRequest, ctx: RequestContext) -> pb2.RequestXPosChannelNResponse:
-        ...
-
-    async def request_y_pos_channel_n(self, request: pb2.RequestYPosChannelNRequest, ctx: RequestContext) -> pb2.RequestYPosChannelNResponse:
-        ...
-
-    async def request_z_pos_channel_n(self, request: pb2.RequestZPosChannelNRequest, ctx: RequestContext) -> pb2.RequestZPosChannelNResponse:
-        ...
-
-    async def request_tip_bottom_z_position(self, request: pb2.RequestTipBottomZPositionRequest, ctx: RequestContext) -> pb2.RequestTipBottomZPositionResponse:
-        ...
-
-    async def get_channels_y_positions(self, request: pb2.GetChannelsYPositionsRequest, ctx: RequestContext) -> pb2.GetChannelsYPositionsResponse:
-        ...
-
-    async def position_channels_in_y_direction(self, request: pb2.PositionChannelsInYDirectionRequest, ctx: RequestContext) -> pb2.PositionChannelsInYDirectionResponse:
-        ...
-
-    async def get_channels_z_positions(self, request: pb2.GetChannelsZPositionsRequest, ctx: RequestContext) -> pb2.GetChannelsZPositionsResponse:
-        ...
-
-    async def position_channels_in_z_direction(self, request: pb2.PositionChannelsInZDirectionRequest, ctx: RequestContext) -> pb2.PositionChannelsInZDirectionResponse:
-        ...
-
-    async def request_pip_channel_version(self, request: pb2.RequestPipChannelVersionRequest, ctx: RequestContext) -> pb2.RequestPipChannelVersionResponse:
-        ...
-
-    async def initialize_core_96_head(self, request: pb2.InitializeCore96HeadRequest, ctx: RequestContext) -> pb2.InitializeCore96HeadResponse:
-        ...
-
-    async def request_core_96_head_initialization_status(self, request: pb2.RequestCore96HeadInitializationStatusRequest, ctx: RequestContext) -> pb2.RequestCore96HeadInitializationStatusResponse:
-        ...
-
-    async def head96_request_firmware_version(self, request: pb2.Head96RequestFirmwareVersionRequest, ctx: RequestContext) -> pb2.Head96RequestFirmwareVersionResponse:
-        ...
-
-    async def head96_request_type(self, request: pb2.Head96RequestTypeRequest, ctx: RequestContext) -> pb2.Head96RequestTypeResponse:
-        ...
-
-    async def head96_dispensing_drive_and_squeezer_driver_initialize(self, request: pb2.Head96DispensingDriveAndSqueezerDriverInitializeRequest, ctx: RequestContext) -> pb2.Head96DispensingDriveAndSqueezerDriverInitializeResponse:
-        ...
-
-    async def move_core_96_to_safe_position(self, request: pb2.MoveCore96ToSafePositionRequest, ctx: RequestContext) -> pb2.MoveCore96ToSafePositionResponse:
-        ...
-
-    async def head96_move_to_z_safety(self, request: pb2.Head96MoveToZSafetyRequest, ctx: RequestContext) -> pb2.Head96MoveToZSafetyResponse:
-        ...
-
-    async def head96_park(self, request: pb2.Head96ParkRequest, ctx: RequestContext) -> pb2.Head96ParkResponse:
-        ...
-
-    async def head96_move_x(self, request: pb2.Head96MoveXRequest, ctx: RequestContext) -> pb2.Head96MoveXResponse:
-        ...
-
-    async def head96_move_y(self, request: pb2.Head96MoveYRequest, ctx: RequestContext) -> pb2.Head96MoveYResponse:
-        ...
-
-    async def head96_move_z(self, request: pb2.Head96MoveZRequest, ctx: RequestContext) -> pb2.Head96MoveZResponse:
-        ...
-
-    async def move_core_96_head_to_defined_position(self, request: pb2.MoveCore96HeadToDefinedPositionRequest, ctx: RequestContext) -> pb2.MoveCore96HeadToDefinedPositionResponse:
-        ...
-
-    async def head96_move_to_coordinate(self, request: pb2.Head96MoveToCoordinateRequest, ctx: RequestContext) -> pb2.Head96MoveToCoordinateResponse:
-        ...
-
-    async def head96_dispensing_drive_move_to_home_volume(self, request: pb2.Head96DispensingDriveMoveToHomeVolumeRequest, ctx: RequestContext) -> pb2.Head96DispensingDriveMoveToHomeVolumeResponse:
-        ...
-
-    async def head96_dispensing_drive_move_to_position(self, request: pb2.Head96DispensingDriveMoveToPositionRequest, ctx: RequestContext) -> pb2.Head96DispensingDriveMoveToPositionResponse:
-        ...
-
-    async def head96_dispensing_drive_request_position_mm(self, request: pb2.Head96DispensingDriveRequestPositionMmRequest, ctx: RequestContext) -> pb2.Head96DispensingDriveRequestPositionMmResponse:
-        ...
-
-    async def head96_dispensing_drive_request_position_ul(self, request: pb2.Head96DispensingDriveRequestPositionUlRequest, ctx: RequestContext) -> pb2.Head96DispensingDriveRequestPositionUlResponse:
-        ...
-
-    async def head96_request_tip_presence(self, request: pb2.Head96RequestTipPresenceRequest, ctx: RequestContext) -> pb2.Head96RequestTipPresenceResponse:
-        ...
-
-    async def head96_request_position(self, request: pb2.Head96RequestPositionRequest, ctx: RequestContext) -> pb2.Head96RequestPositionResponse:
-        ...
-
-    async def pick_up_tips_core96(self, request: pb2.PickUpTipsCore96Request, ctx: RequestContext) -> pb2.PickUpTipsCore96Response:
-        ...
-
-    async def discard_tips_core96(self, request: pb2.DiscardTipsCore96Request, ctx: RequestContext) -> pb2.DiscardTipsCore96Response:
-        ...
-
-    async def aspirate_core96(self, request: pb2.AspirateCore96Request, ctx: RequestContext) -> pb2.AspirateCore96Response:
-        ...
-
-    async def dispense_core96(self, request: pb2.DispenseCore96Request, ctx: RequestContext) -> pb2.DispenseCore96Response:
-        ...
-
-    async def initialize_iswap(self, request: pb2.InitializeIswapRequest, ctx: RequestContext) -> pb2.InitializeIswapResponse:
-        ...
-
-    async def position_components_for_free_iswap_y_range(self, request: pb2.PositionComponentsForFreeIswapYRangeRequest, ctx: RequestContext) -> pb2.PositionComponentsForFreeIswapYRangeResponse:
-        ...
-
-    async def move_iswap_x_relative(self, request: pb2.MoveIswapXRelativeRequest, ctx: RequestContext) -> pb2.MoveIswapXRelativeResponse:
-        ...
-
-    async def move_iswap_y_relative(self, request: pb2.MoveIswapYRelativeRequest, ctx: RequestContext) -> pb2.MoveIswapYRelativeResponse:
-        ...
-
-    async def move_iswap_z_relative(self, request: pb2.MoveIswapZRelativeRequest, ctx: RequestContext) -> pb2.MoveIswapZRelativeResponse:
-        ...
-
-    async def move_iswap_x(self, request: pb2.MoveIswapXRequest, ctx: RequestContext) -> pb2.MoveIswapXResponse:
-        ...
-
-    async def move_iswap_y(self, request: pb2.MoveIswapYRequest, ctx: RequestContext) -> pb2.MoveIswapYResponse:
-        ...
-
-    async def move_iswap_z(self, request: pb2.MoveIswapZRequest, ctx: RequestContext) -> pb2.MoveIswapZResponse:
-        ...
-
-    async def open_not_initialized_gripper(self, request: pb2.OpenNotInitializedGripperRequest, ctx: RequestContext) -> pb2.OpenNotInitializedGripperResponse:
-        ...
-
-    async def iswap_open_gripper(self, request: pb2.IswapOpenGripperRequest, ctx: RequestContext) -> pb2.IswapOpenGripperResponse:
-        ...
-
-    async def iswap_close_gripper(self, request: pb2.IswapCloseGripperRequest, ctx: RequestContext) -> pb2.IswapCloseGripperResponse:
-        ...
-
-    async def park_iswap(self, request: pb2.ParkIswapRequest, ctx: RequestContext) -> pb2.ParkIswapResponse:
-        ...
-
-    async def iswap_get_plate(self, request: pb2.IswapGetPlateRequest, ctx: RequestContext) -> pb2.IswapGetPlateResponse:
-        ...
-
-    async def iswap_put_plate(self, request: pb2.IswapPutPlateRequest, ctx: RequestContext) -> pb2.IswapPutPlateResponse:
-        ...
-
-    async def move_plate_to_position(self, request: pb2.MovePlateToPositionRequest, ctx: RequestContext) -> pb2.MovePlateToPositionResponse:
-        ...
-
-    async def collapse_gripper_arm(self, request: pb2.CollapseGripperArmRequest, ctx: RequestContext) -> pb2.CollapseGripperArmResponse:
-        ...
-
-    async def iswap_rotate(self, request: pb2.IswapRotateRequest, ctx: RequestContext) -> pb2.IswapRotateResponse:
-        ...
-
-    async def rotate_iswap_rotation_drive(self, request: pb2.RotateIswapRotationDriveRequest, ctx: RequestContext) -> pb2.RotateIswapRotationDriveResponse:
-        ...
-
-    async def rotate_iswap_wrist(self, request: pb2.RotateIswapWristRequest, ctx: RequestContext) -> pb2.RotateIswapWristResponse:
-        ...
-
-    async def iswap_dangerous_release_break(self, request: pb2.IswapDangerousReleaseBreakRequest, ctx: RequestContext) -> pb2.IswapDangerousReleaseBreakResponse:
-        ...
-
-    async def iswap_reengage_break(self, request: pb2.IswapReengageBreakRequest, ctx: RequestContext) -> pb2.IswapReengageBreakResponse:
-        ...
-
-    async def iswap_initialize_z_axis(self, request: pb2.IswapInitializeZAxisRequest, ctx: RequestContext) -> pb2.IswapInitializeZAxisResponse:
-        ...
-
-    async def request_iswap_rotation_drive_position_increments(self, request: pb2.RequestIswapRotationDrivePositionIncrementsRequest, ctx: RequestContext) -> pb2.RequestIswapRotationDrivePositionIncrementsResponse:
-        ...
-
-    async def request_iswap_rotation_drive_orientation(self, request: pb2.RequestIswapRotationDriveOrientationRequest, ctx: RequestContext) -> pb2.RequestIswapRotationDriveOrientationResponse:
-        ...
-
-    async def request_iswap_wrist_drive_position_increments(self, request: pb2.RequestIswapWristDrivePositionIncrementsRequest, ctx: RequestContext) -> pb2.RequestIswapWristDrivePositionIncrementsResponse:
-        ...
-
-    async def request_iswap_wrist_drive_orientation(self, request: pb2.RequestIswapWristDriveOrientationRequest, ctx: RequestContext) -> pb2.RequestIswapWristDriveOrientationResponse:
-        ...
-
-    async def request_iswap_in_parking_position(self, request: pb2.RequestIswapInParkingPositionRequest, ctx: RequestContext) -> pb2.RequestIswapInParkingPositionResponse:
-        ...
-
-    async def request_plate_in_iswap(self, request: pb2.RequestPlateInIswapRequest, ctx: RequestContext) -> pb2.RequestPlateInIswapResponse:
-        ...
-
-    async def request_iswap_position(self, request: pb2.RequestIswapPositionRequest, ctx: RequestContext) -> pb2.RequestIswapPositionResponse:
-        ...
-
-    async def iswap_rotation_drive_request_y(self, request: pb2.IswapRotationDriveRequestYRequest, ctx: RequestContext) -> pb2.IswapRotationDriveRequestYResponse:
-        ...
-
-    async def request_iswap_initialization_status(self, request: pb2.RequestIswapInitializationStatusRequest, ctx: RequestContext) -> pb2.RequestIswapInitializationStatusResponse:
-        ...
-
-    async def request_iswap_version(self, request: pb2.RequestIswapVersionRequest, ctx: RequestContext) -> pb2.RequestIswapVersionResponse:
-        ...
-
-    async def get_iswap_version(self, request: pb2.GetIswapVersionRequest, ctx: RequestContext) -> pb2.GetIswapVersionResponse:
-        ...
-
-    async def slow_iswap(self, request: pb2.SlowIswapRequest, ctx: RequestContext) -> pb2.SlowIswapResponse:
-        ...
-
-    async def iswap_move_picked_up_resource(self, request: pb2.IswapMovePickedUpResourceRequest, ctx: RequestContext) -> pb2.IswapMovePickedUpResourceResponse:
-        ...
-
-    async def pick_up_resource(self, request: pb2.PickUpResourceRequest, ctx: RequestContext) -> pb2.PickUpResourceResponse:
-        ...
-
-    async def move_picked_up_resource(self, request: pb2.MovePickedUpResourceRequest, ctx: RequestContext) -> pb2.MovePickedUpResourceResponse:
-        ...
-
-    async def drop_resource(self, request: pb2.DropResourceRequest, ctx: RequestContext) -> pb2.DropResourceResponse:
-        ...
-
-    async def pick_up_core_gripper_tools(self, request: pb2.PickUpCoreGripperToolsRequest, ctx: RequestContext) -> pb2.PickUpCoreGripperToolsResponse:
-        ...
-
-    async def return_core_gripper_tools(self, request: pb2.ReturnCoreGripperToolsRequest, ctx: RequestContext) -> pb2.ReturnCoreGripperToolsResponse:
-        ...
-
-    async def core_open_gripper(self, request: pb2.CoreOpenGripperRequest, ctx: RequestContext) -> pb2.CoreOpenGripperResponse:
-        ...
-
-    async def core_get_plate(self, request: pb2.CoreGetPlateRequest, ctx: RequestContext) -> pb2.CoreGetPlateResponse:
-        ...
-
-    async def core_put_plate(self, request: pb2.CorePutPlateRequest, ctx: RequestContext) -> pb2.CorePutPlateResponse:
-        ...
-
-    async def core_move_plate_to_position(self, request: pb2.CoreMovePlateToPositionRequest, ctx: RequestContext) -> pb2.CoreMovePlateToPositionResponse:
-        ...
-
-    async def core_pick_up_resource(self, request: pb2.CorePickUpResourceRequest, ctx: RequestContext) -> pb2.CorePickUpResourceResponse:
-        ...
-
-    async def core_move_picked_up_resource(self, request: pb2.CoreMovePickedUpResourceRequest, ctx: RequestContext) -> pb2.CoreMovePickedUpResourceResponse:
-        ...
-
-    async def core_release_picked_up_resource(self, request: pb2.CoreReleasePickedUpResourceRequest, ctx: RequestContext) -> pb2.CoreReleasePickedUpResourceResponse:
-        ...
-
-    async def core_check_resource_exists_at_location_center(self, request: pb2.CoreCheckResourceExistsAtLocationCenterRequest, ctx: RequestContext) -> pb2.CoreCheckResourceExistsAtLocationCenterResponse:
-        ...
-
-    async def get_core(self, request: pb2.GetCoreRequest, ctx: RequestContext) -> pb2.GetCoreResponse:
-        ...
-
-    async def put_core(self, request: pb2.PutCoreRequest, ctx: RequestContext) -> pb2.PutCoreResponse:
-        ...
-
-    async def core_read_barcode_of_picked_up_resource(self, request: pb2.CoreReadBarcodeOfPickedUpResourceRequest, ctx: RequestContext) -> pb2.CoreReadBarcodeOfPickedUpResourceResponse:
-        ...
-
-    async def initialize_autoload(self, request: pb2.InitializeAutoloadRequest, ctx: RequestContext) -> pb2.InitializeAutoloadResponse:
-        ...
-
-    async def move_autoload_to_safe_z_position(self, request: pb2.MoveAutoloadToSafeZPositionRequest, ctx: RequestContext) -> pb2.MoveAutoloadToSafeZPositionResponse:
-        ...
-
-    async def request_autoload_track(self, request: pb2.RequestAutoloadTrackRequest, ctx: RequestContext) -> pb2.RequestAutoloadTrackResponse:
-        ...
-
-    async def request_autoload_type(self, request: pb2.RequestAutoloadTypeRequest, ctx: RequestContext) -> pb2.RequestAutoloadTypeResponse:
-        ...
-
-    async def request_presence_of_carriers_on_deck(self, request: pb2.RequestPresenceOfCarriersOnDeckRequest, ctx: RequestContext) -> pb2.RequestPresenceOfCarriersOnDeckResponse:
-        ...
-
-    async def request_presence_of_carriers_on_loading_tray(self, request: pb2.RequestPresenceOfCarriersOnLoadingTrayRequest, ctx: RequestContext) -> pb2.RequestPresenceOfCarriersOnLoadingTrayResponse:
-        ...
-
-    async def request_presence_of_single_carrier_on_loading_tray(self, request: pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest, ctx: RequestContext) -> pb2.RequestPresenceOfSingleCarrierOnLoadingTrayResponse:
-        ...
-
-    async def move_autoload_to_slot(self, request: pb2.MoveAutoloadToSlotRequest, ctx: RequestContext) -> pb2.MoveAutoloadToSlotResponse:
-        ...
-
-    async def move_autoload_to_track(self, request: pb2.MoveAutoloadToTrackRequest, ctx: RequestContext) -> pb2.MoveAutoloadToTrackResponse:
-        ...
-
-    async def park_autoload(self, request: pb2.ParkAutoloadRequest, ctx: RequestContext) -> pb2.ParkAutoloadResponse:
-        ...
-
-    async def take_carrier_out_to_autoload_belt(self, request: pb2.TakeCarrierOutToAutoloadBeltRequest, ctx: RequestContext) -> pb2.TakeCarrierOutToAutoloadBeltResponse:
-        ...
-
-    async def set_barcode_type(self, request: pb2.SetBarcodeTypeRequest, ctx: RequestContext) -> pb2.SetBarcodeTypeResponse:
-        ...
-
-    async def load_carrier_from_tray_and_scan_carrier_barcode(self, request: pb2.LoadCarrierFromTrayAndScanCarrierBarcodeRequest, ctx: RequestContext) -> pb2.LoadCarrierFromTrayAndScanCarrierBarcodeResponse:
-        ...
-
-    async def set_carrier_monitoring(self, request: pb2.SetCarrierMonitoringRequest, ctx: RequestContext) -> pb2.SetCarrierMonitoringResponse:
-        ...
-
-    async def load_carrier(self, request: pb2.LoadCarrierRequest, ctx: RequestContext) -> pb2.LoadCarrierResponse:
-        ...
-
-    async def set_loading_indicators(self, request: pb2.SetLoadingIndicatorsRequest, ctx: RequestContext) -> pb2.SetLoadingIndicatorsResponse:
-        ...
-
-    async def unload_carrier(self, request: pb2.UnloadCarrierRequest, ctx: RequestContext) -> pb2.UnloadCarrierResponse:
-        ...
-
-    async def request_instrument_initialization_status(self, request: pb2.RequestInstrumentInitializationStatusRequest, ctx: RequestContext) -> pb2.RequestInstrumentInitializationStatusResponse:
-        ...
-
-    async def request_autoload_initialization_status(self, request: pb2.RequestAutoloadInitializationStatusRequest, ctx: RequestContext) -> pb2.RequestAutoloadInitializationStatusResponse:
-        ...
-
-    async def lock_cover(self, request: pb2.LockCoverRequest, ctx: RequestContext) -> pb2.LockCoverResponse:
-        ...
-
-    async def unlock_cover(self, request: pb2.UnlockCoverRequest, ctx: RequestContext) -> pb2.UnlockCoverResponse:
-        ...
-
-    async def disable_cover_control(self, request: pb2.DisableCoverControlRequest, ctx: RequestContext) -> pb2.DisableCoverControlResponse:
-        ...
-
-    async def enable_cover_control(self, request: pb2.EnableCoverControlRequest, ctx: RequestContext) -> pb2.EnableCoverControlResponse:
-        ...
-
-    async def set_cover_output(self, request: pb2.SetCoverOutputRequest, ctx: RequestContext) -> pb2.SetCoverOutputResponse:
-        ...
-
-    async def reset_output(self, request: pb2.ResetOutputRequest, ctx: RequestContext) -> pb2.ResetOutputResponse:
-        ...
-
-    async def request_cover_open(self, request: pb2.RequestCoverOpenRequest, ctx: RequestContext) -> pb2.RequestCoverOpenResponse:
-        ...
-
-    async def send_hhs_command(self, request: pb2.SendHhsCommandRequest, ctx: RequestContext) -> pb2.SendHhsCommandResponse:
-        ...
-
-    async def check_type_is_hhc(self, request: pb2.CheckTypeIsHhcRequest, ctx: RequestContext) -> pb2.CheckTypeIsHhcResponse:
-        ...
-
-    async def initialize_hhc(self, request: pb2.InitializeHhcRequest, ctx: RequestContext) -> pb2.InitializeHhcResponse:
-        ...
-
-    async def start_temperature_control_at_hhc(self, request: pb2.StartTemperatureControlAtHhcRequest, ctx: RequestContext) -> pb2.StartTemperatureControlAtHhcResponse:
-        ...
-
-    async def get_temperature_at_hhc(self, request: pb2.GetTemperatureAtHhcRequest, ctx: RequestContext) -> pb2.GetTemperatureAtHhcResponse:
-        ...
-
-    async def query_whether_temperature_reached_at_hhc(self, request: pb2.QueryWhetherTemperatureReachedAtHhcRequest, ctx: RequestContext) -> pb2.QueryWhetherTemperatureReachedAtHhcResponse:
-        ...
-
-    async def stop_temperature_control_at_hhc(self, request: pb2.StopTemperatureControlAtHhcRequest, ctx: RequestContext) -> pb2.StopTemperatureControlAtHhcResponse:
-        ...
-
-    async def request_firmware_version(self, request: pb2.RequestFirmwareVersionRequest, ctx: RequestContext) -> pb2.RequestFirmwareVersionResponse:
-        ...
-
-    async def request_error_code(self, request: pb2.RequestErrorCodeRequest, ctx: RequestContext) -> pb2.RequestErrorCodeResponse:
-        ...
-
-    async def request_device_serial_number(self, request: pb2.RequestDeviceSerialNumberRequest, ctx: RequestContext) -> pb2.RequestDeviceSerialNumberResponse:
-        ...
-
-    async def request_master_status(self, request: pb2.RequestMasterStatusRequest, ctx: RequestContext) -> pb2.RequestMasterStatusResponse:
-        ...
-
-    async def set_single_step_mode(self, request: pb2.SetSingleStepModeRequest, ctx: RequestContext) -> pb2.SetSingleStepModeResponse:
-        ...
-
-    async def trigger_next_step(self, request: pb2.TriggerNextStepRequest, ctx: RequestContext) -> pb2.TriggerNextStepResponse:
-        ...
-
-    async def halt(self, request: pb2.HaltRequest, ctx: RequestContext) -> pb2.HaltResponse:
-        ...
-
-    async def save_all_cycle_counters(self, request: pb2.SaveAllCycleCountersRequest, ctx: RequestContext) -> pb2.SaveAllCycleCountersResponse:
-        ...
-
-    async def set_not_stop(self, request: pb2.SetNotStopRequest, ctx: RequestContext) -> pb2.SetNotStopResponse:
-        ...
-
-    async def configure_node_names(self, request: pb2.ConfigureNodeNamesRequest, ctx: RequestContext) -> pb2.ConfigureNodeNamesResponse:
-        ...
-
-    async def set_deck_data(self, request: pb2.SetDeckDataRequest, ctx: RequestContext) -> pb2.SetDeckDataResponse:
-        ...
-
-    async def position_left_x_arm(self, request: pb2.PositionLeftXArmRequest, ctx: RequestContext) -> pb2.PositionLeftXArmResponse:
-        ...
-
-    async def position_right_x_arm(self, request: pb2.PositionRightXArmRequest, ctx: RequestContext) -> pb2.PositionRightXArmResponse:
-        ...
-
-    async def move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(self, request: pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest, ctx: RequestContext) -> pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
-        ...
-
-    async def move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position(self, request: pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest, ctx: RequestContext) -> pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
-        ...
-
-    async def request_left_x_arm_position(self, request: pb2.RequestLeftXArmPositionRequest, ctx: RequestContext) -> pb2.RequestLeftXArmPositionResponse:
-        ...
-
-    async def request_right_x_arm_position(self, request: pb2.RequestRightXArmPositionRequest, ctx: RequestContext) -> pb2.RequestRightXArmPositionResponse:
-        ...
-
-    async def request_right_x_arm_last_collision_type(self, request: pb2.RequestRightXArmLastCollisionTypeRequest, ctx: RequestContext) -> pb2.RequestRightXArmLastCollisionTypeResponse:
-        ...
-
-    async def request_pump_settings(self, request: pb2.RequestPumpSettingsRequest, ctx: RequestContext) -> pb2.RequestPumpSettingsResponse:
-        ...
-
-    async def initialize_dual_pump_station_valves(self, request: pb2.InitializeDualPumpStationValvesRequest, ctx: RequestContext) -> pb2.InitializeDualPumpStationValvesResponse:
-        ...
-
-    async def drain_dual_chamber_system(self, request: pb2.DrainDualChamberSystemRequest, ctx: RequestContext) -> pb2.DrainDualChamberSystemResponse:
-        ...
-
-    async def violently_shoot_down_tip(self, request: pb2.ViolentlyShootDownTipRequest, ctx: RequestContext) -> pb2.ViolentlyShootDownTipResponse:
-        ...
-
-    async def can_pick_up_tip(self, request: pb2.CanPickUpTipRequest, ctx: RequestContext) -> pb2.CanPickUpTipResponse:
-        ...
+  async def setup(self, request: pb2.SetupRequest, ctx: RequestContext) -> pb2.SetupResponse:
+    ...
+
+  async def stop(self, request: pb2.StopRequest, ctx: RequestContext) -> pb2.StopResponse:
+    ...
+
+  async def get_num_channels(
+    self, request: pb2.GetNumChannelsRequest, ctx: RequestContext
+  ) -> pb2.GetNumChannelsResponse:
+    ...
+
+  async def get_head96_installed(
+    self, request: pb2.GetHead96InstalledRequest, ctx: RequestContext
+  ) -> pb2.GetHead96InstalledResponse:
+    ...
+
+  async def get_iswap_installed(
+    self, request: pb2.GetIswapInstalledRequest, ctx: RequestContext
+  ) -> pb2.GetIswapInstalledResponse:
+    ...
+
+  async def get_iswap_parked(
+    self, request: pb2.GetIswapParkedRequest, ctx: RequestContext
+  ) -> pb2.GetIswapParkedResponse:
+    ...
+
+  async def get_core_parked(
+    self, request: pb2.GetCoreParkedRequest, ctx: RequestContext
+  ) -> pb2.GetCoreParkedResponse:
+    ...
+
+  async def pick_up_tips(
+    self, request: pb2.PickUpTipsRequest, ctx: RequestContext
+  ) -> pb2.PickUpTipsResponse:
+    ...
+
+  async def drop_tips(
+    self, request: pb2.DropTipsRequest, ctx: RequestContext
+  ) -> pb2.DropTipsResponse:
+    ...
+
+  async def aspirate(
+    self, request: pb2.AspirateRequest, ctx: RequestContext
+  ) -> pb2.AspirateResponse:
+    ...
+
+  async def dispense(
+    self, request: pb2.DispenseRequest, ctx: RequestContext
+  ) -> pb2.DispenseResponse:
+    ...
+
+  async def pick_up_tips96(
+    self, request: pb2.PickUpTips96Request, ctx: RequestContext
+  ) -> pb2.PickUpTips96Response:
+    ...
+
+  async def drop_tips96(
+    self, request: pb2.DropTips96Request, ctx: RequestContext
+  ) -> pb2.DropTips96Response:
+    ...
+
+  async def aspirate96(
+    self, request: pb2.Aspirate96Request, ctx: RequestContext
+  ) -> pb2.Aspirate96Response:
+    ...
+
+  async def dispense96(
+    self, request: pb2.Dispense96Request, ctx: RequestContext
+  ) -> pb2.Dispense96Response:
+    ...
+
+  async def initialize_pip(
+    self, request: pb2.InitializePipRequest, ctx: RequestContext
+  ) -> pb2.InitializePipResponse:
+    ...
+
+  async def initialize_pipetting_channels(
+    self, request: pb2.InitializePipettingChannelsRequest, ctx: RequestContext
+  ) -> pb2.InitializePipettingChannelsResponse:
+    ...
+
+  async def pick_up_tip_fw(
+    self, request: pb2.PickUpTipFwRequest, ctx: RequestContext
+  ) -> pb2.PickUpTipFwResponse:
+    ...
+
+  async def discard_tip_fw(
+    self, request: pb2.DiscardTipFwRequest, ctx: RequestContext
+  ) -> pb2.DiscardTipFwResponse:
+    ...
+
+  async def aspirate_pip(
+    self, request: pb2.AspiratePipRequest, ctx: RequestContext
+  ) -> pb2.AspiratePipResponse:
+    ...
+
+  async def dispense_pip(
+    self, request: pb2.DispensePipRequest, ctx: RequestContext
+  ) -> pb2.DispensePipResponse:
+    ...
+
+  async def spread_pip_channels(
+    self, request: pb2.SpreadPipChannelsRequest, ctx: RequestContext
+  ) -> pb2.SpreadPipChannelsResponse:
+    ...
+
+  async def move_all_pipetting_channels_to_defined_position(
+    self, request: pb2.MoveAllPipettingChannelsToDefinedPositionRequest, ctx: RequestContext
+  ) -> pb2.MoveAllPipettingChannelsToDefinedPositionResponse:
+    ...
+
+  async def define_tip_needle(
+    self, request: pb2.DefineTipNeedleRequest, ctx: RequestContext
+  ) -> pb2.DefineTipNeedleResponse:
+    ...
+
+  async def probe_liquid_heights(
+    self, request: pb2.ProbeLiquidHeightsRequest, ctx: RequestContext
+  ) -> pb2.ProbeLiquidHeightsResponse:
+    ...
+
+  async def probe_liquid_volumes(
+    self, request: pb2.ProbeLiquidVolumesRequest, ctx: RequestContext
+  ) -> pb2.ProbeLiquidVolumesResponse:
+    ...
+
+  async def request_tip_presence(
+    self, request: pb2.RequestTipPresenceRequest, ctx: RequestContext
+  ) -> pb2.RequestTipPresenceResponse:
+    ...
+
+  async def channels_sense_tip_presence(
+    self, request: pb2.ChannelsSenseTipPresenceRequest, ctx: RequestContext
+  ) -> pb2.ChannelsSenseTipPresenceResponse:
+    ...
+
+  async def request_pip_height_last_lld(
+    self, request: pb2.RequestPipHeightLastLldRequest, ctx: RequestContext
+  ) -> pb2.RequestPipHeightLastLldResponse:
+    ...
+
+  async def request_tadm_status(
+    self, request: pb2.RequestTadmStatusRequest, ctx: RequestContext
+  ) -> pb2.RequestTadmStatusResponse:
+    ...
+
+  async def request_volume_in_tip(
+    self, request: pb2.RequestVolumeInTipRequest, ctx: RequestContext
+  ) -> pb2.RequestVolumeInTipResponse:
+    ...
+
+  async def request_tip_len_on_channel(
+    self, request: pb2.RequestTipLenOnChannelRequest, ctx: RequestContext
+  ) -> pb2.RequestTipLenOnChannelResponse:
+    ...
+
+  async def request_probe_z_position(
+    self, request: pb2.RequestProbeZPositionRequest, ctx: RequestContext
+  ) -> pb2.RequestProbeZPositionResponse:
+    ...
+
+  async def clld_probe_z_height_using_channel(
+    self, request: pb2.ClldProbeZHeightUsingChannelRequest, ctx: RequestContext
+  ) -> pb2.ClldProbeZHeightUsingChannelResponse:
+    ...
+
+  async def plld_probe_z_height_using_channel(
+    self, request: pb2.PlldProbeZHeightUsingChannelRequest, ctx: RequestContext
+  ) -> pb2.PlldProbeZHeightUsingChannelResponse:
+    ...
+
+  async def ztouch_probe_z_height_using_channel(
+    self, request: pb2.ZtouchProbeZHeightUsingChannelRequest, ctx: RequestContext
+  ) -> pb2.ZtouchProbeZHeightUsingChannelResponse:
+    ...
+
+  async def pierce_foil(
+    self, request: pb2.PierceFoilRequest, ctx: RequestContext
+  ) -> pb2.PierceFoilResponse:
+    ...
+
+  async def pierce_foil_high_level(
+    self, request: pb2.PierceFoilHighLevelRequest, ctx: RequestContext
+  ) -> pb2.PierceFoilHighLevelResponse:
+    ...
+
+  async def step_off_foil(
+    self, request: pb2.StepOffFoilRequest, ctx: RequestContext
+  ) -> pb2.StepOffFoilResponse:
+    ...
+
+  async def empty_tip(
+    self, request: pb2.EmptyTipRequest, ctx: RequestContext
+  ) -> pb2.EmptyTipResponse:
+    ...
+
+  async def empty_tips(
+    self, request: pb2.EmptyTipsRequest, ctx: RequestContext
+  ) -> pb2.EmptyTipsResponse:
+    ...
+
+  async def move_channel_x(
+    self, request: pb2.MoveChannelXRequest, ctx: RequestContext
+  ) -> pb2.MoveChannelXResponse:
+    ...
+
+  async def move_channel_y(
+    self, request: pb2.MoveChannelYRequest, ctx: RequestContext
+  ) -> pb2.MoveChannelYResponse:
+    ...
+
+  async def move_channel_z(
+    self, request: pb2.MoveChannelZRequest, ctx: RequestContext
+  ) -> pb2.MoveChannelZResponse:
+    ...
+
+  async def move_channel_x_relative(
+    self, request: pb2.MoveChannelXRelativeRequest, ctx: RequestContext
+  ) -> pb2.MoveChannelXRelativeResponse:
+    ...
+
+  async def move_channel_y_relative(
+    self, request: pb2.MoveChannelYRelativeRequest, ctx: RequestContext
+  ) -> pb2.MoveChannelYRelativeResponse:
+    ...
+
+  async def move_channel_z_relative(
+    self, request: pb2.MoveChannelZRelativeRequest, ctx: RequestContext
+  ) -> pb2.MoveChannelZRelativeResponse:
+    ...
+
+  async def prepare_for_manual_channel_operation(
+    self, request: pb2.PrepareForManualChannelOperationRequest, ctx: RequestContext
+  ) -> pb2.PrepareForManualChannelOperationResponse:
+    ...
+
+  async def move_all_channels_in_z_safety(
+    self, request: pb2.MoveAllChannelsInZSafetyRequest, ctx: RequestContext
+  ) -> pb2.MoveAllChannelsInZSafetyResponse:
+    ...
+
+  async def position_single_pipetting_channel_in_y_direction(
+    self, request: pb2.PositionSinglePipettingChannelInYDirectionRequest, ctx: RequestContext
+  ) -> pb2.PositionSinglePipettingChannelInYDirectionResponse:
+    ...
+
+  async def position_single_pipetting_channel_in_z_direction(
+    self, request: pb2.PositionSinglePipettingChannelInZDirectionRequest, ctx: RequestContext
+  ) -> pb2.PositionSinglePipettingChannelInZDirectionResponse:
+    ...
+
+  async def position_max_free_y_for_n(
+    self, request: pb2.PositionMaxFreeYForNRequest, ctx: RequestContext
+  ) -> pb2.PositionMaxFreeYForNResponse:
+    ...
+
+  async def request_x_pos_channel_n(
+    self, request: pb2.RequestXPosChannelNRequest, ctx: RequestContext
+  ) -> pb2.RequestXPosChannelNResponse:
+    ...
+
+  async def request_y_pos_channel_n(
+    self, request: pb2.RequestYPosChannelNRequest, ctx: RequestContext
+  ) -> pb2.RequestYPosChannelNResponse:
+    ...
+
+  async def request_z_pos_channel_n(
+    self, request: pb2.RequestZPosChannelNRequest, ctx: RequestContext
+  ) -> pb2.RequestZPosChannelNResponse:
+    ...
+
+  async def request_tip_bottom_z_position(
+    self, request: pb2.RequestTipBottomZPositionRequest, ctx: RequestContext
+  ) -> pb2.RequestTipBottomZPositionResponse:
+    ...
+
+  async def get_channels_y_positions(
+    self, request: pb2.GetChannelsYPositionsRequest, ctx: RequestContext
+  ) -> pb2.GetChannelsYPositionsResponse:
+    ...
+
+  async def position_channels_in_y_direction(
+    self, request: pb2.PositionChannelsInYDirectionRequest, ctx: RequestContext
+  ) -> pb2.PositionChannelsInYDirectionResponse:
+    ...
+
+  async def get_channels_z_positions(
+    self, request: pb2.GetChannelsZPositionsRequest, ctx: RequestContext
+  ) -> pb2.GetChannelsZPositionsResponse:
+    ...
+
+  async def position_channels_in_z_direction(
+    self, request: pb2.PositionChannelsInZDirectionRequest, ctx: RequestContext
+  ) -> pb2.PositionChannelsInZDirectionResponse:
+    ...
+
+  async def request_pip_channel_version(
+    self, request: pb2.RequestPipChannelVersionRequest, ctx: RequestContext
+  ) -> pb2.RequestPipChannelVersionResponse:
+    ...
+
+  async def initialize_core_96_head(
+    self, request: pb2.InitializeCore96HeadRequest, ctx: RequestContext
+  ) -> pb2.InitializeCore96HeadResponse:
+    ...
+
+  async def request_core_96_head_initialization_status(
+    self, request: pb2.RequestCore96HeadInitializationStatusRequest, ctx: RequestContext
+  ) -> pb2.RequestCore96HeadInitializationStatusResponse:
+    ...
+
+  async def head96_request_firmware_version(
+    self, request: pb2.Head96RequestFirmwareVersionRequest, ctx: RequestContext
+  ) -> pb2.Head96RequestFirmwareVersionResponse:
+    ...
+
+  async def head96_request_type(
+    self, request: pb2.Head96RequestTypeRequest, ctx: RequestContext
+  ) -> pb2.Head96RequestTypeResponse:
+    ...
+
+  async def head96_dispensing_drive_and_squeezer_driver_initialize(
+    self, request: pb2.Head96DispensingDriveAndSqueezerDriverInitializeRequest, ctx: RequestContext
+  ) -> pb2.Head96DispensingDriveAndSqueezerDriverInitializeResponse:
+    ...
+
+  async def move_core_96_to_safe_position(
+    self, request: pb2.MoveCore96ToSafePositionRequest, ctx: RequestContext
+  ) -> pb2.MoveCore96ToSafePositionResponse:
+    ...
+
+  async def head96_move_to_z_safety(
+    self, request: pb2.Head96MoveToZSafetyRequest, ctx: RequestContext
+  ) -> pb2.Head96MoveToZSafetyResponse:
+    ...
+
+  async def head96_park(
+    self, request: pb2.Head96ParkRequest, ctx: RequestContext
+  ) -> pb2.Head96ParkResponse:
+    ...
+
+  async def head96_move_x(
+    self, request: pb2.Head96MoveXRequest, ctx: RequestContext
+  ) -> pb2.Head96MoveXResponse:
+    ...
+
+  async def head96_move_y(
+    self, request: pb2.Head96MoveYRequest, ctx: RequestContext
+  ) -> pb2.Head96MoveYResponse:
+    ...
+
+  async def head96_move_z(
+    self, request: pb2.Head96MoveZRequest, ctx: RequestContext
+  ) -> pb2.Head96MoveZResponse:
+    ...
+
+  async def move_core_96_head_to_defined_position(
+    self, request: pb2.MoveCore96HeadToDefinedPositionRequest, ctx: RequestContext
+  ) -> pb2.MoveCore96HeadToDefinedPositionResponse:
+    ...
+
+  async def head96_move_to_coordinate(
+    self, request: pb2.Head96MoveToCoordinateRequest, ctx: RequestContext
+  ) -> pb2.Head96MoveToCoordinateResponse:
+    ...
+
+  async def head96_dispensing_drive_move_to_home_volume(
+    self, request: pb2.Head96DispensingDriveMoveToHomeVolumeRequest, ctx: RequestContext
+  ) -> pb2.Head96DispensingDriveMoveToHomeVolumeResponse:
+    ...
+
+  async def head96_dispensing_drive_move_to_position(
+    self, request: pb2.Head96DispensingDriveMoveToPositionRequest, ctx: RequestContext
+  ) -> pb2.Head96DispensingDriveMoveToPositionResponse:
+    ...
+
+  async def head96_dispensing_drive_request_position_mm(
+    self, request: pb2.Head96DispensingDriveRequestPositionMmRequest, ctx: RequestContext
+  ) -> pb2.Head96DispensingDriveRequestPositionMmResponse:
+    ...
+
+  async def head96_dispensing_drive_request_position_ul(
+    self, request: pb2.Head96DispensingDriveRequestPositionUlRequest, ctx: RequestContext
+  ) -> pb2.Head96DispensingDriveRequestPositionUlResponse:
+    ...
+
+  async def head96_request_tip_presence(
+    self, request: pb2.Head96RequestTipPresenceRequest, ctx: RequestContext
+  ) -> pb2.Head96RequestTipPresenceResponse:
+    ...
+
+  async def head96_request_position(
+    self, request: pb2.Head96RequestPositionRequest, ctx: RequestContext
+  ) -> pb2.Head96RequestPositionResponse:
+    ...
+
+  async def pick_up_tips_core96(
+    self, request: pb2.PickUpTipsCore96Request, ctx: RequestContext
+  ) -> pb2.PickUpTipsCore96Response:
+    ...
+
+  async def discard_tips_core96(
+    self, request: pb2.DiscardTipsCore96Request, ctx: RequestContext
+  ) -> pb2.DiscardTipsCore96Response:
+    ...
+
+  async def aspirate_core96(
+    self, request: pb2.AspirateCore96Request, ctx: RequestContext
+  ) -> pb2.AspirateCore96Response:
+    ...
+
+  async def dispense_core96(
+    self, request: pb2.DispenseCore96Request, ctx: RequestContext
+  ) -> pb2.DispenseCore96Response:
+    ...
+
+  async def initialize_iswap(
+    self, request: pb2.InitializeIswapRequest, ctx: RequestContext
+  ) -> pb2.InitializeIswapResponse:
+    ...
+
+  async def position_components_for_free_iswap_y_range(
+    self, request: pb2.PositionComponentsForFreeIswapYRangeRequest, ctx: RequestContext
+  ) -> pb2.PositionComponentsForFreeIswapYRangeResponse:
+    ...
+
+  async def move_iswap_x_relative(
+    self, request: pb2.MoveIswapXRelativeRequest, ctx: RequestContext
+  ) -> pb2.MoveIswapXRelativeResponse:
+    ...
+
+  async def move_iswap_y_relative(
+    self, request: pb2.MoveIswapYRelativeRequest, ctx: RequestContext
+  ) -> pb2.MoveIswapYRelativeResponse:
+    ...
+
+  async def move_iswap_z_relative(
+    self, request: pb2.MoveIswapZRelativeRequest, ctx: RequestContext
+  ) -> pb2.MoveIswapZRelativeResponse:
+    ...
+
+  async def move_iswap_x(
+    self, request: pb2.MoveIswapXRequest, ctx: RequestContext
+  ) -> pb2.MoveIswapXResponse:
+    ...
+
+  async def move_iswap_y(
+    self, request: pb2.MoveIswapYRequest, ctx: RequestContext
+  ) -> pb2.MoveIswapYResponse:
+    ...
+
+  async def move_iswap_z(
+    self, request: pb2.MoveIswapZRequest, ctx: RequestContext
+  ) -> pb2.MoveIswapZResponse:
+    ...
+
+  async def open_not_initialized_gripper(
+    self, request: pb2.OpenNotInitializedGripperRequest, ctx: RequestContext
+  ) -> pb2.OpenNotInitializedGripperResponse:
+    ...
+
+  async def iswap_open_gripper(
+    self, request: pb2.IswapOpenGripperRequest, ctx: RequestContext
+  ) -> pb2.IswapOpenGripperResponse:
+    ...
+
+  async def iswap_close_gripper(
+    self, request: pb2.IswapCloseGripperRequest, ctx: RequestContext
+  ) -> pb2.IswapCloseGripperResponse:
+    ...
+
+  async def park_iswap(
+    self, request: pb2.ParkIswapRequest, ctx: RequestContext
+  ) -> pb2.ParkIswapResponse:
+    ...
+
+  async def iswap_get_plate(
+    self, request: pb2.IswapGetPlateRequest, ctx: RequestContext
+  ) -> pb2.IswapGetPlateResponse:
+    ...
+
+  async def iswap_put_plate(
+    self, request: pb2.IswapPutPlateRequest, ctx: RequestContext
+  ) -> pb2.IswapPutPlateResponse:
+    ...
+
+  async def move_plate_to_position(
+    self, request: pb2.MovePlateToPositionRequest, ctx: RequestContext
+  ) -> pb2.MovePlateToPositionResponse:
+    ...
+
+  async def collapse_gripper_arm(
+    self, request: pb2.CollapseGripperArmRequest, ctx: RequestContext
+  ) -> pb2.CollapseGripperArmResponse:
+    ...
+
+  async def iswap_rotate(
+    self, request: pb2.IswapRotateRequest, ctx: RequestContext
+  ) -> pb2.IswapRotateResponse:
+    ...
+
+  async def rotate_iswap_rotation_drive(
+    self, request: pb2.RotateIswapRotationDriveRequest, ctx: RequestContext
+  ) -> pb2.RotateIswapRotationDriveResponse:
+    ...
+
+  async def rotate_iswap_wrist(
+    self, request: pb2.RotateIswapWristRequest, ctx: RequestContext
+  ) -> pb2.RotateIswapWristResponse:
+    ...
+
+  async def iswap_dangerous_release_break(
+    self, request: pb2.IswapDangerousReleaseBreakRequest, ctx: RequestContext
+  ) -> pb2.IswapDangerousReleaseBreakResponse:
+    ...
+
+  async def iswap_reengage_break(
+    self, request: pb2.IswapReengageBreakRequest, ctx: RequestContext
+  ) -> pb2.IswapReengageBreakResponse:
+    ...
+
+  async def iswap_initialize_z_axis(
+    self, request: pb2.IswapInitializeZAxisRequest, ctx: RequestContext
+  ) -> pb2.IswapInitializeZAxisResponse:
+    ...
+
+  async def request_iswap_rotation_drive_position_increments(
+    self, request: pb2.RequestIswapRotationDrivePositionIncrementsRequest, ctx: RequestContext
+  ) -> pb2.RequestIswapRotationDrivePositionIncrementsResponse:
+    ...
+
+  async def request_iswap_rotation_drive_orientation(
+    self, request: pb2.RequestIswapRotationDriveOrientationRequest, ctx: RequestContext
+  ) -> pb2.RequestIswapRotationDriveOrientationResponse:
+    ...
+
+  async def request_iswap_wrist_drive_position_increments(
+    self, request: pb2.RequestIswapWristDrivePositionIncrementsRequest, ctx: RequestContext
+  ) -> pb2.RequestIswapWristDrivePositionIncrementsResponse:
+    ...
+
+  async def request_iswap_wrist_drive_orientation(
+    self, request: pb2.RequestIswapWristDriveOrientationRequest, ctx: RequestContext
+  ) -> pb2.RequestIswapWristDriveOrientationResponse:
+    ...
+
+  async def request_iswap_in_parking_position(
+    self, request: pb2.RequestIswapInParkingPositionRequest, ctx: RequestContext
+  ) -> pb2.RequestIswapInParkingPositionResponse:
+    ...
+
+  async def request_plate_in_iswap(
+    self, request: pb2.RequestPlateInIswapRequest, ctx: RequestContext
+  ) -> pb2.RequestPlateInIswapResponse:
+    ...
+
+  async def request_iswap_position(
+    self, request: pb2.RequestIswapPositionRequest, ctx: RequestContext
+  ) -> pb2.RequestIswapPositionResponse:
+    ...
+
+  async def iswap_rotation_drive_request_y(
+    self, request: pb2.IswapRotationDriveRequestYRequest, ctx: RequestContext
+  ) -> pb2.IswapRotationDriveRequestYResponse:
+    ...
+
+  async def request_iswap_initialization_status(
+    self, request: pb2.RequestIswapInitializationStatusRequest, ctx: RequestContext
+  ) -> pb2.RequestIswapInitializationStatusResponse:
+    ...
+
+  async def request_iswap_version(
+    self, request: pb2.RequestIswapVersionRequest, ctx: RequestContext
+  ) -> pb2.RequestIswapVersionResponse:
+    ...
+
+  async def get_iswap_version(
+    self, request: pb2.GetIswapVersionRequest, ctx: RequestContext
+  ) -> pb2.GetIswapVersionResponse:
+    ...
+
+  async def slow_iswap(
+    self, request: pb2.SlowIswapRequest, ctx: RequestContext
+  ) -> pb2.SlowIswapResponse:
+    ...
+
+  async def iswap_move_picked_up_resource(
+    self, request: pb2.IswapMovePickedUpResourceRequest, ctx: RequestContext
+  ) -> pb2.IswapMovePickedUpResourceResponse:
+    ...
+
+  async def pick_up_resource(
+    self, request: pb2.PickUpResourceRequest, ctx: RequestContext
+  ) -> pb2.PickUpResourceResponse:
+    ...
+
+  async def move_picked_up_resource(
+    self, request: pb2.MovePickedUpResourceRequest, ctx: RequestContext
+  ) -> pb2.MovePickedUpResourceResponse:
+    ...
+
+  async def drop_resource(
+    self, request: pb2.DropResourceRequest, ctx: RequestContext
+  ) -> pb2.DropResourceResponse:
+    ...
+
+  async def pick_up_core_gripper_tools(
+    self, request: pb2.PickUpCoreGripperToolsRequest, ctx: RequestContext
+  ) -> pb2.PickUpCoreGripperToolsResponse:
+    ...
+
+  async def return_core_gripper_tools(
+    self, request: pb2.ReturnCoreGripperToolsRequest, ctx: RequestContext
+  ) -> pb2.ReturnCoreGripperToolsResponse:
+    ...
+
+  async def core_open_gripper(
+    self, request: pb2.CoreOpenGripperRequest, ctx: RequestContext
+  ) -> pb2.CoreOpenGripperResponse:
+    ...
+
+  async def core_get_plate(
+    self, request: pb2.CoreGetPlateRequest, ctx: RequestContext
+  ) -> pb2.CoreGetPlateResponse:
+    ...
+
+  async def core_put_plate(
+    self, request: pb2.CorePutPlateRequest, ctx: RequestContext
+  ) -> pb2.CorePutPlateResponse:
+    ...
+
+  async def core_move_plate_to_position(
+    self, request: pb2.CoreMovePlateToPositionRequest, ctx: RequestContext
+  ) -> pb2.CoreMovePlateToPositionResponse:
+    ...
+
+  async def core_pick_up_resource(
+    self, request: pb2.CorePickUpResourceRequest, ctx: RequestContext
+  ) -> pb2.CorePickUpResourceResponse:
+    ...
+
+  async def core_move_picked_up_resource(
+    self, request: pb2.CoreMovePickedUpResourceRequest, ctx: RequestContext
+  ) -> pb2.CoreMovePickedUpResourceResponse:
+    ...
+
+  async def core_release_picked_up_resource(
+    self, request: pb2.CoreReleasePickedUpResourceRequest, ctx: RequestContext
+  ) -> pb2.CoreReleasePickedUpResourceResponse:
+    ...
+
+  async def core_check_resource_exists_at_location_center(
+    self, request: pb2.CoreCheckResourceExistsAtLocationCenterRequest, ctx: RequestContext
+  ) -> pb2.CoreCheckResourceExistsAtLocationCenterResponse:
+    ...
+
+  async def get_core(self, request: pb2.GetCoreRequest, ctx: RequestContext) -> pb2.GetCoreResponse:
+    ...
+
+  async def put_core(self, request: pb2.PutCoreRequest, ctx: RequestContext) -> pb2.PutCoreResponse:
+    ...
+
+  async def core_read_barcode_of_picked_up_resource(
+    self, request: pb2.CoreReadBarcodeOfPickedUpResourceRequest, ctx: RequestContext
+  ) -> pb2.CoreReadBarcodeOfPickedUpResourceResponse:
+    ...
+
+  async def initialize_autoload(
+    self, request: pb2.InitializeAutoloadRequest, ctx: RequestContext
+  ) -> pb2.InitializeAutoloadResponse:
+    ...
+
+  async def move_autoload_to_safe_z_position(
+    self, request: pb2.MoveAutoloadToSafeZPositionRequest, ctx: RequestContext
+  ) -> pb2.MoveAutoloadToSafeZPositionResponse:
+    ...
+
+  async def request_autoload_track(
+    self, request: pb2.RequestAutoloadTrackRequest, ctx: RequestContext
+  ) -> pb2.RequestAutoloadTrackResponse:
+    ...
+
+  async def request_autoload_type(
+    self, request: pb2.RequestAutoloadTypeRequest, ctx: RequestContext
+  ) -> pb2.RequestAutoloadTypeResponse:
+    ...
+
+  async def request_presence_of_carriers_on_deck(
+    self, request: pb2.RequestPresenceOfCarriersOnDeckRequest, ctx: RequestContext
+  ) -> pb2.RequestPresenceOfCarriersOnDeckResponse:
+    ...
+
+  async def request_presence_of_carriers_on_loading_tray(
+    self, request: pb2.RequestPresenceOfCarriersOnLoadingTrayRequest, ctx: RequestContext
+  ) -> pb2.RequestPresenceOfCarriersOnLoadingTrayResponse:
+    ...
+
+  async def request_presence_of_single_carrier_on_loading_tray(
+    self, request: pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest, ctx: RequestContext
+  ) -> pb2.RequestPresenceOfSingleCarrierOnLoadingTrayResponse:
+    ...
+
+  async def move_autoload_to_slot(
+    self, request: pb2.MoveAutoloadToSlotRequest, ctx: RequestContext
+  ) -> pb2.MoveAutoloadToSlotResponse:
+    ...
+
+  async def move_autoload_to_track(
+    self, request: pb2.MoveAutoloadToTrackRequest, ctx: RequestContext
+  ) -> pb2.MoveAutoloadToTrackResponse:
+    ...
+
+  async def park_autoload(
+    self, request: pb2.ParkAutoloadRequest, ctx: RequestContext
+  ) -> pb2.ParkAutoloadResponse:
+    ...
+
+  async def take_carrier_out_to_autoload_belt(
+    self, request: pb2.TakeCarrierOutToAutoloadBeltRequest, ctx: RequestContext
+  ) -> pb2.TakeCarrierOutToAutoloadBeltResponse:
+    ...
+
+  async def set_barcode_type(
+    self, request: pb2.SetBarcodeTypeRequest, ctx: RequestContext
+  ) -> pb2.SetBarcodeTypeResponse:
+    ...
+
+  async def load_carrier_from_tray_and_scan_carrier_barcode(
+    self, request: pb2.LoadCarrierFromTrayAndScanCarrierBarcodeRequest, ctx: RequestContext
+  ) -> pb2.LoadCarrierFromTrayAndScanCarrierBarcodeResponse:
+    ...
+
+  async def set_carrier_monitoring(
+    self, request: pb2.SetCarrierMonitoringRequest, ctx: RequestContext
+  ) -> pb2.SetCarrierMonitoringResponse:
+    ...
+
+  async def load_carrier(
+    self, request: pb2.LoadCarrierRequest, ctx: RequestContext
+  ) -> pb2.LoadCarrierResponse:
+    ...
+
+  async def set_loading_indicators(
+    self, request: pb2.SetLoadingIndicatorsRequest, ctx: RequestContext
+  ) -> pb2.SetLoadingIndicatorsResponse:
+    ...
+
+  async def unload_carrier(
+    self, request: pb2.UnloadCarrierRequest, ctx: RequestContext
+  ) -> pb2.UnloadCarrierResponse:
+    ...
+
+  async def request_instrument_initialization_status(
+    self, request: pb2.RequestInstrumentInitializationStatusRequest, ctx: RequestContext
+  ) -> pb2.RequestInstrumentInitializationStatusResponse:
+    ...
+
+  async def request_autoload_initialization_status(
+    self, request: pb2.RequestAutoloadInitializationStatusRequest, ctx: RequestContext
+  ) -> pb2.RequestAutoloadInitializationStatusResponse:
+    ...
+
+  async def lock_cover(
+    self, request: pb2.LockCoverRequest, ctx: RequestContext
+  ) -> pb2.LockCoverResponse:
+    ...
+
+  async def unlock_cover(
+    self, request: pb2.UnlockCoverRequest, ctx: RequestContext
+  ) -> pb2.UnlockCoverResponse:
+    ...
+
+  async def disable_cover_control(
+    self, request: pb2.DisableCoverControlRequest, ctx: RequestContext
+  ) -> pb2.DisableCoverControlResponse:
+    ...
+
+  async def enable_cover_control(
+    self, request: pb2.EnableCoverControlRequest, ctx: RequestContext
+  ) -> pb2.EnableCoverControlResponse:
+    ...
+
+  async def set_cover_output(
+    self, request: pb2.SetCoverOutputRequest, ctx: RequestContext
+  ) -> pb2.SetCoverOutputResponse:
+    ...
+
+  async def reset_output(
+    self, request: pb2.ResetOutputRequest, ctx: RequestContext
+  ) -> pb2.ResetOutputResponse:
+    ...
+
+  async def request_cover_open(
+    self, request: pb2.RequestCoverOpenRequest, ctx: RequestContext
+  ) -> pb2.RequestCoverOpenResponse:
+    ...
+
+  async def send_hhs_command(
+    self, request: pb2.SendHhsCommandRequest, ctx: RequestContext
+  ) -> pb2.SendHhsCommandResponse:
+    ...
+
+  async def check_type_is_hhc(
+    self, request: pb2.CheckTypeIsHhcRequest, ctx: RequestContext
+  ) -> pb2.CheckTypeIsHhcResponse:
+    ...
+
+  async def initialize_hhc(
+    self, request: pb2.InitializeHhcRequest, ctx: RequestContext
+  ) -> pb2.InitializeHhcResponse:
+    ...
+
+  async def start_temperature_control_at_hhc(
+    self, request: pb2.StartTemperatureControlAtHhcRequest, ctx: RequestContext
+  ) -> pb2.StartTemperatureControlAtHhcResponse:
+    ...
+
+  async def get_temperature_at_hhc(
+    self, request: pb2.GetTemperatureAtHhcRequest, ctx: RequestContext
+  ) -> pb2.GetTemperatureAtHhcResponse:
+    ...
+
+  async def query_whether_temperature_reached_at_hhc(
+    self, request: pb2.QueryWhetherTemperatureReachedAtHhcRequest, ctx: RequestContext
+  ) -> pb2.QueryWhetherTemperatureReachedAtHhcResponse:
+    ...
+
+  async def stop_temperature_control_at_hhc(
+    self, request: pb2.StopTemperatureControlAtHhcRequest, ctx: RequestContext
+  ) -> pb2.StopTemperatureControlAtHhcResponse:
+    ...
+
+  async def request_firmware_version(
+    self, request: pb2.RequestFirmwareVersionRequest, ctx: RequestContext
+  ) -> pb2.RequestFirmwareVersionResponse:
+    ...
+
+  async def request_error_code(
+    self, request: pb2.RequestErrorCodeRequest, ctx: RequestContext
+  ) -> pb2.RequestErrorCodeResponse:
+    ...
+
+  async def request_device_serial_number(
+    self, request: pb2.RequestDeviceSerialNumberRequest, ctx: RequestContext
+  ) -> pb2.RequestDeviceSerialNumberResponse:
+    ...
+
+  async def request_master_status(
+    self, request: pb2.RequestMasterStatusRequest, ctx: RequestContext
+  ) -> pb2.RequestMasterStatusResponse:
+    ...
+
+  async def set_single_step_mode(
+    self, request: pb2.SetSingleStepModeRequest, ctx: RequestContext
+  ) -> pb2.SetSingleStepModeResponse:
+    ...
+
+  async def trigger_next_step(
+    self, request: pb2.TriggerNextStepRequest, ctx: RequestContext
+  ) -> pb2.TriggerNextStepResponse:
+    ...
+
+  async def halt(self, request: pb2.HaltRequest, ctx: RequestContext) -> pb2.HaltResponse:
+    ...
+
+  async def save_all_cycle_counters(
+    self, request: pb2.SaveAllCycleCountersRequest, ctx: RequestContext
+  ) -> pb2.SaveAllCycleCountersResponse:
+    ...
+
+  async def set_not_stop(
+    self, request: pb2.SetNotStopRequest, ctx: RequestContext
+  ) -> pb2.SetNotStopResponse:
+    ...
+
+  async def configure_node_names(
+    self, request: pb2.ConfigureNodeNamesRequest, ctx: RequestContext
+  ) -> pb2.ConfigureNodeNamesResponse:
+    ...
+
+  async def set_deck_data(
+    self, request: pb2.SetDeckDataRequest, ctx: RequestContext
+  ) -> pb2.SetDeckDataResponse:
+    ...
+
+  async def position_left_x_arm(
+    self, request: pb2.PositionLeftXArmRequest, ctx: RequestContext
+  ) -> pb2.PositionLeftXArmResponse:
+    ...
+
+  async def position_right_x_arm(
+    self, request: pb2.PositionRightXArmRequest, ctx: RequestContext
+  ) -> pb2.PositionRightXArmResponse:
+    ...
+
+  async def move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(
+    self,
+    request: pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest,
+    ctx: RequestContext,
+  ) -> pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
+    ...
+
+  async def move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position(
+    self,
+    request: pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest,
+    ctx: RequestContext,
+  ) -> pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
+    ...
+
+  async def request_left_x_arm_position(
+    self, request: pb2.RequestLeftXArmPositionRequest, ctx: RequestContext
+  ) -> pb2.RequestLeftXArmPositionResponse:
+    ...
+
+  async def request_right_x_arm_position(
+    self, request: pb2.RequestRightXArmPositionRequest, ctx: RequestContext
+  ) -> pb2.RequestRightXArmPositionResponse:
+    ...
+
+  async def request_right_x_arm_last_collision_type(
+    self, request: pb2.RequestRightXArmLastCollisionTypeRequest, ctx: RequestContext
+  ) -> pb2.RequestRightXArmLastCollisionTypeResponse:
+    ...
+
+  async def request_pump_settings(
+    self, request: pb2.RequestPumpSettingsRequest, ctx: RequestContext
+  ) -> pb2.RequestPumpSettingsResponse:
+    ...
+
+  async def initialize_dual_pump_station_valves(
+    self, request: pb2.InitializeDualPumpStationValvesRequest, ctx: RequestContext
+  ) -> pb2.InitializeDualPumpStationValvesResponse:
+    ...
+
+  async def drain_dual_chamber_system(
+    self, request: pb2.DrainDualChamberSystemRequest, ctx: RequestContext
+  ) -> pb2.DrainDualChamberSystemResponse:
+    ...
+
+  async def violently_shoot_down_tip(
+    self, request: pb2.ViolentlyShootDownTipRequest, ctx: RequestContext
+  ) -> pb2.ViolentlyShootDownTipResponse:
+    ...
+
+  async def can_pick_up_tip(
+    self, request: pb2.CanPickUpTipRequest, ctx: RequestContext
+  ) -> pb2.CanPickUpTipResponse:
+    ...
 
 
 # ============================================================
 # ASGI application
 # ============================================================
 
-class STARServiceASGIApplication(ConnectASGIApplication[STARService]):
-    def __init__(
-        self,
-        service: STARService | AsyncGenerator[STARService],
-        *,
-        interceptors: Iterable[Interceptor] = (),
-        read_max_bytes: int | None = None,
-    ) -> None:
-        super().__init__(
-            service=service,
-            endpoints=lambda svc: {
-                f"/{_SVC}/Setup": Endpoint.unary(method=_SETUP, function=svc.setup),
-                f"/{_SVC}/Stop": Endpoint.unary(method=_STOP, function=svc.stop),
-                f"/{_SVC}/GetNumChannels": Endpoint.unary(method=_GET_NUM_CHANNELS, function=svc.get_num_channels),
-                f"/{_SVC}/GetHead96Installed": Endpoint.unary(method=_GET_HEAD96_INSTALLED, function=svc.get_head96_installed),
-                f"/{_SVC}/GetIswapInstalled": Endpoint.unary(method=_GET_ISWAP_INSTALLED, function=svc.get_iswap_installed),
-                f"/{_SVC}/GetIswapParked": Endpoint.unary(method=_GET_ISWAP_PARKED, function=svc.get_iswap_parked),
-                f"/{_SVC}/GetCoreParked": Endpoint.unary(method=_GET_CORE_PARKED, function=svc.get_core_parked),
-                f"/{_SVC}/PickUpTips": Endpoint.unary(method=_PICK_UP_TIPS, function=svc.pick_up_tips),
-                f"/{_SVC}/DropTips": Endpoint.unary(method=_DROP_TIPS, function=svc.drop_tips),
-                f"/{_SVC}/Aspirate": Endpoint.unary(method=_ASPIRATE, function=svc.aspirate),
-                f"/{_SVC}/Dispense": Endpoint.unary(method=_DISPENSE, function=svc.dispense),
-                f"/{_SVC}/PickUpTips96": Endpoint.unary(method=_PICK_UP_TIPS96, function=svc.pick_up_tips96),
-                f"/{_SVC}/DropTips96": Endpoint.unary(method=_DROP_TIPS96, function=svc.drop_tips96),
-                f"/{_SVC}/Aspirate96": Endpoint.unary(method=_ASPIRATE96, function=svc.aspirate96),
-                f"/{_SVC}/Dispense96": Endpoint.unary(method=_DISPENSE96, function=svc.dispense96),
-                f"/{_SVC}/InitializePip": Endpoint.unary(method=_INITIALIZE_PIP, function=svc.initialize_pip),
-                f"/{_SVC}/InitializePipettingChannels": Endpoint.unary(method=_INITIALIZE_PIPETTING_CHANNELS, function=svc.initialize_pipetting_channels),
-                f"/{_SVC}/PickUpTipFw": Endpoint.unary(method=_PICK_UP_TIP_FW, function=svc.pick_up_tip_fw),
-                f"/{_SVC}/DiscardTipFw": Endpoint.unary(method=_DISCARD_TIP_FW, function=svc.discard_tip_fw),
-                f"/{_SVC}/AspiratePip": Endpoint.unary(method=_ASPIRATE_PIP, function=svc.aspirate_pip),
-                f"/{_SVC}/DispensePip": Endpoint.unary(method=_DISPENSE_PIP, function=svc.dispense_pip),
-                f"/{_SVC}/SpreadPipChannels": Endpoint.unary(method=_SPREAD_PIP_CHANNELS, function=svc.spread_pip_channels),
-                f"/{_SVC}/MoveAllPipettingChannelsToDefinedPosition": Endpoint.unary(method=_MOVE_ALL_PIPETTING_CHANNELS_TO_DEFINED_POSITION, function=svc.move_all_pipetting_channels_to_defined_position),
-                f"/{_SVC}/DefineTipNeedle": Endpoint.unary(method=_DEFINE_TIP_NEEDLE, function=svc.define_tip_needle),
-                f"/{_SVC}/ProbeLiquidHeights": Endpoint.unary(method=_PROBE_LIQUID_HEIGHTS, function=svc.probe_liquid_heights),
-                f"/{_SVC}/ProbeLiquidVolumes": Endpoint.unary(method=_PROBE_LIQUID_VOLUMES, function=svc.probe_liquid_volumes),
-                f"/{_SVC}/RequestTipPresence": Endpoint.unary(method=_REQUEST_TIP_PRESENCE, function=svc.request_tip_presence),
-                f"/{_SVC}/ChannelsSenseTipPresence": Endpoint.unary(method=_CHANNELS_SENSE_TIP_PRESENCE, function=svc.channels_sense_tip_presence),
-                f"/{_SVC}/RequestPipHeightLastLld": Endpoint.unary(method=_REQUEST_PIP_HEIGHT_LAST_LLD, function=svc.request_pip_height_last_lld),
-                f"/{_SVC}/RequestTadmStatus": Endpoint.unary(method=_REQUEST_TADM_STATUS, function=svc.request_tadm_status),
-                f"/{_SVC}/RequestVolumeInTip": Endpoint.unary(method=_REQUEST_VOLUME_IN_TIP, function=svc.request_volume_in_tip),
-                f"/{_SVC}/RequestTipLenOnChannel": Endpoint.unary(method=_REQUEST_TIP_LEN_ON_CHANNEL, function=svc.request_tip_len_on_channel),
-                f"/{_SVC}/RequestProbeZPosition": Endpoint.unary(method=_REQUEST_PROBE_Z_POSITION, function=svc.request_probe_z_position),
-                f"/{_SVC}/ClldProbeZHeightUsingChannel": Endpoint.unary(method=_CLLD_PROBE_Z_HEIGHT_USING_CHANNEL, function=svc.clld_probe_z_height_using_channel),
-                f"/{_SVC}/PlldProbeZHeightUsingChannel": Endpoint.unary(method=_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL, function=svc.plld_probe_z_height_using_channel),
-                f"/{_SVC}/ZtouchProbeZHeightUsingChannel": Endpoint.unary(method=_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL, function=svc.ztouch_probe_z_height_using_channel),
-                f"/{_SVC}/PierceFoil": Endpoint.unary(method=_PIERCE_FOIL, function=svc.pierce_foil),
-                f"/{_SVC}/PierceFoilHighLevel": Endpoint.unary(method=_PIERCE_FOIL_HIGH_LEVEL, function=svc.pierce_foil_high_level),
-                f"/{_SVC}/StepOffFoil": Endpoint.unary(method=_STEP_OFF_FOIL, function=svc.step_off_foil),
-                f"/{_SVC}/EmptyTip": Endpoint.unary(method=_EMPTY_TIP, function=svc.empty_tip),
-                f"/{_SVC}/EmptyTips": Endpoint.unary(method=_EMPTY_TIPS, function=svc.empty_tips),
-                f"/{_SVC}/MoveChannelX": Endpoint.unary(method=_MOVE_CHANNEL_X, function=svc.move_channel_x),
-                f"/{_SVC}/MoveChannelY": Endpoint.unary(method=_MOVE_CHANNEL_Y, function=svc.move_channel_y),
-                f"/{_SVC}/MoveChannelZ": Endpoint.unary(method=_MOVE_CHANNEL_Z, function=svc.move_channel_z),
-                f"/{_SVC}/MoveChannelXRelative": Endpoint.unary(method=_MOVE_CHANNEL_X_RELATIVE, function=svc.move_channel_x_relative),
-                f"/{_SVC}/MoveChannelYRelative": Endpoint.unary(method=_MOVE_CHANNEL_Y_RELATIVE, function=svc.move_channel_y_relative),
-                f"/{_SVC}/MoveChannelZRelative": Endpoint.unary(method=_MOVE_CHANNEL_Z_RELATIVE, function=svc.move_channel_z_relative),
-                f"/{_SVC}/PrepareForManualChannelOperation": Endpoint.unary(method=_PREPARE_FOR_MANUAL_CHANNEL_OPERATION, function=svc.prepare_for_manual_channel_operation),
-                f"/{_SVC}/MoveAllChannelsInZSafety": Endpoint.unary(method=_MOVE_ALL_CHANNELS_IN_Z_SAFETY, function=svc.move_all_channels_in_z_safety),
-                f"/{_SVC}/PositionSinglePipettingChannelInYDirection": Endpoint.unary(method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Y_DIRECTION, function=svc.position_single_pipetting_channel_in_y_direction),
-                f"/{_SVC}/PositionSinglePipettingChannelInZDirection": Endpoint.unary(method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Z_DIRECTION, function=svc.position_single_pipetting_channel_in_z_direction),
-                f"/{_SVC}/PositionMaxFreeYForN": Endpoint.unary(method=_POSITION_MAX_FREE_Y_FOR_N, function=svc.position_max_free_y_for_n),
-                f"/{_SVC}/RequestXPosChannelN": Endpoint.unary(method=_REQUEST_X_POS_CHANNEL_N, function=svc.request_x_pos_channel_n),
-                f"/{_SVC}/RequestYPosChannelN": Endpoint.unary(method=_REQUEST_Y_POS_CHANNEL_N, function=svc.request_y_pos_channel_n),
-                f"/{_SVC}/RequestZPosChannelN": Endpoint.unary(method=_REQUEST_Z_POS_CHANNEL_N, function=svc.request_z_pos_channel_n),
-                f"/{_SVC}/RequestTipBottomZPosition": Endpoint.unary(method=_REQUEST_TIP_BOTTOM_Z_POSITION, function=svc.request_tip_bottom_z_position),
-                f"/{_SVC}/GetChannelsYPositions": Endpoint.unary(method=_GET_CHANNELS_Y_POSITIONS, function=svc.get_channels_y_positions),
-                f"/{_SVC}/PositionChannelsInYDirection": Endpoint.unary(method=_POSITION_CHANNELS_IN_Y_DIRECTION, function=svc.position_channels_in_y_direction),
-                f"/{_SVC}/GetChannelsZPositions": Endpoint.unary(method=_GET_CHANNELS_Z_POSITIONS, function=svc.get_channels_z_positions),
-                f"/{_SVC}/PositionChannelsInZDirection": Endpoint.unary(method=_POSITION_CHANNELS_IN_Z_DIRECTION, function=svc.position_channels_in_z_direction),
-                f"/{_SVC}/RequestPipChannelVersion": Endpoint.unary(method=_REQUEST_PIP_CHANNEL_VERSION, function=svc.request_pip_channel_version),
-                f"/{_SVC}/InitializeCore96Head": Endpoint.unary(method=_INITIALIZE_CORE96_HEAD, function=svc.initialize_core_96_head),
-                f"/{_SVC}/RequestCore96HeadInitializationStatus": Endpoint.unary(method=_REQUEST_CORE96_HEAD_INITIALIZATION_STATUS, function=svc.request_core_96_head_initialization_status),
-                f"/{_SVC}/Head96RequestFirmwareVersion": Endpoint.unary(method=_HEAD96_REQUEST_FIRMWARE_VERSION, function=svc.head96_request_firmware_version),
-                f"/{_SVC}/Head96RequestType": Endpoint.unary(method=_HEAD96_REQUEST_TYPE, function=svc.head96_request_type),
-                f"/{_SVC}/Head96DispensingDriveAndSqueezerDriverInitialize": Endpoint.unary(method=_HEAD96_DISPENSING_DRIVE_AND_SQUEEZER_DRIVER_INITIALIZE, function=svc.head96_dispensing_drive_and_squeezer_driver_initialize),
-                f"/{_SVC}/MoveCore96ToSafePosition": Endpoint.unary(method=_MOVE_CORE96_TO_SAFE_POSITION, function=svc.move_core_96_to_safe_position),
-                f"/{_SVC}/Head96MoveToZSafety": Endpoint.unary(method=_HEAD96_MOVE_TO_Z_SAFETY, function=svc.head96_move_to_z_safety),
-                f"/{_SVC}/Head96Park": Endpoint.unary(method=_HEAD96_PARK, function=svc.head96_park),
-                f"/{_SVC}/Head96MoveX": Endpoint.unary(method=_HEAD96_MOVE_X, function=svc.head96_move_x),
-                f"/{_SVC}/Head96MoveY": Endpoint.unary(method=_HEAD96_MOVE_Y, function=svc.head96_move_y),
-                f"/{_SVC}/Head96MoveZ": Endpoint.unary(method=_HEAD96_MOVE_Z, function=svc.head96_move_z),
-                f"/{_SVC}/MoveCore96HeadToDefinedPosition": Endpoint.unary(method=_MOVE_CORE96_HEAD_TO_DEFINED_POSITION, function=svc.move_core_96_head_to_defined_position),
-                f"/{_SVC}/Head96MoveToCoordinate": Endpoint.unary(method=_HEAD96_MOVE_TO_COORDINATE, function=svc.head96_move_to_coordinate),
-                f"/{_SVC}/Head96DispensingDriveMoveToHomeVolume": Endpoint.unary(method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_HOME_VOLUME, function=svc.head96_dispensing_drive_move_to_home_volume),
-                f"/{_SVC}/Head96DispensingDriveMoveToPosition": Endpoint.unary(method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_POSITION, function=svc.head96_dispensing_drive_move_to_position),
-                f"/{_SVC}/Head96DispensingDriveRequestPositionMm": Endpoint.unary(method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_MM, function=svc.head96_dispensing_drive_request_position_mm),
-                f"/{_SVC}/Head96DispensingDriveRequestPositionUl": Endpoint.unary(method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_UL, function=svc.head96_dispensing_drive_request_position_ul),
-                f"/{_SVC}/Head96RequestTipPresence": Endpoint.unary(method=_HEAD96_REQUEST_TIP_PRESENCE, function=svc.head96_request_tip_presence),
-                f"/{_SVC}/Head96RequestPosition": Endpoint.unary(method=_HEAD96_REQUEST_POSITION, function=svc.head96_request_position),
-                f"/{_SVC}/PickUpTipsCore96": Endpoint.unary(method=_PICK_UP_TIPS_CORE96, function=svc.pick_up_tips_core96),
-                f"/{_SVC}/DiscardTipsCore96": Endpoint.unary(method=_DISCARD_TIPS_CORE96, function=svc.discard_tips_core96),
-                f"/{_SVC}/AspirateCore96": Endpoint.unary(method=_ASPIRATE_CORE96, function=svc.aspirate_core96),
-                f"/{_SVC}/DispenseCore96": Endpoint.unary(method=_DISPENSE_CORE96, function=svc.dispense_core96),
-                f"/{_SVC}/InitializeIswap": Endpoint.unary(method=_INITIALIZE_ISWAP, function=svc.initialize_iswap),
-                f"/{_SVC}/PositionComponentsForFreeIswapYRange": Endpoint.unary(method=_POSITION_COMPONENTS_FOR_FREE_ISWAP_Y_RANGE, function=svc.position_components_for_free_iswap_y_range),
-                f"/{_SVC}/MoveIswapXRelative": Endpoint.unary(method=_MOVE_ISWAP_X_RELATIVE, function=svc.move_iswap_x_relative),
-                f"/{_SVC}/MoveIswapYRelative": Endpoint.unary(method=_MOVE_ISWAP_Y_RELATIVE, function=svc.move_iswap_y_relative),
-                f"/{_SVC}/MoveIswapZRelative": Endpoint.unary(method=_MOVE_ISWAP_Z_RELATIVE, function=svc.move_iswap_z_relative),
-                f"/{_SVC}/MoveIswapX": Endpoint.unary(method=_MOVE_ISWAP_X, function=svc.move_iswap_x),
-                f"/{_SVC}/MoveIswapY": Endpoint.unary(method=_MOVE_ISWAP_Y, function=svc.move_iswap_y),
-                f"/{_SVC}/MoveIswapZ": Endpoint.unary(method=_MOVE_ISWAP_Z, function=svc.move_iswap_z),
-                f"/{_SVC}/OpenNotInitializedGripper": Endpoint.unary(method=_OPEN_NOT_INITIALIZED_GRIPPER, function=svc.open_not_initialized_gripper),
-                f"/{_SVC}/IswapOpenGripper": Endpoint.unary(method=_ISWAP_OPEN_GRIPPER, function=svc.iswap_open_gripper),
-                f"/{_SVC}/IswapCloseGripper": Endpoint.unary(method=_ISWAP_CLOSE_GRIPPER, function=svc.iswap_close_gripper),
-                f"/{_SVC}/ParkIswap": Endpoint.unary(method=_PARK_ISWAP, function=svc.park_iswap),
-                f"/{_SVC}/IswapGetPlate": Endpoint.unary(method=_ISWAP_GET_PLATE, function=svc.iswap_get_plate),
-                f"/{_SVC}/IswapPutPlate": Endpoint.unary(method=_ISWAP_PUT_PLATE, function=svc.iswap_put_plate),
-                f"/{_SVC}/MovePlateToPosition": Endpoint.unary(method=_MOVE_PLATE_TO_POSITION, function=svc.move_plate_to_position),
-                f"/{_SVC}/CollapseGripperArm": Endpoint.unary(method=_COLLAPSE_GRIPPER_ARM, function=svc.collapse_gripper_arm),
-                f"/{_SVC}/IswapRotate": Endpoint.unary(method=_ISWAP_ROTATE, function=svc.iswap_rotate),
-                f"/{_SVC}/RotateIswapRotationDrive": Endpoint.unary(method=_ROTATE_ISWAP_ROTATION_DRIVE, function=svc.rotate_iswap_rotation_drive),
-                f"/{_SVC}/RotateIswapWrist": Endpoint.unary(method=_ROTATE_ISWAP_WRIST, function=svc.rotate_iswap_wrist),
-                f"/{_SVC}/IswapDangerousReleaseBreak": Endpoint.unary(method=_ISWAP_DANGEROUS_RELEASE_BREAK, function=svc.iswap_dangerous_release_break),
-                f"/{_SVC}/IswapReengageBreak": Endpoint.unary(method=_ISWAP_REENGAGE_BREAK, function=svc.iswap_reengage_break),
-                f"/{_SVC}/IswapInitializeZAxis": Endpoint.unary(method=_ISWAP_INITIALIZE_Z_AXIS, function=svc.iswap_initialize_z_axis),
-                f"/{_SVC}/RequestIswapRotationDrivePositionIncrements": Endpoint.unary(method=_REQUEST_ISWAP_ROTATION_DRIVE_POSITION_INCREMENTS, function=svc.request_iswap_rotation_drive_position_increments),
-                f"/{_SVC}/RequestIswapRotationDriveOrientation": Endpoint.unary(method=_REQUEST_ISWAP_ROTATION_DRIVE_ORIENTATION, function=svc.request_iswap_rotation_drive_orientation),
-                f"/{_SVC}/RequestIswapWristDrivePositionIncrements": Endpoint.unary(method=_REQUEST_ISWAP_WRIST_DRIVE_POSITION_INCREMENTS, function=svc.request_iswap_wrist_drive_position_increments),
-                f"/{_SVC}/RequestIswapWristDriveOrientation": Endpoint.unary(method=_REQUEST_ISWAP_WRIST_DRIVE_ORIENTATION, function=svc.request_iswap_wrist_drive_orientation),
-                f"/{_SVC}/RequestIswapInParkingPosition": Endpoint.unary(method=_REQUEST_ISWAP_IN_PARKING_POSITION, function=svc.request_iswap_in_parking_position),
-                f"/{_SVC}/RequestPlateInIswap": Endpoint.unary(method=_REQUEST_PLATE_IN_ISWAP, function=svc.request_plate_in_iswap),
-                f"/{_SVC}/RequestIswapPosition": Endpoint.unary(method=_REQUEST_ISWAP_POSITION, function=svc.request_iswap_position),
-                f"/{_SVC}/IswapRotationDriveRequestY": Endpoint.unary(method=_ISWAP_ROTATION_DRIVE_REQUEST_Y, function=svc.iswap_rotation_drive_request_y),
-                f"/{_SVC}/RequestIswapInitializationStatus": Endpoint.unary(method=_REQUEST_ISWAP_INITIALIZATION_STATUS, function=svc.request_iswap_initialization_status),
-                f"/{_SVC}/RequestIswapVersion": Endpoint.unary(method=_REQUEST_ISWAP_VERSION, function=svc.request_iswap_version),
-                f"/{_SVC}/GetIswapVersion": Endpoint.unary(method=_GET_ISWAP_VERSION, function=svc.get_iswap_version),
-                f"/{_SVC}/SlowIswap": Endpoint.unary(method=_SLOW_ISWAP, function=svc.slow_iswap),
-                f"/{_SVC}/IswapMovePickedUpResource": Endpoint.unary(method=_ISWAP_MOVE_PICKED_UP_RESOURCE, function=svc.iswap_move_picked_up_resource),
-                f"/{_SVC}/PickUpResource": Endpoint.unary(method=_PICK_UP_RESOURCE, function=svc.pick_up_resource),
-                f"/{_SVC}/MovePickedUpResource": Endpoint.unary(method=_MOVE_PICKED_UP_RESOURCE, function=svc.move_picked_up_resource),
-                f"/{_SVC}/DropResource": Endpoint.unary(method=_DROP_RESOURCE, function=svc.drop_resource),
-                f"/{_SVC}/PickUpCoreGripperTools": Endpoint.unary(method=_PICK_UP_CORE_GRIPPER_TOOLS, function=svc.pick_up_core_gripper_tools),
-                f"/{_SVC}/ReturnCoreGripperTools": Endpoint.unary(method=_RETURN_CORE_GRIPPER_TOOLS, function=svc.return_core_gripper_tools),
-                f"/{_SVC}/CoreOpenGripper": Endpoint.unary(method=_CORE_OPEN_GRIPPER, function=svc.core_open_gripper),
-                f"/{_SVC}/CoreGetPlate": Endpoint.unary(method=_CORE_GET_PLATE, function=svc.core_get_plate),
-                f"/{_SVC}/CorePutPlate": Endpoint.unary(method=_CORE_PUT_PLATE, function=svc.core_put_plate),
-                f"/{_SVC}/CoreMovePlateToPosition": Endpoint.unary(method=_CORE_MOVE_PLATE_TO_POSITION, function=svc.core_move_plate_to_position),
-                f"/{_SVC}/CorePickUpResource": Endpoint.unary(method=_CORE_PICK_UP_RESOURCE, function=svc.core_pick_up_resource),
-                f"/{_SVC}/CoreMovePickedUpResource": Endpoint.unary(method=_CORE_MOVE_PICKED_UP_RESOURCE, function=svc.core_move_picked_up_resource),
-                f"/{_SVC}/CoreReleasePickedUpResource": Endpoint.unary(method=_CORE_RELEASE_PICKED_UP_RESOURCE, function=svc.core_release_picked_up_resource),
-                f"/{_SVC}/CoreCheckResourceExistsAtLocationCenter": Endpoint.unary(method=_CORE_CHECK_RESOURCE_EXISTS_AT_LOCATION_CENTER, function=svc.core_check_resource_exists_at_location_center),
-                f"/{_SVC}/GetCore": Endpoint.unary(method=_GET_CORE, function=svc.get_core),
-                f"/{_SVC}/PutCore": Endpoint.unary(method=_PUT_CORE, function=svc.put_core),
-                f"/{_SVC}/CoreReadBarcodeOfPickedUpResource": Endpoint.unary(method=_CORE_READ_BARCODE_OF_PICKED_UP_RESOURCE, function=svc.core_read_barcode_of_picked_up_resource),
-                f"/{_SVC}/InitializeAutoload": Endpoint.unary(method=_INITIALIZE_AUTOLOAD, function=svc.initialize_autoload),
-                f"/{_SVC}/MoveAutoloadToSafeZPosition": Endpoint.unary(method=_MOVE_AUTOLOAD_TO_SAFE_Z_POSITION, function=svc.move_autoload_to_safe_z_position),
-                f"/{_SVC}/RequestAutoloadTrack": Endpoint.unary(method=_REQUEST_AUTOLOAD_TRACK, function=svc.request_autoload_track),
-                f"/{_SVC}/RequestAutoloadType": Endpoint.unary(method=_REQUEST_AUTOLOAD_TYPE, function=svc.request_autoload_type),
-                f"/{_SVC}/RequestPresenceOfCarriersOnDeck": Endpoint.unary(method=_REQUEST_PRESENCE_OF_CARRIERS_ON_DECK, function=svc.request_presence_of_carriers_on_deck),
-                f"/{_SVC}/RequestPresenceOfCarriersOnLoadingTray": Endpoint.unary(method=_REQUEST_PRESENCE_OF_CARRIERS_ON_LOADING_TRAY, function=svc.request_presence_of_carriers_on_loading_tray),
-                f"/{_SVC}/RequestPresenceOfSingleCarrierOnLoadingTray": Endpoint.unary(method=_REQUEST_PRESENCE_OF_SINGLE_CARRIER_ON_LOADING_TRAY, function=svc.request_presence_of_single_carrier_on_loading_tray),
-                f"/{_SVC}/MoveAutoloadToSlot": Endpoint.unary(method=_MOVE_AUTOLOAD_TO_SLOT, function=svc.move_autoload_to_slot),
-                f"/{_SVC}/MoveAutoloadToTrack": Endpoint.unary(method=_MOVE_AUTOLOAD_TO_TRACK, function=svc.move_autoload_to_track),
-                f"/{_SVC}/ParkAutoload": Endpoint.unary(method=_PARK_AUTOLOAD, function=svc.park_autoload),
-                f"/{_SVC}/TakeCarrierOutToAutoloadBelt": Endpoint.unary(method=_TAKE_CARRIER_OUT_TO_AUTOLOAD_BELT, function=svc.take_carrier_out_to_autoload_belt),
-                f"/{_SVC}/SetBarcodeType": Endpoint.unary(method=_SET_BARCODE_TYPE, function=svc.set_barcode_type),
-                f"/{_SVC}/LoadCarrierFromTrayAndScanCarrierBarcode": Endpoint.unary(method=_LOAD_CARRIER_FROM_TRAY_AND_SCAN_CARRIER_BARCODE, function=svc.load_carrier_from_tray_and_scan_carrier_barcode),
-                f"/{_SVC}/SetCarrierMonitoring": Endpoint.unary(method=_SET_CARRIER_MONITORING, function=svc.set_carrier_monitoring),
-                f"/{_SVC}/LoadCarrier": Endpoint.unary(method=_LOAD_CARRIER, function=svc.load_carrier),
-                f"/{_SVC}/SetLoadingIndicators": Endpoint.unary(method=_SET_LOADING_INDICATORS, function=svc.set_loading_indicators),
-                f"/{_SVC}/UnloadCarrier": Endpoint.unary(method=_UNLOAD_CARRIER, function=svc.unload_carrier),
-                f"/{_SVC}/RequestInstrumentInitializationStatus": Endpoint.unary(method=_REQUEST_INSTRUMENT_INITIALIZATION_STATUS, function=svc.request_instrument_initialization_status),
-                f"/{_SVC}/RequestAutoloadInitializationStatus": Endpoint.unary(method=_REQUEST_AUTOLOAD_INITIALIZATION_STATUS, function=svc.request_autoload_initialization_status),
-                f"/{_SVC}/LockCover": Endpoint.unary(method=_LOCK_COVER, function=svc.lock_cover),
-                f"/{_SVC}/UnlockCover": Endpoint.unary(method=_UNLOCK_COVER, function=svc.unlock_cover),
-                f"/{_SVC}/DisableCoverControl": Endpoint.unary(method=_DISABLE_COVER_CONTROL, function=svc.disable_cover_control),
-                f"/{_SVC}/EnableCoverControl": Endpoint.unary(method=_ENABLE_COVER_CONTROL, function=svc.enable_cover_control),
-                f"/{_SVC}/SetCoverOutput": Endpoint.unary(method=_SET_COVER_OUTPUT, function=svc.set_cover_output),
-                f"/{_SVC}/ResetOutput": Endpoint.unary(method=_RESET_OUTPUT, function=svc.reset_output),
-                f"/{_SVC}/RequestCoverOpen": Endpoint.unary(method=_REQUEST_COVER_OPEN, function=svc.request_cover_open),
-                f"/{_SVC}/SendHhsCommand": Endpoint.unary(method=_SEND_HHS_COMMAND, function=svc.send_hhs_command),
-                f"/{_SVC}/CheckTypeIsHhc": Endpoint.unary(method=_CHECK_TYPE_IS_HHC, function=svc.check_type_is_hhc),
-                f"/{_SVC}/InitializeHhc": Endpoint.unary(method=_INITIALIZE_HHC, function=svc.initialize_hhc),
-                f"/{_SVC}/StartTemperatureControlAtHhc": Endpoint.unary(method=_START_TEMPERATURE_CONTROL_AT_HHC, function=svc.start_temperature_control_at_hhc),
-                f"/{_SVC}/GetTemperatureAtHhc": Endpoint.unary(method=_GET_TEMPERATURE_AT_HHC, function=svc.get_temperature_at_hhc),
-                f"/{_SVC}/QueryWhetherTemperatureReachedAtHhc": Endpoint.unary(method=_QUERY_WHETHER_TEMPERATURE_REACHED_AT_HHC, function=svc.query_whether_temperature_reached_at_hhc),
-                f"/{_SVC}/StopTemperatureControlAtHhc": Endpoint.unary(method=_STOP_TEMPERATURE_CONTROL_AT_HHC, function=svc.stop_temperature_control_at_hhc),
-                f"/{_SVC}/RequestFirmwareVersion": Endpoint.unary(method=_REQUEST_FIRMWARE_VERSION, function=svc.request_firmware_version),
-                f"/{_SVC}/RequestErrorCode": Endpoint.unary(method=_REQUEST_ERROR_CODE, function=svc.request_error_code),
-                f"/{_SVC}/RequestDeviceSerialNumber": Endpoint.unary(method=_REQUEST_DEVICE_SERIAL_NUMBER, function=svc.request_device_serial_number),
-                f"/{_SVC}/RequestMasterStatus": Endpoint.unary(method=_REQUEST_MASTER_STATUS, function=svc.request_master_status),
-                f"/{_SVC}/SetSingleStepMode": Endpoint.unary(method=_SET_SINGLE_STEP_MODE, function=svc.set_single_step_mode),
-                f"/{_SVC}/TriggerNextStep": Endpoint.unary(method=_TRIGGER_NEXT_STEP, function=svc.trigger_next_step),
-                f"/{_SVC}/Halt": Endpoint.unary(method=_HALT, function=svc.halt),
-                f"/{_SVC}/SaveAllCycleCounters": Endpoint.unary(method=_SAVE_ALL_CYCLE_COUNTERS, function=svc.save_all_cycle_counters),
-                f"/{_SVC}/SetNotStop": Endpoint.unary(method=_SET_NOT_STOP, function=svc.set_not_stop),
-                f"/{_SVC}/ConfigureNodeNames": Endpoint.unary(method=_CONFIGURE_NODE_NAMES, function=svc.configure_node_names),
-                f"/{_SVC}/SetDeckData": Endpoint.unary(method=_SET_DECK_DATA, function=svc.set_deck_data),
-                f"/{_SVC}/PositionLeftXArm": Endpoint.unary(method=_POSITION_LEFT_X_ARM, function=svc.position_left_x_arm),
-                f"/{_SVC}/PositionRightXArm": Endpoint.unary(method=_POSITION_RIGHT_X_ARM, function=svc.position_right_x_arm),
-                f"/{_SVC}/MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPosition": Endpoint.unary(method=_MOVE_LEFT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION, function=svc.move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position),
-                f"/{_SVC}/MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPosition": Endpoint.unary(method=_MOVE_RIGHT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION, function=svc.move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position),
-                f"/{_SVC}/RequestLeftXArmPosition": Endpoint.unary(method=_REQUEST_LEFT_X_ARM_POSITION, function=svc.request_left_x_arm_position),
-                f"/{_SVC}/RequestRightXArmPosition": Endpoint.unary(method=_REQUEST_RIGHT_X_ARM_POSITION, function=svc.request_right_x_arm_position),
-                f"/{_SVC}/RequestRightXArmLastCollisionType": Endpoint.unary(method=_REQUEST_RIGHT_X_ARM_LAST_COLLISION_TYPE, function=svc.request_right_x_arm_last_collision_type),
-                f"/{_SVC}/RequestPumpSettings": Endpoint.unary(method=_REQUEST_PUMP_SETTINGS, function=svc.request_pump_settings),
-                f"/{_SVC}/InitializeDualPumpStationValves": Endpoint.unary(method=_INITIALIZE_DUAL_PUMP_STATION_VALVES, function=svc.initialize_dual_pump_station_valves),
-                f"/{_SVC}/DrainDualChamberSystem": Endpoint.unary(method=_DRAIN_DUAL_CHAMBER_SYSTEM, function=svc.drain_dual_chamber_system),
-                f"/{_SVC}/ViolentlyShootDownTip": Endpoint.unary(method=_VIOLENTLY_SHOOT_DOWN_TIP, function=svc.violently_shoot_down_tip),
-                f"/{_SVC}/CanPickUpTip": Endpoint.unary(method=_CAN_PICK_UP_TIP, function=svc.can_pick_up_tip),
-            },
-            interceptors=interceptors,
-            read_max_bytes=read_max_bytes,
-        )
 
-    @property
-    def path(self) -> str:
-        return f"/{_SVC}"
+class STARServiceASGIApplication(ConnectASGIApplication[STARService]):
+  def __init__(
+    self,
+    service: STARService | AsyncGenerator[STARService],
+    *,
+    interceptors: Iterable[Interceptor] = (),
+    read_max_bytes: int | None = None,
+  ) -> None:
+    super().__init__(
+      service=service,
+      endpoints=lambda svc: {
+        f"/{_SVC}/Setup": Endpoint.unary(method=_SETUP, function=svc.setup),
+        f"/{_SVC}/Stop": Endpoint.unary(method=_STOP, function=svc.stop),
+        f"/{_SVC}/GetNumChannels": Endpoint.unary(
+          method=_GET_NUM_CHANNELS, function=svc.get_num_channels
+        ),
+        f"/{_SVC}/GetHead96Installed": Endpoint.unary(
+          method=_GET_HEAD96_INSTALLED, function=svc.get_head96_installed
+        ),
+        f"/{_SVC}/GetIswapInstalled": Endpoint.unary(
+          method=_GET_ISWAP_INSTALLED, function=svc.get_iswap_installed
+        ),
+        f"/{_SVC}/GetIswapParked": Endpoint.unary(
+          method=_GET_ISWAP_PARKED, function=svc.get_iswap_parked
+        ),
+        f"/{_SVC}/GetCoreParked": Endpoint.unary(
+          method=_GET_CORE_PARKED, function=svc.get_core_parked
+        ),
+        f"/{_SVC}/PickUpTips": Endpoint.unary(method=_PICK_UP_TIPS, function=svc.pick_up_tips),
+        f"/{_SVC}/DropTips": Endpoint.unary(method=_DROP_TIPS, function=svc.drop_tips),
+        f"/{_SVC}/Aspirate": Endpoint.unary(method=_ASPIRATE, function=svc.aspirate),
+        f"/{_SVC}/Dispense": Endpoint.unary(method=_DISPENSE, function=svc.dispense),
+        f"/{_SVC}/PickUpTips96": Endpoint.unary(
+          method=_PICK_UP_TIPS96, function=svc.pick_up_tips96
+        ),
+        f"/{_SVC}/DropTips96": Endpoint.unary(method=_DROP_TIPS96, function=svc.drop_tips96),
+        f"/{_SVC}/Aspirate96": Endpoint.unary(method=_ASPIRATE96, function=svc.aspirate96),
+        f"/{_SVC}/Dispense96": Endpoint.unary(method=_DISPENSE96, function=svc.dispense96),
+        f"/{_SVC}/InitializePip": Endpoint.unary(
+          method=_INITIALIZE_PIP, function=svc.initialize_pip
+        ),
+        f"/{_SVC}/InitializePipettingChannels": Endpoint.unary(
+          method=_INITIALIZE_PIPETTING_CHANNELS, function=svc.initialize_pipetting_channels
+        ),
+        f"/{_SVC}/PickUpTipFw": Endpoint.unary(method=_PICK_UP_TIP_FW, function=svc.pick_up_tip_fw),
+        f"/{_SVC}/DiscardTipFw": Endpoint.unary(
+          method=_DISCARD_TIP_FW, function=svc.discard_tip_fw
+        ),
+        f"/{_SVC}/AspiratePip": Endpoint.unary(method=_ASPIRATE_PIP, function=svc.aspirate_pip),
+        f"/{_SVC}/DispensePip": Endpoint.unary(method=_DISPENSE_PIP, function=svc.dispense_pip),
+        f"/{_SVC}/SpreadPipChannels": Endpoint.unary(
+          method=_SPREAD_PIP_CHANNELS, function=svc.spread_pip_channels
+        ),
+        f"/{_SVC}/MoveAllPipettingChannelsToDefinedPosition": Endpoint.unary(
+          method=_MOVE_ALL_PIPETTING_CHANNELS_TO_DEFINED_POSITION,
+          function=svc.move_all_pipetting_channels_to_defined_position,
+        ),
+        f"/{_SVC}/DefineTipNeedle": Endpoint.unary(
+          method=_DEFINE_TIP_NEEDLE, function=svc.define_tip_needle
+        ),
+        f"/{_SVC}/ProbeLiquidHeights": Endpoint.unary(
+          method=_PROBE_LIQUID_HEIGHTS, function=svc.probe_liquid_heights
+        ),
+        f"/{_SVC}/ProbeLiquidVolumes": Endpoint.unary(
+          method=_PROBE_LIQUID_VOLUMES, function=svc.probe_liquid_volumes
+        ),
+        f"/{_SVC}/RequestTipPresence": Endpoint.unary(
+          method=_REQUEST_TIP_PRESENCE, function=svc.request_tip_presence
+        ),
+        f"/{_SVC}/ChannelsSenseTipPresence": Endpoint.unary(
+          method=_CHANNELS_SENSE_TIP_PRESENCE, function=svc.channels_sense_tip_presence
+        ),
+        f"/{_SVC}/RequestPipHeightLastLld": Endpoint.unary(
+          method=_REQUEST_PIP_HEIGHT_LAST_LLD, function=svc.request_pip_height_last_lld
+        ),
+        f"/{_SVC}/RequestTadmStatus": Endpoint.unary(
+          method=_REQUEST_TADM_STATUS, function=svc.request_tadm_status
+        ),
+        f"/{_SVC}/RequestVolumeInTip": Endpoint.unary(
+          method=_REQUEST_VOLUME_IN_TIP, function=svc.request_volume_in_tip
+        ),
+        f"/{_SVC}/RequestTipLenOnChannel": Endpoint.unary(
+          method=_REQUEST_TIP_LEN_ON_CHANNEL, function=svc.request_tip_len_on_channel
+        ),
+        f"/{_SVC}/RequestProbeZPosition": Endpoint.unary(
+          method=_REQUEST_PROBE_Z_POSITION, function=svc.request_probe_z_position
+        ),
+        f"/{_SVC}/ClldProbeZHeightUsingChannel": Endpoint.unary(
+          method=_CLLD_PROBE_Z_HEIGHT_USING_CHANNEL, function=svc.clld_probe_z_height_using_channel
+        ),
+        f"/{_SVC}/PlldProbeZHeightUsingChannel": Endpoint.unary(
+          method=_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL, function=svc.plld_probe_z_height_using_channel
+        ),
+        f"/{_SVC}/ZtouchProbeZHeightUsingChannel": Endpoint.unary(
+          method=_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL,
+          function=svc.ztouch_probe_z_height_using_channel,
+        ),
+        f"/{_SVC}/PierceFoil": Endpoint.unary(method=_PIERCE_FOIL, function=svc.pierce_foil),
+        f"/{_SVC}/PierceFoilHighLevel": Endpoint.unary(
+          method=_PIERCE_FOIL_HIGH_LEVEL, function=svc.pierce_foil_high_level
+        ),
+        f"/{_SVC}/StepOffFoil": Endpoint.unary(method=_STEP_OFF_FOIL, function=svc.step_off_foil),
+        f"/{_SVC}/EmptyTip": Endpoint.unary(method=_EMPTY_TIP, function=svc.empty_tip),
+        f"/{_SVC}/EmptyTips": Endpoint.unary(method=_EMPTY_TIPS, function=svc.empty_tips),
+        f"/{_SVC}/MoveChannelX": Endpoint.unary(
+          method=_MOVE_CHANNEL_X, function=svc.move_channel_x
+        ),
+        f"/{_SVC}/MoveChannelY": Endpoint.unary(
+          method=_MOVE_CHANNEL_Y, function=svc.move_channel_y
+        ),
+        f"/{_SVC}/MoveChannelZ": Endpoint.unary(
+          method=_MOVE_CHANNEL_Z, function=svc.move_channel_z
+        ),
+        f"/{_SVC}/MoveChannelXRelative": Endpoint.unary(
+          method=_MOVE_CHANNEL_X_RELATIVE, function=svc.move_channel_x_relative
+        ),
+        f"/{_SVC}/MoveChannelYRelative": Endpoint.unary(
+          method=_MOVE_CHANNEL_Y_RELATIVE, function=svc.move_channel_y_relative
+        ),
+        f"/{_SVC}/MoveChannelZRelative": Endpoint.unary(
+          method=_MOVE_CHANNEL_Z_RELATIVE, function=svc.move_channel_z_relative
+        ),
+        f"/{_SVC}/PrepareForManualChannelOperation": Endpoint.unary(
+          method=_PREPARE_FOR_MANUAL_CHANNEL_OPERATION,
+          function=svc.prepare_for_manual_channel_operation,
+        ),
+        f"/{_SVC}/MoveAllChannelsInZSafety": Endpoint.unary(
+          method=_MOVE_ALL_CHANNELS_IN_Z_SAFETY, function=svc.move_all_channels_in_z_safety
+        ),
+        f"/{_SVC}/PositionSinglePipettingChannelInYDirection": Endpoint.unary(
+          method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Y_DIRECTION,
+          function=svc.position_single_pipetting_channel_in_y_direction,
+        ),
+        f"/{_SVC}/PositionSinglePipettingChannelInZDirection": Endpoint.unary(
+          method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Z_DIRECTION,
+          function=svc.position_single_pipetting_channel_in_z_direction,
+        ),
+        f"/{_SVC}/PositionMaxFreeYForN": Endpoint.unary(
+          method=_POSITION_MAX_FREE_Y_FOR_N, function=svc.position_max_free_y_for_n
+        ),
+        f"/{_SVC}/RequestXPosChannelN": Endpoint.unary(
+          method=_REQUEST_X_POS_CHANNEL_N, function=svc.request_x_pos_channel_n
+        ),
+        f"/{_SVC}/RequestYPosChannelN": Endpoint.unary(
+          method=_REQUEST_Y_POS_CHANNEL_N, function=svc.request_y_pos_channel_n
+        ),
+        f"/{_SVC}/RequestZPosChannelN": Endpoint.unary(
+          method=_REQUEST_Z_POS_CHANNEL_N, function=svc.request_z_pos_channel_n
+        ),
+        f"/{_SVC}/RequestTipBottomZPosition": Endpoint.unary(
+          method=_REQUEST_TIP_BOTTOM_Z_POSITION, function=svc.request_tip_bottom_z_position
+        ),
+        f"/{_SVC}/GetChannelsYPositions": Endpoint.unary(
+          method=_GET_CHANNELS_Y_POSITIONS, function=svc.get_channels_y_positions
+        ),
+        f"/{_SVC}/PositionChannelsInYDirection": Endpoint.unary(
+          method=_POSITION_CHANNELS_IN_Y_DIRECTION, function=svc.position_channels_in_y_direction
+        ),
+        f"/{_SVC}/GetChannelsZPositions": Endpoint.unary(
+          method=_GET_CHANNELS_Z_POSITIONS, function=svc.get_channels_z_positions
+        ),
+        f"/{_SVC}/PositionChannelsInZDirection": Endpoint.unary(
+          method=_POSITION_CHANNELS_IN_Z_DIRECTION, function=svc.position_channels_in_z_direction
+        ),
+        f"/{_SVC}/RequestPipChannelVersion": Endpoint.unary(
+          method=_REQUEST_PIP_CHANNEL_VERSION, function=svc.request_pip_channel_version
+        ),
+        f"/{_SVC}/InitializeCore96Head": Endpoint.unary(
+          method=_INITIALIZE_CORE96_HEAD, function=svc.initialize_core_96_head
+        ),
+        f"/{_SVC}/RequestCore96HeadInitializationStatus": Endpoint.unary(
+          method=_REQUEST_CORE96_HEAD_INITIALIZATION_STATUS,
+          function=svc.request_core_96_head_initialization_status,
+        ),
+        f"/{_SVC}/Head96RequestFirmwareVersion": Endpoint.unary(
+          method=_HEAD96_REQUEST_FIRMWARE_VERSION, function=svc.head96_request_firmware_version
+        ),
+        f"/{_SVC}/Head96RequestType": Endpoint.unary(
+          method=_HEAD96_REQUEST_TYPE, function=svc.head96_request_type
+        ),
+        f"/{_SVC}/Head96DispensingDriveAndSqueezerDriverInitialize": Endpoint.unary(
+          method=_HEAD96_DISPENSING_DRIVE_AND_SQUEEZER_DRIVER_INITIALIZE,
+          function=svc.head96_dispensing_drive_and_squeezer_driver_initialize,
+        ),
+        f"/{_SVC}/MoveCore96ToSafePosition": Endpoint.unary(
+          method=_MOVE_CORE96_TO_SAFE_POSITION, function=svc.move_core_96_to_safe_position
+        ),
+        f"/{_SVC}/Head96MoveToZSafety": Endpoint.unary(
+          method=_HEAD96_MOVE_TO_Z_SAFETY, function=svc.head96_move_to_z_safety
+        ),
+        f"/{_SVC}/Head96Park": Endpoint.unary(method=_HEAD96_PARK, function=svc.head96_park),
+        f"/{_SVC}/Head96MoveX": Endpoint.unary(method=_HEAD96_MOVE_X, function=svc.head96_move_x),
+        f"/{_SVC}/Head96MoveY": Endpoint.unary(method=_HEAD96_MOVE_Y, function=svc.head96_move_y),
+        f"/{_SVC}/Head96MoveZ": Endpoint.unary(method=_HEAD96_MOVE_Z, function=svc.head96_move_z),
+        f"/{_SVC}/MoveCore96HeadToDefinedPosition": Endpoint.unary(
+          method=_MOVE_CORE96_HEAD_TO_DEFINED_POSITION,
+          function=svc.move_core_96_head_to_defined_position,
+        ),
+        f"/{_SVC}/Head96MoveToCoordinate": Endpoint.unary(
+          method=_HEAD96_MOVE_TO_COORDINATE, function=svc.head96_move_to_coordinate
+        ),
+        f"/{_SVC}/Head96DispensingDriveMoveToHomeVolume": Endpoint.unary(
+          method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_HOME_VOLUME,
+          function=svc.head96_dispensing_drive_move_to_home_volume,
+        ),
+        f"/{_SVC}/Head96DispensingDriveMoveToPosition": Endpoint.unary(
+          method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_POSITION,
+          function=svc.head96_dispensing_drive_move_to_position,
+        ),
+        f"/{_SVC}/Head96DispensingDriveRequestPositionMm": Endpoint.unary(
+          method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_MM,
+          function=svc.head96_dispensing_drive_request_position_mm,
+        ),
+        f"/{_SVC}/Head96DispensingDriveRequestPositionUl": Endpoint.unary(
+          method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_UL,
+          function=svc.head96_dispensing_drive_request_position_ul,
+        ),
+        f"/{_SVC}/Head96RequestTipPresence": Endpoint.unary(
+          method=_HEAD96_REQUEST_TIP_PRESENCE, function=svc.head96_request_tip_presence
+        ),
+        f"/{_SVC}/Head96RequestPosition": Endpoint.unary(
+          method=_HEAD96_REQUEST_POSITION, function=svc.head96_request_position
+        ),
+        f"/{_SVC}/PickUpTipsCore96": Endpoint.unary(
+          method=_PICK_UP_TIPS_CORE96, function=svc.pick_up_tips_core96
+        ),
+        f"/{_SVC}/DiscardTipsCore96": Endpoint.unary(
+          method=_DISCARD_TIPS_CORE96, function=svc.discard_tips_core96
+        ),
+        f"/{_SVC}/AspirateCore96": Endpoint.unary(
+          method=_ASPIRATE_CORE96, function=svc.aspirate_core96
+        ),
+        f"/{_SVC}/DispenseCore96": Endpoint.unary(
+          method=_DISPENSE_CORE96, function=svc.dispense_core96
+        ),
+        f"/{_SVC}/InitializeIswap": Endpoint.unary(
+          method=_INITIALIZE_ISWAP, function=svc.initialize_iswap
+        ),
+        f"/{_SVC}/PositionComponentsForFreeIswapYRange": Endpoint.unary(
+          method=_POSITION_COMPONENTS_FOR_FREE_ISWAP_Y_RANGE,
+          function=svc.position_components_for_free_iswap_y_range,
+        ),
+        f"/{_SVC}/MoveIswapXRelative": Endpoint.unary(
+          method=_MOVE_ISWAP_X_RELATIVE, function=svc.move_iswap_x_relative
+        ),
+        f"/{_SVC}/MoveIswapYRelative": Endpoint.unary(
+          method=_MOVE_ISWAP_Y_RELATIVE, function=svc.move_iswap_y_relative
+        ),
+        f"/{_SVC}/MoveIswapZRelative": Endpoint.unary(
+          method=_MOVE_ISWAP_Z_RELATIVE, function=svc.move_iswap_z_relative
+        ),
+        f"/{_SVC}/MoveIswapX": Endpoint.unary(method=_MOVE_ISWAP_X, function=svc.move_iswap_x),
+        f"/{_SVC}/MoveIswapY": Endpoint.unary(method=_MOVE_ISWAP_Y, function=svc.move_iswap_y),
+        f"/{_SVC}/MoveIswapZ": Endpoint.unary(method=_MOVE_ISWAP_Z, function=svc.move_iswap_z),
+        f"/{_SVC}/OpenNotInitializedGripper": Endpoint.unary(
+          method=_OPEN_NOT_INITIALIZED_GRIPPER, function=svc.open_not_initialized_gripper
+        ),
+        f"/{_SVC}/IswapOpenGripper": Endpoint.unary(
+          method=_ISWAP_OPEN_GRIPPER, function=svc.iswap_open_gripper
+        ),
+        f"/{_SVC}/IswapCloseGripper": Endpoint.unary(
+          method=_ISWAP_CLOSE_GRIPPER, function=svc.iswap_close_gripper
+        ),
+        f"/{_SVC}/ParkIswap": Endpoint.unary(method=_PARK_ISWAP, function=svc.park_iswap),
+        f"/{_SVC}/IswapGetPlate": Endpoint.unary(
+          method=_ISWAP_GET_PLATE, function=svc.iswap_get_plate
+        ),
+        f"/{_SVC}/IswapPutPlate": Endpoint.unary(
+          method=_ISWAP_PUT_PLATE, function=svc.iswap_put_plate
+        ),
+        f"/{_SVC}/MovePlateToPosition": Endpoint.unary(
+          method=_MOVE_PLATE_TO_POSITION, function=svc.move_plate_to_position
+        ),
+        f"/{_SVC}/CollapseGripperArm": Endpoint.unary(
+          method=_COLLAPSE_GRIPPER_ARM, function=svc.collapse_gripper_arm
+        ),
+        f"/{_SVC}/IswapRotate": Endpoint.unary(method=_ISWAP_ROTATE, function=svc.iswap_rotate),
+        f"/{_SVC}/RotateIswapRotationDrive": Endpoint.unary(
+          method=_ROTATE_ISWAP_ROTATION_DRIVE, function=svc.rotate_iswap_rotation_drive
+        ),
+        f"/{_SVC}/RotateIswapWrist": Endpoint.unary(
+          method=_ROTATE_ISWAP_WRIST, function=svc.rotate_iswap_wrist
+        ),
+        f"/{_SVC}/IswapDangerousReleaseBreak": Endpoint.unary(
+          method=_ISWAP_DANGEROUS_RELEASE_BREAK, function=svc.iswap_dangerous_release_break
+        ),
+        f"/{_SVC}/IswapReengageBreak": Endpoint.unary(
+          method=_ISWAP_REENGAGE_BREAK, function=svc.iswap_reengage_break
+        ),
+        f"/{_SVC}/IswapInitializeZAxis": Endpoint.unary(
+          method=_ISWAP_INITIALIZE_Z_AXIS, function=svc.iswap_initialize_z_axis
+        ),
+        f"/{_SVC}/RequestIswapRotationDrivePositionIncrements": Endpoint.unary(
+          method=_REQUEST_ISWAP_ROTATION_DRIVE_POSITION_INCREMENTS,
+          function=svc.request_iswap_rotation_drive_position_increments,
+        ),
+        f"/{_SVC}/RequestIswapRotationDriveOrientation": Endpoint.unary(
+          method=_REQUEST_ISWAP_ROTATION_DRIVE_ORIENTATION,
+          function=svc.request_iswap_rotation_drive_orientation,
+        ),
+        f"/{_SVC}/RequestIswapWristDrivePositionIncrements": Endpoint.unary(
+          method=_REQUEST_ISWAP_WRIST_DRIVE_POSITION_INCREMENTS,
+          function=svc.request_iswap_wrist_drive_position_increments,
+        ),
+        f"/{_SVC}/RequestIswapWristDriveOrientation": Endpoint.unary(
+          method=_REQUEST_ISWAP_WRIST_DRIVE_ORIENTATION,
+          function=svc.request_iswap_wrist_drive_orientation,
+        ),
+        f"/{_SVC}/RequestIswapInParkingPosition": Endpoint.unary(
+          method=_REQUEST_ISWAP_IN_PARKING_POSITION, function=svc.request_iswap_in_parking_position
+        ),
+        f"/{_SVC}/RequestPlateInIswap": Endpoint.unary(
+          method=_REQUEST_PLATE_IN_ISWAP, function=svc.request_plate_in_iswap
+        ),
+        f"/{_SVC}/RequestIswapPosition": Endpoint.unary(
+          method=_REQUEST_ISWAP_POSITION, function=svc.request_iswap_position
+        ),
+        f"/{_SVC}/IswapRotationDriveRequestY": Endpoint.unary(
+          method=_ISWAP_ROTATION_DRIVE_REQUEST_Y, function=svc.iswap_rotation_drive_request_y
+        ),
+        f"/{_SVC}/RequestIswapInitializationStatus": Endpoint.unary(
+          method=_REQUEST_ISWAP_INITIALIZATION_STATUS,
+          function=svc.request_iswap_initialization_status,
+        ),
+        f"/{_SVC}/RequestIswapVersion": Endpoint.unary(
+          method=_REQUEST_ISWAP_VERSION, function=svc.request_iswap_version
+        ),
+        f"/{_SVC}/GetIswapVersion": Endpoint.unary(
+          method=_GET_ISWAP_VERSION, function=svc.get_iswap_version
+        ),
+        f"/{_SVC}/SlowIswap": Endpoint.unary(method=_SLOW_ISWAP, function=svc.slow_iswap),
+        f"/{_SVC}/IswapMovePickedUpResource": Endpoint.unary(
+          method=_ISWAP_MOVE_PICKED_UP_RESOURCE, function=svc.iswap_move_picked_up_resource
+        ),
+        f"/{_SVC}/PickUpResource": Endpoint.unary(
+          method=_PICK_UP_RESOURCE, function=svc.pick_up_resource
+        ),
+        f"/{_SVC}/MovePickedUpResource": Endpoint.unary(
+          method=_MOVE_PICKED_UP_RESOURCE, function=svc.move_picked_up_resource
+        ),
+        f"/{_SVC}/DropResource": Endpoint.unary(method=_DROP_RESOURCE, function=svc.drop_resource),
+        f"/{_SVC}/PickUpCoreGripperTools": Endpoint.unary(
+          method=_PICK_UP_CORE_GRIPPER_TOOLS, function=svc.pick_up_core_gripper_tools
+        ),
+        f"/{_SVC}/ReturnCoreGripperTools": Endpoint.unary(
+          method=_RETURN_CORE_GRIPPER_TOOLS, function=svc.return_core_gripper_tools
+        ),
+        f"/{_SVC}/CoreOpenGripper": Endpoint.unary(
+          method=_CORE_OPEN_GRIPPER, function=svc.core_open_gripper
+        ),
+        f"/{_SVC}/CoreGetPlate": Endpoint.unary(
+          method=_CORE_GET_PLATE, function=svc.core_get_plate
+        ),
+        f"/{_SVC}/CorePutPlate": Endpoint.unary(
+          method=_CORE_PUT_PLATE, function=svc.core_put_plate
+        ),
+        f"/{_SVC}/CoreMovePlateToPosition": Endpoint.unary(
+          method=_CORE_MOVE_PLATE_TO_POSITION, function=svc.core_move_plate_to_position
+        ),
+        f"/{_SVC}/CorePickUpResource": Endpoint.unary(
+          method=_CORE_PICK_UP_RESOURCE, function=svc.core_pick_up_resource
+        ),
+        f"/{_SVC}/CoreMovePickedUpResource": Endpoint.unary(
+          method=_CORE_MOVE_PICKED_UP_RESOURCE, function=svc.core_move_picked_up_resource
+        ),
+        f"/{_SVC}/CoreReleasePickedUpResource": Endpoint.unary(
+          method=_CORE_RELEASE_PICKED_UP_RESOURCE, function=svc.core_release_picked_up_resource
+        ),
+        f"/{_SVC}/CoreCheckResourceExistsAtLocationCenter": Endpoint.unary(
+          method=_CORE_CHECK_RESOURCE_EXISTS_AT_LOCATION_CENTER,
+          function=svc.core_check_resource_exists_at_location_center,
+        ),
+        f"/{_SVC}/GetCore": Endpoint.unary(method=_GET_CORE, function=svc.get_core),
+        f"/{_SVC}/PutCore": Endpoint.unary(method=_PUT_CORE, function=svc.put_core),
+        f"/{_SVC}/CoreReadBarcodeOfPickedUpResource": Endpoint.unary(
+          method=_CORE_READ_BARCODE_OF_PICKED_UP_RESOURCE,
+          function=svc.core_read_barcode_of_picked_up_resource,
+        ),
+        f"/{_SVC}/InitializeAutoload": Endpoint.unary(
+          method=_INITIALIZE_AUTOLOAD, function=svc.initialize_autoload
+        ),
+        f"/{_SVC}/MoveAutoloadToSafeZPosition": Endpoint.unary(
+          method=_MOVE_AUTOLOAD_TO_SAFE_Z_POSITION, function=svc.move_autoload_to_safe_z_position
+        ),
+        f"/{_SVC}/RequestAutoloadTrack": Endpoint.unary(
+          method=_REQUEST_AUTOLOAD_TRACK, function=svc.request_autoload_track
+        ),
+        f"/{_SVC}/RequestAutoloadType": Endpoint.unary(
+          method=_REQUEST_AUTOLOAD_TYPE, function=svc.request_autoload_type
+        ),
+        f"/{_SVC}/RequestPresenceOfCarriersOnDeck": Endpoint.unary(
+          method=_REQUEST_PRESENCE_OF_CARRIERS_ON_DECK,
+          function=svc.request_presence_of_carriers_on_deck,
+        ),
+        f"/{_SVC}/RequestPresenceOfCarriersOnLoadingTray": Endpoint.unary(
+          method=_REQUEST_PRESENCE_OF_CARRIERS_ON_LOADING_TRAY,
+          function=svc.request_presence_of_carriers_on_loading_tray,
+        ),
+        f"/{_SVC}/RequestPresenceOfSingleCarrierOnLoadingTray": Endpoint.unary(
+          method=_REQUEST_PRESENCE_OF_SINGLE_CARRIER_ON_LOADING_TRAY,
+          function=svc.request_presence_of_single_carrier_on_loading_tray,
+        ),
+        f"/{_SVC}/MoveAutoloadToSlot": Endpoint.unary(
+          method=_MOVE_AUTOLOAD_TO_SLOT, function=svc.move_autoload_to_slot
+        ),
+        f"/{_SVC}/MoveAutoloadToTrack": Endpoint.unary(
+          method=_MOVE_AUTOLOAD_TO_TRACK, function=svc.move_autoload_to_track
+        ),
+        f"/{_SVC}/ParkAutoload": Endpoint.unary(method=_PARK_AUTOLOAD, function=svc.park_autoload),
+        f"/{_SVC}/TakeCarrierOutToAutoloadBelt": Endpoint.unary(
+          method=_TAKE_CARRIER_OUT_TO_AUTOLOAD_BELT, function=svc.take_carrier_out_to_autoload_belt
+        ),
+        f"/{_SVC}/SetBarcodeType": Endpoint.unary(
+          method=_SET_BARCODE_TYPE, function=svc.set_barcode_type
+        ),
+        f"/{_SVC}/LoadCarrierFromTrayAndScanCarrierBarcode": Endpoint.unary(
+          method=_LOAD_CARRIER_FROM_TRAY_AND_SCAN_CARRIER_BARCODE,
+          function=svc.load_carrier_from_tray_and_scan_carrier_barcode,
+        ),
+        f"/{_SVC}/SetCarrierMonitoring": Endpoint.unary(
+          method=_SET_CARRIER_MONITORING, function=svc.set_carrier_monitoring
+        ),
+        f"/{_SVC}/LoadCarrier": Endpoint.unary(method=_LOAD_CARRIER, function=svc.load_carrier),
+        f"/{_SVC}/SetLoadingIndicators": Endpoint.unary(
+          method=_SET_LOADING_INDICATORS, function=svc.set_loading_indicators
+        ),
+        f"/{_SVC}/UnloadCarrier": Endpoint.unary(
+          method=_UNLOAD_CARRIER, function=svc.unload_carrier
+        ),
+        f"/{_SVC}/RequestInstrumentInitializationStatus": Endpoint.unary(
+          method=_REQUEST_INSTRUMENT_INITIALIZATION_STATUS,
+          function=svc.request_instrument_initialization_status,
+        ),
+        f"/{_SVC}/RequestAutoloadInitializationStatus": Endpoint.unary(
+          method=_REQUEST_AUTOLOAD_INITIALIZATION_STATUS,
+          function=svc.request_autoload_initialization_status,
+        ),
+        f"/{_SVC}/LockCover": Endpoint.unary(method=_LOCK_COVER, function=svc.lock_cover),
+        f"/{_SVC}/UnlockCover": Endpoint.unary(method=_UNLOCK_COVER, function=svc.unlock_cover),
+        f"/{_SVC}/DisableCoverControl": Endpoint.unary(
+          method=_DISABLE_COVER_CONTROL, function=svc.disable_cover_control
+        ),
+        f"/{_SVC}/EnableCoverControl": Endpoint.unary(
+          method=_ENABLE_COVER_CONTROL, function=svc.enable_cover_control
+        ),
+        f"/{_SVC}/SetCoverOutput": Endpoint.unary(
+          method=_SET_COVER_OUTPUT, function=svc.set_cover_output
+        ),
+        f"/{_SVC}/ResetOutput": Endpoint.unary(method=_RESET_OUTPUT, function=svc.reset_output),
+        f"/{_SVC}/RequestCoverOpen": Endpoint.unary(
+          method=_REQUEST_COVER_OPEN, function=svc.request_cover_open
+        ),
+        f"/{_SVC}/SendHhsCommand": Endpoint.unary(
+          method=_SEND_HHS_COMMAND, function=svc.send_hhs_command
+        ),
+        f"/{_SVC}/CheckTypeIsHhc": Endpoint.unary(
+          method=_CHECK_TYPE_IS_HHC, function=svc.check_type_is_hhc
+        ),
+        f"/{_SVC}/InitializeHhc": Endpoint.unary(
+          method=_INITIALIZE_HHC, function=svc.initialize_hhc
+        ),
+        f"/{_SVC}/StartTemperatureControlAtHhc": Endpoint.unary(
+          method=_START_TEMPERATURE_CONTROL_AT_HHC, function=svc.start_temperature_control_at_hhc
+        ),
+        f"/{_SVC}/GetTemperatureAtHhc": Endpoint.unary(
+          method=_GET_TEMPERATURE_AT_HHC, function=svc.get_temperature_at_hhc
+        ),
+        f"/{_SVC}/QueryWhetherTemperatureReachedAtHhc": Endpoint.unary(
+          method=_QUERY_WHETHER_TEMPERATURE_REACHED_AT_HHC,
+          function=svc.query_whether_temperature_reached_at_hhc,
+        ),
+        f"/{_SVC}/StopTemperatureControlAtHhc": Endpoint.unary(
+          method=_STOP_TEMPERATURE_CONTROL_AT_HHC, function=svc.stop_temperature_control_at_hhc
+        ),
+        f"/{_SVC}/RequestFirmwareVersion": Endpoint.unary(
+          method=_REQUEST_FIRMWARE_VERSION, function=svc.request_firmware_version
+        ),
+        f"/{_SVC}/RequestErrorCode": Endpoint.unary(
+          method=_REQUEST_ERROR_CODE, function=svc.request_error_code
+        ),
+        f"/{_SVC}/RequestDeviceSerialNumber": Endpoint.unary(
+          method=_REQUEST_DEVICE_SERIAL_NUMBER, function=svc.request_device_serial_number
+        ),
+        f"/{_SVC}/RequestMasterStatus": Endpoint.unary(
+          method=_REQUEST_MASTER_STATUS, function=svc.request_master_status
+        ),
+        f"/{_SVC}/SetSingleStepMode": Endpoint.unary(
+          method=_SET_SINGLE_STEP_MODE, function=svc.set_single_step_mode
+        ),
+        f"/{_SVC}/TriggerNextStep": Endpoint.unary(
+          method=_TRIGGER_NEXT_STEP, function=svc.trigger_next_step
+        ),
+        f"/{_SVC}/Halt": Endpoint.unary(method=_HALT, function=svc.halt),
+        f"/{_SVC}/SaveAllCycleCounters": Endpoint.unary(
+          method=_SAVE_ALL_CYCLE_COUNTERS, function=svc.save_all_cycle_counters
+        ),
+        f"/{_SVC}/SetNotStop": Endpoint.unary(method=_SET_NOT_STOP, function=svc.set_not_stop),
+        f"/{_SVC}/ConfigureNodeNames": Endpoint.unary(
+          method=_CONFIGURE_NODE_NAMES, function=svc.configure_node_names
+        ),
+        f"/{_SVC}/SetDeckData": Endpoint.unary(method=_SET_DECK_DATA, function=svc.set_deck_data),
+        f"/{_SVC}/PositionLeftXArm": Endpoint.unary(
+          method=_POSITION_LEFT_X_ARM, function=svc.position_left_x_arm
+        ),
+        f"/{_SVC}/PositionRightXArm": Endpoint.unary(
+          method=_POSITION_RIGHT_X_ARM, function=svc.position_right_x_arm
+        ),
+        f"/{_SVC}/MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPosition": Endpoint.unary(
+          method=_MOVE_LEFT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION,
+          function=svc.move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position,
+        ),
+        f"/{_SVC}/MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPosition": Endpoint.unary(
+          method=_MOVE_RIGHT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION,
+          function=svc.move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position,
+        ),
+        f"/{_SVC}/RequestLeftXArmPosition": Endpoint.unary(
+          method=_REQUEST_LEFT_X_ARM_POSITION, function=svc.request_left_x_arm_position
+        ),
+        f"/{_SVC}/RequestRightXArmPosition": Endpoint.unary(
+          method=_REQUEST_RIGHT_X_ARM_POSITION, function=svc.request_right_x_arm_position
+        ),
+        f"/{_SVC}/RequestRightXArmLastCollisionType": Endpoint.unary(
+          method=_REQUEST_RIGHT_X_ARM_LAST_COLLISION_TYPE,
+          function=svc.request_right_x_arm_last_collision_type,
+        ),
+        f"/{_SVC}/RequestPumpSettings": Endpoint.unary(
+          method=_REQUEST_PUMP_SETTINGS, function=svc.request_pump_settings
+        ),
+        f"/{_SVC}/InitializeDualPumpStationValves": Endpoint.unary(
+          method=_INITIALIZE_DUAL_PUMP_STATION_VALVES,
+          function=svc.initialize_dual_pump_station_valves,
+        ),
+        f"/{_SVC}/DrainDualChamberSystem": Endpoint.unary(
+          method=_DRAIN_DUAL_CHAMBER_SYSTEM, function=svc.drain_dual_chamber_system
+        ),
+        f"/{_SVC}/ViolentlyShootDownTip": Endpoint.unary(
+          method=_VIOLENTLY_SHOOT_DOWN_TIP, function=svc.violently_shoot_down_tip
+        ),
+        f"/{_SVC}/CanPickUpTip": Endpoint.unary(
+          method=_CAN_PICK_UP_TIP, function=svc.can_pick_up_tip
+        ),
+      },
+      interceptors=interceptors,
+      read_max_bytes=read_max_bytes,
+    )
+
+  @property
+  def path(self) -> str:
+    return f"/{_SVC}"
 
 
 # ============================================================
 # Async client
 # ============================================================
 
+
 class STARServiceClient(ConnectClient):
-
-    async def setup(self, request: pb2.SetupRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetupResponse:
-        return await self.execute_unary(request=request, method=_SETUP, headers=headers, timeout_ms=timeout_ms)
-
-    async def stop(self, request: pb2.StopRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StopResponse:
-        return await self.execute_unary(request=request, method=_STOP, headers=headers, timeout_ms=timeout_ms)
-
-    async def get_num_channels(self, request: pb2.GetNumChannelsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetNumChannelsResponse:
-        return await self.execute_unary(request=request, method=_GET_NUM_CHANNELS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def get_head96_installed(self, request: pb2.GetHead96InstalledRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetHead96InstalledResponse:
-        return await self.execute_unary(request=request, method=_GET_HEAD96_INSTALLED, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def get_iswap_installed(self, request: pb2.GetIswapInstalledRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetIswapInstalledResponse:
-        return await self.execute_unary(request=request, method=_GET_ISWAP_INSTALLED, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def get_iswap_parked(self, request: pb2.GetIswapParkedRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetIswapParkedResponse:
-        return await self.execute_unary(request=request, method=_GET_ISWAP_PARKED, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def get_core_parked(self, request: pb2.GetCoreParkedRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetCoreParkedResponse:
-        return await self.execute_unary(request=request, method=_GET_CORE_PARKED, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def pick_up_tips(self, request: pb2.PickUpTipsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpTipsResponse:
-        return await self.execute_unary(request=request, method=_PICK_UP_TIPS, headers=headers, timeout_ms=timeout_ms)
-
-    async def drop_tips(self, request: pb2.DropTipsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DropTipsResponse:
-        return await self.execute_unary(request=request, method=_DROP_TIPS, headers=headers, timeout_ms=timeout_ms)
-
-    async def aspirate(self, request: pb2.AspirateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.AspirateResponse:
-        return await self.execute_unary(request=request, method=_ASPIRATE, headers=headers, timeout_ms=timeout_ms)
-
-    async def dispense(self, request: pb2.DispenseRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DispenseResponse:
-        return await self.execute_unary(request=request, method=_DISPENSE, headers=headers, timeout_ms=timeout_ms)
-
-    async def pick_up_tips96(self, request: pb2.PickUpTips96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpTips96Response:
-        return await self.execute_unary(request=request, method=_PICK_UP_TIPS96, headers=headers, timeout_ms=timeout_ms)
-
-    async def drop_tips96(self, request: pb2.DropTips96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DropTips96Response:
-        return await self.execute_unary(request=request, method=_DROP_TIPS96, headers=headers, timeout_ms=timeout_ms)
-
-    async def aspirate96(self, request: pb2.Aspirate96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Aspirate96Response:
-        return await self.execute_unary(request=request, method=_ASPIRATE96, headers=headers, timeout_ms=timeout_ms)
-
-    async def dispense96(self, request: pb2.Dispense96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Dispense96Response:
-        return await self.execute_unary(request=request, method=_DISPENSE96, headers=headers, timeout_ms=timeout_ms)
-
-    async def initialize_pip(self, request: pb2.InitializePipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializePipResponse:
-        return await self.execute_unary(request=request, method=_INITIALIZE_PIP, headers=headers, timeout_ms=timeout_ms)
-
-    async def initialize_pipetting_channels(self, request: pb2.InitializePipettingChannelsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializePipettingChannelsResponse:
-        return await self.execute_unary(request=request, method=_INITIALIZE_PIPETTING_CHANNELS, headers=headers, timeout_ms=timeout_ms)
-
-    async def pick_up_tip_fw(self, request: pb2.PickUpTipFwRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpTipFwResponse:
-        return await self.execute_unary(request=request, method=_PICK_UP_TIP_FW, headers=headers, timeout_ms=timeout_ms)
-
-    async def discard_tip_fw(self, request: pb2.DiscardTipFwRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DiscardTipFwResponse:
-        return await self.execute_unary(request=request, method=_DISCARD_TIP_FW, headers=headers, timeout_ms=timeout_ms)
-
-    async def aspirate_pip(self, request: pb2.AspiratePipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.AspiratePipResponse:
-        return await self.execute_unary(request=request, method=_ASPIRATE_PIP, headers=headers, timeout_ms=timeout_ms)
-
-    async def dispense_pip(self, request: pb2.DispensePipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DispensePipResponse:
-        return await self.execute_unary(request=request, method=_DISPENSE_PIP, headers=headers, timeout_ms=timeout_ms)
-
-    async def spread_pip_channels(self, request: pb2.SpreadPipChannelsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SpreadPipChannelsResponse:
-        return await self.execute_unary(request=request, method=_SPREAD_PIP_CHANNELS, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_all_pipetting_channels_to_defined_position(self, request: pb2.MoveAllPipettingChannelsToDefinedPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAllPipettingChannelsToDefinedPositionResponse:
-        return await self.execute_unary(request=request, method=_MOVE_ALL_PIPETTING_CHANNELS_TO_DEFINED_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def define_tip_needle(self, request: pb2.DefineTipNeedleRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DefineTipNeedleResponse:
-        return await self.execute_unary(request=request, method=_DEFINE_TIP_NEEDLE, headers=headers, timeout_ms=timeout_ms)
-
-    async def probe_liquid_heights(self, request: pb2.ProbeLiquidHeightsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ProbeLiquidHeightsResponse:
-        return await self.execute_unary(request=request, method=_PROBE_LIQUID_HEIGHTS, headers=headers, timeout_ms=timeout_ms)
-
-    async def probe_liquid_volumes(self, request: pb2.ProbeLiquidVolumesRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ProbeLiquidVolumesResponse:
-        return await self.execute_unary(request=request, method=_PROBE_LIQUID_VOLUMES, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_tip_presence(self, request: pb2.RequestTipPresenceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestTipPresenceResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_TIP_PRESENCE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def channels_sense_tip_presence(self, request: pb2.ChannelsSenseTipPresenceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.ChannelsSenseTipPresenceResponse:
-        return await self.execute_unary(request=request, method=_CHANNELS_SENSE_TIP_PRESENCE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_pip_height_last_lld(self, request: pb2.RequestPipHeightLastLldRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPipHeightLastLldResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_PIP_HEIGHT_LAST_LLD, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_tadm_status(self, request: pb2.RequestTadmStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestTadmStatusResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_TADM_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_volume_in_tip(self, request: pb2.RequestVolumeInTipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestVolumeInTipResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_VOLUME_IN_TIP, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_tip_len_on_channel(self, request: pb2.RequestTipLenOnChannelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestTipLenOnChannelResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_TIP_LEN_ON_CHANNEL, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_probe_z_position(self, request: pb2.RequestProbeZPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestProbeZPositionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_PROBE_Z_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def clld_probe_z_height_using_channel(self, request: pb2.ClldProbeZHeightUsingChannelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ClldProbeZHeightUsingChannelResponse:
-        return await self.execute_unary(request=request, method=_CLLD_PROBE_Z_HEIGHT_USING_CHANNEL, headers=headers, timeout_ms=timeout_ms)
-
-    async def plld_probe_z_height_using_channel(self, request: pb2.PlldProbeZHeightUsingChannelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PlldProbeZHeightUsingChannelResponse:
-        return await self.execute_unary(request=request, method=_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL, headers=headers, timeout_ms=timeout_ms)
-
-    async def ztouch_probe_z_height_using_channel(self, request: pb2.ZtouchProbeZHeightUsingChannelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ZtouchProbeZHeightUsingChannelResponse:
-        return await self.execute_unary(request=request, method=_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL, headers=headers, timeout_ms=timeout_ms)
-
-    async def pierce_foil(self, request: pb2.PierceFoilRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PierceFoilResponse:
-        return await self.execute_unary(request=request, method=_PIERCE_FOIL, headers=headers, timeout_ms=timeout_ms)
-
-    async def pierce_foil_high_level(self, request: pb2.PierceFoilHighLevelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PierceFoilHighLevelResponse:
-        return await self.execute_unary(request=request, method=_PIERCE_FOIL_HIGH_LEVEL, headers=headers, timeout_ms=timeout_ms)
-
-    async def step_off_foil(self, request: pb2.StepOffFoilRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StepOffFoilResponse:
-        return await self.execute_unary(request=request, method=_STEP_OFF_FOIL, headers=headers, timeout_ms=timeout_ms)
-
-    async def empty_tip(self, request: pb2.EmptyTipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.EmptyTipResponse:
-        return await self.execute_unary(request=request, method=_EMPTY_TIP, headers=headers, timeout_ms=timeout_ms)
-
-    async def empty_tips(self, request: pb2.EmptyTipsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.EmptyTipsResponse:
-        return await self.execute_unary(request=request, method=_EMPTY_TIPS, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_channel_x(self, request: pb2.MoveChannelXRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelXResponse:
-        return await self.execute_unary(request=request, method=_MOVE_CHANNEL_X, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_channel_y(self, request: pb2.MoveChannelYRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelYResponse:
-        return await self.execute_unary(request=request, method=_MOVE_CHANNEL_Y, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_channel_z(self, request: pb2.MoveChannelZRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelZResponse:
-        return await self.execute_unary(request=request, method=_MOVE_CHANNEL_Z, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_channel_x_relative(self, request: pb2.MoveChannelXRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelXRelativeResponse:
-        return await self.execute_unary(request=request, method=_MOVE_CHANNEL_X_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_channel_y_relative(self, request: pb2.MoveChannelYRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelYRelativeResponse:
-        return await self.execute_unary(request=request, method=_MOVE_CHANNEL_Y_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_channel_z_relative(self, request: pb2.MoveChannelZRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelZRelativeResponse:
-        return await self.execute_unary(request=request, method=_MOVE_CHANNEL_Z_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    async def prepare_for_manual_channel_operation(self, request: pb2.PrepareForManualChannelOperationRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PrepareForManualChannelOperationResponse:
-        return await self.execute_unary(request=request, method=_PREPARE_FOR_MANUAL_CHANNEL_OPERATION, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_all_channels_in_z_safety(self, request: pb2.MoveAllChannelsInZSafetyRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAllChannelsInZSafetyResponse:
-        return await self.execute_unary(request=request, method=_MOVE_ALL_CHANNELS_IN_Z_SAFETY, headers=headers, timeout_ms=timeout_ms)
-
-    async def position_single_pipetting_channel_in_y_direction(self, request: pb2.PositionSinglePipettingChannelInYDirectionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionSinglePipettingChannelInYDirectionResponse:
-        return await self.execute_unary(request=request, method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Y_DIRECTION, headers=headers, timeout_ms=timeout_ms)
-
-    async def position_single_pipetting_channel_in_z_direction(self, request: pb2.PositionSinglePipettingChannelInZDirectionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionSinglePipettingChannelInZDirectionResponse:
-        return await self.execute_unary(request=request, method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Z_DIRECTION, headers=headers, timeout_ms=timeout_ms)
-
-    async def position_max_free_y_for_n(self, request: pb2.PositionMaxFreeYForNRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionMaxFreeYForNResponse:
-        return await self.execute_unary(request=request, method=_POSITION_MAX_FREE_Y_FOR_N, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_x_pos_channel_n(self, request: pb2.RequestXPosChannelNRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestXPosChannelNResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_X_POS_CHANNEL_N, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_y_pos_channel_n(self, request: pb2.RequestYPosChannelNRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestYPosChannelNResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_Y_POS_CHANNEL_N, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_z_pos_channel_n(self, request: pb2.RequestZPosChannelNRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestZPosChannelNResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_Z_POS_CHANNEL_N, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_tip_bottom_z_position(self, request: pb2.RequestTipBottomZPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestTipBottomZPositionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_TIP_BOTTOM_Z_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def get_channels_y_positions(self, request: pb2.GetChannelsYPositionsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetChannelsYPositionsResponse:
-        return await self.execute_unary(request=request, method=_GET_CHANNELS_Y_POSITIONS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def position_channels_in_y_direction(self, request: pb2.PositionChannelsInYDirectionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionChannelsInYDirectionResponse:
-        return await self.execute_unary(request=request, method=_POSITION_CHANNELS_IN_Y_DIRECTION, headers=headers, timeout_ms=timeout_ms)
-
-    async def get_channels_z_positions(self, request: pb2.GetChannelsZPositionsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetChannelsZPositionsResponse:
-        return await self.execute_unary(request=request, method=_GET_CHANNELS_Z_POSITIONS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def position_channels_in_z_direction(self, request: pb2.PositionChannelsInZDirectionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionChannelsInZDirectionResponse:
-        return await self.execute_unary(request=request, method=_POSITION_CHANNELS_IN_Z_DIRECTION, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_pip_channel_version(self, request: pb2.RequestPipChannelVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPipChannelVersionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_PIP_CHANNEL_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def initialize_core96_head(self, request: pb2.InitializeCore96HeadRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeCore96HeadResponse:
-        return await self.execute_unary(request=request, method=_INITIALIZE_CORE96_HEAD, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_core96_head_initialization_status(self, request: pb2.RequestCore96HeadInitializationStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestCore96HeadInitializationStatusResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_CORE96_HEAD_INITIALIZATION_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def head96_request_firmware_version(self, request: pb2.Head96RequestFirmwareVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96RequestFirmwareVersionResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_REQUEST_FIRMWARE_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def head96_request_type(self, request: pb2.Head96RequestTypeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96RequestTypeResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_REQUEST_TYPE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def head96_dispensing_drive_and_squeezer_driver_initialize(self, request: pb2.Head96DispensingDriveAndSqueezerDriverInitializeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96DispensingDriveAndSqueezerDriverInitializeResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_AND_SQUEEZER_DRIVER_INITIALIZE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_core96_to_safe_position(self, request: pb2.MoveCore96ToSafePositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveCore96ToSafePositionResponse:
-        return await self.execute_unary(request=request, method=_MOVE_CORE96_TO_SAFE_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_move_to_z_safety(self, request: pb2.Head96MoveToZSafetyRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveToZSafetyResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_MOVE_TO_Z_SAFETY, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_park(self, request: pb2.Head96ParkRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96ParkResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_PARK, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_move_x(self, request: pb2.Head96MoveXRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveXResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_MOVE_X, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_move_y(self, request: pb2.Head96MoveYRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveYResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_MOVE_Y, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_move_z(self, request: pb2.Head96MoveZRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveZResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_MOVE_Z, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_core96_head_to_defined_position(self, request: pb2.MoveCore96HeadToDefinedPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveCore96HeadToDefinedPositionResponse:
-        return await self.execute_unary(request=request, method=_MOVE_CORE96_HEAD_TO_DEFINED_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_move_to_coordinate(self, request: pb2.Head96MoveToCoordinateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveToCoordinateResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_MOVE_TO_COORDINATE, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_dispensing_drive_move_to_home_volume(self, request: pb2.Head96DispensingDriveMoveToHomeVolumeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96DispensingDriveMoveToHomeVolumeResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_HOME_VOLUME, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_dispensing_drive_move_to_position(self, request: pb2.Head96DispensingDriveMoveToPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96DispensingDriveMoveToPositionResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def head96_dispensing_drive_request_position_mm(self, request: pb2.Head96DispensingDriveRequestPositionMmRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96DispensingDriveRequestPositionMmResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_MM, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def head96_dispensing_drive_request_position_ul(self, request: pb2.Head96DispensingDriveRequestPositionUlRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96DispensingDriveRequestPositionUlResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_UL, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def head96_request_tip_presence(self, request: pb2.Head96RequestTipPresenceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96RequestTipPresenceResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_REQUEST_TIP_PRESENCE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def head96_request_position(self, request: pb2.Head96RequestPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96RequestPositionResponse:
-        return await self.execute_unary(request=request, method=_HEAD96_REQUEST_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def pick_up_tips_core96(self, request: pb2.PickUpTipsCore96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpTipsCore96Response:
-        return await self.execute_unary(request=request, method=_PICK_UP_TIPS_CORE96, headers=headers, timeout_ms=timeout_ms)
-
-    async def discard_tips_core96(self, request: pb2.DiscardTipsCore96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DiscardTipsCore96Response:
-        return await self.execute_unary(request=request, method=_DISCARD_TIPS_CORE96, headers=headers, timeout_ms=timeout_ms)
-
-    async def aspirate_core96(self, request: pb2.AspirateCore96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.AspirateCore96Response:
-        return await self.execute_unary(request=request, method=_ASPIRATE_CORE96, headers=headers, timeout_ms=timeout_ms)
-
-    async def dispense_core96(self, request: pb2.DispenseCore96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DispenseCore96Response:
-        return await self.execute_unary(request=request, method=_DISPENSE_CORE96, headers=headers, timeout_ms=timeout_ms)
-
-    async def initialize_iswap(self, request: pb2.InitializeIswapRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeIswapResponse:
-        return await self.execute_unary(request=request, method=_INITIALIZE_ISWAP, headers=headers, timeout_ms=timeout_ms)
-
-    async def position_components_for_free_iswap_y_range(self, request: pb2.PositionComponentsForFreeIswapYRangeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionComponentsForFreeIswapYRangeResponse:
-        return await self.execute_unary(request=request, method=_POSITION_COMPONENTS_FOR_FREE_ISWAP_Y_RANGE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_iswap_x_relative(self, request: pb2.MoveIswapXRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapXRelativeResponse:
-        return await self.execute_unary(request=request, method=_MOVE_ISWAP_X_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_iswap_y_relative(self, request: pb2.MoveIswapYRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapYRelativeResponse:
-        return await self.execute_unary(request=request, method=_MOVE_ISWAP_Y_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_iswap_z_relative(self, request: pb2.MoveIswapZRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapZRelativeResponse:
-        return await self.execute_unary(request=request, method=_MOVE_ISWAP_Z_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_iswap_x(self, request: pb2.MoveIswapXRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapXResponse:
-        return await self.execute_unary(request=request, method=_MOVE_ISWAP_X, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_iswap_y(self, request: pb2.MoveIswapYRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapYResponse:
-        return await self.execute_unary(request=request, method=_MOVE_ISWAP_Y, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_iswap_z(self, request: pb2.MoveIswapZRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapZResponse:
-        return await self.execute_unary(request=request, method=_MOVE_ISWAP_Z, headers=headers, timeout_ms=timeout_ms)
-
-    async def open_not_initialized_gripper(self, request: pb2.OpenNotInitializedGripperRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.OpenNotInitializedGripperResponse:
-        return await self.execute_unary(request=request, method=_OPEN_NOT_INITIALIZED_GRIPPER, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_open_gripper(self, request: pb2.IswapOpenGripperRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapOpenGripperResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_OPEN_GRIPPER, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_close_gripper(self, request: pb2.IswapCloseGripperRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapCloseGripperResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_CLOSE_GRIPPER, headers=headers, timeout_ms=timeout_ms)
-
-    async def park_iswap(self, request: pb2.ParkIswapRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ParkIswapResponse:
-        return await self.execute_unary(request=request, method=_PARK_ISWAP, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_get_plate(self, request: pb2.IswapGetPlateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapGetPlateResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_GET_PLATE, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_put_plate(self, request: pb2.IswapPutPlateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapPutPlateResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_PUT_PLATE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_plate_to_position(self, request: pb2.MovePlateToPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MovePlateToPositionResponse:
-        return await self.execute_unary(request=request, method=_MOVE_PLATE_TO_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def collapse_gripper_arm(self, request: pb2.CollapseGripperArmRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CollapseGripperArmResponse:
-        return await self.execute_unary(request=request, method=_COLLAPSE_GRIPPER_ARM, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_rotate(self, request: pb2.IswapRotateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapRotateResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_ROTATE, headers=headers, timeout_ms=timeout_ms)
-
-    async def rotate_iswap_rotation_drive(self, request: pb2.RotateIswapRotationDriveRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.RotateIswapRotationDriveResponse:
-        return await self.execute_unary(request=request, method=_ROTATE_ISWAP_ROTATION_DRIVE, headers=headers, timeout_ms=timeout_ms)
-
-    async def rotate_iswap_wrist(self, request: pb2.RotateIswapWristRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.RotateIswapWristResponse:
-        return await self.execute_unary(request=request, method=_ROTATE_ISWAP_WRIST, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_dangerous_release_break(self, request: pb2.IswapDangerousReleaseBreakRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapDangerousReleaseBreakResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_DANGEROUS_RELEASE_BREAK, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_reengage_break(self, request: pb2.IswapReengageBreakRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapReengageBreakResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_REENGAGE_BREAK, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_initialize_z_axis(self, request: pb2.IswapInitializeZAxisRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapInitializeZAxisResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_INITIALIZE_Z_AXIS, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_iswap_rotation_drive_position_increments(self, request: pb2.RequestIswapRotationDrivePositionIncrementsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapRotationDrivePositionIncrementsResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ISWAP_ROTATION_DRIVE_POSITION_INCREMENTS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_iswap_rotation_drive_orientation(self, request: pb2.RequestIswapRotationDriveOrientationRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapRotationDriveOrientationResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ISWAP_ROTATION_DRIVE_ORIENTATION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_iswap_wrist_drive_position_increments(self, request: pb2.RequestIswapWristDrivePositionIncrementsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapWristDrivePositionIncrementsResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ISWAP_WRIST_DRIVE_POSITION_INCREMENTS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_iswap_wrist_drive_orientation(self, request: pb2.RequestIswapWristDriveOrientationRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapWristDriveOrientationResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ISWAP_WRIST_DRIVE_ORIENTATION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_iswap_in_parking_position(self, request: pb2.RequestIswapInParkingPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapInParkingPositionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ISWAP_IN_PARKING_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_plate_in_iswap(self, request: pb2.RequestPlateInIswapRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPlateInIswapResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_PLATE_IN_ISWAP, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_iswap_position(self, request: pb2.RequestIswapPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapPositionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ISWAP_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def iswap_rotation_drive_request_y(self, request: pb2.IswapRotationDriveRequestYRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.IswapRotationDriveRequestYResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_ROTATION_DRIVE_REQUEST_Y, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_iswap_initialization_status(self, request: pb2.RequestIswapInitializationStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapInitializationStatusResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ISWAP_INITIALIZATION_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_iswap_version(self, request: pb2.RequestIswapVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapVersionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ISWAP_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def get_iswap_version(self, request: pb2.GetIswapVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetIswapVersionResponse:
-        return await self.execute_unary(request=request, method=_GET_ISWAP_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def slow_iswap(self, request: pb2.SlowIswapRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SlowIswapResponse:
-        return await self.execute_unary(request=request, method=_SLOW_ISWAP, headers=headers, timeout_ms=timeout_ms)
-
-    async def iswap_move_picked_up_resource(self, request: pb2.IswapMovePickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapMovePickedUpResourceResponse:
-        return await self.execute_unary(request=request, method=_ISWAP_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    async def pick_up_resource(self, request: pb2.PickUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpResourceResponse:
-        return await self.execute_unary(request=request, method=_PICK_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_picked_up_resource(self, request: pb2.MovePickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MovePickedUpResourceResponse:
-        return await self.execute_unary(request=request, method=_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    async def drop_resource(self, request: pb2.DropResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DropResourceResponse:
-        return await self.execute_unary(request=request, method=_DROP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    async def pick_up_core_gripper_tools(self, request: pb2.PickUpCoreGripperToolsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpCoreGripperToolsResponse:
-        return await self.execute_unary(request=request, method=_PICK_UP_CORE_GRIPPER_TOOLS, headers=headers, timeout_ms=timeout_ms)
-
-    async def return_core_gripper_tools(self, request: pb2.ReturnCoreGripperToolsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ReturnCoreGripperToolsResponse:
-        return await self.execute_unary(request=request, method=_RETURN_CORE_GRIPPER_TOOLS, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_open_gripper(self, request: pb2.CoreOpenGripperRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreOpenGripperResponse:
-        return await self.execute_unary(request=request, method=_CORE_OPEN_GRIPPER, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_get_plate(self, request: pb2.CoreGetPlateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreGetPlateResponse:
-        return await self.execute_unary(request=request, method=_CORE_GET_PLATE, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_put_plate(self, request: pb2.CorePutPlateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CorePutPlateResponse:
-        return await self.execute_unary(request=request, method=_CORE_PUT_PLATE, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_move_plate_to_position(self, request: pb2.CoreMovePlateToPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreMovePlateToPositionResponse:
-        return await self.execute_unary(request=request, method=_CORE_MOVE_PLATE_TO_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_pick_up_resource(self, request: pb2.CorePickUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CorePickUpResourceResponse:
-        return await self.execute_unary(request=request, method=_CORE_PICK_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_move_picked_up_resource(self, request: pb2.CoreMovePickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreMovePickedUpResourceResponse:
-        return await self.execute_unary(request=request, method=_CORE_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_release_picked_up_resource(self, request: pb2.CoreReleasePickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreReleasePickedUpResourceResponse:
-        return await self.execute_unary(request=request, method=_CORE_RELEASE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_check_resource_exists_at_location_center(self, request: pb2.CoreCheckResourceExistsAtLocationCenterRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreCheckResourceExistsAtLocationCenterResponse:
-        return await self.execute_unary(request=request, method=_CORE_CHECK_RESOURCE_EXISTS_AT_LOCATION_CENTER, headers=headers, timeout_ms=timeout_ms)
-
-    async def get_core(self, request: pb2.GetCoreRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetCoreResponse:
-        return await self.execute_unary(request=request, method=_GET_CORE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def put_core(self, request: pb2.PutCoreRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PutCoreResponse:
-        return await self.execute_unary(request=request, method=_PUT_CORE, headers=headers, timeout_ms=timeout_ms)
-
-    async def core_read_barcode_of_picked_up_resource(self, request: pb2.CoreReadBarcodeOfPickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreReadBarcodeOfPickedUpResourceResponse:
-        return await self.execute_unary(request=request, method=_CORE_READ_BARCODE_OF_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    async def initialize_autoload(self, request: pb2.InitializeAutoloadRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeAutoloadResponse:
-        return await self.execute_unary(request=request, method=_INITIALIZE_AUTOLOAD, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_autoload_to_safe_z_position(self, request: pb2.MoveAutoloadToSafeZPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAutoloadToSafeZPositionResponse:
-        return await self.execute_unary(request=request, method=_MOVE_AUTOLOAD_TO_SAFE_Z_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_autoload_track(self, request: pb2.RequestAutoloadTrackRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestAutoloadTrackResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_AUTOLOAD_TRACK, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_autoload_type(self, request: pb2.RequestAutoloadTypeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestAutoloadTypeResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_AUTOLOAD_TYPE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_presence_of_carriers_on_deck(self, request: pb2.RequestPresenceOfCarriersOnDeckRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPresenceOfCarriersOnDeckResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_PRESENCE_OF_CARRIERS_ON_DECK, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_presence_of_carriers_on_loading_tray(self, request: pb2.RequestPresenceOfCarriersOnLoadingTrayRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPresenceOfCarriersOnLoadingTrayResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_PRESENCE_OF_CARRIERS_ON_LOADING_TRAY, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_presence_of_single_carrier_on_loading_tray(self, request: pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPresenceOfSingleCarrierOnLoadingTrayResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_PRESENCE_OF_SINGLE_CARRIER_ON_LOADING_TRAY, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def move_autoload_to_slot(self, request: pb2.MoveAutoloadToSlotRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAutoloadToSlotResponse:
-        return await self.execute_unary(request=request, method=_MOVE_AUTOLOAD_TO_SLOT, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_autoload_to_track(self, request: pb2.MoveAutoloadToTrackRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAutoloadToTrackResponse:
-        return await self.execute_unary(request=request, method=_MOVE_AUTOLOAD_TO_TRACK, headers=headers, timeout_ms=timeout_ms)
-
-    async def park_autoload(self, request: pb2.ParkAutoloadRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ParkAutoloadResponse:
-        return await self.execute_unary(request=request, method=_PARK_AUTOLOAD, headers=headers, timeout_ms=timeout_ms)
-
-    async def take_carrier_out_to_autoload_belt(self, request: pb2.TakeCarrierOutToAutoloadBeltRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.TakeCarrierOutToAutoloadBeltResponse:
-        return await self.execute_unary(request=request, method=_TAKE_CARRIER_OUT_TO_AUTOLOAD_BELT, headers=headers, timeout_ms=timeout_ms)
-
-    async def set_barcode_type(self, request: pb2.SetBarcodeTypeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetBarcodeTypeResponse:
-        return await self.execute_unary(request=request, method=_SET_BARCODE_TYPE, headers=headers, timeout_ms=timeout_ms)
-
-    async def load_carrier_from_tray_and_scan_carrier_barcode(self, request: pb2.LoadCarrierFromTrayAndScanCarrierBarcodeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.LoadCarrierFromTrayAndScanCarrierBarcodeResponse:
-        return await self.execute_unary(request=request, method=_LOAD_CARRIER_FROM_TRAY_AND_SCAN_CARRIER_BARCODE, headers=headers, timeout_ms=timeout_ms)
-
-    async def set_carrier_monitoring(self, request: pb2.SetCarrierMonitoringRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetCarrierMonitoringResponse:
-        return await self.execute_unary(request=request, method=_SET_CARRIER_MONITORING, headers=headers, timeout_ms=timeout_ms)
-
-    async def load_carrier(self, request: pb2.LoadCarrierRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.LoadCarrierResponse:
-        return await self.execute_unary(request=request, method=_LOAD_CARRIER, headers=headers, timeout_ms=timeout_ms)
-
-    async def set_loading_indicators(self, request: pb2.SetLoadingIndicatorsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetLoadingIndicatorsResponse:
-        return await self.execute_unary(request=request, method=_SET_LOADING_INDICATORS, headers=headers, timeout_ms=timeout_ms)
-
-    async def unload_carrier(self, request: pb2.UnloadCarrierRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.UnloadCarrierResponse:
-        return await self.execute_unary(request=request, method=_UNLOAD_CARRIER, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_instrument_initialization_status(self, request: pb2.RequestInstrumentInitializationStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestInstrumentInitializationStatusResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_INSTRUMENT_INITIALIZATION_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_autoload_initialization_status(self, request: pb2.RequestAutoloadInitializationStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestAutoloadInitializationStatusResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_AUTOLOAD_INITIALIZATION_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def lock_cover(self, request: pb2.LockCoverRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.LockCoverResponse:
-        return await self.execute_unary(request=request, method=_LOCK_COVER, headers=headers, timeout_ms=timeout_ms)
-
-    async def unlock_cover(self, request: pb2.UnlockCoverRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.UnlockCoverResponse:
-        return await self.execute_unary(request=request, method=_UNLOCK_COVER, headers=headers, timeout_ms=timeout_ms)
-
-    async def disable_cover_control(self, request: pb2.DisableCoverControlRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DisableCoverControlResponse:
-        return await self.execute_unary(request=request, method=_DISABLE_COVER_CONTROL, headers=headers, timeout_ms=timeout_ms)
-
-    async def enable_cover_control(self, request: pb2.EnableCoverControlRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.EnableCoverControlResponse:
-        return await self.execute_unary(request=request, method=_ENABLE_COVER_CONTROL, headers=headers, timeout_ms=timeout_ms)
-
-    async def set_cover_output(self, request: pb2.SetCoverOutputRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetCoverOutputResponse:
-        return await self.execute_unary(request=request, method=_SET_COVER_OUTPUT, headers=headers, timeout_ms=timeout_ms)
-
-    async def reset_output(self, request: pb2.ResetOutputRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ResetOutputResponse:
-        return await self.execute_unary(request=request, method=_RESET_OUTPUT, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_cover_open(self, request: pb2.RequestCoverOpenRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestCoverOpenResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_COVER_OPEN, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def send_hhs_command(self, request: pb2.SendHhsCommandRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SendHhsCommandResponse:
-        return await self.execute_unary(request=request, method=_SEND_HHS_COMMAND, headers=headers, timeout_ms=timeout_ms)
-
-    async def check_type_is_hhc(self, request: pb2.CheckTypeIsHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CheckTypeIsHhcResponse:
-        return await self.execute_unary(request=request, method=_CHECK_TYPE_IS_HHC, headers=headers, timeout_ms=timeout_ms)
-
-    async def initialize_hhc(self, request: pb2.InitializeHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeHhcResponse:
-        return await self.execute_unary(request=request, method=_INITIALIZE_HHC, headers=headers, timeout_ms=timeout_ms)
-
-    async def start_temperature_control_at_hhc(self, request: pb2.StartTemperatureControlAtHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StartTemperatureControlAtHhcResponse:
-        return await self.execute_unary(request=request, method=_START_TEMPERATURE_CONTROL_AT_HHC, headers=headers, timeout_ms=timeout_ms)
-
-    async def get_temperature_at_hhc(self, request: pb2.GetTemperatureAtHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetTemperatureAtHhcResponse:
-        return await self.execute_unary(request=request, method=_GET_TEMPERATURE_AT_HHC, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def query_whether_temperature_reached_at_hhc(self, request: pb2.QueryWhetherTemperatureReachedAtHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.QueryWhetherTemperatureReachedAtHhcResponse:
-        return await self.execute_unary(request=request, method=_QUERY_WHETHER_TEMPERATURE_REACHED_AT_HHC, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def stop_temperature_control_at_hhc(self, request: pb2.StopTemperatureControlAtHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StopTemperatureControlAtHhcResponse:
-        return await self.execute_unary(request=request, method=_STOP_TEMPERATURE_CONTROL_AT_HHC, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_firmware_version(self, request: pb2.RequestFirmwareVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestFirmwareVersionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_FIRMWARE_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_error_code(self, request: pb2.RequestErrorCodeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestErrorCodeResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_ERROR_CODE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_device_serial_number(self, request: pb2.RequestDeviceSerialNumberRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestDeviceSerialNumberResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_DEVICE_SERIAL_NUMBER, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_master_status(self, request: pb2.RequestMasterStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestMasterStatusResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_MASTER_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def set_single_step_mode(self, request: pb2.SetSingleStepModeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetSingleStepModeResponse:
-        return await self.execute_unary(request=request, method=_SET_SINGLE_STEP_MODE, headers=headers, timeout_ms=timeout_ms)
-
-    async def trigger_next_step(self, request: pb2.TriggerNextStepRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.TriggerNextStepResponse:
-        return await self.execute_unary(request=request, method=_TRIGGER_NEXT_STEP, headers=headers, timeout_ms=timeout_ms)
-
-    async def halt(self, request: pb2.HaltRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.HaltResponse:
-        return await self.execute_unary(request=request, method=_HALT, headers=headers, timeout_ms=timeout_ms)
-
-    async def save_all_cycle_counters(self, request: pb2.SaveAllCycleCountersRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SaveAllCycleCountersResponse:
-        return await self.execute_unary(request=request, method=_SAVE_ALL_CYCLE_COUNTERS, headers=headers, timeout_ms=timeout_ms)
-
-    async def set_not_stop(self, request: pb2.SetNotStopRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetNotStopResponse:
-        return await self.execute_unary(request=request, method=_SET_NOT_STOP, headers=headers, timeout_ms=timeout_ms)
-
-    async def configure_node_names(self, request: pb2.ConfigureNodeNamesRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ConfigureNodeNamesResponse:
-        return await self.execute_unary(request=request, method=_CONFIGURE_NODE_NAMES, headers=headers, timeout_ms=timeout_ms)
-
-    async def set_deck_data(self, request: pb2.SetDeckDataRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetDeckDataResponse:
-        return await self.execute_unary(request=request, method=_SET_DECK_DATA, headers=headers, timeout_ms=timeout_ms)
-
-    async def position_left_x_arm(self, request: pb2.PositionLeftXArmRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionLeftXArmResponse:
-        return await self.execute_unary(request=request, method=_POSITION_LEFT_X_ARM, headers=headers, timeout_ms=timeout_ms)
-
-    async def position_right_x_arm(self, request: pb2.PositionRightXArmRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionRightXArmResponse:
-        return await self.execute_unary(request=request, method=_POSITION_RIGHT_X_ARM, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(self, request: pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
-        return await self.execute_unary(request=request, method=_MOVE_LEFT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position(self, request: pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
-        return await self.execute_unary(request=request, method=_MOVE_RIGHT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    async def request_left_x_arm_position(self, request: pb2.RequestLeftXArmPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestLeftXArmPositionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_LEFT_X_ARM_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_right_x_arm_position(self, request: pb2.RequestRightXArmPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestRightXArmPositionResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_RIGHT_X_ARM_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_right_x_arm_last_collision_type(self, request: pb2.RequestRightXArmLastCollisionTypeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestRightXArmLastCollisionTypeResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_RIGHT_X_ARM_LAST_COLLISION_TYPE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def request_pump_settings(self, request: pb2.RequestPumpSettingsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPumpSettingsResponse:
-        return await self.execute_unary(request=request, method=_REQUEST_PUMP_SETTINGS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    async def initialize_dual_pump_station_valves(self, request: pb2.InitializeDualPumpStationValvesRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeDualPumpStationValvesResponse:
-        return await self.execute_unary(request=request, method=_INITIALIZE_DUAL_PUMP_STATION_VALVES, headers=headers, timeout_ms=timeout_ms)
-
-    async def drain_dual_chamber_system(self, request: pb2.DrainDualChamberSystemRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DrainDualChamberSystemResponse:
-        return await self.execute_unary(request=request, method=_DRAIN_DUAL_CHAMBER_SYSTEM, headers=headers, timeout_ms=timeout_ms)
-
-    async def violently_shoot_down_tip(self, request: pb2.ViolentlyShootDownTipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ViolentlyShootDownTipResponse:
-        return await self.execute_unary(request=request, method=_VIOLENTLY_SHOOT_DOWN_TIP, headers=headers, timeout_ms=timeout_ms)
-
-    async def can_pick_up_tip(self, request: pb2.CanPickUpTipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.CanPickUpTipResponse:
-        return await self.execute_unary(request=request, method=_CAN_PICK_UP_TIP, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
+  async def setup(
+    self,
+    request: pb2.SetupRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetupResponse:
+    return await self.execute_unary(
+      request=request, method=_SETUP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def stop(
+    self,
+    request: pb2.StopRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.StopResponse:
+    return await self.execute_unary(
+      request=request, method=_STOP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def get_num_channels(
+    self,
+    request: pb2.GetNumChannelsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetNumChannelsResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_NUM_CHANNELS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def get_head96_installed(
+    self,
+    request: pb2.GetHead96InstalledRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetHead96InstalledResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_HEAD96_INSTALLED,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def get_iswap_installed(
+    self,
+    request: pb2.GetIswapInstalledRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetIswapInstalledResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_ISWAP_INSTALLED,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def get_iswap_parked(
+    self,
+    request: pb2.GetIswapParkedRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetIswapParkedResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_ISWAP_PARKED,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def get_core_parked(
+    self,
+    request: pb2.GetCoreParkedRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetCoreParkedResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_CORE_PARKED,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def pick_up_tips(
+    self,
+    request: pb2.PickUpTipsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpTipsResponse:
+    return await self.execute_unary(
+      request=request, method=_PICK_UP_TIPS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def drop_tips(
+    self,
+    request: pb2.DropTipsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DropTipsResponse:
+    return await self.execute_unary(
+      request=request, method=_DROP_TIPS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def aspirate(
+    self,
+    request: pb2.AspirateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.AspirateResponse:
+    return await self.execute_unary(
+      request=request, method=_ASPIRATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def dispense(
+    self,
+    request: pb2.DispenseRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DispenseResponse:
+    return await self.execute_unary(
+      request=request, method=_DISPENSE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def pick_up_tips96(
+    self,
+    request: pb2.PickUpTips96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpTips96Response:
+    return await self.execute_unary(
+      request=request, method=_PICK_UP_TIPS96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def drop_tips96(
+    self,
+    request: pb2.DropTips96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DropTips96Response:
+    return await self.execute_unary(
+      request=request, method=_DROP_TIPS96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def aspirate96(
+    self,
+    request: pb2.Aspirate96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Aspirate96Response:
+    return await self.execute_unary(
+      request=request, method=_ASPIRATE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def dispense96(
+    self,
+    request: pb2.Dispense96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Dispense96Response:
+    return await self.execute_unary(
+      request=request, method=_DISPENSE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def initialize_pip(
+    self,
+    request: pb2.InitializePipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializePipResponse:
+    return await self.execute_unary(
+      request=request, method=_INITIALIZE_PIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def initialize_pipetting_channels(
+    self,
+    request: pb2.InitializePipettingChannelsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializePipettingChannelsResponse:
+    return await self.execute_unary(
+      request=request, method=_INITIALIZE_PIPETTING_CHANNELS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def pick_up_tip_fw(
+    self,
+    request: pb2.PickUpTipFwRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpTipFwResponse:
+    return await self.execute_unary(
+      request=request, method=_PICK_UP_TIP_FW, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def discard_tip_fw(
+    self,
+    request: pb2.DiscardTipFwRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DiscardTipFwResponse:
+    return await self.execute_unary(
+      request=request, method=_DISCARD_TIP_FW, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def aspirate_pip(
+    self,
+    request: pb2.AspiratePipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.AspiratePipResponse:
+    return await self.execute_unary(
+      request=request, method=_ASPIRATE_PIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def dispense_pip(
+    self,
+    request: pb2.DispensePipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DispensePipResponse:
+    return await self.execute_unary(
+      request=request, method=_DISPENSE_PIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def spread_pip_channels(
+    self,
+    request: pb2.SpreadPipChannelsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SpreadPipChannelsResponse:
+    return await self.execute_unary(
+      request=request, method=_SPREAD_PIP_CHANNELS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_all_pipetting_channels_to_defined_position(
+    self,
+    request: pb2.MoveAllPipettingChannelsToDefinedPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAllPipettingChannelsToDefinedPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_MOVE_ALL_PIPETTING_CHANNELS_TO_DEFINED_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def define_tip_needle(
+    self,
+    request: pb2.DefineTipNeedleRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DefineTipNeedleResponse:
+    return await self.execute_unary(
+      request=request, method=_DEFINE_TIP_NEEDLE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def probe_liquid_heights(
+    self,
+    request: pb2.ProbeLiquidHeightsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ProbeLiquidHeightsResponse:
+    return await self.execute_unary(
+      request=request, method=_PROBE_LIQUID_HEIGHTS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def probe_liquid_volumes(
+    self,
+    request: pb2.ProbeLiquidVolumesRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ProbeLiquidVolumesResponse:
+    return await self.execute_unary(
+      request=request, method=_PROBE_LIQUID_VOLUMES, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def request_tip_presence(
+    self,
+    request: pb2.RequestTipPresenceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestTipPresenceResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_TIP_PRESENCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def channels_sense_tip_presence(
+    self,
+    request: pb2.ChannelsSenseTipPresenceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.ChannelsSenseTipPresenceResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_CHANNELS_SENSE_TIP_PRESENCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_pip_height_last_lld(
+    self,
+    request: pb2.RequestPipHeightLastLldRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPipHeightLastLldResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_PIP_HEIGHT_LAST_LLD,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_tadm_status(
+    self,
+    request: pb2.RequestTadmStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestTadmStatusResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_TADM_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_volume_in_tip(
+    self,
+    request: pb2.RequestVolumeInTipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestVolumeInTipResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_VOLUME_IN_TIP,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_tip_len_on_channel(
+    self,
+    request: pb2.RequestTipLenOnChannelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestTipLenOnChannelResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_TIP_LEN_ON_CHANNEL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_probe_z_position(
+    self,
+    request: pb2.RequestProbeZPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestProbeZPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_PROBE_Z_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def clld_probe_z_height_using_channel(
+    self,
+    request: pb2.ClldProbeZHeightUsingChannelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ClldProbeZHeightUsingChannelResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_CLLD_PROBE_Z_HEIGHT_USING_CHANNEL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def plld_probe_z_height_using_channel(
+    self,
+    request: pb2.PlldProbeZHeightUsingChannelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PlldProbeZHeightUsingChannelResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def ztouch_probe_z_height_using_channel(
+    self,
+    request: pb2.ZtouchProbeZHeightUsingChannelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ZtouchProbeZHeightUsingChannelResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def pierce_foil(
+    self,
+    request: pb2.PierceFoilRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PierceFoilResponse:
+    return await self.execute_unary(
+      request=request, method=_PIERCE_FOIL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def pierce_foil_high_level(
+    self,
+    request: pb2.PierceFoilHighLevelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PierceFoilHighLevelResponse:
+    return await self.execute_unary(
+      request=request, method=_PIERCE_FOIL_HIGH_LEVEL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def step_off_foil(
+    self,
+    request: pb2.StepOffFoilRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.StepOffFoilResponse:
+    return await self.execute_unary(
+      request=request, method=_STEP_OFF_FOIL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def empty_tip(
+    self,
+    request: pb2.EmptyTipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.EmptyTipResponse:
+    return await self.execute_unary(
+      request=request, method=_EMPTY_TIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def empty_tips(
+    self,
+    request: pb2.EmptyTipsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.EmptyTipsResponse:
+    return await self.execute_unary(
+      request=request, method=_EMPTY_TIPS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_channel_x(
+    self,
+    request: pb2.MoveChannelXRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelXResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_X, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_channel_y(
+    self,
+    request: pb2.MoveChannelYRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelYResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_Y, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_channel_z(
+    self,
+    request: pb2.MoveChannelZRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelZResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_Z, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_channel_x_relative(
+    self,
+    request: pb2.MoveChannelXRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelXRelativeResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_X_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_channel_y_relative(
+    self,
+    request: pb2.MoveChannelYRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelYRelativeResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_Y_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_channel_z_relative(
+    self,
+    request: pb2.MoveChannelZRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelZRelativeResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_Z_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def prepare_for_manual_channel_operation(
+    self,
+    request: pb2.PrepareForManualChannelOperationRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PrepareForManualChannelOperationResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_PREPARE_FOR_MANUAL_CHANNEL_OPERATION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def move_all_channels_in_z_safety(
+    self,
+    request: pb2.MoveAllChannelsInZSafetyRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAllChannelsInZSafetyResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_ALL_CHANNELS_IN_Z_SAFETY, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def position_single_pipetting_channel_in_y_direction(
+    self,
+    request: pb2.PositionSinglePipettingChannelInYDirectionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionSinglePipettingChannelInYDirectionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Y_DIRECTION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def position_single_pipetting_channel_in_z_direction(
+    self,
+    request: pb2.PositionSinglePipettingChannelInZDirectionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionSinglePipettingChannelInZDirectionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Z_DIRECTION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def position_max_free_y_for_n(
+    self,
+    request: pb2.PositionMaxFreeYForNRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionMaxFreeYForNResponse:
+    return await self.execute_unary(
+      request=request, method=_POSITION_MAX_FREE_Y_FOR_N, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def request_x_pos_channel_n(
+    self,
+    request: pb2.RequestXPosChannelNRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestXPosChannelNResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_X_POS_CHANNEL_N,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_y_pos_channel_n(
+    self,
+    request: pb2.RequestYPosChannelNRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestYPosChannelNResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_Y_POS_CHANNEL_N,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_z_pos_channel_n(
+    self,
+    request: pb2.RequestZPosChannelNRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestZPosChannelNResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_Z_POS_CHANNEL_N,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_tip_bottom_z_position(
+    self,
+    request: pb2.RequestTipBottomZPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestTipBottomZPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_TIP_BOTTOM_Z_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def get_channels_y_positions(
+    self,
+    request: pb2.GetChannelsYPositionsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetChannelsYPositionsResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_CHANNELS_Y_POSITIONS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def position_channels_in_y_direction(
+    self,
+    request: pb2.PositionChannelsInYDirectionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionChannelsInYDirectionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_POSITION_CHANNELS_IN_Y_DIRECTION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def get_channels_z_positions(
+    self,
+    request: pb2.GetChannelsZPositionsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetChannelsZPositionsResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_CHANNELS_Z_POSITIONS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def position_channels_in_z_direction(
+    self,
+    request: pb2.PositionChannelsInZDirectionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionChannelsInZDirectionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_POSITION_CHANNELS_IN_Z_DIRECTION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def request_pip_channel_version(
+    self,
+    request: pb2.RequestPipChannelVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPipChannelVersionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_PIP_CHANNEL_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def initialize_core96_head(
+    self,
+    request: pb2.InitializeCore96HeadRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeCore96HeadResponse:
+    return await self.execute_unary(
+      request=request, method=_INITIALIZE_CORE96_HEAD, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def request_core96_head_initialization_status(
+    self,
+    request: pb2.RequestCore96HeadInitializationStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestCore96HeadInitializationStatusResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_CORE96_HEAD_INITIALIZATION_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def head96_request_firmware_version(
+    self,
+    request: pb2.Head96RequestFirmwareVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96RequestFirmwareVersionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_REQUEST_FIRMWARE_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def head96_request_type(
+    self,
+    request: pb2.Head96RequestTypeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96RequestTypeResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_REQUEST_TYPE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def head96_dispensing_drive_and_squeezer_driver_initialize(
+    self,
+    request: pb2.Head96DispensingDriveAndSqueezerDriverInitializeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96DispensingDriveAndSqueezerDriverInitializeResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_AND_SQUEEZER_DRIVER_INITIALIZE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def move_core96_to_safe_position(
+    self,
+    request: pb2.MoveCore96ToSafePositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveCore96ToSafePositionResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_CORE96_TO_SAFE_POSITION, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def head96_move_to_z_safety(
+    self,
+    request: pb2.Head96MoveToZSafetyRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveToZSafetyResponse:
+    return await self.execute_unary(
+      request=request, method=_HEAD96_MOVE_TO_Z_SAFETY, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def head96_park(
+    self,
+    request: pb2.Head96ParkRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96ParkResponse:
+    return await self.execute_unary(
+      request=request, method=_HEAD96_PARK, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def head96_move_x(
+    self,
+    request: pb2.Head96MoveXRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveXResponse:
+    return await self.execute_unary(
+      request=request, method=_HEAD96_MOVE_X, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def head96_move_y(
+    self,
+    request: pb2.Head96MoveYRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveYResponse:
+    return await self.execute_unary(
+      request=request, method=_HEAD96_MOVE_Y, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def head96_move_z(
+    self,
+    request: pb2.Head96MoveZRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveZResponse:
+    return await self.execute_unary(
+      request=request, method=_HEAD96_MOVE_Z, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_core96_head_to_defined_position(
+    self,
+    request: pb2.MoveCore96HeadToDefinedPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveCore96HeadToDefinedPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_MOVE_CORE96_HEAD_TO_DEFINED_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def head96_move_to_coordinate(
+    self,
+    request: pb2.Head96MoveToCoordinateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveToCoordinateResponse:
+    return await self.execute_unary(
+      request=request, method=_HEAD96_MOVE_TO_COORDINATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def head96_dispensing_drive_move_to_home_volume(
+    self,
+    request: pb2.Head96DispensingDriveMoveToHomeVolumeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96DispensingDriveMoveToHomeVolumeResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_HOME_VOLUME,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def head96_dispensing_drive_move_to_position(
+    self,
+    request: pb2.Head96DispensingDriveMoveToPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96DispensingDriveMoveToPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def head96_dispensing_drive_request_position_mm(
+    self,
+    request: pb2.Head96DispensingDriveRequestPositionMmRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96DispensingDriveRequestPositionMmResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_MM,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def head96_dispensing_drive_request_position_ul(
+    self,
+    request: pb2.Head96DispensingDriveRequestPositionUlRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96DispensingDriveRequestPositionUlResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_UL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def head96_request_tip_presence(
+    self,
+    request: pb2.Head96RequestTipPresenceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96RequestTipPresenceResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_REQUEST_TIP_PRESENCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def head96_request_position(
+    self,
+    request: pb2.Head96RequestPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96RequestPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_HEAD96_REQUEST_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def pick_up_tips_core96(
+    self,
+    request: pb2.PickUpTipsCore96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpTipsCore96Response:
+    return await self.execute_unary(
+      request=request, method=_PICK_UP_TIPS_CORE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def discard_tips_core96(
+    self,
+    request: pb2.DiscardTipsCore96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DiscardTipsCore96Response:
+    return await self.execute_unary(
+      request=request, method=_DISCARD_TIPS_CORE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def aspirate_core96(
+    self,
+    request: pb2.AspirateCore96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.AspirateCore96Response:
+    return await self.execute_unary(
+      request=request, method=_ASPIRATE_CORE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def dispense_core96(
+    self,
+    request: pb2.DispenseCore96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DispenseCore96Response:
+    return await self.execute_unary(
+      request=request, method=_DISPENSE_CORE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def initialize_iswap(
+    self,
+    request: pb2.InitializeIswapRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeIswapResponse:
+    return await self.execute_unary(
+      request=request, method=_INITIALIZE_ISWAP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def position_components_for_free_iswap_y_range(
+    self,
+    request: pb2.PositionComponentsForFreeIswapYRangeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionComponentsForFreeIswapYRangeResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_POSITION_COMPONENTS_FOR_FREE_ISWAP_Y_RANGE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def move_iswap_x_relative(
+    self,
+    request: pb2.MoveIswapXRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapXRelativeResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_ISWAP_X_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_iswap_y_relative(
+    self,
+    request: pb2.MoveIswapYRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapYRelativeResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_ISWAP_Y_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_iswap_z_relative(
+    self,
+    request: pb2.MoveIswapZRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapZRelativeResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_ISWAP_Z_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_iswap_x(
+    self,
+    request: pb2.MoveIswapXRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapXResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_ISWAP_X, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_iswap_y(
+    self,
+    request: pb2.MoveIswapYRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapYResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_ISWAP_Y, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_iswap_z(
+    self,
+    request: pb2.MoveIswapZRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapZResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_ISWAP_Z, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def open_not_initialized_gripper(
+    self,
+    request: pb2.OpenNotInitializedGripperRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.OpenNotInitializedGripperResponse:
+    return await self.execute_unary(
+      request=request, method=_OPEN_NOT_INITIALIZED_GRIPPER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_open_gripper(
+    self,
+    request: pb2.IswapOpenGripperRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapOpenGripperResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_OPEN_GRIPPER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_close_gripper(
+    self,
+    request: pb2.IswapCloseGripperRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapCloseGripperResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_CLOSE_GRIPPER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def park_iswap(
+    self,
+    request: pb2.ParkIswapRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ParkIswapResponse:
+    return await self.execute_unary(
+      request=request, method=_PARK_ISWAP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_get_plate(
+    self,
+    request: pb2.IswapGetPlateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapGetPlateResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_GET_PLATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_put_plate(
+    self,
+    request: pb2.IswapPutPlateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapPutPlateResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_PUT_PLATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_plate_to_position(
+    self,
+    request: pb2.MovePlateToPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MovePlateToPositionResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_PLATE_TO_POSITION, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def collapse_gripper_arm(
+    self,
+    request: pb2.CollapseGripperArmRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CollapseGripperArmResponse:
+    return await self.execute_unary(
+      request=request, method=_COLLAPSE_GRIPPER_ARM, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_rotate(
+    self,
+    request: pb2.IswapRotateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapRotateResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_ROTATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def rotate_iswap_rotation_drive(
+    self,
+    request: pb2.RotateIswapRotationDriveRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.RotateIswapRotationDriveResponse:
+    return await self.execute_unary(
+      request=request, method=_ROTATE_ISWAP_ROTATION_DRIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def rotate_iswap_wrist(
+    self,
+    request: pb2.RotateIswapWristRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.RotateIswapWristResponse:
+    return await self.execute_unary(
+      request=request, method=_ROTATE_ISWAP_WRIST, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_dangerous_release_break(
+    self,
+    request: pb2.IswapDangerousReleaseBreakRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapDangerousReleaseBreakResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_DANGEROUS_RELEASE_BREAK, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_reengage_break(
+    self,
+    request: pb2.IswapReengageBreakRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapReengageBreakResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_REENGAGE_BREAK, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_initialize_z_axis(
+    self,
+    request: pb2.IswapInitializeZAxisRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapInitializeZAxisResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_INITIALIZE_Z_AXIS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def request_iswap_rotation_drive_position_increments(
+    self,
+    request: pb2.RequestIswapRotationDrivePositionIncrementsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapRotationDrivePositionIncrementsResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_ROTATION_DRIVE_POSITION_INCREMENTS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_iswap_rotation_drive_orientation(
+    self,
+    request: pb2.RequestIswapRotationDriveOrientationRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapRotationDriveOrientationResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_ROTATION_DRIVE_ORIENTATION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_iswap_wrist_drive_position_increments(
+    self,
+    request: pb2.RequestIswapWristDrivePositionIncrementsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapWristDrivePositionIncrementsResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_WRIST_DRIVE_POSITION_INCREMENTS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_iswap_wrist_drive_orientation(
+    self,
+    request: pb2.RequestIswapWristDriveOrientationRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapWristDriveOrientationResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_WRIST_DRIVE_ORIENTATION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_iswap_in_parking_position(
+    self,
+    request: pb2.RequestIswapInParkingPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapInParkingPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_IN_PARKING_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_plate_in_iswap(
+    self,
+    request: pb2.RequestPlateInIswapRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPlateInIswapResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_PLATE_IN_ISWAP,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_iswap_position(
+    self,
+    request: pb2.RequestIswapPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def iswap_rotation_drive_request_y(
+    self,
+    request: pb2.IswapRotationDriveRequestYRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.IswapRotationDriveRequestYResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_ISWAP_ROTATION_DRIVE_REQUEST_Y,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_iswap_initialization_status(
+    self,
+    request: pb2.RequestIswapInitializationStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapInitializationStatusResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_INITIALIZATION_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_iswap_version(
+    self,
+    request: pb2.RequestIswapVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapVersionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def get_iswap_version(
+    self,
+    request: pb2.GetIswapVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetIswapVersionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_ISWAP_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def slow_iswap(
+    self,
+    request: pb2.SlowIswapRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SlowIswapResponse:
+    return await self.execute_unary(
+      request=request, method=_SLOW_ISWAP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def iswap_move_picked_up_resource(
+    self,
+    request: pb2.IswapMovePickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapMovePickedUpResourceResponse:
+    return await self.execute_unary(
+      request=request, method=_ISWAP_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def pick_up_resource(
+    self,
+    request: pb2.PickUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpResourceResponse:
+    return await self.execute_unary(
+      request=request, method=_PICK_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_picked_up_resource(
+    self,
+    request: pb2.MovePickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MovePickedUpResourceResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def drop_resource(
+    self,
+    request: pb2.DropResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DropResourceResponse:
+    return await self.execute_unary(
+      request=request, method=_DROP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def pick_up_core_gripper_tools(
+    self,
+    request: pb2.PickUpCoreGripperToolsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpCoreGripperToolsResponse:
+    return await self.execute_unary(
+      request=request, method=_PICK_UP_CORE_GRIPPER_TOOLS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def return_core_gripper_tools(
+    self,
+    request: pb2.ReturnCoreGripperToolsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ReturnCoreGripperToolsResponse:
+    return await self.execute_unary(
+      request=request, method=_RETURN_CORE_GRIPPER_TOOLS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def core_open_gripper(
+    self,
+    request: pb2.CoreOpenGripperRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreOpenGripperResponse:
+    return await self.execute_unary(
+      request=request, method=_CORE_OPEN_GRIPPER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def core_get_plate(
+    self,
+    request: pb2.CoreGetPlateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreGetPlateResponse:
+    return await self.execute_unary(
+      request=request, method=_CORE_GET_PLATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def core_put_plate(
+    self,
+    request: pb2.CorePutPlateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CorePutPlateResponse:
+    return await self.execute_unary(
+      request=request, method=_CORE_PUT_PLATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def core_move_plate_to_position(
+    self,
+    request: pb2.CoreMovePlateToPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreMovePlateToPositionResponse:
+    return await self.execute_unary(
+      request=request, method=_CORE_MOVE_PLATE_TO_POSITION, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def core_pick_up_resource(
+    self,
+    request: pb2.CorePickUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CorePickUpResourceResponse:
+    return await self.execute_unary(
+      request=request, method=_CORE_PICK_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def core_move_picked_up_resource(
+    self,
+    request: pb2.CoreMovePickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreMovePickedUpResourceResponse:
+    return await self.execute_unary(
+      request=request, method=_CORE_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def core_release_picked_up_resource(
+    self,
+    request: pb2.CoreReleasePickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreReleasePickedUpResourceResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_CORE_RELEASE_PICKED_UP_RESOURCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def core_check_resource_exists_at_location_center(
+    self,
+    request: pb2.CoreCheckResourceExistsAtLocationCenterRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreCheckResourceExistsAtLocationCenterResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_CORE_CHECK_RESOURCE_EXISTS_AT_LOCATION_CENTER,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def get_core(
+    self,
+    request: pb2.GetCoreRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetCoreResponse:
+    return await self.execute_unary(
+      request=request, method=_GET_CORE, headers=headers, timeout_ms=timeout_ms, use_get=use_get
+    )
+
+  async def put_core(
+    self,
+    request: pb2.PutCoreRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PutCoreResponse:
+    return await self.execute_unary(
+      request=request, method=_PUT_CORE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def core_read_barcode_of_picked_up_resource(
+    self,
+    request: pb2.CoreReadBarcodeOfPickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreReadBarcodeOfPickedUpResourceResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_CORE_READ_BARCODE_OF_PICKED_UP_RESOURCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def initialize_autoload(
+    self,
+    request: pb2.InitializeAutoloadRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeAutoloadResponse:
+    return await self.execute_unary(
+      request=request, method=_INITIALIZE_AUTOLOAD, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_autoload_to_safe_z_position(
+    self,
+    request: pb2.MoveAutoloadToSafeZPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAutoloadToSafeZPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_MOVE_AUTOLOAD_TO_SAFE_Z_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def request_autoload_track(
+    self,
+    request: pb2.RequestAutoloadTrackRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestAutoloadTrackResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_AUTOLOAD_TRACK,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_autoload_type(
+    self,
+    request: pb2.RequestAutoloadTypeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestAutoloadTypeResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_AUTOLOAD_TYPE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_presence_of_carriers_on_deck(
+    self,
+    request: pb2.RequestPresenceOfCarriersOnDeckRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPresenceOfCarriersOnDeckResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_PRESENCE_OF_CARRIERS_ON_DECK,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_presence_of_carriers_on_loading_tray(
+    self,
+    request: pb2.RequestPresenceOfCarriersOnLoadingTrayRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPresenceOfCarriersOnLoadingTrayResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_PRESENCE_OF_CARRIERS_ON_LOADING_TRAY,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_presence_of_single_carrier_on_loading_tray(
+    self,
+    request: pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPresenceOfSingleCarrierOnLoadingTrayResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_PRESENCE_OF_SINGLE_CARRIER_ON_LOADING_TRAY,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def move_autoload_to_slot(
+    self,
+    request: pb2.MoveAutoloadToSlotRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAutoloadToSlotResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_AUTOLOAD_TO_SLOT, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_autoload_to_track(
+    self,
+    request: pb2.MoveAutoloadToTrackRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAutoloadToTrackResponse:
+    return await self.execute_unary(
+      request=request, method=_MOVE_AUTOLOAD_TO_TRACK, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def park_autoload(
+    self,
+    request: pb2.ParkAutoloadRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ParkAutoloadResponse:
+    return await self.execute_unary(
+      request=request, method=_PARK_AUTOLOAD, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def take_carrier_out_to_autoload_belt(
+    self,
+    request: pb2.TakeCarrierOutToAutoloadBeltRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.TakeCarrierOutToAutoloadBeltResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_TAKE_CARRIER_OUT_TO_AUTOLOAD_BELT,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def set_barcode_type(
+    self,
+    request: pb2.SetBarcodeTypeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetBarcodeTypeResponse:
+    return await self.execute_unary(
+      request=request, method=_SET_BARCODE_TYPE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def load_carrier_from_tray_and_scan_carrier_barcode(
+    self,
+    request: pb2.LoadCarrierFromTrayAndScanCarrierBarcodeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.LoadCarrierFromTrayAndScanCarrierBarcodeResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_LOAD_CARRIER_FROM_TRAY_AND_SCAN_CARRIER_BARCODE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def set_carrier_monitoring(
+    self,
+    request: pb2.SetCarrierMonitoringRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetCarrierMonitoringResponse:
+    return await self.execute_unary(
+      request=request, method=_SET_CARRIER_MONITORING, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def load_carrier(
+    self,
+    request: pb2.LoadCarrierRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.LoadCarrierResponse:
+    return await self.execute_unary(
+      request=request, method=_LOAD_CARRIER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def set_loading_indicators(
+    self,
+    request: pb2.SetLoadingIndicatorsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetLoadingIndicatorsResponse:
+    return await self.execute_unary(
+      request=request, method=_SET_LOADING_INDICATORS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def unload_carrier(
+    self,
+    request: pb2.UnloadCarrierRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.UnloadCarrierResponse:
+    return await self.execute_unary(
+      request=request, method=_UNLOAD_CARRIER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def request_instrument_initialization_status(
+    self,
+    request: pb2.RequestInstrumentInitializationStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestInstrumentInitializationStatusResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_INSTRUMENT_INITIALIZATION_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_autoload_initialization_status(
+    self,
+    request: pb2.RequestAutoloadInitializationStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestAutoloadInitializationStatusResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_AUTOLOAD_INITIALIZATION_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def lock_cover(
+    self,
+    request: pb2.LockCoverRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.LockCoverResponse:
+    return await self.execute_unary(
+      request=request, method=_LOCK_COVER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def unlock_cover(
+    self,
+    request: pb2.UnlockCoverRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.UnlockCoverResponse:
+    return await self.execute_unary(
+      request=request, method=_UNLOCK_COVER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def disable_cover_control(
+    self,
+    request: pb2.DisableCoverControlRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DisableCoverControlResponse:
+    return await self.execute_unary(
+      request=request, method=_DISABLE_COVER_CONTROL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def enable_cover_control(
+    self,
+    request: pb2.EnableCoverControlRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.EnableCoverControlResponse:
+    return await self.execute_unary(
+      request=request, method=_ENABLE_COVER_CONTROL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def set_cover_output(
+    self,
+    request: pb2.SetCoverOutputRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetCoverOutputResponse:
+    return await self.execute_unary(
+      request=request, method=_SET_COVER_OUTPUT, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def reset_output(
+    self,
+    request: pb2.ResetOutputRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ResetOutputResponse:
+    return await self.execute_unary(
+      request=request, method=_RESET_OUTPUT, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def request_cover_open(
+    self,
+    request: pb2.RequestCoverOpenRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestCoverOpenResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_COVER_OPEN,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def send_hhs_command(
+    self,
+    request: pb2.SendHhsCommandRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SendHhsCommandResponse:
+    return await self.execute_unary(
+      request=request, method=_SEND_HHS_COMMAND, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def check_type_is_hhc(
+    self,
+    request: pb2.CheckTypeIsHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CheckTypeIsHhcResponse:
+    return await self.execute_unary(
+      request=request, method=_CHECK_TYPE_IS_HHC, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def initialize_hhc(
+    self,
+    request: pb2.InitializeHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeHhcResponse:
+    return await self.execute_unary(
+      request=request, method=_INITIALIZE_HHC, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def start_temperature_control_at_hhc(
+    self,
+    request: pb2.StartTemperatureControlAtHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.StartTemperatureControlAtHhcResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_START_TEMPERATURE_CONTROL_AT_HHC,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def get_temperature_at_hhc(
+    self,
+    request: pb2.GetTemperatureAtHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetTemperatureAtHhcResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_GET_TEMPERATURE_AT_HHC,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def query_whether_temperature_reached_at_hhc(
+    self,
+    request: pb2.QueryWhetherTemperatureReachedAtHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.QueryWhetherTemperatureReachedAtHhcResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_QUERY_WHETHER_TEMPERATURE_REACHED_AT_HHC,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def stop_temperature_control_at_hhc(
+    self,
+    request: pb2.StopTemperatureControlAtHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.StopTemperatureControlAtHhcResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_STOP_TEMPERATURE_CONTROL_AT_HHC,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def request_firmware_version(
+    self,
+    request: pb2.RequestFirmwareVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestFirmwareVersionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_FIRMWARE_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_error_code(
+    self,
+    request: pb2.RequestErrorCodeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestErrorCodeResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_ERROR_CODE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_device_serial_number(
+    self,
+    request: pb2.RequestDeviceSerialNumberRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestDeviceSerialNumberResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_DEVICE_SERIAL_NUMBER,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_master_status(
+    self,
+    request: pb2.RequestMasterStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestMasterStatusResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_MASTER_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def set_single_step_mode(
+    self,
+    request: pb2.SetSingleStepModeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetSingleStepModeResponse:
+    return await self.execute_unary(
+      request=request, method=_SET_SINGLE_STEP_MODE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def trigger_next_step(
+    self,
+    request: pb2.TriggerNextStepRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.TriggerNextStepResponse:
+    return await self.execute_unary(
+      request=request, method=_TRIGGER_NEXT_STEP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def halt(
+    self,
+    request: pb2.HaltRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.HaltResponse:
+    return await self.execute_unary(
+      request=request, method=_HALT, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def save_all_cycle_counters(
+    self,
+    request: pb2.SaveAllCycleCountersRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SaveAllCycleCountersResponse:
+    return await self.execute_unary(
+      request=request, method=_SAVE_ALL_CYCLE_COUNTERS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def set_not_stop(
+    self,
+    request: pb2.SetNotStopRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetNotStopResponse:
+    return await self.execute_unary(
+      request=request, method=_SET_NOT_STOP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def configure_node_names(
+    self,
+    request: pb2.ConfigureNodeNamesRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ConfigureNodeNamesResponse:
+    return await self.execute_unary(
+      request=request, method=_CONFIGURE_NODE_NAMES, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def set_deck_data(
+    self,
+    request: pb2.SetDeckDataRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetDeckDataResponse:
+    return await self.execute_unary(
+      request=request, method=_SET_DECK_DATA, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def position_left_x_arm(
+    self,
+    request: pb2.PositionLeftXArmRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionLeftXArmResponse:
+    return await self.execute_unary(
+      request=request, method=_POSITION_LEFT_X_ARM, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def position_right_x_arm(
+    self,
+    request: pb2.PositionRightXArmRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionRightXArmResponse:
+    return await self.execute_unary(
+      request=request, method=_POSITION_RIGHT_X_ARM, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(
+    self,
+    request: pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_MOVE_LEFT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position(
+    self,
+    request: pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_MOVE_RIGHT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def request_left_x_arm_position(
+    self,
+    request: pb2.RequestLeftXArmPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestLeftXArmPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_LEFT_X_ARM_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_right_x_arm_position(
+    self,
+    request: pb2.RequestRightXArmPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestRightXArmPositionResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_RIGHT_X_ARM_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_right_x_arm_last_collision_type(
+    self,
+    request: pb2.RequestRightXArmLastCollisionTypeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestRightXArmLastCollisionTypeResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_RIGHT_X_ARM_LAST_COLLISION_TYPE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def request_pump_settings(
+    self,
+    request: pb2.RequestPumpSettingsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPumpSettingsResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_REQUEST_PUMP_SETTINGS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  async def initialize_dual_pump_station_valves(
+    self,
+    request: pb2.InitializeDualPumpStationValvesRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeDualPumpStationValvesResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_INITIALIZE_DUAL_PUMP_STATION_VALVES,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  async def drain_dual_chamber_system(
+    self,
+    request: pb2.DrainDualChamberSystemRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DrainDualChamberSystemResponse:
+    return await self.execute_unary(
+      request=request, method=_DRAIN_DUAL_CHAMBER_SYSTEM, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def violently_shoot_down_tip(
+    self,
+    request: pb2.ViolentlyShootDownTipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ViolentlyShootDownTipResponse:
+    return await self.execute_unary(
+      request=request, method=_VIOLENTLY_SHOOT_DOWN_TIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  async def can_pick_up_tip(
+    self,
+    request: pb2.CanPickUpTipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.CanPickUpTipResponse:
+    return await self.execute_unary(
+      request=request,
+      method=_CAN_PICK_UP_TIP,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
 
 
 # ============================================================
 # Sync client
 # ============================================================
 
+
 class STARServiceClientSync(ConnectClientSync):
-
-    def setup(self, request: pb2.SetupRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetupResponse:
-        return self.execute_unary(request=request, method=_SETUP, headers=headers, timeout_ms=timeout_ms)
-
-    def stop(self, request: pb2.StopRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StopResponse:
-        return self.execute_unary(request=request, method=_STOP, headers=headers, timeout_ms=timeout_ms)
-
-    def get_num_channels(self, request: pb2.GetNumChannelsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetNumChannelsResponse:
-        return self.execute_unary(request=request, method=_GET_NUM_CHANNELS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def get_head96_installed(self, request: pb2.GetHead96InstalledRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetHead96InstalledResponse:
-        return self.execute_unary(request=request, method=_GET_HEAD96_INSTALLED, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def get_iswap_installed(self, request: pb2.GetIswapInstalledRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetIswapInstalledResponse:
-        return self.execute_unary(request=request, method=_GET_ISWAP_INSTALLED, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def get_iswap_parked(self, request: pb2.GetIswapParkedRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetIswapParkedResponse:
-        return self.execute_unary(request=request, method=_GET_ISWAP_PARKED, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def get_core_parked(self, request: pb2.GetCoreParkedRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetCoreParkedResponse:
-        return self.execute_unary(request=request, method=_GET_CORE_PARKED, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def pick_up_tips(self, request: pb2.PickUpTipsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpTipsResponse:
-        return self.execute_unary(request=request, method=_PICK_UP_TIPS, headers=headers, timeout_ms=timeout_ms)
-
-    def drop_tips(self, request: pb2.DropTipsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DropTipsResponse:
-        return self.execute_unary(request=request, method=_DROP_TIPS, headers=headers, timeout_ms=timeout_ms)
-
-    def aspirate(self, request: pb2.AspirateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.AspirateResponse:
-        return self.execute_unary(request=request, method=_ASPIRATE, headers=headers, timeout_ms=timeout_ms)
-
-    def dispense(self, request: pb2.DispenseRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DispenseResponse:
-        return self.execute_unary(request=request, method=_DISPENSE, headers=headers, timeout_ms=timeout_ms)
-
-    def pick_up_tips96(self, request: pb2.PickUpTips96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpTips96Response:
-        return self.execute_unary(request=request, method=_PICK_UP_TIPS96, headers=headers, timeout_ms=timeout_ms)
-
-    def drop_tips96(self, request: pb2.DropTips96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DropTips96Response:
-        return self.execute_unary(request=request, method=_DROP_TIPS96, headers=headers, timeout_ms=timeout_ms)
-
-    def aspirate96(self, request: pb2.Aspirate96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Aspirate96Response:
-        return self.execute_unary(request=request, method=_ASPIRATE96, headers=headers, timeout_ms=timeout_ms)
-
-    def dispense96(self, request: pb2.Dispense96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Dispense96Response:
-        return self.execute_unary(request=request, method=_DISPENSE96, headers=headers, timeout_ms=timeout_ms)
-
-    def initialize_pip(self, request: pb2.InitializePipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializePipResponse:
-        return self.execute_unary(request=request, method=_INITIALIZE_PIP, headers=headers, timeout_ms=timeout_ms)
-
-    def initialize_pipetting_channels(self, request: pb2.InitializePipettingChannelsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializePipettingChannelsResponse:
-        return self.execute_unary(request=request, method=_INITIALIZE_PIPETTING_CHANNELS, headers=headers, timeout_ms=timeout_ms)
-
-    def pick_up_tip_fw(self, request: pb2.PickUpTipFwRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpTipFwResponse:
-        return self.execute_unary(request=request, method=_PICK_UP_TIP_FW, headers=headers, timeout_ms=timeout_ms)
-
-    def discard_tip_fw(self, request: pb2.DiscardTipFwRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DiscardTipFwResponse:
-        return self.execute_unary(request=request, method=_DISCARD_TIP_FW, headers=headers, timeout_ms=timeout_ms)
-
-    def aspirate_pip(self, request: pb2.AspiratePipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.AspiratePipResponse:
-        return self.execute_unary(request=request, method=_ASPIRATE_PIP, headers=headers, timeout_ms=timeout_ms)
-
-    def dispense_pip(self, request: pb2.DispensePipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DispensePipResponse:
-        return self.execute_unary(request=request, method=_DISPENSE_PIP, headers=headers, timeout_ms=timeout_ms)
-
-    def spread_pip_channels(self, request: pb2.SpreadPipChannelsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SpreadPipChannelsResponse:
-        return self.execute_unary(request=request, method=_SPREAD_PIP_CHANNELS, headers=headers, timeout_ms=timeout_ms)
-
-    def move_all_pipetting_channels_to_defined_position(self, request: pb2.MoveAllPipettingChannelsToDefinedPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAllPipettingChannelsToDefinedPositionResponse:
-        return self.execute_unary(request=request, method=_MOVE_ALL_PIPETTING_CHANNELS_TO_DEFINED_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def define_tip_needle(self, request: pb2.DefineTipNeedleRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DefineTipNeedleResponse:
-        return self.execute_unary(request=request, method=_DEFINE_TIP_NEEDLE, headers=headers, timeout_ms=timeout_ms)
-
-    def probe_liquid_heights(self, request: pb2.ProbeLiquidHeightsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ProbeLiquidHeightsResponse:
-        return self.execute_unary(request=request, method=_PROBE_LIQUID_HEIGHTS, headers=headers, timeout_ms=timeout_ms)
-
-    def probe_liquid_volumes(self, request: pb2.ProbeLiquidVolumesRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ProbeLiquidVolumesResponse:
-        return self.execute_unary(request=request, method=_PROBE_LIQUID_VOLUMES, headers=headers, timeout_ms=timeout_ms)
-
-    def request_tip_presence(self, request: pb2.RequestTipPresenceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestTipPresenceResponse:
-        return self.execute_unary(request=request, method=_REQUEST_TIP_PRESENCE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def channels_sense_tip_presence(self, request: pb2.ChannelsSenseTipPresenceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.ChannelsSenseTipPresenceResponse:
-        return self.execute_unary(request=request, method=_CHANNELS_SENSE_TIP_PRESENCE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_pip_height_last_lld(self, request: pb2.RequestPipHeightLastLldRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPipHeightLastLldResponse:
-        return self.execute_unary(request=request, method=_REQUEST_PIP_HEIGHT_LAST_LLD, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_tadm_status(self, request: pb2.RequestTadmStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestTadmStatusResponse:
-        return self.execute_unary(request=request, method=_REQUEST_TADM_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_volume_in_tip(self, request: pb2.RequestVolumeInTipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestVolumeInTipResponse:
-        return self.execute_unary(request=request, method=_REQUEST_VOLUME_IN_TIP, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_tip_len_on_channel(self, request: pb2.RequestTipLenOnChannelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestTipLenOnChannelResponse:
-        return self.execute_unary(request=request, method=_REQUEST_TIP_LEN_ON_CHANNEL, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_probe_z_position(self, request: pb2.RequestProbeZPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestProbeZPositionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_PROBE_Z_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def clld_probe_z_height_using_channel(self, request: pb2.ClldProbeZHeightUsingChannelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ClldProbeZHeightUsingChannelResponse:
-        return self.execute_unary(request=request, method=_CLLD_PROBE_Z_HEIGHT_USING_CHANNEL, headers=headers, timeout_ms=timeout_ms)
-
-    def plld_probe_z_height_using_channel(self, request: pb2.PlldProbeZHeightUsingChannelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PlldProbeZHeightUsingChannelResponse:
-        return self.execute_unary(request=request, method=_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL, headers=headers, timeout_ms=timeout_ms)
-
-    def ztouch_probe_z_height_using_channel(self, request: pb2.ZtouchProbeZHeightUsingChannelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ZtouchProbeZHeightUsingChannelResponse:
-        return self.execute_unary(request=request, method=_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL, headers=headers, timeout_ms=timeout_ms)
-
-    def pierce_foil(self, request: pb2.PierceFoilRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PierceFoilResponse:
-        return self.execute_unary(request=request, method=_PIERCE_FOIL, headers=headers, timeout_ms=timeout_ms)
-
-    def pierce_foil_high_level(self, request: pb2.PierceFoilHighLevelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PierceFoilHighLevelResponse:
-        return self.execute_unary(request=request, method=_PIERCE_FOIL_HIGH_LEVEL, headers=headers, timeout_ms=timeout_ms)
-
-    def step_off_foil(self, request: pb2.StepOffFoilRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StepOffFoilResponse:
-        return self.execute_unary(request=request, method=_STEP_OFF_FOIL, headers=headers, timeout_ms=timeout_ms)
-
-    def empty_tip(self, request: pb2.EmptyTipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.EmptyTipResponse:
-        return self.execute_unary(request=request, method=_EMPTY_TIP, headers=headers, timeout_ms=timeout_ms)
-
-    def empty_tips(self, request: pb2.EmptyTipsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.EmptyTipsResponse:
-        return self.execute_unary(request=request, method=_EMPTY_TIPS, headers=headers, timeout_ms=timeout_ms)
-
-    def move_channel_x(self, request: pb2.MoveChannelXRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelXResponse:
-        return self.execute_unary(request=request, method=_MOVE_CHANNEL_X, headers=headers, timeout_ms=timeout_ms)
-
-    def move_channel_y(self, request: pb2.MoveChannelYRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelYResponse:
-        return self.execute_unary(request=request, method=_MOVE_CHANNEL_Y, headers=headers, timeout_ms=timeout_ms)
-
-    def move_channel_z(self, request: pb2.MoveChannelZRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelZResponse:
-        return self.execute_unary(request=request, method=_MOVE_CHANNEL_Z, headers=headers, timeout_ms=timeout_ms)
-
-    def move_channel_x_relative(self, request: pb2.MoveChannelXRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelXRelativeResponse:
-        return self.execute_unary(request=request, method=_MOVE_CHANNEL_X_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_channel_y_relative(self, request: pb2.MoveChannelYRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelYRelativeResponse:
-        return self.execute_unary(request=request, method=_MOVE_CHANNEL_Y_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_channel_z_relative(self, request: pb2.MoveChannelZRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveChannelZRelativeResponse:
-        return self.execute_unary(request=request, method=_MOVE_CHANNEL_Z_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    def prepare_for_manual_channel_operation(self, request: pb2.PrepareForManualChannelOperationRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PrepareForManualChannelOperationResponse:
-        return self.execute_unary(request=request, method=_PREPARE_FOR_MANUAL_CHANNEL_OPERATION, headers=headers, timeout_ms=timeout_ms)
-
-    def move_all_channels_in_z_safety(self, request: pb2.MoveAllChannelsInZSafetyRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAllChannelsInZSafetyResponse:
-        return self.execute_unary(request=request, method=_MOVE_ALL_CHANNELS_IN_Z_SAFETY, headers=headers, timeout_ms=timeout_ms)
-
-    def position_single_pipetting_channel_in_y_direction(self, request: pb2.PositionSinglePipettingChannelInYDirectionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionSinglePipettingChannelInYDirectionResponse:
-        return self.execute_unary(request=request, method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Y_DIRECTION, headers=headers, timeout_ms=timeout_ms)
-
-    def position_single_pipetting_channel_in_z_direction(self, request: pb2.PositionSinglePipettingChannelInZDirectionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionSinglePipettingChannelInZDirectionResponse:
-        return self.execute_unary(request=request, method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Z_DIRECTION, headers=headers, timeout_ms=timeout_ms)
-
-    def position_max_free_y_for_n(self, request: pb2.PositionMaxFreeYForNRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionMaxFreeYForNResponse:
-        return self.execute_unary(request=request, method=_POSITION_MAX_FREE_Y_FOR_N, headers=headers, timeout_ms=timeout_ms)
-
-    def request_x_pos_channel_n(self, request: pb2.RequestXPosChannelNRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestXPosChannelNResponse:
-        return self.execute_unary(request=request, method=_REQUEST_X_POS_CHANNEL_N, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_y_pos_channel_n(self, request: pb2.RequestYPosChannelNRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestYPosChannelNResponse:
-        return self.execute_unary(request=request, method=_REQUEST_Y_POS_CHANNEL_N, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_z_pos_channel_n(self, request: pb2.RequestZPosChannelNRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestZPosChannelNResponse:
-        return self.execute_unary(request=request, method=_REQUEST_Z_POS_CHANNEL_N, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_tip_bottom_z_position(self, request: pb2.RequestTipBottomZPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestTipBottomZPositionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_TIP_BOTTOM_Z_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def get_channels_y_positions(self, request: pb2.GetChannelsYPositionsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetChannelsYPositionsResponse:
-        return self.execute_unary(request=request, method=_GET_CHANNELS_Y_POSITIONS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def position_channels_in_y_direction(self, request: pb2.PositionChannelsInYDirectionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionChannelsInYDirectionResponse:
-        return self.execute_unary(request=request, method=_POSITION_CHANNELS_IN_Y_DIRECTION, headers=headers, timeout_ms=timeout_ms)
-
-    def get_channels_z_positions(self, request: pb2.GetChannelsZPositionsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetChannelsZPositionsResponse:
-        return self.execute_unary(request=request, method=_GET_CHANNELS_Z_POSITIONS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def position_channels_in_z_direction(self, request: pb2.PositionChannelsInZDirectionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionChannelsInZDirectionResponse:
-        return self.execute_unary(request=request, method=_POSITION_CHANNELS_IN_Z_DIRECTION, headers=headers, timeout_ms=timeout_ms)
-
-    def request_pip_channel_version(self, request: pb2.RequestPipChannelVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPipChannelVersionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_PIP_CHANNEL_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def initialize_core96_head(self, request: pb2.InitializeCore96HeadRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeCore96HeadResponse:
-        return self.execute_unary(request=request, method=_INITIALIZE_CORE96_HEAD, headers=headers, timeout_ms=timeout_ms)
-
-    def request_core96_head_initialization_status(self, request: pb2.RequestCore96HeadInitializationStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestCore96HeadInitializationStatusResponse:
-        return self.execute_unary(request=request, method=_REQUEST_CORE96_HEAD_INITIALIZATION_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def head96_request_firmware_version(self, request: pb2.Head96RequestFirmwareVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96RequestFirmwareVersionResponse:
-        return self.execute_unary(request=request, method=_HEAD96_REQUEST_FIRMWARE_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def head96_request_type(self, request: pb2.Head96RequestTypeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96RequestTypeResponse:
-        return self.execute_unary(request=request, method=_HEAD96_REQUEST_TYPE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def head96_dispensing_drive_and_squeezer_driver_initialize(self, request: pb2.Head96DispensingDriveAndSqueezerDriverInitializeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96DispensingDriveAndSqueezerDriverInitializeResponse:
-        return self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_AND_SQUEEZER_DRIVER_INITIALIZE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_core96_to_safe_position(self, request: pb2.MoveCore96ToSafePositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveCore96ToSafePositionResponse:
-        return self.execute_unary(request=request, method=_MOVE_CORE96_TO_SAFE_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_move_to_z_safety(self, request: pb2.Head96MoveToZSafetyRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveToZSafetyResponse:
-        return self.execute_unary(request=request, method=_HEAD96_MOVE_TO_Z_SAFETY, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_park(self, request: pb2.Head96ParkRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96ParkResponse:
-        return self.execute_unary(request=request, method=_HEAD96_PARK, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_move_x(self, request: pb2.Head96MoveXRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveXResponse:
-        return self.execute_unary(request=request, method=_HEAD96_MOVE_X, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_move_y(self, request: pb2.Head96MoveYRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveYResponse:
-        return self.execute_unary(request=request, method=_HEAD96_MOVE_Y, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_move_z(self, request: pb2.Head96MoveZRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveZResponse:
-        return self.execute_unary(request=request, method=_HEAD96_MOVE_Z, headers=headers, timeout_ms=timeout_ms)
-
-    def move_core96_head_to_defined_position(self, request: pb2.MoveCore96HeadToDefinedPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveCore96HeadToDefinedPositionResponse:
-        return self.execute_unary(request=request, method=_MOVE_CORE96_HEAD_TO_DEFINED_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_move_to_coordinate(self, request: pb2.Head96MoveToCoordinateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96MoveToCoordinateResponse:
-        return self.execute_unary(request=request, method=_HEAD96_MOVE_TO_COORDINATE, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_dispensing_drive_move_to_home_volume(self, request: pb2.Head96DispensingDriveMoveToHomeVolumeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96DispensingDriveMoveToHomeVolumeResponse:
-        return self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_HOME_VOLUME, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_dispensing_drive_move_to_position(self, request: pb2.Head96DispensingDriveMoveToPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.Head96DispensingDriveMoveToPositionResponse:
-        return self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def head96_dispensing_drive_request_position_mm(self, request: pb2.Head96DispensingDriveRequestPositionMmRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96DispensingDriveRequestPositionMmResponse:
-        return self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_MM, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def head96_dispensing_drive_request_position_ul(self, request: pb2.Head96DispensingDriveRequestPositionUlRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96DispensingDriveRequestPositionUlResponse:
-        return self.execute_unary(request=request, method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_UL, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def head96_request_tip_presence(self, request: pb2.Head96RequestTipPresenceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96RequestTipPresenceResponse:
-        return self.execute_unary(request=request, method=_HEAD96_REQUEST_TIP_PRESENCE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def head96_request_position(self, request: pb2.Head96RequestPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.Head96RequestPositionResponse:
-        return self.execute_unary(request=request, method=_HEAD96_REQUEST_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def pick_up_tips_core96(self, request: pb2.PickUpTipsCore96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpTipsCore96Response:
-        return self.execute_unary(request=request, method=_PICK_UP_TIPS_CORE96, headers=headers, timeout_ms=timeout_ms)
-
-    def discard_tips_core96(self, request: pb2.DiscardTipsCore96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DiscardTipsCore96Response:
-        return self.execute_unary(request=request, method=_DISCARD_TIPS_CORE96, headers=headers, timeout_ms=timeout_ms)
-
-    def aspirate_core96(self, request: pb2.AspirateCore96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.AspirateCore96Response:
-        return self.execute_unary(request=request, method=_ASPIRATE_CORE96, headers=headers, timeout_ms=timeout_ms)
-
-    def dispense_core96(self, request: pb2.DispenseCore96Request, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DispenseCore96Response:
-        return self.execute_unary(request=request, method=_DISPENSE_CORE96, headers=headers, timeout_ms=timeout_ms)
-
-    def initialize_iswap(self, request: pb2.InitializeIswapRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeIswapResponse:
-        return self.execute_unary(request=request, method=_INITIALIZE_ISWAP, headers=headers, timeout_ms=timeout_ms)
-
-    def position_components_for_free_iswap_y_range(self, request: pb2.PositionComponentsForFreeIswapYRangeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionComponentsForFreeIswapYRangeResponse:
-        return self.execute_unary(request=request, method=_POSITION_COMPONENTS_FOR_FREE_ISWAP_Y_RANGE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_iswap_x_relative(self, request: pb2.MoveIswapXRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapXRelativeResponse:
-        return self.execute_unary(request=request, method=_MOVE_ISWAP_X_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_iswap_y_relative(self, request: pb2.MoveIswapYRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapYRelativeResponse:
-        return self.execute_unary(request=request, method=_MOVE_ISWAP_Y_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_iswap_z_relative(self, request: pb2.MoveIswapZRelativeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapZRelativeResponse:
-        return self.execute_unary(request=request, method=_MOVE_ISWAP_Z_RELATIVE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_iswap_x(self, request: pb2.MoveIswapXRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapXResponse:
-        return self.execute_unary(request=request, method=_MOVE_ISWAP_X, headers=headers, timeout_ms=timeout_ms)
-
-    def move_iswap_y(self, request: pb2.MoveIswapYRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapYResponse:
-        return self.execute_unary(request=request, method=_MOVE_ISWAP_Y, headers=headers, timeout_ms=timeout_ms)
-
-    def move_iswap_z(self, request: pb2.MoveIswapZRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveIswapZResponse:
-        return self.execute_unary(request=request, method=_MOVE_ISWAP_Z, headers=headers, timeout_ms=timeout_ms)
-
-    def open_not_initialized_gripper(self, request: pb2.OpenNotInitializedGripperRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.OpenNotInitializedGripperResponse:
-        return self.execute_unary(request=request, method=_OPEN_NOT_INITIALIZED_GRIPPER, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_open_gripper(self, request: pb2.IswapOpenGripperRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapOpenGripperResponse:
-        return self.execute_unary(request=request, method=_ISWAP_OPEN_GRIPPER, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_close_gripper(self, request: pb2.IswapCloseGripperRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapCloseGripperResponse:
-        return self.execute_unary(request=request, method=_ISWAP_CLOSE_GRIPPER, headers=headers, timeout_ms=timeout_ms)
-
-    def park_iswap(self, request: pb2.ParkIswapRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ParkIswapResponse:
-        return self.execute_unary(request=request, method=_PARK_ISWAP, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_get_plate(self, request: pb2.IswapGetPlateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapGetPlateResponse:
-        return self.execute_unary(request=request, method=_ISWAP_GET_PLATE, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_put_plate(self, request: pb2.IswapPutPlateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapPutPlateResponse:
-        return self.execute_unary(request=request, method=_ISWAP_PUT_PLATE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_plate_to_position(self, request: pb2.MovePlateToPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MovePlateToPositionResponse:
-        return self.execute_unary(request=request, method=_MOVE_PLATE_TO_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def collapse_gripper_arm(self, request: pb2.CollapseGripperArmRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CollapseGripperArmResponse:
-        return self.execute_unary(request=request, method=_COLLAPSE_GRIPPER_ARM, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_rotate(self, request: pb2.IswapRotateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapRotateResponse:
-        return self.execute_unary(request=request, method=_ISWAP_ROTATE, headers=headers, timeout_ms=timeout_ms)
-
-    def rotate_iswap_rotation_drive(self, request: pb2.RotateIswapRotationDriveRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.RotateIswapRotationDriveResponse:
-        return self.execute_unary(request=request, method=_ROTATE_ISWAP_ROTATION_DRIVE, headers=headers, timeout_ms=timeout_ms)
-
-    def rotate_iswap_wrist(self, request: pb2.RotateIswapWristRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.RotateIswapWristResponse:
-        return self.execute_unary(request=request, method=_ROTATE_ISWAP_WRIST, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_dangerous_release_break(self, request: pb2.IswapDangerousReleaseBreakRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapDangerousReleaseBreakResponse:
-        return self.execute_unary(request=request, method=_ISWAP_DANGEROUS_RELEASE_BREAK, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_reengage_break(self, request: pb2.IswapReengageBreakRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapReengageBreakResponse:
-        return self.execute_unary(request=request, method=_ISWAP_REENGAGE_BREAK, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_initialize_z_axis(self, request: pb2.IswapInitializeZAxisRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapInitializeZAxisResponse:
-        return self.execute_unary(request=request, method=_ISWAP_INITIALIZE_Z_AXIS, headers=headers, timeout_ms=timeout_ms)
-
-    def request_iswap_rotation_drive_position_increments(self, request: pb2.RequestIswapRotationDrivePositionIncrementsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapRotationDrivePositionIncrementsResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ISWAP_ROTATION_DRIVE_POSITION_INCREMENTS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_iswap_rotation_drive_orientation(self, request: pb2.RequestIswapRotationDriveOrientationRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapRotationDriveOrientationResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ISWAP_ROTATION_DRIVE_ORIENTATION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_iswap_wrist_drive_position_increments(self, request: pb2.RequestIswapWristDrivePositionIncrementsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapWristDrivePositionIncrementsResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ISWAP_WRIST_DRIVE_POSITION_INCREMENTS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_iswap_wrist_drive_orientation(self, request: pb2.RequestIswapWristDriveOrientationRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapWristDriveOrientationResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ISWAP_WRIST_DRIVE_ORIENTATION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_iswap_in_parking_position(self, request: pb2.RequestIswapInParkingPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapInParkingPositionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ISWAP_IN_PARKING_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_plate_in_iswap(self, request: pb2.RequestPlateInIswapRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPlateInIswapResponse:
-        return self.execute_unary(request=request, method=_REQUEST_PLATE_IN_ISWAP, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_iswap_position(self, request: pb2.RequestIswapPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapPositionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ISWAP_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def iswap_rotation_drive_request_y(self, request: pb2.IswapRotationDriveRequestYRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.IswapRotationDriveRequestYResponse:
-        return self.execute_unary(request=request, method=_ISWAP_ROTATION_DRIVE_REQUEST_Y, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_iswap_initialization_status(self, request: pb2.RequestIswapInitializationStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapInitializationStatusResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ISWAP_INITIALIZATION_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_iswap_version(self, request: pb2.RequestIswapVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestIswapVersionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ISWAP_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def get_iswap_version(self, request: pb2.GetIswapVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetIswapVersionResponse:
-        return self.execute_unary(request=request, method=_GET_ISWAP_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def slow_iswap(self, request: pb2.SlowIswapRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SlowIswapResponse:
-        return self.execute_unary(request=request, method=_SLOW_ISWAP, headers=headers, timeout_ms=timeout_ms)
-
-    def iswap_move_picked_up_resource(self, request: pb2.IswapMovePickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.IswapMovePickedUpResourceResponse:
-        return self.execute_unary(request=request, method=_ISWAP_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    def pick_up_resource(self, request: pb2.PickUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpResourceResponse:
-        return self.execute_unary(request=request, method=_PICK_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    def move_picked_up_resource(self, request: pb2.MovePickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MovePickedUpResourceResponse:
-        return self.execute_unary(request=request, method=_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    def drop_resource(self, request: pb2.DropResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DropResourceResponse:
-        return self.execute_unary(request=request, method=_DROP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    def pick_up_core_gripper_tools(self, request: pb2.PickUpCoreGripperToolsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PickUpCoreGripperToolsResponse:
-        return self.execute_unary(request=request, method=_PICK_UP_CORE_GRIPPER_TOOLS, headers=headers, timeout_ms=timeout_ms)
-
-    def return_core_gripper_tools(self, request: pb2.ReturnCoreGripperToolsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ReturnCoreGripperToolsResponse:
-        return self.execute_unary(request=request, method=_RETURN_CORE_GRIPPER_TOOLS, headers=headers, timeout_ms=timeout_ms)
-
-    def core_open_gripper(self, request: pb2.CoreOpenGripperRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreOpenGripperResponse:
-        return self.execute_unary(request=request, method=_CORE_OPEN_GRIPPER, headers=headers, timeout_ms=timeout_ms)
-
-    def core_get_plate(self, request: pb2.CoreGetPlateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreGetPlateResponse:
-        return self.execute_unary(request=request, method=_CORE_GET_PLATE, headers=headers, timeout_ms=timeout_ms)
-
-    def core_put_plate(self, request: pb2.CorePutPlateRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CorePutPlateResponse:
-        return self.execute_unary(request=request, method=_CORE_PUT_PLATE, headers=headers, timeout_ms=timeout_ms)
-
-    def core_move_plate_to_position(self, request: pb2.CoreMovePlateToPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreMovePlateToPositionResponse:
-        return self.execute_unary(request=request, method=_CORE_MOVE_PLATE_TO_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def core_pick_up_resource(self, request: pb2.CorePickUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CorePickUpResourceResponse:
-        return self.execute_unary(request=request, method=_CORE_PICK_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    def core_move_picked_up_resource(self, request: pb2.CoreMovePickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreMovePickedUpResourceResponse:
-        return self.execute_unary(request=request, method=_CORE_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    def core_release_picked_up_resource(self, request: pb2.CoreReleasePickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreReleasePickedUpResourceResponse:
-        return self.execute_unary(request=request, method=_CORE_RELEASE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    def core_check_resource_exists_at_location_center(self, request: pb2.CoreCheckResourceExistsAtLocationCenterRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreCheckResourceExistsAtLocationCenterResponse:
-        return self.execute_unary(request=request, method=_CORE_CHECK_RESOURCE_EXISTS_AT_LOCATION_CENTER, headers=headers, timeout_ms=timeout_ms)
-
-    def get_core(self, request: pb2.GetCoreRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetCoreResponse:
-        return self.execute_unary(request=request, method=_GET_CORE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def put_core(self, request: pb2.PutCoreRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PutCoreResponse:
-        return self.execute_unary(request=request, method=_PUT_CORE, headers=headers, timeout_ms=timeout_ms)
-
-    def core_read_barcode_of_picked_up_resource(self, request: pb2.CoreReadBarcodeOfPickedUpResourceRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CoreReadBarcodeOfPickedUpResourceResponse:
-        return self.execute_unary(request=request, method=_CORE_READ_BARCODE_OF_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms)
-
-    def initialize_autoload(self, request: pb2.InitializeAutoloadRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeAutoloadResponse:
-        return self.execute_unary(request=request, method=_INITIALIZE_AUTOLOAD, headers=headers, timeout_ms=timeout_ms)
-
-    def move_autoload_to_safe_z_position(self, request: pb2.MoveAutoloadToSafeZPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAutoloadToSafeZPositionResponse:
-        return self.execute_unary(request=request, method=_MOVE_AUTOLOAD_TO_SAFE_Z_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def request_autoload_track(self, request: pb2.RequestAutoloadTrackRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestAutoloadTrackResponse:
-        return self.execute_unary(request=request, method=_REQUEST_AUTOLOAD_TRACK, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_autoload_type(self, request: pb2.RequestAutoloadTypeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestAutoloadTypeResponse:
-        return self.execute_unary(request=request, method=_REQUEST_AUTOLOAD_TYPE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_presence_of_carriers_on_deck(self, request: pb2.RequestPresenceOfCarriersOnDeckRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPresenceOfCarriersOnDeckResponse:
-        return self.execute_unary(request=request, method=_REQUEST_PRESENCE_OF_CARRIERS_ON_DECK, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_presence_of_carriers_on_loading_tray(self, request: pb2.RequestPresenceOfCarriersOnLoadingTrayRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPresenceOfCarriersOnLoadingTrayResponse:
-        return self.execute_unary(request=request, method=_REQUEST_PRESENCE_OF_CARRIERS_ON_LOADING_TRAY, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_presence_of_single_carrier_on_loading_tray(self, request: pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPresenceOfSingleCarrierOnLoadingTrayResponse:
-        return self.execute_unary(request=request, method=_REQUEST_PRESENCE_OF_SINGLE_CARRIER_ON_LOADING_TRAY, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def move_autoload_to_slot(self, request: pb2.MoveAutoloadToSlotRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAutoloadToSlotResponse:
-        return self.execute_unary(request=request, method=_MOVE_AUTOLOAD_TO_SLOT, headers=headers, timeout_ms=timeout_ms)
-
-    def move_autoload_to_track(self, request: pb2.MoveAutoloadToTrackRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveAutoloadToTrackResponse:
-        return self.execute_unary(request=request, method=_MOVE_AUTOLOAD_TO_TRACK, headers=headers, timeout_ms=timeout_ms)
-
-    def park_autoload(self, request: pb2.ParkAutoloadRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ParkAutoloadResponse:
-        return self.execute_unary(request=request, method=_PARK_AUTOLOAD, headers=headers, timeout_ms=timeout_ms)
-
-    def take_carrier_out_to_autoload_belt(self, request: pb2.TakeCarrierOutToAutoloadBeltRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.TakeCarrierOutToAutoloadBeltResponse:
-        return self.execute_unary(request=request, method=_TAKE_CARRIER_OUT_TO_AUTOLOAD_BELT, headers=headers, timeout_ms=timeout_ms)
-
-    def set_barcode_type(self, request: pb2.SetBarcodeTypeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetBarcodeTypeResponse:
-        return self.execute_unary(request=request, method=_SET_BARCODE_TYPE, headers=headers, timeout_ms=timeout_ms)
-
-    def load_carrier_from_tray_and_scan_carrier_barcode(self, request: pb2.LoadCarrierFromTrayAndScanCarrierBarcodeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.LoadCarrierFromTrayAndScanCarrierBarcodeResponse:
-        return self.execute_unary(request=request, method=_LOAD_CARRIER_FROM_TRAY_AND_SCAN_CARRIER_BARCODE, headers=headers, timeout_ms=timeout_ms)
-
-    def set_carrier_monitoring(self, request: pb2.SetCarrierMonitoringRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetCarrierMonitoringResponse:
-        return self.execute_unary(request=request, method=_SET_CARRIER_MONITORING, headers=headers, timeout_ms=timeout_ms)
-
-    def load_carrier(self, request: pb2.LoadCarrierRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.LoadCarrierResponse:
-        return self.execute_unary(request=request, method=_LOAD_CARRIER, headers=headers, timeout_ms=timeout_ms)
-
-    def set_loading_indicators(self, request: pb2.SetLoadingIndicatorsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetLoadingIndicatorsResponse:
-        return self.execute_unary(request=request, method=_SET_LOADING_INDICATORS, headers=headers, timeout_ms=timeout_ms)
-
-    def unload_carrier(self, request: pb2.UnloadCarrierRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.UnloadCarrierResponse:
-        return self.execute_unary(request=request, method=_UNLOAD_CARRIER, headers=headers, timeout_ms=timeout_ms)
-
-    def request_instrument_initialization_status(self, request: pb2.RequestInstrumentInitializationStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestInstrumentInitializationStatusResponse:
-        return self.execute_unary(request=request, method=_REQUEST_INSTRUMENT_INITIALIZATION_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_autoload_initialization_status(self, request: pb2.RequestAutoloadInitializationStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestAutoloadInitializationStatusResponse:
-        return self.execute_unary(request=request, method=_REQUEST_AUTOLOAD_INITIALIZATION_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def lock_cover(self, request: pb2.LockCoverRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.LockCoverResponse:
-        return self.execute_unary(request=request, method=_LOCK_COVER, headers=headers, timeout_ms=timeout_ms)
-
-    def unlock_cover(self, request: pb2.UnlockCoverRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.UnlockCoverResponse:
-        return self.execute_unary(request=request, method=_UNLOCK_COVER, headers=headers, timeout_ms=timeout_ms)
-
-    def disable_cover_control(self, request: pb2.DisableCoverControlRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DisableCoverControlResponse:
-        return self.execute_unary(request=request, method=_DISABLE_COVER_CONTROL, headers=headers, timeout_ms=timeout_ms)
-
-    def enable_cover_control(self, request: pb2.EnableCoverControlRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.EnableCoverControlResponse:
-        return self.execute_unary(request=request, method=_ENABLE_COVER_CONTROL, headers=headers, timeout_ms=timeout_ms)
-
-    def set_cover_output(self, request: pb2.SetCoverOutputRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetCoverOutputResponse:
-        return self.execute_unary(request=request, method=_SET_COVER_OUTPUT, headers=headers, timeout_ms=timeout_ms)
-
-    def reset_output(self, request: pb2.ResetOutputRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ResetOutputResponse:
-        return self.execute_unary(request=request, method=_RESET_OUTPUT, headers=headers, timeout_ms=timeout_ms)
-
-    def request_cover_open(self, request: pb2.RequestCoverOpenRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestCoverOpenResponse:
-        return self.execute_unary(request=request, method=_REQUEST_COVER_OPEN, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def send_hhs_command(self, request: pb2.SendHhsCommandRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SendHhsCommandResponse:
-        return self.execute_unary(request=request, method=_SEND_HHS_COMMAND, headers=headers, timeout_ms=timeout_ms)
-
-    def check_type_is_hhc(self, request: pb2.CheckTypeIsHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.CheckTypeIsHhcResponse:
-        return self.execute_unary(request=request, method=_CHECK_TYPE_IS_HHC, headers=headers, timeout_ms=timeout_ms)
-
-    def initialize_hhc(self, request: pb2.InitializeHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeHhcResponse:
-        return self.execute_unary(request=request, method=_INITIALIZE_HHC, headers=headers, timeout_ms=timeout_ms)
-
-    def start_temperature_control_at_hhc(self, request: pb2.StartTemperatureControlAtHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StartTemperatureControlAtHhcResponse:
-        return self.execute_unary(request=request, method=_START_TEMPERATURE_CONTROL_AT_HHC, headers=headers, timeout_ms=timeout_ms)
-
-    def get_temperature_at_hhc(self, request: pb2.GetTemperatureAtHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.GetTemperatureAtHhcResponse:
-        return self.execute_unary(request=request, method=_GET_TEMPERATURE_AT_HHC, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def query_whether_temperature_reached_at_hhc(self, request: pb2.QueryWhetherTemperatureReachedAtHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.QueryWhetherTemperatureReachedAtHhcResponse:
-        return self.execute_unary(request=request, method=_QUERY_WHETHER_TEMPERATURE_REACHED_AT_HHC, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def stop_temperature_control_at_hhc(self, request: pb2.StopTemperatureControlAtHhcRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StopTemperatureControlAtHhcResponse:
-        return self.execute_unary(request=request, method=_STOP_TEMPERATURE_CONTROL_AT_HHC, headers=headers, timeout_ms=timeout_ms)
-
-    def request_firmware_version(self, request: pb2.RequestFirmwareVersionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestFirmwareVersionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_FIRMWARE_VERSION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_error_code(self, request: pb2.RequestErrorCodeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestErrorCodeResponse:
-        return self.execute_unary(request=request, method=_REQUEST_ERROR_CODE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_device_serial_number(self, request: pb2.RequestDeviceSerialNumberRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestDeviceSerialNumberResponse:
-        return self.execute_unary(request=request, method=_REQUEST_DEVICE_SERIAL_NUMBER, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_master_status(self, request: pb2.RequestMasterStatusRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestMasterStatusResponse:
-        return self.execute_unary(request=request, method=_REQUEST_MASTER_STATUS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def set_single_step_mode(self, request: pb2.SetSingleStepModeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetSingleStepModeResponse:
-        return self.execute_unary(request=request, method=_SET_SINGLE_STEP_MODE, headers=headers, timeout_ms=timeout_ms)
-
-    def trigger_next_step(self, request: pb2.TriggerNextStepRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.TriggerNextStepResponse:
-        return self.execute_unary(request=request, method=_TRIGGER_NEXT_STEP, headers=headers, timeout_ms=timeout_ms)
-
-    def halt(self, request: pb2.HaltRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.HaltResponse:
-        return self.execute_unary(request=request, method=_HALT, headers=headers, timeout_ms=timeout_ms)
-
-    def save_all_cycle_counters(self, request: pb2.SaveAllCycleCountersRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SaveAllCycleCountersResponse:
-        return self.execute_unary(request=request, method=_SAVE_ALL_CYCLE_COUNTERS, headers=headers, timeout_ms=timeout_ms)
-
-    def set_not_stop(self, request: pb2.SetNotStopRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetNotStopResponse:
-        return self.execute_unary(request=request, method=_SET_NOT_STOP, headers=headers, timeout_ms=timeout_ms)
-
-    def configure_node_names(self, request: pb2.ConfigureNodeNamesRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ConfigureNodeNamesResponse:
-        return self.execute_unary(request=request, method=_CONFIGURE_NODE_NAMES, headers=headers, timeout_ms=timeout_ms)
-
-    def set_deck_data(self, request: pb2.SetDeckDataRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.SetDeckDataResponse:
-        return self.execute_unary(request=request, method=_SET_DECK_DATA, headers=headers, timeout_ms=timeout_ms)
-
-    def position_left_x_arm(self, request: pb2.PositionLeftXArmRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionLeftXArmResponse:
-        return self.execute_unary(request=request, method=_POSITION_LEFT_X_ARM, headers=headers, timeout_ms=timeout_ms)
-
-    def position_right_x_arm(self, request: pb2.PositionRightXArmRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PositionRightXArmResponse:
-        return self.execute_unary(request=request, method=_POSITION_RIGHT_X_ARM, headers=headers, timeout_ms=timeout_ms)
-
-    def move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(self, request: pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
-        return self.execute_unary(request=request, method=_MOVE_LEFT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position(self, request: pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
-        return self.execute_unary(request=request, method=_MOVE_RIGHT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION, headers=headers, timeout_ms=timeout_ms)
-
-    def request_left_x_arm_position(self, request: pb2.RequestLeftXArmPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestLeftXArmPositionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_LEFT_X_ARM_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_right_x_arm_position(self, request: pb2.RequestRightXArmPositionRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestRightXArmPositionResponse:
-        return self.execute_unary(request=request, method=_REQUEST_RIGHT_X_ARM_POSITION, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_right_x_arm_last_collision_type(self, request: pb2.RequestRightXArmLastCollisionTypeRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestRightXArmLastCollisionTypeResponse:
-        return self.execute_unary(request=request, method=_REQUEST_RIGHT_X_ARM_LAST_COLLISION_TYPE, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def request_pump_settings(self, request: pb2.RequestPumpSettingsRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.RequestPumpSettingsResponse:
-        return self.execute_unary(request=request, method=_REQUEST_PUMP_SETTINGS, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
-
-    def initialize_dual_pump_station_valves(self, request: pb2.InitializeDualPumpStationValvesRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.InitializeDualPumpStationValvesResponse:
-        return self.execute_unary(request=request, method=_INITIALIZE_DUAL_PUMP_STATION_VALVES, headers=headers, timeout_ms=timeout_ms)
-
-    def drain_dual_chamber_system(self, request: pb2.DrainDualChamberSystemRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.DrainDualChamberSystemResponse:
-        return self.execute_unary(request=request, method=_DRAIN_DUAL_CHAMBER_SYSTEM, headers=headers, timeout_ms=timeout_ms)
-
-    def violently_shoot_down_tip(self, request: pb2.ViolentlyShootDownTipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.ViolentlyShootDownTipResponse:
-        return self.execute_unary(request=request, method=_VIOLENTLY_SHOOT_DOWN_TIP, headers=headers, timeout_ms=timeout_ms)
-
-    def can_pick_up_tip(self, request: pb2.CanPickUpTipRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None, use_get: bool = False) -> pb2.CanPickUpTipResponse:
-        return self.execute_unary(request=request, method=_CAN_PICK_UP_TIP, headers=headers, timeout_ms=timeout_ms, use_get=use_get)
+  def setup(
+    self,
+    request: pb2.SetupRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetupResponse:
+    return self.execute_unary(
+      request=request, method=_SETUP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def stop(
+    self,
+    request: pb2.StopRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.StopResponse:
+    return self.execute_unary(request=request, method=_STOP, headers=headers, timeout_ms=timeout_ms)
+
+  def get_num_channels(
+    self,
+    request: pb2.GetNumChannelsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetNumChannelsResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_NUM_CHANNELS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def get_head96_installed(
+    self,
+    request: pb2.GetHead96InstalledRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetHead96InstalledResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_HEAD96_INSTALLED,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def get_iswap_installed(
+    self,
+    request: pb2.GetIswapInstalledRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetIswapInstalledResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_ISWAP_INSTALLED,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def get_iswap_parked(
+    self,
+    request: pb2.GetIswapParkedRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetIswapParkedResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_ISWAP_PARKED,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def get_core_parked(
+    self,
+    request: pb2.GetCoreParkedRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetCoreParkedResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_CORE_PARKED,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def pick_up_tips(
+    self,
+    request: pb2.PickUpTipsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpTipsResponse:
+    return self.execute_unary(
+      request=request, method=_PICK_UP_TIPS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def drop_tips(
+    self,
+    request: pb2.DropTipsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DropTipsResponse:
+    return self.execute_unary(
+      request=request, method=_DROP_TIPS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def aspirate(
+    self,
+    request: pb2.AspirateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.AspirateResponse:
+    return self.execute_unary(
+      request=request, method=_ASPIRATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def dispense(
+    self,
+    request: pb2.DispenseRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DispenseResponse:
+    return self.execute_unary(
+      request=request, method=_DISPENSE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def pick_up_tips96(
+    self,
+    request: pb2.PickUpTips96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpTips96Response:
+    return self.execute_unary(
+      request=request, method=_PICK_UP_TIPS96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def drop_tips96(
+    self,
+    request: pb2.DropTips96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DropTips96Response:
+    return self.execute_unary(
+      request=request, method=_DROP_TIPS96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def aspirate96(
+    self,
+    request: pb2.Aspirate96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Aspirate96Response:
+    return self.execute_unary(
+      request=request, method=_ASPIRATE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def dispense96(
+    self,
+    request: pb2.Dispense96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Dispense96Response:
+    return self.execute_unary(
+      request=request, method=_DISPENSE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def initialize_pip(
+    self,
+    request: pb2.InitializePipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializePipResponse:
+    return self.execute_unary(
+      request=request, method=_INITIALIZE_PIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def initialize_pipetting_channels(
+    self,
+    request: pb2.InitializePipettingChannelsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializePipettingChannelsResponse:
+    return self.execute_unary(
+      request=request, method=_INITIALIZE_PIPETTING_CHANNELS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def pick_up_tip_fw(
+    self,
+    request: pb2.PickUpTipFwRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpTipFwResponse:
+    return self.execute_unary(
+      request=request, method=_PICK_UP_TIP_FW, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def discard_tip_fw(
+    self,
+    request: pb2.DiscardTipFwRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DiscardTipFwResponse:
+    return self.execute_unary(
+      request=request, method=_DISCARD_TIP_FW, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def aspirate_pip(
+    self,
+    request: pb2.AspiratePipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.AspiratePipResponse:
+    return self.execute_unary(
+      request=request, method=_ASPIRATE_PIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def dispense_pip(
+    self,
+    request: pb2.DispensePipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DispensePipResponse:
+    return self.execute_unary(
+      request=request, method=_DISPENSE_PIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def spread_pip_channels(
+    self,
+    request: pb2.SpreadPipChannelsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SpreadPipChannelsResponse:
+    return self.execute_unary(
+      request=request, method=_SPREAD_PIP_CHANNELS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_all_pipetting_channels_to_defined_position(
+    self,
+    request: pb2.MoveAllPipettingChannelsToDefinedPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAllPipettingChannelsToDefinedPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_MOVE_ALL_PIPETTING_CHANNELS_TO_DEFINED_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def define_tip_needle(
+    self,
+    request: pb2.DefineTipNeedleRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DefineTipNeedleResponse:
+    return self.execute_unary(
+      request=request, method=_DEFINE_TIP_NEEDLE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def probe_liquid_heights(
+    self,
+    request: pb2.ProbeLiquidHeightsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ProbeLiquidHeightsResponse:
+    return self.execute_unary(
+      request=request, method=_PROBE_LIQUID_HEIGHTS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def probe_liquid_volumes(
+    self,
+    request: pb2.ProbeLiquidVolumesRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ProbeLiquidVolumesResponse:
+    return self.execute_unary(
+      request=request, method=_PROBE_LIQUID_VOLUMES, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def request_tip_presence(
+    self,
+    request: pb2.RequestTipPresenceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestTipPresenceResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_TIP_PRESENCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def channels_sense_tip_presence(
+    self,
+    request: pb2.ChannelsSenseTipPresenceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.ChannelsSenseTipPresenceResponse:
+    return self.execute_unary(
+      request=request,
+      method=_CHANNELS_SENSE_TIP_PRESENCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_pip_height_last_lld(
+    self,
+    request: pb2.RequestPipHeightLastLldRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPipHeightLastLldResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_PIP_HEIGHT_LAST_LLD,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_tadm_status(
+    self,
+    request: pb2.RequestTadmStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestTadmStatusResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_TADM_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_volume_in_tip(
+    self,
+    request: pb2.RequestVolumeInTipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestVolumeInTipResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_VOLUME_IN_TIP,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_tip_len_on_channel(
+    self,
+    request: pb2.RequestTipLenOnChannelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestTipLenOnChannelResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_TIP_LEN_ON_CHANNEL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_probe_z_position(
+    self,
+    request: pb2.RequestProbeZPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestProbeZPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_PROBE_Z_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def clld_probe_z_height_using_channel(
+    self,
+    request: pb2.ClldProbeZHeightUsingChannelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ClldProbeZHeightUsingChannelResponse:
+    return self.execute_unary(
+      request=request,
+      method=_CLLD_PROBE_Z_HEIGHT_USING_CHANNEL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def plld_probe_z_height_using_channel(
+    self,
+    request: pb2.PlldProbeZHeightUsingChannelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PlldProbeZHeightUsingChannelResponse:
+    return self.execute_unary(
+      request=request,
+      method=_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def ztouch_probe_z_height_using_channel(
+    self,
+    request: pb2.ZtouchProbeZHeightUsingChannelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ZtouchProbeZHeightUsingChannelResponse:
+    return self.execute_unary(
+      request=request,
+      method=_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def pierce_foil(
+    self,
+    request: pb2.PierceFoilRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PierceFoilResponse:
+    return self.execute_unary(
+      request=request, method=_PIERCE_FOIL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def pierce_foil_high_level(
+    self,
+    request: pb2.PierceFoilHighLevelRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PierceFoilHighLevelResponse:
+    return self.execute_unary(
+      request=request, method=_PIERCE_FOIL_HIGH_LEVEL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def step_off_foil(
+    self,
+    request: pb2.StepOffFoilRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.StepOffFoilResponse:
+    return self.execute_unary(
+      request=request, method=_STEP_OFF_FOIL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def empty_tip(
+    self,
+    request: pb2.EmptyTipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.EmptyTipResponse:
+    return self.execute_unary(
+      request=request, method=_EMPTY_TIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def empty_tips(
+    self,
+    request: pb2.EmptyTipsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.EmptyTipsResponse:
+    return self.execute_unary(
+      request=request, method=_EMPTY_TIPS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_channel_x(
+    self,
+    request: pb2.MoveChannelXRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelXResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_X, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_channel_y(
+    self,
+    request: pb2.MoveChannelYRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelYResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_Y, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_channel_z(
+    self,
+    request: pb2.MoveChannelZRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelZResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_Z, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_channel_x_relative(
+    self,
+    request: pb2.MoveChannelXRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelXRelativeResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_X_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_channel_y_relative(
+    self,
+    request: pb2.MoveChannelYRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelYRelativeResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_Y_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_channel_z_relative(
+    self,
+    request: pb2.MoveChannelZRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveChannelZRelativeResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_CHANNEL_Z_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def prepare_for_manual_channel_operation(
+    self,
+    request: pb2.PrepareForManualChannelOperationRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PrepareForManualChannelOperationResponse:
+    return self.execute_unary(
+      request=request,
+      method=_PREPARE_FOR_MANUAL_CHANNEL_OPERATION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def move_all_channels_in_z_safety(
+    self,
+    request: pb2.MoveAllChannelsInZSafetyRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAllChannelsInZSafetyResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_ALL_CHANNELS_IN_Z_SAFETY, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def position_single_pipetting_channel_in_y_direction(
+    self,
+    request: pb2.PositionSinglePipettingChannelInYDirectionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionSinglePipettingChannelInYDirectionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Y_DIRECTION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def position_single_pipetting_channel_in_z_direction(
+    self,
+    request: pb2.PositionSinglePipettingChannelInZDirectionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionSinglePipettingChannelInZDirectionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_POSITION_SINGLE_PIPETTING_CHANNEL_IN_Z_DIRECTION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def position_max_free_y_for_n(
+    self,
+    request: pb2.PositionMaxFreeYForNRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionMaxFreeYForNResponse:
+    return self.execute_unary(
+      request=request, method=_POSITION_MAX_FREE_Y_FOR_N, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def request_x_pos_channel_n(
+    self,
+    request: pb2.RequestXPosChannelNRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestXPosChannelNResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_X_POS_CHANNEL_N,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_y_pos_channel_n(
+    self,
+    request: pb2.RequestYPosChannelNRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestYPosChannelNResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_Y_POS_CHANNEL_N,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_z_pos_channel_n(
+    self,
+    request: pb2.RequestZPosChannelNRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestZPosChannelNResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_Z_POS_CHANNEL_N,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_tip_bottom_z_position(
+    self,
+    request: pb2.RequestTipBottomZPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestTipBottomZPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_TIP_BOTTOM_Z_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def get_channels_y_positions(
+    self,
+    request: pb2.GetChannelsYPositionsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetChannelsYPositionsResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_CHANNELS_Y_POSITIONS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def position_channels_in_y_direction(
+    self,
+    request: pb2.PositionChannelsInYDirectionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionChannelsInYDirectionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_POSITION_CHANNELS_IN_Y_DIRECTION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def get_channels_z_positions(
+    self,
+    request: pb2.GetChannelsZPositionsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetChannelsZPositionsResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_CHANNELS_Z_POSITIONS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def position_channels_in_z_direction(
+    self,
+    request: pb2.PositionChannelsInZDirectionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionChannelsInZDirectionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_POSITION_CHANNELS_IN_Z_DIRECTION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def request_pip_channel_version(
+    self,
+    request: pb2.RequestPipChannelVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPipChannelVersionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_PIP_CHANNEL_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def initialize_core96_head(
+    self,
+    request: pb2.InitializeCore96HeadRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeCore96HeadResponse:
+    return self.execute_unary(
+      request=request, method=_INITIALIZE_CORE96_HEAD, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def request_core96_head_initialization_status(
+    self,
+    request: pb2.RequestCore96HeadInitializationStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestCore96HeadInitializationStatusResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_CORE96_HEAD_INITIALIZATION_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def head96_request_firmware_version(
+    self,
+    request: pb2.Head96RequestFirmwareVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96RequestFirmwareVersionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_REQUEST_FIRMWARE_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def head96_request_type(
+    self,
+    request: pb2.Head96RequestTypeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96RequestTypeResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_REQUEST_TYPE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def head96_dispensing_drive_and_squeezer_driver_initialize(
+    self,
+    request: pb2.Head96DispensingDriveAndSqueezerDriverInitializeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96DispensingDriveAndSqueezerDriverInitializeResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_AND_SQUEEZER_DRIVER_INITIALIZE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def move_core96_to_safe_position(
+    self,
+    request: pb2.MoveCore96ToSafePositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveCore96ToSafePositionResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_CORE96_TO_SAFE_POSITION, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def head96_move_to_z_safety(
+    self,
+    request: pb2.Head96MoveToZSafetyRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveToZSafetyResponse:
+    return self.execute_unary(
+      request=request, method=_HEAD96_MOVE_TO_Z_SAFETY, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def head96_park(
+    self,
+    request: pb2.Head96ParkRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96ParkResponse:
+    return self.execute_unary(
+      request=request, method=_HEAD96_PARK, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def head96_move_x(
+    self,
+    request: pb2.Head96MoveXRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveXResponse:
+    return self.execute_unary(
+      request=request, method=_HEAD96_MOVE_X, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def head96_move_y(
+    self,
+    request: pb2.Head96MoveYRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveYResponse:
+    return self.execute_unary(
+      request=request, method=_HEAD96_MOVE_Y, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def head96_move_z(
+    self,
+    request: pb2.Head96MoveZRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveZResponse:
+    return self.execute_unary(
+      request=request, method=_HEAD96_MOVE_Z, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_core96_head_to_defined_position(
+    self,
+    request: pb2.MoveCore96HeadToDefinedPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveCore96HeadToDefinedPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_MOVE_CORE96_HEAD_TO_DEFINED_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def head96_move_to_coordinate(
+    self,
+    request: pb2.Head96MoveToCoordinateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96MoveToCoordinateResponse:
+    return self.execute_unary(
+      request=request, method=_HEAD96_MOVE_TO_COORDINATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def head96_dispensing_drive_move_to_home_volume(
+    self,
+    request: pb2.Head96DispensingDriveMoveToHomeVolumeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96DispensingDriveMoveToHomeVolumeResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_HOME_VOLUME,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def head96_dispensing_drive_move_to_position(
+    self,
+    request: pb2.Head96DispensingDriveMoveToPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.Head96DispensingDriveMoveToPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_MOVE_TO_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def head96_dispensing_drive_request_position_mm(
+    self,
+    request: pb2.Head96DispensingDriveRequestPositionMmRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96DispensingDriveRequestPositionMmResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_MM,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def head96_dispensing_drive_request_position_ul(
+    self,
+    request: pb2.Head96DispensingDriveRequestPositionUlRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96DispensingDriveRequestPositionUlResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_DISPENSING_DRIVE_REQUEST_POSITION_UL,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def head96_request_tip_presence(
+    self,
+    request: pb2.Head96RequestTipPresenceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96RequestTipPresenceResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_REQUEST_TIP_PRESENCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def head96_request_position(
+    self,
+    request: pb2.Head96RequestPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.Head96RequestPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_HEAD96_REQUEST_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def pick_up_tips_core96(
+    self,
+    request: pb2.PickUpTipsCore96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpTipsCore96Response:
+    return self.execute_unary(
+      request=request, method=_PICK_UP_TIPS_CORE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def discard_tips_core96(
+    self,
+    request: pb2.DiscardTipsCore96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DiscardTipsCore96Response:
+    return self.execute_unary(
+      request=request, method=_DISCARD_TIPS_CORE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def aspirate_core96(
+    self,
+    request: pb2.AspirateCore96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.AspirateCore96Response:
+    return self.execute_unary(
+      request=request, method=_ASPIRATE_CORE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def dispense_core96(
+    self,
+    request: pb2.DispenseCore96Request,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DispenseCore96Response:
+    return self.execute_unary(
+      request=request, method=_DISPENSE_CORE96, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def initialize_iswap(
+    self,
+    request: pb2.InitializeIswapRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeIswapResponse:
+    return self.execute_unary(
+      request=request, method=_INITIALIZE_ISWAP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def position_components_for_free_iswap_y_range(
+    self,
+    request: pb2.PositionComponentsForFreeIswapYRangeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionComponentsForFreeIswapYRangeResponse:
+    return self.execute_unary(
+      request=request,
+      method=_POSITION_COMPONENTS_FOR_FREE_ISWAP_Y_RANGE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def move_iswap_x_relative(
+    self,
+    request: pb2.MoveIswapXRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapXRelativeResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_ISWAP_X_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_iswap_y_relative(
+    self,
+    request: pb2.MoveIswapYRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapYRelativeResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_ISWAP_Y_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_iswap_z_relative(
+    self,
+    request: pb2.MoveIswapZRelativeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapZRelativeResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_ISWAP_Z_RELATIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_iswap_x(
+    self,
+    request: pb2.MoveIswapXRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapXResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_ISWAP_X, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_iswap_y(
+    self,
+    request: pb2.MoveIswapYRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapYResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_ISWAP_Y, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_iswap_z(
+    self,
+    request: pb2.MoveIswapZRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveIswapZResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_ISWAP_Z, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def open_not_initialized_gripper(
+    self,
+    request: pb2.OpenNotInitializedGripperRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.OpenNotInitializedGripperResponse:
+    return self.execute_unary(
+      request=request, method=_OPEN_NOT_INITIALIZED_GRIPPER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_open_gripper(
+    self,
+    request: pb2.IswapOpenGripperRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapOpenGripperResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_OPEN_GRIPPER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_close_gripper(
+    self,
+    request: pb2.IswapCloseGripperRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapCloseGripperResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_CLOSE_GRIPPER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def park_iswap(
+    self,
+    request: pb2.ParkIswapRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ParkIswapResponse:
+    return self.execute_unary(
+      request=request, method=_PARK_ISWAP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_get_plate(
+    self,
+    request: pb2.IswapGetPlateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapGetPlateResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_GET_PLATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_put_plate(
+    self,
+    request: pb2.IswapPutPlateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapPutPlateResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_PUT_PLATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_plate_to_position(
+    self,
+    request: pb2.MovePlateToPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MovePlateToPositionResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_PLATE_TO_POSITION, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def collapse_gripper_arm(
+    self,
+    request: pb2.CollapseGripperArmRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CollapseGripperArmResponse:
+    return self.execute_unary(
+      request=request, method=_COLLAPSE_GRIPPER_ARM, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_rotate(
+    self,
+    request: pb2.IswapRotateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapRotateResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_ROTATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def rotate_iswap_rotation_drive(
+    self,
+    request: pb2.RotateIswapRotationDriveRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.RotateIswapRotationDriveResponse:
+    return self.execute_unary(
+      request=request, method=_ROTATE_ISWAP_ROTATION_DRIVE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def rotate_iswap_wrist(
+    self,
+    request: pb2.RotateIswapWristRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.RotateIswapWristResponse:
+    return self.execute_unary(
+      request=request, method=_ROTATE_ISWAP_WRIST, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_dangerous_release_break(
+    self,
+    request: pb2.IswapDangerousReleaseBreakRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapDangerousReleaseBreakResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_DANGEROUS_RELEASE_BREAK, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_reengage_break(
+    self,
+    request: pb2.IswapReengageBreakRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapReengageBreakResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_REENGAGE_BREAK, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_initialize_z_axis(
+    self,
+    request: pb2.IswapInitializeZAxisRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapInitializeZAxisResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_INITIALIZE_Z_AXIS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def request_iswap_rotation_drive_position_increments(
+    self,
+    request: pb2.RequestIswapRotationDrivePositionIncrementsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapRotationDrivePositionIncrementsResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_ROTATION_DRIVE_POSITION_INCREMENTS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_iswap_rotation_drive_orientation(
+    self,
+    request: pb2.RequestIswapRotationDriveOrientationRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapRotationDriveOrientationResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_ROTATION_DRIVE_ORIENTATION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_iswap_wrist_drive_position_increments(
+    self,
+    request: pb2.RequestIswapWristDrivePositionIncrementsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapWristDrivePositionIncrementsResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_WRIST_DRIVE_POSITION_INCREMENTS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_iswap_wrist_drive_orientation(
+    self,
+    request: pb2.RequestIswapWristDriveOrientationRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapWristDriveOrientationResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_WRIST_DRIVE_ORIENTATION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_iswap_in_parking_position(
+    self,
+    request: pb2.RequestIswapInParkingPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapInParkingPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_IN_PARKING_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_plate_in_iswap(
+    self,
+    request: pb2.RequestPlateInIswapRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPlateInIswapResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_PLATE_IN_ISWAP,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_iswap_position(
+    self,
+    request: pb2.RequestIswapPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def iswap_rotation_drive_request_y(
+    self,
+    request: pb2.IswapRotationDriveRequestYRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.IswapRotationDriveRequestYResponse:
+    return self.execute_unary(
+      request=request,
+      method=_ISWAP_ROTATION_DRIVE_REQUEST_Y,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_iswap_initialization_status(
+    self,
+    request: pb2.RequestIswapInitializationStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapInitializationStatusResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_INITIALIZATION_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_iswap_version(
+    self,
+    request: pb2.RequestIswapVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestIswapVersionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ISWAP_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def get_iswap_version(
+    self,
+    request: pb2.GetIswapVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetIswapVersionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_ISWAP_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def slow_iswap(
+    self,
+    request: pb2.SlowIswapRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SlowIswapResponse:
+    return self.execute_unary(
+      request=request, method=_SLOW_ISWAP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def iswap_move_picked_up_resource(
+    self,
+    request: pb2.IswapMovePickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.IswapMovePickedUpResourceResponse:
+    return self.execute_unary(
+      request=request, method=_ISWAP_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def pick_up_resource(
+    self,
+    request: pb2.PickUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpResourceResponse:
+    return self.execute_unary(
+      request=request, method=_PICK_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_picked_up_resource(
+    self,
+    request: pb2.MovePickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MovePickedUpResourceResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def drop_resource(
+    self,
+    request: pb2.DropResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DropResourceResponse:
+    return self.execute_unary(
+      request=request, method=_DROP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def pick_up_core_gripper_tools(
+    self,
+    request: pb2.PickUpCoreGripperToolsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PickUpCoreGripperToolsResponse:
+    return self.execute_unary(
+      request=request, method=_PICK_UP_CORE_GRIPPER_TOOLS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def return_core_gripper_tools(
+    self,
+    request: pb2.ReturnCoreGripperToolsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ReturnCoreGripperToolsResponse:
+    return self.execute_unary(
+      request=request, method=_RETURN_CORE_GRIPPER_TOOLS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def core_open_gripper(
+    self,
+    request: pb2.CoreOpenGripperRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreOpenGripperResponse:
+    return self.execute_unary(
+      request=request, method=_CORE_OPEN_GRIPPER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def core_get_plate(
+    self,
+    request: pb2.CoreGetPlateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreGetPlateResponse:
+    return self.execute_unary(
+      request=request, method=_CORE_GET_PLATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def core_put_plate(
+    self,
+    request: pb2.CorePutPlateRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CorePutPlateResponse:
+    return self.execute_unary(
+      request=request, method=_CORE_PUT_PLATE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def core_move_plate_to_position(
+    self,
+    request: pb2.CoreMovePlateToPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreMovePlateToPositionResponse:
+    return self.execute_unary(
+      request=request, method=_CORE_MOVE_PLATE_TO_POSITION, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def core_pick_up_resource(
+    self,
+    request: pb2.CorePickUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CorePickUpResourceResponse:
+    return self.execute_unary(
+      request=request, method=_CORE_PICK_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def core_move_picked_up_resource(
+    self,
+    request: pb2.CoreMovePickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreMovePickedUpResourceResponse:
+    return self.execute_unary(
+      request=request, method=_CORE_MOVE_PICKED_UP_RESOURCE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def core_release_picked_up_resource(
+    self,
+    request: pb2.CoreReleasePickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreReleasePickedUpResourceResponse:
+    return self.execute_unary(
+      request=request,
+      method=_CORE_RELEASE_PICKED_UP_RESOURCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def core_check_resource_exists_at_location_center(
+    self,
+    request: pb2.CoreCheckResourceExistsAtLocationCenterRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreCheckResourceExistsAtLocationCenterResponse:
+    return self.execute_unary(
+      request=request,
+      method=_CORE_CHECK_RESOURCE_EXISTS_AT_LOCATION_CENTER,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def get_core(
+    self,
+    request: pb2.GetCoreRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetCoreResponse:
+    return self.execute_unary(
+      request=request, method=_GET_CORE, headers=headers, timeout_ms=timeout_ms, use_get=use_get
+    )
+
+  def put_core(
+    self,
+    request: pb2.PutCoreRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PutCoreResponse:
+    return self.execute_unary(
+      request=request, method=_PUT_CORE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def core_read_barcode_of_picked_up_resource(
+    self,
+    request: pb2.CoreReadBarcodeOfPickedUpResourceRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CoreReadBarcodeOfPickedUpResourceResponse:
+    return self.execute_unary(
+      request=request,
+      method=_CORE_READ_BARCODE_OF_PICKED_UP_RESOURCE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def initialize_autoload(
+    self,
+    request: pb2.InitializeAutoloadRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeAutoloadResponse:
+    return self.execute_unary(
+      request=request, method=_INITIALIZE_AUTOLOAD, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_autoload_to_safe_z_position(
+    self,
+    request: pb2.MoveAutoloadToSafeZPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAutoloadToSafeZPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_MOVE_AUTOLOAD_TO_SAFE_Z_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def request_autoload_track(
+    self,
+    request: pb2.RequestAutoloadTrackRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestAutoloadTrackResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_AUTOLOAD_TRACK,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_autoload_type(
+    self,
+    request: pb2.RequestAutoloadTypeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestAutoloadTypeResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_AUTOLOAD_TYPE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_presence_of_carriers_on_deck(
+    self,
+    request: pb2.RequestPresenceOfCarriersOnDeckRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPresenceOfCarriersOnDeckResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_PRESENCE_OF_CARRIERS_ON_DECK,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_presence_of_carriers_on_loading_tray(
+    self,
+    request: pb2.RequestPresenceOfCarriersOnLoadingTrayRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPresenceOfCarriersOnLoadingTrayResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_PRESENCE_OF_CARRIERS_ON_LOADING_TRAY,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_presence_of_single_carrier_on_loading_tray(
+    self,
+    request: pb2.RequestPresenceOfSingleCarrierOnLoadingTrayRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPresenceOfSingleCarrierOnLoadingTrayResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_PRESENCE_OF_SINGLE_CARRIER_ON_LOADING_TRAY,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def move_autoload_to_slot(
+    self,
+    request: pb2.MoveAutoloadToSlotRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAutoloadToSlotResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_AUTOLOAD_TO_SLOT, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_autoload_to_track(
+    self,
+    request: pb2.MoveAutoloadToTrackRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveAutoloadToTrackResponse:
+    return self.execute_unary(
+      request=request, method=_MOVE_AUTOLOAD_TO_TRACK, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def park_autoload(
+    self,
+    request: pb2.ParkAutoloadRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ParkAutoloadResponse:
+    return self.execute_unary(
+      request=request, method=_PARK_AUTOLOAD, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def take_carrier_out_to_autoload_belt(
+    self,
+    request: pb2.TakeCarrierOutToAutoloadBeltRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.TakeCarrierOutToAutoloadBeltResponse:
+    return self.execute_unary(
+      request=request,
+      method=_TAKE_CARRIER_OUT_TO_AUTOLOAD_BELT,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def set_barcode_type(
+    self,
+    request: pb2.SetBarcodeTypeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetBarcodeTypeResponse:
+    return self.execute_unary(
+      request=request, method=_SET_BARCODE_TYPE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def load_carrier_from_tray_and_scan_carrier_barcode(
+    self,
+    request: pb2.LoadCarrierFromTrayAndScanCarrierBarcodeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.LoadCarrierFromTrayAndScanCarrierBarcodeResponse:
+    return self.execute_unary(
+      request=request,
+      method=_LOAD_CARRIER_FROM_TRAY_AND_SCAN_CARRIER_BARCODE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def set_carrier_monitoring(
+    self,
+    request: pb2.SetCarrierMonitoringRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetCarrierMonitoringResponse:
+    return self.execute_unary(
+      request=request, method=_SET_CARRIER_MONITORING, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def load_carrier(
+    self,
+    request: pb2.LoadCarrierRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.LoadCarrierResponse:
+    return self.execute_unary(
+      request=request, method=_LOAD_CARRIER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def set_loading_indicators(
+    self,
+    request: pb2.SetLoadingIndicatorsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetLoadingIndicatorsResponse:
+    return self.execute_unary(
+      request=request, method=_SET_LOADING_INDICATORS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def unload_carrier(
+    self,
+    request: pb2.UnloadCarrierRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.UnloadCarrierResponse:
+    return self.execute_unary(
+      request=request, method=_UNLOAD_CARRIER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def request_instrument_initialization_status(
+    self,
+    request: pb2.RequestInstrumentInitializationStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestInstrumentInitializationStatusResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_INSTRUMENT_INITIALIZATION_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_autoload_initialization_status(
+    self,
+    request: pb2.RequestAutoloadInitializationStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestAutoloadInitializationStatusResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_AUTOLOAD_INITIALIZATION_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def lock_cover(
+    self,
+    request: pb2.LockCoverRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.LockCoverResponse:
+    return self.execute_unary(
+      request=request, method=_LOCK_COVER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def unlock_cover(
+    self,
+    request: pb2.UnlockCoverRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.UnlockCoverResponse:
+    return self.execute_unary(
+      request=request, method=_UNLOCK_COVER, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def disable_cover_control(
+    self,
+    request: pb2.DisableCoverControlRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DisableCoverControlResponse:
+    return self.execute_unary(
+      request=request, method=_DISABLE_COVER_CONTROL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def enable_cover_control(
+    self,
+    request: pb2.EnableCoverControlRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.EnableCoverControlResponse:
+    return self.execute_unary(
+      request=request, method=_ENABLE_COVER_CONTROL, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def set_cover_output(
+    self,
+    request: pb2.SetCoverOutputRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetCoverOutputResponse:
+    return self.execute_unary(
+      request=request, method=_SET_COVER_OUTPUT, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def reset_output(
+    self,
+    request: pb2.ResetOutputRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ResetOutputResponse:
+    return self.execute_unary(
+      request=request, method=_RESET_OUTPUT, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def request_cover_open(
+    self,
+    request: pb2.RequestCoverOpenRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestCoverOpenResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_COVER_OPEN,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def send_hhs_command(
+    self,
+    request: pb2.SendHhsCommandRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SendHhsCommandResponse:
+    return self.execute_unary(
+      request=request, method=_SEND_HHS_COMMAND, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def check_type_is_hhc(
+    self,
+    request: pb2.CheckTypeIsHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.CheckTypeIsHhcResponse:
+    return self.execute_unary(
+      request=request, method=_CHECK_TYPE_IS_HHC, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def initialize_hhc(
+    self,
+    request: pb2.InitializeHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeHhcResponse:
+    return self.execute_unary(
+      request=request, method=_INITIALIZE_HHC, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def start_temperature_control_at_hhc(
+    self,
+    request: pb2.StartTemperatureControlAtHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.StartTemperatureControlAtHhcResponse:
+    return self.execute_unary(
+      request=request,
+      method=_START_TEMPERATURE_CONTROL_AT_HHC,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def get_temperature_at_hhc(
+    self,
+    request: pb2.GetTemperatureAtHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.GetTemperatureAtHhcResponse:
+    return self.execute_unary(
+      request=request,
+      method=_GET_TEMPERATURE_AT_HHC,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def query_whether_temperature_reached_at_hhc(
+    self,
+    request: pb2.QueryWhetherTemperatureReachedAtHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.QueryWhetherTemperatureReachedAtHhcResponse:
+    return self.execute_unary(
+      request=request,
+      method=_QUERY_WHETHER_TEMPERATURE_REACHED_AT_HHC,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def stop_temperature_control_at_hhc(
+    self,
+    request: pb2.StopTemperatureControlAtHhcRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.StopTemperatureControlAtHhcResponse:
+    return self.execute_unary(
+      request=request,
+      method=_STOP_TEMPERATURE_CONTROL_AT_HHC,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def request_firmware_version(
+    self,
+    request: pb2.RequestFirmwareVersionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestFirmwareVersionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_FIRMWARE_VERSION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_error_code(
+    self,
+    request: pb2.RequestErrorCodeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestErrorCodeResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_ERROR_CODE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_device_serial_number(
+    self,
+    request: pb2.RequestDeviceSerialNumberRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestDeviceSerialNumberResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_DEVICE_SERIAL_NUMBER,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_master_status(
+    self,
+    request: pb2.RequestMasterStatusRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestMasterStatusResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_MASTER_STATUS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def set_single_step_mode(
+    self,
+    request: pb2.SetSingleStepModeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetSingleStepModeResponse:
+    return self.execute_unary(
+      request=request, method=_SET_SINGLE_STEP_MODE, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def trigger_next_step(
+    self,
+    request: pb2.TriggerNextStepRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.TriggerNextStepResponse:
+    return self.execute_unary(
+      request=request, method=_TRIGGER_NEXT_STEP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def halt(
+    self,
+    request: pb2.HaltRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.HaltResponse:
+    return self.execute_unary(request=request, method=_HALT, headers=headers, timeout_ms=timeout_ms)
+
+  def save_all_cycle_counters(
+    self,
+    request: pb2.SaveAllCycleCountersRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SaveAllCycleCountersResponse:
+    return self.execute_unary(
+      request=request, method=_SAVE_ALL_CYCLE_COUNTERS, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def set_not_stop(
+    self,
+    request: pb2.SetNotStopRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetNotStopResponse:
+    return self.execute_unary(
+      request=request, method=_SET_NOT_STOP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def configure_node_names(
+    self,
+    request: pb2.ConfigureNodeNamesRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ConfigureNodeNamesResponse:
+    return self.execute_unary(
+      request=request, method=_CONFIGURE_NODE_NAMES, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def set_deck_data(
+    self,
+    request: pb2.SetDeckDataRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.SetDeckDataResponse:
+    return self.execute_unary(
+      request=request, method=_SET_DECK_DATA, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def position_left_x_arm(
+    self,
+    request: pb2.PositionLeftXArmRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionLeftXArmResponse:
+    return self.execute_unary(
+      request=request, method=_POSITION_LEFT_X_ARM, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def position_right_x_arm(
+    self,
+    request: pb2.PositionRightXArmRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.PositionRightXArmResponse:
+    return self.execute_unary(
+      request=request, method=_POSITION_RIGHT_X_ARM, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(
+    self,
+    request: pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_MOVE_LEFT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def move_right_x_arm_to_position_with_all_attached_components_in_z_safety_position(
+    self,
+    request: pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_MOVE_RIGHT_X_ARM_TO_POSITION_WITH_ALL_ATTACHED_COMPONENTS_IN_Z_SAFETY_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def request_left_x_arm_position(
+    self,
+    request: pb2.RequestLeftXArmPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestLeftXArmPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_LEFT_X_ARM_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_right_x_arm_position(
+    self,
+    request: pb2.RequestRightXArmPositionRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestRightXArmPositionResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_RIGHT_X_ARM_POSITION,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_right_x_arm_last_collision_type(
+    self,
+    request: pb2.RequestRightXArmLastCollisionTypeRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestRightXArmLastCollisionTypeResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_RIGHT_X_ARM_LAST_COLLISION_TYPE,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def request_pump_settings(
+    self,
+    request: pb2.RequestPumpSettingsRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.RequestPumpSettingsResponse:
+    return self.execute_unary(
+      request=request,
+      method=_REQUEST_PUMP_SETTINGS,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )
+
+  def initialize_dual_pump_station_valves(
+    self,
+    request: pb2.InitializeDualPumpStationValvesRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.InitializeDualPumpStationValvesResponse:
+    return self.execute_unary(
+      request=request,
+      method=_INITIALIZE_DUAL_PUMP_STATION_VALVES,
+      headers=headers,
+      timeout_ms=timeout_ms,
+    )
+
+  def drain_dual_chamber_system(
+    self,
+    request: pb2.DrainDualChamberSystemRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.DrainDualChamberSystemResponse:
+    return self.execute_unary(
+      request=request, method=_DRAIN_DUAL_CHAMBER_SYSTEM, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def violently_shoot_down_tip(
+    self,
+    request: pb2.ViolentlyShootDownTipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+  ) -> pb2.ViolentlyShootDownTipResponse:
+    return self.execute_unary(
+      request=request, method=_VIOLENTLY_SHOOT_DOWN_TIP, headers=headers, timeout_ms=timeout_ms
+    )
+
+  def can_pick_up_tip(
+    self,
+    request: pb2.CanPickUpTipRequest,
+    *,
+    headers: Headers | Mapping[str, str] | None = None,
+    timeout_ms: int | None = None,
+    use_get: bool = False,
+  ) -> pb2.CanPickUpTipResponse:
+    return self.execute_unary(
+      request=request,
+      method=_CAN_PICK_UP_TIP,
+      headers=headers,
+      timeout_ms=timeout_ms,
+      use_get=use_get,
+    )

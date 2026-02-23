@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..star_service_connect import STARServiceASGIApplication
 from ._autoload import AutoloadServerMixin
 from ._channel import ChannelServerMixin
 from ._core_gripper import CoreGripperServerMixin
@@ -12,7 +13,6 @@ from ._iswap import IswapServerMixin
 from ._lifecycle import LifecycleServerMixin
 from ._misc import MiscServerMixin
 from ._pipetting import PipettingServerMixin
-from ..star_service_connect import STARServiceASGIApplication
 
 if TYPE_CHECKING:
   from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
