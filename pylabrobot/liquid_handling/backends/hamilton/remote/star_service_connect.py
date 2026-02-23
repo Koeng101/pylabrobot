@@ -79,6 +79,7 @@ _CLLD_PROBE_Z_HEIGHT_USING_CHANNEL = _method("ClldProbeZHeightUsingChannel", pb2
 _PLLD_PROBE_Z_HEIGHT_USING_CHANNEL = _method("PlldProbeZHeightUsingChannel", pb2.PlldProbeZHeightUsingChannelRequest, pb2.PlldProbeZHeightUsingChannelResponse)
 _ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL = _method("ZtouchProbeZHeightUsingChannel", pb2.ZtouchProbeZHeightUsingChannelRequest, pb2.ZtouchProbeZHeightUsingChannelResponse)
 _PIERCE_FOIL = _method("PierceFoil", pb2.PierceFoilRequest, pb2.PierceFoilResponse)
+_PIERCE_FOIL_HIGH_LEVEL = _method("PierceFoilHighLevel", pb2.PierceFoilHighLevelRequest, pb2.PierceFoilHighLevelResponse)
 _STEP_OFF_FOIL = _method("StepOffFoil", pb2.StepOffFoilRequest, pb2.StepOffFoilResponse)
 _EMPTY_TIP = _method("EmptyTip", pb2.EmptyTipRequest, pb2.EmptyTipResponse)
 _EMPTY_TIPS = _method("EmptyTips", pb2.EmptyTipsRequest, pb2.EmptyTipsResponse)
@@ -348,6 +349,9 @@ class STARService(Protocol):
         ...
 
     async def pierce_foil(self, request: pb2.PierceFoilRequest, ctx: RequestContext) -> pb2.PierceFoilResponse:
+        ...
+
+    async def pierce_foil_high_level(self, request: pb2.PierceFoilHighLevelRequest, ctx: RequestContext) -> pb2.PierceFoilHighLevelResponse:
         ...
 
     async def step_off_foil(self, request: pb2.StepOffFoilRequest, ctx: RequestContext) -> pb2.StepOffFoilResponse:
@@ -862,6 +866,7 @@ class STARServiceASGIApplication(ConnectASGIApplication[STARService]):
                 f"/{_SVC}/PlldProbeZHeightUsingChannel": Endpoint.unary(method=_PLLD_PROBE_Z_HEIGHT_USING_CHANNEL, function=svc.plld_probe_z_height_using_channel),
                 f"/{_SVC}/ZtouchProbeZHeightUsingChannel": Endpoint.unary(method=_ZTOUCH_PROBE_Z_HEIGHT_USING_CHANNEL, function=svc.ztouch_probe_z_height_using_channel),
                 f"/{_SVC}/PierceFoil": Endpoint.unary(method=_PIERCE_FOIL, function=svc.pierce_foil),
+                f"/{_SVC}/PierceFoilHighLevel": Endpoint.unary(method=_PIERCE_FOIL_HIGH_LEVEL, function=svc.pierce_foil_high_level),
                 f"/{_SVC}/StepOffFoil": Endpoint.unary(method=_STEP_OFF_FOIL, function=svc.step_off_foil),
                 f"/{_SVC}/EmptyTip": Endpoint.unary(method=_EMPTY_TIP, function=svc.empty_tip),
                 f"/{_SVC}/EmptyTips": Endpoint.unary(method=_EMPTY_TIPS, function=svc.empty_tips),
@@ -1141,6 +1146,9 @@ class STARServiceClient(ConnectClient):
 
     async def pierce_foil(self, request: pb2.PierceFoilRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PierceFoilResponse:
         return await self.execute_unary(request=request, method=_PIERCE_FOIL, headers=headers, timeout_ms=timeout_ms)
+
+    async def pierce_foil_high_level(self, request: pb2.PierceFoilHighLevelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PierceFoilHighLevelResponse:
+        return await self.execute_unary(request=request, method=_PIERCE_FOIL_HIGH_LEVEL, headers=headers, timeout_ms=timeout_ms)
 
     async def step_off_foil(self, request: pb2.StepOffFoilRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StepOffFoilResponse:
         return await self.execute_unary(request=request, method=_STEP_OFF_FOIL, headers=headers, timeout_ms=timeout_ms)
@@ -1718,6 +1726,9 @@ class STARServiceClientSync(ConnectClientSync):
 
     def pierce_foil(self, request: pb2.PierceFoilRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PierceFoilResponse:
         return self.execute_unary(request=request, method=_PIERCE_FOIL, headers=headers, timeout_ms=timeout_ms)
+
+    def pierce_foil_high_level(self, request: pb2.PierceFoilHighLevelRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.PierceFoilHighLevelResponse:
+        return self.execute_unary(request=request, method=_PIERCE_FOIL_HIGH_LEVEL, headers=headers, timeout_ms=timeout_ms)
 
     def step_off_foil(self, request: pb2.StepOffFoilRequest, *, headers: Headers | Mapping[str, str] | None = None, timeout_ms: int | None = None) -> pb2.StepOffFoilResponse:
         return self.execute_unary(request=request, method=_STEP_OFF_FOIL, headers=headers, timeout_ms=timeout_ms)

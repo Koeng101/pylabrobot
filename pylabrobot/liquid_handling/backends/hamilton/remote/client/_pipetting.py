@@ -971,6 +971,28 @@ class PipettingClientMixin:
       kwargs["minimum_traverse_height"] = minimum_traverse_height
     self._client.pierce_foil(pb2.PierceFoilRequest(**kwargs))
 
+  async def pierce_foil_high_level(
+    self,
+    well_names: List[str],
+    piercing_channels: List[int],
+    hold_down_channels: List[int],
+    move_inwards: float,
+    spread: str = "wide",
+    one_by_one: bool = False,
+    distance_from_bottom: float = 20.0,
+  ) -> None:
+    self._client.pierce_foil_high_level(
+      pb2.PierceFoilHighLevelRequest(
+        well_names=well_names,
+        piercing_channels=piercing_channels,
+        hold_down_channels=hold_down_channels,
+        move_inwards=move_inwards,
+        spread=spread,
+        one_by_one=one_by_one,
+        distance_from_bottom=distance_from_bottom,
+      )
+    )
+
   async def step_off_foil(
     self,
     channel_idx: int,

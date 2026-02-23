@@ -669,6 +669,17 @@ message PierceFoilRequest {
 }
 message PierceFoilResponse {}
 
+message PierceFoilHighLevelRequest {
+  repeated string well_names = 1;
+  repeated int32 piercing_channels = 2;
+  repeated int32 hold_down_channels = 3;
+  double move_inwards = 4;
+  string spread = 5;  // "wide" or "tight"
+  bool one_by_one = 6;
+  double distance_from_bottom = 7;
+}
+message PierceFoilHighLevelResponse {}
+
 message StepOffFoilRequest {
   int32 channel_idx = 1;
   optional int32 x_position = 2;
@@ -1532,6 +1543,7 @@ service STARService {
   rpc PlldProbeZHeightUsingChannel(PlldProbeZHeightUsingChannelRequest) returns (PlldProbeZHeightUsingChannelResponse);
   rpc ZtouchProbeZHeightUsingChannel(ZtouchProbeZHeightUsingChannelRequest) returns (ZtouchProbeZHeightUsingChannelResponse);
   rpc PierceFoil(PierceFoilRequest) returns (PierceFoilResponse);
+  rpc PierceFoilHighLevel(PierceFoilHighLevelRequest) returns (PierceFoilHighLevelResponse);
   rpc StepOffFoil(StepOffFoilRequest) returns (StepOffFoilResponse);
   rpc EmptyTip(EmptyTipRequest) returns (EmptyTipResponse);
   rpc EmptyTips(EmptyTipsRequest) returns (EmptyTipsResponse);

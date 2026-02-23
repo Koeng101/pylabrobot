@@ -958,6 +958,23 @@ class PipettingServerMixin:
         await self._backend.move_all_channels_in_z_safety()
         return pb2.StepOffFoilResponse()
 
+    async def pierce_foil_high_level(
+        self, request: pb2.PierceFoilHighLevelRequest, ctx: RequestContext
+    ) -> pb2.PierceFoilHighLevelResponse:
+        wells = []
+        for name in request.well_names:
+            wells.append(self._backend.deck.get_resource(name))
+        await self._backend.pierce_foil(
+            wells=wells,
+            piercing_channels=list(request.piercing_channels),
+            hold_down_channels=list(request.hold_down_channels),
+            move_inwards=request.move_inwards,
+            spread=request.spread,
+            one_by_one=request.one_by_one,
+            distance_from_bottom=request.distance_from_bottom,
+        )
+        return pb2.PierceFoilHighLevelResponse()
+
     # ===================================================================
     # Empty tip(s)
     # ===================================================================

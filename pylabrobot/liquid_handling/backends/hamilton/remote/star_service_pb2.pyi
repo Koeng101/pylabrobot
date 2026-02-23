@@ -1280,6 +1280,28 @@ class PierceFoilResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class PierceFoilHighLevelRequest(_message.Message):
+    __slots__ = ("well_names", "piercing_channels", "hold_down_channels", "move_inwards", "spread", "one_by_one", "distance_from_bottom")
+    WELL_NAMES_FIELD_NUMBER: _ClassVar[int]
+    PIERCING_CHANNELS_FIELD_NUMBER: _ClassVar[int]
+    HOLD_DOWN_CHANNELS_FIELD_NUMBER: _ClassVar[int]
+    MOVE_INWARDS_FIELD_NUMBER: _ClassVar[int]
+    SPREAD_FIELD_NUMBER: _ClassVar[int]
+    ONE_BY_ONE_FIELD_NUMBER: _ClassVar[int]
+    DISTANCE_FROM_BOTTOM_FIELD_NUMBER: _ClassVar[int]
+    well_names: _containers.RepeatedScalarFieldContainer[str]
+    piercing_channels: _containers.RepeatedScalarFieldContainer[int]
+    hold_down_channels: _containers.RepeatedScalarFieldContainer[int]
+    move_inwards: float
+    spread: str
+    one_by_one: bool
+    distance_from_bottom: float
+    def __init__(self, well_names: _Optional[_Iterable[str]] = ..., piercing_channels: _Optional[_Iterable[int]] = ..., hold_down_channels: _Optional[_Iterable[int]] = ..., move_inwards: _Optional[float] = ..., spread: _Optional[str] = ..., one_by_one: bool = ..., distance_from_bottom: _Optional[float] = ...) -> None: ...
+
+class PierceFoilHighLevelResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class StepOffFoilRequest(_message.Message):
     __slots__ = ("channel_idx", "x_position", "y_position", "z_position", "minimum_traverse_height")
     CHANNEL_IDX_FIELD_NUMBER: _ClassVar[int]

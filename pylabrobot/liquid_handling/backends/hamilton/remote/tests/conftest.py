@@ -23,23 +23,52 @@ from pylabrobot.liquid_handling.backends.hamilton.remote.star_service_connect im
   STARServiceClientSync,
 )
 from pylabrobot.resources import (
+  AGenBio_1_troughplate_190000uL_Fl,
+  CellTreat_96_wellplate_350ul_Ub,
   PLT_CAR_L5AC_A00,
+  PLT_CAR_L5MD_A00,
+  PLT_CAR_P3AC_A01,
   TIP_CAR_480_A00,
   Coordinate,
   Container,
   Cor_96_wellplate_360ul_Fb,
   Lid,
   hamilton_96_tiprack_300uL_filter,
+  hamilton_96_tiprack_1000uL,
   hamilton_96_tiprack_1000uL_filter,
 )
 from pylabrobot.resources.hamilton import STARLetDeck
 
 _PORT = 18765
+_PORT_ISWAP = 18766
+_PORT_FOIL = 18767
 
 
 @dataclass
 class StarServiceFixture:
   """Holds both ends of the remote STAR setup for testing."""
+
+  backend: STARBackend
+  remote: RemoteSTARBackend
+  deck: STARLetDeck
+  bb: Container  # BlueBucket
+
+
+@dataclass
+class StarServiceIswapFixture:
+  """Fixture for iSwap movement tests with a different deck layout."""
+
+  backend: STARBackend
+  remote: RemoteSTARBackend
+  deck: STARLetDeck
+  plt_car: PLT_CAR_L5MD_A00
+  plt_car2: PLT_CAR_P3AC_A01
+  plate: CellTreat_96_wellplate_350ul_Ub
+
+
+@dataclass
+class StarServiceFoilFixture:
+  """Fixture for foil piercing tests with a different deck layout."""
 
   backend: STARBackend
   remote: RemoteSTARBackend
@@ -64,35 +93,49 @@ class _ServerThread:
     self._thread.join(timeout=3)
 
 
-def _make_mocked_backend() -> tuple[STARBackend, STARLetDeck]:
-  """Create a STARBackend with mocked I/O, matching STAR_tests.py setup."""
-  backend = STARBackend(read_timeout=1)
+def _init_backend_state(backend: STARBackend) -> None:
+  """Set common backend state for mocked testing."""
   backend._write_and_read_command = unittest.mock.AsyncMock(return_value=None)
   backend.io = unittest.mock.AsyncMock()
   backend.io.setup = unittest.mock.AsyncMock()
   backend.io.write = unittest.mock.MagicMock()
   backend.io.read = unittest.mock.MagicMock()
 
-  # Backend state
   backend._num_channels = 8
   backend.iswap_installed = True
   backend.core96_head_installed = True
   backend._core_parked = True
   backend._iswap_parked = True
 
-  # Extended configuration (normally loaded during setup via request_extended_configuration)
   backend._extended_conf = {
     "ka": 0, "ke": 0,
-    "xt": 54,       # number of tracks/rails
-    "xa": 30,       # right X-arm configuration
-    "xw": 13130,    # tip eject waste X position
+    "xt": 54, "xa": 30, "xw": 13130,
     "xl": 0, "xn": 0, "xr": 0, "xo": 0,
     "xm": 0, "xx": 0, "xu": 0, "xv": 0,
     "kc": 0, "kr": 0, "ys": 0,
     "kl": 0, "km": 0, "ym": 0, "yu": 0, "yx": 0,
   }
+  backend.setup = unittest.mock.AsyncMock()
 
-  # Build deck with resources (matching STAR_tests.py layout)
+
+class BlueBucket(Container):
+  def __init__(self, name: str):
+    super().__init__(
+      name,
+      size_x=123,
+      size_y=82,
+      size_z=75,
+      category="bucket",
+      max_volume=123 * 82 * 75,
+      material_z_thickness=1,
+    )
+
+
+def _make_mocked_backend() -> tuple[STARBackend, STARLetDeck, Container]:
+  """Create a STARBackend with mocked I/O, matching STAR_tests.py setup."""
+  backend = STARBackend(read_timeout=1)
+  _init_backend_state(backend)
+
   deck = STARLetDeck()
 
   tip_car = TIP_CAR_480_A00(name="tip carrier")
@@ -124,17 +167,56 @@ def _make_mocked_backend() -> tuple[STARBackend, STARLetDeck]:
   plt_car[1] = other_plate
   deck.assign_child_resource(plt_car, rails=9)
 
-  backend.set_deck(deck)
-  # Skip actual setup — mock it
-  backend.setup = unittest.mock.AsyncMock()
+  bb = BlueBucket(name="blue bucket")
+  deck.assign_child_resource(bb, location=Coordinate(425, 141.5, 120 - 1))
 
+  backend.set_deck(deck)
+  return backend, deck, bb
+
+
+def _make_iswap_movement_backend() -> tuple[
+  STARBackend, STARLetDeck, PLT_CAR_L5MD_A00, PLT_CAR_P3AC_A01,
+  CellTreat_96_wellplate_350ul_Ub,
+]:
+  """Deck: PLT_CAR_L5MD_A00 at rails=15, PLT_CAR_P3AC_A01 at rails=3."""
+  backend = STARBackend()
+  _init_backend_state(backend)
+
+  deck = STARLetDeck()
+  plt_car = PLT_CAR_L5MD_A00(name="plt_car")
+  plt_car[0] = plate = CellTreat_96_wellplate_350ul_Ub(name="plate", with_lid=True)
+  deck.assign_child_resource(plt_car, rails=15)
+
+  plt_car2 = PLT_CAR_P3AC_A01(name="plt_car2")
+  deck.assign_child_resource(plt_car2, rails=3)
+
+  backend.set_deck(deck)
+  return backend, deck, plt_car, plt_car2, plate
+
+
+def _make_foil_backend() -> tuple[STARBackend, STARLetDeck]:
+  """Deck for foil piercing: tip carrier + plate carrier + AGenBio trough plate."""
+  backend = STARBackend()
+  _init_backend_state(backend)
+
+  deck = STARLetDeck()
+
+  tip_carrier = TIP_CAR_480_A00(name="tip_carrier")
+  tip_carrier[1] = hamilton_96_tiprack_1000uL(name="tip_rack")
+  deck.assign_child_resource(tip_carrier, rails=1)
+
+  plt_carrier = PLT_CAR_L5AC_A00(name="plt_carrier")
+  plt_carrier[0] = AGenBio_1_troughplate_190000uL_Fl(name="plate")
+  deck.assign_child_resource(plt_carrier, rails=10)
+
+  backend.set_deck(deck)
   return backend, deck
 
 
 @pytest.fixture(scope="module")
 def star_service():
   """Module-scoped fixture: mocked STARBackend + server + RemoteSTARBackend client."""
-  backend, deck = _make_mocked_backend()
+  backend, deck, bb = _make_mocked_backend()
   app = create_star_app(backend)
 
   server_thread = _ServerThread(app, port=_PORT)
@@ -143,6 +225,43 @@ def star_service():
   try:
     client = STARServiceClientSync(address=f"http://127.0.0.1:{_PORT}")
     remote = RemoteSTARBackend(client)
-    yield StarServiceFixture(backend=backend, remote=remote, deck=deck)
+    yield StarServiceFixture(backend=backend, remote=remote, deck=deck, bb=bb)
+  finally:
+    server_thread.stop()
+
+
+@pytest.fixture(scope="module")
+def star_service_iswap():
+  """Module-scoped fixture for iSwap movement tests."""
+  backend, deck, plt_car, plt_car2, plate = _make_iswap_movement_backend()
+  app = create_star_app(backend)
+
+  server_thread = _ServerThread(app, port=_PORT_ISWAP)
+  server_thread.start()
+
+  try:
+    client = STARServiceClientSync(address=f"http://127.0.0.1:{_PORT_ISWAP}")
+    remote = RemoteSTARBackend(client)
+    yield StarServiceIswapFixture(
+      backend=backend, remote=remote, deck=deck,
+      plt_car=plt_car, plt_car2=plt_car2, plate=plate,
+    )
+  finally:
+    server_thread.stop()
+
+
+@pytest.fixture(scope="module")
+def star_service_foil():
+  """Module-scoped fixture for foil piercing tests."""
+  backend, deck = _make_foil_backend()
+  app = create_star_app(backend)
+
+  server_thread = _ServerThread(app, port=_PORT_FOIL)
+  server_thread.start()
+
+  try:
+    client = STARServiceClientSync(address=f"http://127.0.0.1:{_PORT_FOIL}")
+    remote = RemoteSTARBackend(client)
+    yield StarServiceFoilFixture(backend=backend, remote=remote, deck=deck)
   finally:
     server_thread.stop()
