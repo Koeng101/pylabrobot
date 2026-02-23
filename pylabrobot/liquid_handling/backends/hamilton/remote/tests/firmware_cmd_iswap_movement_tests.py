@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign,attr-defined"
 """iSwap movement firmware command tests for the remote STAR backend.
 
 These tests mirror STARIswapMovementTests from STAR_tests.py, verifying that

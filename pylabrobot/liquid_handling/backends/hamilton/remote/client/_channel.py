@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 from .. import star_service_pb2 as pb2
 
+if TYPE_CHECKING:
+  from ..star_service_connect import STARServiceClientSync
+
 
 class ChannelClientMixin:
+  _client: STARServiceClientSync
   """Client stubs for channel movement and queries.
 
   ``self._client`` is a :class:`STARServiceClientSync` instance.

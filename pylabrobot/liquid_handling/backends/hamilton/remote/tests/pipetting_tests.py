@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign,attr-defined"
 """Tests for pipetting RPCs: tip handling, aspirate, dispense, 96-head ops."""
 
 import unittest.mock

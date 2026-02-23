@@ -23,6 +23,8 @@ WristDriveOrientation = STARBackend.WristDriveOrientation
 if TYPE_CHECKING:
     from connectrpc.request import RequestContext
 
+    from pylabrobot.resources import Deck
+
 # ---------------------------------------------------------------------------
 # Enum mappings
 # ---------------------------------------------------------------------------
@@ -44,6 +46,8 @@ _WRIST_TO_PROTO = {v: k for k, v in _PROTO_TO_WRIST.items()}
 
 
 class IswapServerMixin:
+    _backend: STARBackend
+    _deck: Deck
     """RPC handlers for iSWAP operations.
 
     ``self._backend`` is a :class:`STARBackend` instance (set by ``__init__.py``).
@@ -394,7 +398,7 @@ class IswapServerMixin:
     async def slow_iswap(
         self, request: pb2.SlowIswapRequest, ctx: RequestContext
     ) -> pb2.SlowIswapResponse:
-        await self._backend.slow_iswap(
+        await self._backend.slow_iswap(  # type: ignore[misc]
             wrist_velocity=request.wrist_velocity,
             gripper_velocity=request.gripper_velocity,
         )
@@ -450,7 +454,7 @@ class IswapServerMixin:
             kwargs["plate_width"] = plate_w
         await self._backend.pick_up_resource(
             pickup=pickup,
-            use_arm=request.use_arm,
+            use_arm=request.use_arm,  # type: ignore[arg-type]
             core_front_channel=request.core_front_channel,
             iswap_grip_strength=request.iswap_grip_strength,
             core_grip_strength=request.core_grip_strength,
@@ -471,7 +475,7 @@ class IswapServerMixin:
         move = resource_move_from_proto(self._deck, request.move)
         await self._backend.move_picked_up_resource(
             move=move,
-            use_arm=request.use_arm,
+            use_arm=request.use_arm,  # type: ignore[arg-type]
         )
         return pb2.MovePickedUpResourceResponse()
 
@@ -493,7 +497,7 @@ class IswapServerMixin:
             kwargs["open_gripper_position"] = open_pos
         await self._backend.drop_resource(
             drop=drop,
-            use_arm=request.use_arm,
+            use_arm=request.use_arm,  # type: ignore[arg-type]
             return_core_gripper=request.return_core_gripper,
             hotel_depth=request.hotel_depth,
             hotel_clearance_height=request.hotel_clearance_height,

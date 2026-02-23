@@ -10,8 +10,11 @@ from ..helpers import coordinate_to_proto, coordinate_from_proto
 if TYPE_CHECKING:
     from connectrpc.request import RequestContext
 
+    from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
+
 
 class Head96ServerMixin:
+    _backend: STARBackend
     """RPC handlers for 96-head operations.
 
     ``self._backend`` is a :class:`STARBackend` instance (set by ``__init__.py``).
@@ -24,7 +27,7 @@ class Head96ServerMixin:
     ) -> pb2.InitializeCore96HeadResponse:
         trash = self._backend.deck.get_resource(request.trash96_name)
         await self._backend.initialize_core_96_head(
-            trash96=trash,
+            trash96=trash,  # type: ignore[arg-type]
             z_position_at_the_command_end=request.z_position_at_the_command_end,
         )
         return pb2.InitializeCore96HeadResponse()
@@ -51,7 +54,7 @@ class Head96ServerMixin:
         ctx: RequestContext,
     ) -> pb2.Head96RequestTypeResponse:
         result = await self._backend.head96_request_type()
-        return pb2.Head96RequestTypeResponse(head_type=result.value)
+        return pb2.Head96RequestTypeResponse(head_type=result.value)  # type: ignore[union-attr]
 
     async def head96_dispensing_drive_and_squeezer_driver_initialize(
         self,
@@ -105,7 +108,7 @@ class Head96ServerMixin:
     ) -> pb2.Head96MoveYResponse:
         await self._backend.head96_move_y(
             y=request.y,
-            move_up_before=request.move_up_before,
+            move_up_before=request.move_up_before,  # type: ignore[call-arg]
             move_down_after=request.move_down_after,
         )
         return pb2.Head96MoveYResponse()

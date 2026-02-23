@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign,attr-defined"
 """Tests for autoload RPCs."""
 
 import unittest.mock

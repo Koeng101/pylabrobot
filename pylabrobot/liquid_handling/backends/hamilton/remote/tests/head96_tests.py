@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign"
 """Tests for 96-head movement and query RPCs."""
 
 import unittest.mock

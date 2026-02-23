@@ -10,8 +10,11 @@ from ..helpers import coordinate_from_proto, extract_optional_field
 if TYPE_CHECKING:
     from connectrpc.request import RequestContext
 
+    from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
+
 
 class CoreGripperServerMixin:
+    _backend: STARBackend
     """RPC handlers for core gripper operations.
 
     ``self._backend`` is a :class:`STARBackend` instance (set by ``__init__.py``).
@@ -149,7 +152,7 @@ class CoreGripperServerMixin:
         )
         if minimum_z_end is not None:
             kwargs["minimum_z_position_at_the_command_end"] = minimum_z_end
-        await self._backend.core_pick_up_resource(**kwargs)
+        await self._backend.core_pick_up_resource(**kwargs)  # type: ignore[arg-type]
         return pb2.CorePickUpResourceResponse()
 
     async def core_move_picked_up_resource(
@@ -168,7 +171,7 @@ class CoreGripperServerMixin:
         )
         if minimum_traverse_height is not None:
             kwargs["minimum_traverse_height_at_beginning_of_a_command"] = minimum_traverse_height
-        await self._backend.core_move_picked_up_resource(**kwargs)
+        await self._backend.core_move_picked_up_resource(**kwargs)  # type: ignore[arg-type]
         return pb2.CoreMovePickedUpResourceResponse()
 
     async def core_release_picked_up_resource(
@@ -192,7 +195,7 @@ class CoreGripperServerMixin:
         z_end = extract_optional_field(request, "z_position_at_the_command_end")
         if z_end is not None:
             kwargs["z_position_at_the_command_end"] = z_end
-        await self._backend.core_release_picked_up_resource(**kwargs)
+        await self._backend.core_release_picked_up_resource(**kwargs)  # type: ignore[arg-type]
         return pb2.CoreReleasePickedUpResourceResponse()
 
     async def core_check_resource_exists_at_location_center(
@@ -247,5 +250,5 @@ class CoreGripperServerMixin:
         labware_description = extract_optional_field(request, "labware_description")
         if labware_description is not None:
             kwargs["labware_description"] = labware_description
-        await self._backend.core_read_barcode_of_picked_up_resource(**kwargs)
+        await self._backend.core_read_barcode_of_picked_up_resource(**kwargs)  # type: ignore[arg-type]
         return pb2.CoreReadBarcodeOfPickedUpResourceResponse()

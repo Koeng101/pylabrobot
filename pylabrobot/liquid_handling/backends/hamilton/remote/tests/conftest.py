@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign,attr-defined,valid-type"
 """Shared fixtures for remote STAR backend tests.
 
 Creates a server-side STARBackend with mocked I/O, wraps it in the
@@ -36,7 +37,9 @@ from pylabrobot.resources import (
   hamilton_96_tiprack_1000uL,
   hamilton_96_tiprack_1000uL_filter,
 )
+from pylabrobot.resources.carrier import PlateCarrier
 from pylabrobot.resources.hamilton import STARLetDeck
+from pylabrobot.resources.plate import Plate
 
 _PORT = 18765
 _PORT_ISWAP = 18766
@@ -60,9 +63,9 @@ class StarServiceIswapFixture:
   backend: STARBackend
   remote: RemoteSTARBackend
   deck: STARLetDeck
-  plt_car: PLT_CAR_L5MD_A00
-  plt_car2: PLT_CAR_P3AC_A01
-  plate: CellTreat_96_wellplate_350ul_Ub
+  plt_car: PlateCarrier
+  plt_car2: PlateCarrier
+  plate: Plate
 
 
 @dataclass
@@ -174,8 +177,8 @@ def _make_mocked_backend() -> tuple[STARBackend, STARLetDeck, Container]:
 
 
 def _make_iswap_movement_backend() -> tuple[
-  STARBackend, STARLetDeck, PLT_CAR_L5MD_A00, PLT_CAR_P3AC_A01,
-  CellTreat_96_wellplate_350ul_Ub,
+  STARBackend, STARLetDeck, PlateCarrier, PlateCarrier,
+  Plate,
 ]:
   """Deck: PLT_CAR_L5MD_A00 at rails=15, PLT_CAR_P3AC_A01 at rails=3."""
   backend = STARBackend()

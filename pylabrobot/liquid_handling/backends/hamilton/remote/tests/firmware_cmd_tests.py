@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign,attr-defined"
 """Firmware command verification tests for the remote STAR backend.
 
 These tests verify that the full pipeline (client serialize -> RPC -> server

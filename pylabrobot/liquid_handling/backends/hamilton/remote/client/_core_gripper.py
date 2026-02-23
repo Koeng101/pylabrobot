@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pylabrobot.resources import Coordinate, Resource
 
 from .. import star_service_pb2 as pb2
 from ..helpers import coordinate_to_proto
 
+if TYPE_CHECKING:
+  from ..star_service_connect import STARServiceClientSync
+
 
 class CoreGripperClientMixin:
+  _client: STARServiceClientSync
   """Client stubs for core gripper operations.
 
   ``self._client`` is a :class:`STARServiceClientSync` instance.

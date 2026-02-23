@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from pylabrobot.liquid_handling.standard import (
   Drop,
@@ -49,8 +49,12 @@ _PICKUP_METHOD_TO_PROTO = {
   TipPickupMethod.OUT_OF_WASH_LIQUID: pb2.OUT_OF_WASH_LIQUID,
 }
 
+if TYPE_CHECKING:
+  from ..star_service_connect import STARServiceClientSync
+
 
 class PipettingClientMixin:
+  _client: STARServiceClientSync
   """Client stubs for pipetting RPCs: core LH interface, low-level pip, and TADM/LLD.
 
   ``self._client`` is a :class:`STARServiceClientSync` instance.

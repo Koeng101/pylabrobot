@@ -10,8 +10,11 @@ from ..helpers import tip_from_proto
 if TYPE_CHECKING:
     from connectrpc.request import RequestContext
 
+    from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
+
 
 class MiscServerMixin:
+    _backend: STARBackend
     """RPC handlers for firmware queries, config, cover, HHS, pump, X-arm, and special ops.
 
     ``self._backend`` is a :class:`STARBackend` instance (set by ``__init__.py``).
@@ -93,7 +96,7 @@ class MiscServerMixin:
     ) -> pb2.StartTemperatureControlAtHhcResponse:
         await self._backend.start_temperature_control_at_hhc(
             device_number=request.device_number,
-            temperature=request.temperature,
+            temperature=request.temperature,  # type: ignore[call-arg]
         )
         return pb2.StartTemperatureControlAtHhcResponse()
 
@@ -212,13 +215,13 @@ class MiscServerMixin:
     async def position_left_x_arm(
         self, request: pb2.PositionLeftXArmRequest, ctx: RequestContext
     ) -> pb2.PositionLeftXArmResponse:
-        await self._backend.position_left_x_arm(x_position=request.x_position)
+        await self._backend.position_left_x_arm(x_position=request.x_position)  # type: ignore[attr-defined]
         return pb2.PositionLeftXArmResponse()
 
     async def position_right_x_arm(
         self, request: pb2.PositionRightXArmRequest, ctx: RequestContext
     ) -> pb2.PositionRightXArmResponse:
-        await self._backend.position_right_x_arm(x_position=request.x_position)
+        await self._backend.position_right_x_arm(x_position=request.x_position)  # type: ignore[attr-defined]
         return pb2.PositionRightXArmResponse()
 
     async def move_left_x_arm_to_position_with_all_attached_components_in_z_safety_position(
@@ -292,7 +295,7 @@ class MiscServerMixin:
     async def violently_shoot_down_tip(
         self, request: pb2.ViolentlyShootDownTipRequest, ctx: RequestContext
     ) -> pb2.ViolentlyShootDownTipResponse:
-        await self._backend.violently_shoot_down_tip(channel_idx=request.channel_idx)
+        await self._backend.violently_shoot_down_tip(channel_idx=request.channel_idx)  # type: ignore[attr-defined]
         return pb2.ViolentlyShootDownTipResponse()
 
     async def can_pick_up_tip(

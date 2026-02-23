@@ -1,3 +1,4 @@
+# mypy: disable-error-code="attr-defined,index"
 """Connect to a remote deck server and run a liquid handling workflow."""
 
 import asyncio

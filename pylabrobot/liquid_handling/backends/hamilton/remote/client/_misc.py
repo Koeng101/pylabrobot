@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 from pylabrobot.resources.tip import Tip
 
 from .. import star_service_pb2 as pb2
 from ..helpers import tip_to_proto
 
+if TYPE_CHECKING:
+  from ..star_service_connect import STARServiceClientSync
+
 
 class MiscClientMixin:
+  _client: STARServiceClientSync
   """Client stubs for firmware queries, config, cover, HHS, pump, X-arm, and special ops.
 
   ``self._client`` is a :class:`STARServiceClientSync` instance.

@@ -110,7 +110,7 @@ class ContainerProxy(_SpatialMixin, Container):
             model=data.model or None,
         )
         self._client = client
-        self.tracker = RemoteVolumeTracker(client, self.name)
+        self.tracker = RemoteVolumeTracker(client, self.name)  # type: ignore[assignment]
 
     def compute_volume_from_height(self, height: float) -> float:
         resp = self._client.compute_volume_from_height(
@@ -146,7 +146,7 @@ class WellProxy(_SpatialMixin, Well):
             model=data.model or None,
         )
         self._client = client
-        self.tracker = RemoteVolumeTracker(client, self.name)
+        self.tracker = RemoteVolumeTracker(client, self.name)  # type: ignore[assignment]
 
     def compute_volume_from_height(self, height: float) -> float:
         resp = self._client.compute_volume_from_height(
@@ -195,7 +195,7 @@ class TipSpotProxy(_SpatialMixin, TipSpot):
             category=data.category or "tip_spot",
         )
         self._client = client
-        self.tracker = RemoteTipTracker(client, self.name)
+        self.tracker = RemoteTipTracker(client, self.name)  # type: ignore[assignment]
 
     def get_tip(self) -> Tip:
         """Always get the tip from the server (authoritative state)."""
@@ -215,7 +215,7 @@ class PlateProxy(_SpatialMixin, Plate):
             size_y=data.size_y,
             size_z=data.size_z,
             ordering=OrderedDict(ordering),
-            plate_type=data.plate_type or "skirted",
+            plate_type=data.plate_type or "skirted",  # type: ignore[arg-type]
             category=data.category or "plate",
             model=data.model or None,
         )
@@ -260,7 +260,7 @@ class TrashProxy(_SpatialMixin, Trash):
             model=data.model or None,
         )
         self._client = client
-        self.tracker = RemoteVolumeTracker(client, self.name)
+        self.tracker = RemoteVolumeTracker(client, self.name)  # type: ignore[assignment]
 
 
 class LidProxy(_SpatialMixin, Lid):
@@ -299,5 +299,5 @@ def create_proxy(client: DeckServiceClientSync, data: pb2.ResourceData) -> Resou
     """Create the appropriate proxy object from a ResourceData message."""
     cls = _PROXY_MAP.get(data.type, ResourceProxy)
     if cls in (PlateProxy, TipRackProxy):
-        return cls(client, data, ordering=dict(data.ordering))
-    return cls(client, data)
+        return cls(client, data, ordering=dict(data.ordering))  # type: ignore[no-any-return]
+    return cls(client, data)  # type: ignore[no-any-return]

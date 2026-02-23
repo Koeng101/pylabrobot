@@ -12,6 +12,8 @@ from ..helpers import extract_optional_field
 if TYPE_CHECKING:
   from connectrpc.request import RequestContext
 
+  from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
+
 # Proto enum value -> Python Barcode1DSymbology literal
 _PROTO_TO_BARCODE_SYMBOLOGY: dict[int, Barcode1DSymbology] = {
   pb2.BARCODE_CODE128: "Code 128 (Subset B and C)",
@@ -24,6 +26,7 @@ _PROTO_TO_BARCODE_SYMBOLOGY: dict[int, Barcode1DSymbology] = {
 
 
 class AutoloadServerMixin:
+  _backend: STARBackend
   """RPC handlers for autoload operations.
 
   ``self._backend`` is a :class:`STARBackend` instance (set by ``__init__.py``).
@@ -105,7 +108,7 @@ class AutoloadServerMixin:
     ctx: RequestContext,
   ) -> pb2.TakeCarrierOutToAutoloadBeltResponse:
     carrier = self._backend.deck.get_resource(request.carrier_name)
-    await self._backend.take_carrier_out_to_autoload_belt(carrier=carrier)
+    await self._backend.take_carrier_out_to_autoload_belt(carrier=carrier)  # type: ignore[arg-type]
     return pb2.TakeCarrierOutToAutoloadBeltResponse()
 
   async def set_barcode_type(
@@ -130,7 +133,7 @@ class AutoloadServerMixin:
     )
 
     barcode = await self._backend.load_carrier_from_tray_and_scan_carrier_barcode(
-      carrier=carrier,
+      carrier=carrier,  # type: ignore[arg-type]
       carrier_barcode_reading=request.carrier_barcode_reading,
       barcode_symbology=barcode_symbology,
       barcode_position=request.barcode_position,
@@ -152,7 +155,7 @@ class AutoloadServerMixin:
     self, request: pb2.LoadCarrierRequest, ctx: RequestContext
   ) -> pb2.LoadCarrierResponse:
     carrier = self._backend.deck.get_resource(request.carrier_name)
-    await self._backend.load_carrier(carrier=carrier)
+    await self._backend.load_carrier(carrier=carrier)  # type: ignore[arg-type]
     return pb2.LoadCarrierResponse()
 
   async def set_loading_indicators(
@@ -168,7 +171,7 @@ class AutoloadServerMixin:
     self, request: pb2.UnloadCarrierRequest, ctx: RequestContext
   ) -> pb2.UnloadCarrierResponse:
     carrier = self._backend.deck.get_resource(request.carrier_name)
-    await self._backend.unload_carrier(carrier=carrier)
+    await self._backend.unload_carrier(carrier=carrier)  # type: ignore[arg-type]
     return pb2.UnloadCarrierResponse()
 
   async def request_instrument_initialization_status(

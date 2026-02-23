@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
 from pylabrobot.liquid_handling.standard import GripDirection, ResourceDrop, ResourceMove, ResourcePickup
@@ -40,8 +40,12 @@ _WRIST_TO_PROTO = {
 }
 _PROTO_TO_WRIST = {v: k for k, v in _WRIST_TO_PROTO.items()}
 
+if TYPE_CHECKING:
+  from ..star_service_connect import STARServiceClientSync
+
 
 class IswapClientMixin:
+  _client: STARServiceClientSync
   """Client stubs for iSWAP operations.
 
   ``self._client`` is a :class:`STARServiceClientSync` instance.

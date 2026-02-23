@@ -9,8 +9,11 @@ from .. import star_service_pb2 as pb2
 if TYPE_CHECKING:
     from connectrpc.request import RequestContext
 
+    from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
+
 
 class ChannelServerMixin:
+    _backend: STARBackend
     """RPC handlers for channel movement and queries.
 
     ``self._backend`` is a :class:`STARBackend` instance (set by ``__init__.py``).

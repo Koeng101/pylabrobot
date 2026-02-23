@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-any-return,attr-defined"
 """Round-trip serialization tests for all proto <-> Python conversions."""
 
 import pytest

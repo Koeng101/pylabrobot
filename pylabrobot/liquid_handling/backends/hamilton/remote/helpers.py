@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence, cast
 
 from pylabrobot.liquid_handling.standard import (
   Drop,
@@ -22,7 +22,10 @@ from pylabrobot.liquid_handling.standard import (
   SingleChannelDispense,
 )
 from pylabrobot.resources import Coordinate
+from pylabrobot.resources.container import Container
 from pylabrobot.resources.hamilton import HamiltonTip, TipPickupMethod, TipSize
+from pylabrobot.resources.tip_rack import TipRack, TipSpot
+from pylabrobot.resources.well import Well
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.tip import Tip
 
@@ -145,7 +148,7 @@ _GRIP_DIR_TO_PROTO = {
   GripDirection.RIGHT: pb2.GRIP_RIGHT,
 }
 
-_PROTO_TO_GRIP_DIR = {v: k for k, v in _GRIP_DIR_TO_PROTO.items()}
+_PROTO_TO_GRIP_DIR: dict[int, GripDirection] = {v: k for k, v in _GRIP_DIR_TO_PROTO.items()}
 
 
 def grip_direction_to_proto(d: GripDirection) -> pb2.GripDirectionEnum:
@@ -170,7 +173,7 @@ def pickup_to_proto(op: Pickup) -> pb2.PickupOp:
 
 
 def pickup_from_proto(deck: Deck, msg: pb2.PickupOp) -> Pickup:
-  resource = deck.get_resource(msg.resource_name)
+  resource = cast(TipSpot, deck.get_resource(msg.resource_name))
   return Pickup(
     resource=resource,
     offset=coordinate_from_proto(msg.offset),
@@ -216,7 +219,7 @@ def aspiration_to_proto(op: SingleChannelAspiration) -> pb2.SingleChannelAspirat
 def aspiration_from_proto(
   deck: Deck, msg: pb2.SingleChannelAspirationOp
 ) -> SingleChannelAspiration:
-  resource = deck.get_resource(msg.resource_name)
+  resource = cast(Container, deck.get_resource(msg.resource_name))
   return SingleChannelAspiration(
     resource=resource,
     offset=coordinate_from_proto(msg.offset),
@@ -248,7 +251,7 @@ def dispense_to_proto(op: SingleChannelDispense) -> pb2.SingleChannelDispenseOp:
 
 
 def dispense_from_proto(deck: Deck, msg: pb2.SingleChannelDispenseOp) -> SingleChannelDispense:
-  resource = deck.get_resource(msg.resource_name)
+  resource = cast(Container, deck.get_resource(msg.resource_name))
   return SingleChannelDispense(
     resource=resource,
     offset=coordinate_from_proto(msg.offset),
@@ -306,7 +309,7 @@ def pickup_tip_rack_to_proto(op: PickupTipRack) -> pb2.PickupTipRackOp:
 
 
 def pickup_tip_rack_from_proto(deck: Deck, msg: pb2.PickupTipRackOp) -> PickupTipRack:
-  resource = deck.get_resource(msg.resource_name)
+  resource = cast(TipRack, deck.get_resource(msg.resource_name))
   tips = _tips_from_proto(list(msg.tips), list(msg.tip_present))
   return PickupTipRack(
     resource=resource,
@@ -323,7 +326,7 @@ def drop_tip_rack_to_proto(op: DropTipRack) -> pb2.DropTipRackOp:
 
 
 def drop_tip_rack_from_proto(deck: Deck, msg: pb2.DropTipRackOp) -> DropTipRack:
-  resource = deck.get_resource(msg.resource_name)
+  resource = cast(TipRack, deck.get_resource(msg.resource_name))
   return DropTipRack(
     resource=resource,
     offset=coordinate_from_proto(msg.offset),
@@ -355,7 +358,7 @@ def multi_head_aspiration_plate_to_proto(
 def multi_head_aspiration_plate_from_proto(
   deck: Deck, msg: pb2.MultiHeadAspirationPlateOp
 ) -> MultiHeadAspirationPlate:
-  wells = [deck.get_resource(name) for name in msg.well_names]
+  wells = [cast(Well, deck.get_resource(name)) for name in msg.well_names]
   tips = _tips_from_proto(list(msg.tips), list(msg.tip_present))
   return MultiHeadAspirationPlate(
     wells=wells,
@@ -394,7 +397,7 @@ def multi_head_dispense_plate_to_proto(
 def multi_head_dispense_plate_from_proto(
   deck: Deck, msg: pb2.MultiHeadDispensePlateOp
 ) -> MultiHeadDispensePlate:
-  wells = [deck.get_resource(name) for name in msg.well_names]
+  wells = [cast(Well, deck.get_resource(name)) for name in msg.well_names]
   tips = _tips_from_proto(list(msg.tips), list(msg.tip_present))
   return MultiHeadDispensePlate(
     wells=wells,
@@ -433,7 +436,7 @@ def multi_head_aspiration_container_to_proto(
 def multi_head_aspiration_container_from_proto(
   deck: Deck, msg: pb2.MultiHeadAspirationContainerOp
 ) -> MultiHeadAspirationContainer:
-  container = deck.get_resource(msg.container_name)
+  container = cast(Container, deck.get_resource(msg.container_name))
   tips = _tips_from_proto(list(msg.tips), list(msg.tip_present))
   return MultiHeadAspirationContainer(
     container=container,
@@ -472,7 +475,7 @@ def multi_head_dispense_container_to_proto(
 def multi_head_dispense_container_from_proto(
   deck: Deck, msg: pb2.MultiHeadDispenseContainerOp
 ) -> MultiHeadDispenseContainer:
-  container = deck.get_resource(msg.container_name)
+  container = cast(Container, deck.get_resource(msg.container_name))
   tips = _tips_from_proto(list(msg.tips), list(msg.tip_present))
   return MultiHeadDispenseContainer(
     container=container,

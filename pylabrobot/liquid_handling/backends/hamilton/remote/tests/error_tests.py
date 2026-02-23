@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign"
 """Tests that errors raised in the server-side backend propagate to the client.
 
 When the real STARBackend raises an exception inside a server RPC handler,

@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from pylabrobot.resources import Coordinate
 
 from .. import star_service_pb2 as pb2
 from ..helpers import coordinate_to_proto, coordinate_from_proto
 
+if TYPE_CHECKING:
+  from ..star_service_connect import STARServiceClientSync
+
 
 class Head96ClientMixin:
+  _client: STARServiceClientSync
   """Client stubs for 96-head operations.
 
   ``self._client`` is a :class:`STARServiceClientSync` instance.

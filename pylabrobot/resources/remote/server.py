@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pylabrobot.resources.container import Container
 from pylabrobot.resources.coordinate import Coordinate
@@ -199,32 +199,32 @@ class DeckServiceImpl(DeckService):
     # --- Computed methods ---
 
     async def compute_volume_from_height(self, request: pb2.ComputeVolumeHeightRequest, ctx: RequestContext) -> pb2.FloatResponse:
-        resource = self._deck.get_resource(request.resource_name)
+        resource = cast(Container, self._deck.get_resource(request.resource_name))
         return pb2.FloatResponse(value=resource.compute_volume_from_height(request.value))
 
     async def compute_height_from_volume(self, request: pb2.ComputeVolumeHeightRequest, ctx: RequestContext) -> pb2.FloatResponse:
-        resource = self._deck.get_resource(request.resource_name)
+        resource = cast(Container, self._deck.get_resource(request.resource_name))
         return pb2.FloatResponse(value=resource.compute_height_from_volume(request.value))
 
     async def supports_compute_height_volume(self, request: pb2.ResourceByNameRequest, ctx: RequestContext) -> pb2.BoolResponse:
-        resource = self._deck.get_resource(request.name)
+        resource = cast(Container, self._deck.get_resource(request.name))
         return pb2.BoolResponse(value=resource.supports_compute_height_volume_functions())
 
     async def has_lid(self, request: pb2.HasLidRequest, ctx: RequestContext) -> pb2.BoolResponse:
-        plate = self._deck.get_resource(request.plate_name)
+        plate = cast(Plate, self._deck.get_resource(request.plate_name))
         return pb2.BoolResponse(value=plate.has_lid())
 
     # --- Tip access ---
 
     async def get_tip(self, request: pb2.GetTipRequest, ctx: RequestContext) -> pb2.TipData:
-        tip_spot = self._deck.get_resource(request.tip_spot_name)
+        tip_spot = cast(TipSpot, self._deck.get_resource(request.tip_spot_name))
         tip = tip_spot.get_tip()
         return _tip_to_proto(tip)
 
     # --- Volume tracker ---
 
     async def get_volume_tracker_state(self, request: pb2.ResourceByNameRequest, ctx: RequestContext) -> pb2.VolumeTrackerState:
-        resource = self._deck.get_resource(request.name)
+        resource = cast(Container, self._deck.get_resource(request.name))
         tracker = resource.tracker
         return pb2.VolumeTrackerState(
             volume=tracker.volume,
@@ -234,31 +234,31 @@ class DeckServiceImpl(DeckService):
         )
 
     async def remove_liquid(self, request: pb2.TrackerOpRequest, ctx: RequestContext) -> pb2.Empty:
-        resource = self._deck.get_resource(request.resource_name)
+        resource = cast(Container, self._deck.get_resource(request.resource_name))
         resource.tracker.remove_liquid(request.volume)
         return pb2.Empty()
 
     async def add_liquid(self, request: pb2.TrackerOpRequest, ctx: RequestContext) -> pb2.Empty:
-        resource = self._deck.get_resource(request.resource_name)
+        resource = cast(Container, self._deck.get_resource(request.resource_name))
         resource.tracker.add_liquid(request.volume)
         return pb2.Empty()
 
     async def batch_remove_liquid(self, request: pb2.BatchTrackerOpRequest, ctx: RequestContext) -> pb2.Empty:
         for op in request.ops:
-            resource = self._deck.get_resource(op.resource_name)
+            resource = cast(Container, self._deck.get_resource(op.resource_name))
             resource.tracker.remove_liquid(op.volume)
         return pb2.Empty()
 
     async def batch_add_liquid(self, request: pb2.BatchTrackerOpRequest, ctx: RequestContext) -> pb2.Empty:
         for op in request.ops:
-            resource = self._deck.get_resource(op.resource_name)
+            resource = cast(Container, self._deck.get_resource(op.resource_name))
             resource.tracker.add_liquid(op.volume)
         return pb2.Empty()
 
     # --- Tip tracker ---
 
     async def get_tip_tracker_state(self, request: pb2.ResourceByNameRequest, ctx: RequestContext) -> pb2.TipTrackerState:
-        resource = self._deck.get_resource(request.name)
+        resource = cast(TipSpot, self._deck.get_resource(request.name))
         tracker = resource.tracker
         state = pb2.TipTrackerState(
             has_tip=tracker.has_tip,
@@ -269,13 +269,12 @@ class DeckServiceImpl(DeckService):
         return state
 
     async def remove_tip(self, request: pb2.TipTrackerOpRequest, ctx: RequestContext) -> pb2.Empty:
-        resource = self._deck.get_resource(request.tip_spot_name)
+        resource = cast(TipSpot, self._deck.get_resource(request.tip_spot_name))
         resource.tracker.remove_tip()
         return pb2.Empty()
 
     async def add_tip(self, request: pb2.TipTrackerOpRequest, ctx: RequestContext) -> pb2.Empty:
-        resource = self._deck.get_resource(request.tip_spot_name)
-        tip_spot = resource
+        tip_spot = cast(TipSpot, self._deck.get_resource(request.tip_spot_name))
         tip_spot.tracker.add_tip(tip_spot.make_tip(), origin=tip_spot)
         return pb2.Empty()
 
@@ -283,25 +282,25 @@ class DeckServiceImpl(DeckService):
 
     async def commit_volume_trackers(self, request: pb2.CommitRollbackRequest, ctx: RequestContext) -> pb2.Empty:
         for name in request.resource_names:
-            resource = self._deck.get_resource(name)
+            resource = cast(Container, self._deck.get_resource(name))
             resource.tracker.commit()
         return pb2.Empty()
 
     async def rollback_volume_trackers(self, request: pb2.CommitRollbackRequest, ctx: RequestContext) -> pb2.Empty:
         for name in request.resource_names:
-            resource = self._deck.get_resource(name)
+            resource = cast(Container, self._deck.get_resource(name))
             resource.tracker.rollback()
         return pb2.Empty()
 
     async def commit_tip_trackers(self, request: pb2.CommitRollbackRequest, ctx: RequestContext) -> pb2.Empty:
         for name in request.resource_names:
-            resource = self._deck.get_resource(name)
+            resource = cast(TipSpot, self._deck.get_resource(name))
             resource.tracker.commit()
         return pb2.Empty()
 
     async def rollback_tip_trackers(self, request: pb2.CommitRollbackRequest, ctx: RequestContext) -> pb2.Empty:
         for name in request.resource_names:
-            resource = self._deck.get_resource(name)
+            resource = cast(TipSpot, self._deck.get_resource(name))
             resource.tracker.rollback()
         return pb2.Empty()
 

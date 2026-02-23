@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign,attr-defined"
 """Foil piercing firmware command tests for the remote STAR backend.
 
 These tests mirror STARFoilTests from STAR_tests.py, verifying that the

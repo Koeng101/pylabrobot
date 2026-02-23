@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign,attr-defined,arg-type,index"
 """Tests for the remote deck system (server, client, proxies, trackers)."""
 
 import threading

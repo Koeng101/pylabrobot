@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from pylabrobot.resources.barcode import Barcode1DSymbology
 from pylabrobot.resources.carrier import Carrier
@@ -19,8 +19,12 @@ _BARCODE_SYMBOLOGY_TO_PROTO: dict[Barcode1DSymbology, int] = {
   "YESN/EAN 8": pb2.BARCODE_EAN128,
 }
 
+if TYPE_CHECKING:
+  from ..star_service_connect import STARServiceClientSync
+
 
 class AutoloadClientMixin:
+  _client: STARServiceClientSync
   """Client stubs for autoload operations.
 
   ``self._client`` is a :class:`STARServiceClientSync` instance.
@@ -103,7 +107,7 @@ class AutoloadClientMixin:
   async def set_1d_barcode_type(
     self, barcode_symbology: Optional[Barcode1DSymbology],
   ) -> None:
-    proto_sym = _BARCODE_SYMBOLOGY_TO_PROTO.get(barcode_symbology, pb2.BARCODE_UNKNOWN)
+    proto_sym = _BARCODE_SYMBOLOGY_TO_PROTO.get(barcode_symbology, pb2.BARCODE_UNKNOWN)  # type: ignore[arg-type]
     self._client.set_barcode_type(
       pb2.SetBarcodeTypeRequest(barcode_symbology=proto_sym)
     )

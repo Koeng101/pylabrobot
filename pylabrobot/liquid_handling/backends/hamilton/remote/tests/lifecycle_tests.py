@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign"
 """Tests for lifecycle RPCs: setup, stop, property queries."""
 
 

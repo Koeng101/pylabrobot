@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign,attr-defined"
 """Tests for misc RPCs: firmware queries, cover, config, HHS, pump, X-arm, special."""
 
 import unittest.mock

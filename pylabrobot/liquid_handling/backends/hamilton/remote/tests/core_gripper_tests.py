@@ -1,3 +1,4 @@
+# mypy: disable-error-code="method-assign"
 """Tests for core gripper RPCs."""
 
 import unittest.mock

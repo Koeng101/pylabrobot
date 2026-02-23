@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
 from pylabrobot.resources.hamilton import TipDropMethod, TipPickupMethod, TipSize
@@ -26,6 +26,13 @@ from ..helpers import (
 
 if TYPE_CHECKING:
     from connectrpc.request import RequestContext
+
+    from pylabrobot.liquid_handling.standard import (
+        MultiHeadAspirationContainer,
+        MultiHeadAspirationPlate,
+        MultiHeadDispenseContainer,
+        MultiHeadDispensePlate,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +60,7 @@ _PROTO_TO_DROP_METHOD = {
 
 
 class PipettingServerMixin:
+    _backend: STARBackend
     """RPC handlers for pipetting operations.
 
     ``self._backend`` is a :class:`STARBackend` instance (set by ``__init__.py``).
@@ -414,6 +422,7 @@ class PipettingServerMixin:
         self, request: pb2.Aspirate96Request, ctx: RequestContext
     ) -> pb2.Aspirate96Response:
         aspiration_variant = request.WhichOneof("aspiration")
+        aspiration: Union[MultiHeadAspirationPlate, MultiHeadAspirationContainer]
         if aspiration_variant == "plate":
             aspiration = multi_head_aspiration_plate_from_proto(
                 self._backend.deck, request.plate
@@ -465,6 +474,7 @@ class PipettingServerMixin:
         self, request: pb2.Dispense96Request, ctx: RequestContext
     ) -> pb2.Dispense96Response:
         dispense_variant = request.WhichOneof("dispense_op")
+        dispense_op: Union[MultiHeadDispensePlate, MultiHeadDispenseContainer]
         if dispense_variant == "plate":
             dispense_op = multi_head_dispense_plate_from_proto(
                 self._backend.deck, request.plate
@@ -749,7 +759,7 @@ class PipettingServerMixin:
             else None
         )
         heights = await self._backend.probe_liquid_heights(
-            containers=containers,
+            containers=containers,  # type: ignore[arg-type]
             use_channels=use_channels,
             resource_offsets=resource_offsets,
             lld_mode=STARBackend.LLDMode(request.lld_mode),
@@ -773,7 +783,7 @@ class PipettingServerMixin:
             else None
         )
         volumes = await self._backend.probe_liquid_volumes(
-            containers=containers,
+            containers=containers,  # type: ignore[arg-type]
             use_channels=use_channels,
             resource_offsets=resource_offsets,
             lld_mode=STARBackend.LLDMode(request.lld_mode),
@@ -791,7 +801,7 @@ class PipettingServerMixin:
         self, request: pb2.RequestTipPresenceRequest, ctx: RequestContext
     ) -> pb2.RequestTipPresenceResponse:
         tip_presences = await self._backend.request_tip_presence()
-        return pb2.RequestTipPresenceResponse(tip_presences=tip_presences)
+        return pb2.RequestTipPresenceResponse(tip_presences=tip_presences)  # type: ignore[arg-type]
 
     async def channels_sense_tip_presence(
         self, request: pb2.ChannelsSenseTipPresenceRequest, ctx: RequestContext
@@ -965,11 +975,11 @@ class PipettingServerMixin:
         for name in request.well_names:
             wells.append(self._backend.deck.get_resource(name))
         await self._backend.pierce_foil(
-            wells=wells,
+            wells=wells,  # type: ignore[arg-type]
             piercing_channels=list(request.piercing_channels),
             hold_down_channels=list(request.hold_down_channels),
             move_inwards=request.move_inwards,
-            spread=request.spread,
+            spread=request.spread,  # type: ignore[arg-type]
             one_by_one=request.one_by_one,
             distance_from_bottom=request.distance_from_bottom,
         )
