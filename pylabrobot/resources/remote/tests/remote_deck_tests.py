@@ -28,19 +28,9 @@ from pylabrobot.resources.well import Well
 from pylabrobot.resources.remote import deck_service_pb2 as pb2
 from pylabrobot.resources.remote.client import RemoteDeck
 from pylabrobot.resources.remote.proxies import (
-    ContainerProxy,
-    LidProxy,
-    PlateProxy,
-    ResourceProxy,
-    TipRackProxy,
-    TipSpotProxy,
-    TrashProxy,
-    WellProxy,
     create_proxy,
 )
 from pylabrobot.resources.remote.remote_trackers import (
-    RemoteTipTracker,
-    RemoteVolumeTracker,
     _tip_from_proto,
 )
 from pylabrobot.resources.remote.server import (

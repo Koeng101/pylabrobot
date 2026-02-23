@@ -5,9 +5,6 @@ from __future__ import annotations
 from typing import Optional
 
 from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
-
-RotationDriveOrientation = STARBackend.RotationDriveOrientation
-WristDriveOrientation = STARBackend.WristDriveOrientation
 from pylabrobot.liquid_handling.standard import GripDirection, ResourceDrop, ResourceMove, ResourcePickup
 from pylabrobot.resources import Coordinate
 
@@ -20,6 +17,9 @@ from ..helpers import (
     resource_move_to_proto,
     resource_pickup_to_proto,
 )
+
+RotationDriveOrientation = STARBackend.RotationDriveOrientation
+WristDriveOrientation = STARBackend.WristDriveOrientation
 
 # ---------------------------------------------------------------------------
 # Enum mappings

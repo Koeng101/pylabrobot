@@ -5,7 +5,6 @@ deserialize -> backend) produces identical firmware commands to a local
 STARBackend, by comparing against the expected command strings from STAR_tests.py.
 """
 
-import re
 import unittest.mock
 from typing import Literal, cast
 
@@ -25,18 +24,13 @@ from pylabrobot.liquid_handling.standard import (
   SingleChannelAspiration,
   SingleChannelDispense,
 )
-from pylabrobot.plate_reading import PlateReader
-from pylabrobot.plate_reading.chatterbox import PlateReaderChatterboxBackend
 from pylabrobot.resources import (
   Coordinate,
   Lid,
   Resource,
   ResourceStack,
   Rotation,
-  TIP_CAR_288_C00,
   hamilton_96_tiprack_1000uL,
-  no_volume_tracking,
-  set_tip_tracking,
 )
 from pylabrobot.liquid_handling.utils import (
   get_tight_single_resource_liquid_op_offsets,

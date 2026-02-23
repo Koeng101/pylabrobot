@@ -8,7 +8,6 @@ Requires a separate deck layout (tip carrier + AGenBio trough plate)
 via the star_service_foil fixture.
 """
 
-import unittest.mock
 
 import pytest
 

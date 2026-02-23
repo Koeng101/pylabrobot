@@ -1,6 +1,5 @@
 """Tests for lifecycle RPCs: setup, stop, property queries."""
 
-import pytest
 
 from .conftest import StarServiceFixture
 

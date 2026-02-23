@@ -10,8 +10,6 @@ import argparse
 import asyncio
 
 from pylabrobot.liquid_handling.backends.hamilton.remote.client import RemoteSTARBackend
-from pylabrobot.resources import Coordinate
-from pylabrobot.resources.hamilton import STARLetDeck, TIP_CAR_480_A00, hamilton_96_tiprack_300uL_filter
 
 
 async def main(url: str = "http://localhost:8080"):

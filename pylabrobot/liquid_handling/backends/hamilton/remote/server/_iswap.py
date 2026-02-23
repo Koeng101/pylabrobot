@@ -6,10 +6,6 @@ from typing import TYPE_CHECKING
 
 from pylabrobot.liquid_handling.backends.hamilton.STAR_backend import STARBackend
 
-RotationDriveOrientation = STARBackend.RotationDriveOrientation
-WristDriveOrientation = STARBackend.WristDriveOrientation
-from pylabrobot.liquid_handling.standard import GripDirection
-
 from .. import star_service_pb2 as pb2
 from ..helpers import (
     coordinate_from_proto,
@@ -20,6 +16,9 @@ from ..helpers import (
     resource_move_from_proto,
     resource_pickup_from_proto,
 )
+
+RotationDriveOrientation = STARBackend.RotationDriveOrientation
+WristDriveOrientation = STARBackend.WristDriveOrientation
 
 if TYPE_CHECKING:
     from connectrpc.request import RequestContext

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict
 
 from pylabrobot.resources.container import Container
 from pylabrobot.resources.coordinate import Coordinate

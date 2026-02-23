@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .. import star_service_pb2 as pb2
-from ..helpers import coordinate_from_proto, coordinate_to_proto, extract_optional_field
+from ..helpers import coordinate_from_proto, extract_optional_field
 
 if TYPE_CHECKING:
     from connectrpc.request import RequestContext

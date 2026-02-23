@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from pylabrobot.liquid_handling.standard import (
   Drop,
@@ -21,7 +21,7 @@ from pylabrobot.liquid_handling.standard import (
   SingleChannelAspiration,
   SingleChannelDispense,
 )
-from pylabrobot.resources import Coordinate, Resource
+from pylabrobot.resources import Coordinate
 from pylabrobot.resources.hamilton import HamiltonTip, TipPickupMethod, TipSize
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.tip import Tip

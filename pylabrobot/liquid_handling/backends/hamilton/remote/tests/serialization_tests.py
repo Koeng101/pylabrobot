@@ -4,7 +4,6 @@ import pytest
 
 from pylabrobot.liquid_handling.standard import (
   Drop,
-  DropTipRack,
   GripDirection,
   Mix,
   Pickup,

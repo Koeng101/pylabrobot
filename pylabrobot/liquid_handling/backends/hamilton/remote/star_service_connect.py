@@ -8,8 +8,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 from connectrpc.client import ConnectClient, ConnectClientSync
-from connectrpc.code import Code
-from connectrpc.errors import ConnectError
 from connectrpc.method import IdempotencyLevel, MethodInfo
 from connectrpc.server import (
     ConnectASGIApplication,

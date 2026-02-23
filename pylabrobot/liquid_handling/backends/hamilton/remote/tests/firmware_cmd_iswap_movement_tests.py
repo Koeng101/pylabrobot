@@ -8,7 +8,6 @@ Requires a separate deck layout (PLT_CAR_L5MD_A00 at rails=15,
 PLT_CAR_P3AC_A01 at rails=3) via the star_service_iswap fixture.
 """
 
-import unittest.mock
 
 import pytest
 

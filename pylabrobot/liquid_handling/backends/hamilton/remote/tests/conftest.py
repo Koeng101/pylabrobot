@@ -11,7 +11,6 @@ import threading
 import time
 import unittest.mock
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import pytest
 import uvicorn
