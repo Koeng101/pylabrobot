@@ -1,0 +1,1724 @@
+syntax = "proto3";
+package pylabrobot.liquid_handling.backends.hamilton.remote;
+
+// =============================================================================
+// Common types
+// =============================================================================
+
+message Empty {}
+message Coordinate { double x = 1; double y = 2; double z = 3; }
+message Rotation   { double x = 1; double y = 2; double z = 3; }
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+enum LLDMode {
+  LLD_OFF = 0;
+  LLD_GAMMA = 1;
+  LLD_PRESSURE = 2;
+  LLD_DUAL = 3;
+  LLD_Z_TOUCH_OFF = 4;
+}
+
+enum TipPickupMethod {
+  OUT_OF_RACK = 0;
+  OUT_OF_WASH_LIQUID = 1;
+}
+
+enum TipDropMethodEnum {
+  PLACE_SHIFT = 0;
+  TIP_DROP = 1;
+}
+
+enum TipSizeEnum {
+  TIP_SIZE_UNDEFINED = 0;
+  LOW_VOLUME = 1;
+  STANDARD_VOLUME = 2;
+  HIGH_VOLUME = 3;
+  CORE_384 = 4;
+  XL = 5;
+}
+
+enum GripDirectionEnum {
+  GRIP_FRONT = 0;
+  GRIP_BACK = 1;
+  GRIP_LEFT = 2;
+  GRIP_RIGHT = 3;
+}
+
+enum RotationDriveOrientationEnum {
+  ROT_LEFT = 0;
+  ROT_FRONT = 1;
+  ROT_RIGHT = 2;
+}
+
+enum WristDriveOrientationEnum {
+  WRIST_RIGHT = 0;
+  WRIST_STRAIGHT = 1;
+  WRIST_LEFT = 2;
+  WRIST_REVERSE = 3;
+}
+
+enum Barcode1DSymbologyEnum {
+  BARCODE_UNKNOWN = 0;
+  BARCODE_CODE128 = 1;
+  BARCODE_CODE39 = 2;
+  BARCODE_CODABAR = 3;
+  BARCODE_CODE93 = 4;
+  BARCODE_CODE25 = 5;
+  BARCODE_EAN128 = 6;
+}
+
+// =============================================================================
+// Data types
+// =============================================================================
+
+message TipData {
+  string type = 1;           // "Tip" or "HamiltonTip"
+  bool has_filter = 2;
+  double total_tip_length = 3;
+  double maximal_volume = 4;
+  double fitting_depth = 5;
+  TipSizeEnum tip_size = 6;
+  TipPickupMethod pickup_method = 7;
+}
+
+message MixData {
+  double volume = 1;
+  int32 repetitions = 2;
+  double flow_rate = 3;
+}
+
+// =============================================================================
+// Operation messages (for core LH interface)
+// =============================================================================
+
+message PickupOp {
+  string resource_name = 1;
+  Coordinate offset = 2;
+  TipData tip = 3;
+}
+
+message DropOp {
+  string resource_name = 1;
+  Coordinate offset = 2;
+  TipData tip = 3;
+}
+
+message SingleChannelAspirationOp {
+  string resource_name = 1;
+  Coordinate offset = 2;
+  TipData tip = 3;
+  double volume = 4;
+  optional double flow_rate = 5;
+  optional double liquid_height = 6;
+  optional double blow_out_air_volume = 7;
+  optional MixData mix = 8;
+}
+
+message SingleChannelDispenseOp {
+  string resource_name = 1;
+  Coordinate offset = 2;
+  TipData tip = 3;
+  double volume = 4;
+  optional double flow_rate = 5;
+  optional double liquid_height = 6;
+  optional double blow_out_air_volume = 7;
+  optional MixData mix = 8;
+}
+
+message PickupTipRackOp {
+  string resource_name = 1;
+  Coordinate offset = 2;
+  repeated TipData tips = 3;
+  repeated bool tip_present = 4;  // parallel to tips: false = None tip
+}
+
+message DropTipRackOp {
+  string resource_name = 1;
+  Coordinate offset = 2;
+}
+
+message MultiHeadAspirationPlateOp {
+  repeated string well_names = 1;
+  Coordinate offset = 2;
+  repeated TipData tips = 3;
+  repeated bool tip_present = 4;
+  double volume = 5;
+  optional double flow_rate = 6;
+  optional double liquid_height = 7;
+  optional double blow_out_air_volume = 8;
+  optional MixData mix = 9;
+}
+
+message MultiHeadDispensePlateOp {
+  repeated string well_names = 1;
+  Coordinate offset = 2;
+  repeated TipData tips = 3;
+  repeated bool tip_present = 4;
+  double volume = 5;
+  optional double flow_rate = 6;
+  optional double liquid_height = 7;
+  optional double blow_out_air_volume = 8;
+  optional MixData mix = 9;
+}
+
+message MultiHeadAspirationContainerOp {
+  string container_name = 1;
+  Coordinate offset = 2;
+  repeated TipData tips = 3;
+  repeated bool tip_present = 4;
+  double volume = 5;
+  optional double flow_rate = 6;
+  optional double liquid_height = 7;
+  optional double blow_out_air_volume = 8;
+  optional MixData mix = 9;
+}
+
+message MultiHeadDispenseContainerOp {
+  string container_name = 1;
+  Coordinate offset = 2;
+  repeated TipData tips = 3;
+  repeated bool tip_present = 4;
+  double volume = 5;
+  optional double flow_rate = 6;
+  optional double liquid_height = 7;
+  optional double blow_out_air_volume = 8;
+  optional MixData mix = 9;
+}
+
+message ResourcePickupOp {
+  string resource_name = 1;
+  Coordinate offset = 2;
+  double pickup_distance_from_top = 3;
+  GripDirectionEnum direction = 4;
+}
+
+message ResourceMoveOp {
+  string resource_name = 1;
+  Coordinate location = 2;
+  GripDirectionEnum gripped_direction = 3;
+  double pickup_distance_from_top = 4;
+  Coordinate offset = 5;
+}
+
+message ResourceDropOp {
+  string resource_name = 1;
+  Coordinate destination = 2;
+  Rotation destination_absolute_rotation = 3;
+  Coordinate offset = 4;
+  double pickup_distance_from_top = 5;
+  GripDirectionEnum pickup_direction = 6;
+  GripDirectionEnum direction = 7;
+  double rotation = 8;
+}
+
+// Dict<int, float> for channel position maps
+message ChannelFloatMap {
+  map<int32, double> entries = 1;
+}
+
+// =============================================================================
+// Lifecycle RPCs
+// =============================================================================
+
+message SetupRequest {}
+message SetupResponse {}
+
+message StopRequest {}
+message StopResponse {}
+
+message GetNumChannelsRequest {}
+message GetNumChannelsResponse { int32 num_channels = 1; }
+
+message GetHead96InstalledRequest {}
+message GetHead96InstalledResponse { bool installed = 1; }
+
+message GetIswapInstalledRequest {}
+message GetIswapInstalledResponse { bool installed = 1; }
+
+message GetIswapParkedRequest {}
+message GetIswapParkedResponse { bool parked = 1; }
+
+message GetCoreParkedRequest {}
+message GetCoreParkedResponse { bool parked = 1; }
+
+// =============================================================================
+// Core LH interface RPCs
+// =============================================================================
+
+// --- pick_up_tips ---
+message PickUpTipsRequest {
+  repeated PickupOp ops = 1;
+  repeated int32 use_channels = 2;
+  optional double begin_tip_pick_up_process = 3;
+  optional double end_tip_pick_up_process = 4;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 5;
+  optional int32 pickup_method = 6;  // TipPickupMethod enum value
+}
+message PickUpTipsResponse {}
+
+// --- drop_tips ---
+message DropTipsRequest {
+  repeated DropOp ops = 1;
+  repeated int32 use_channels = 2;
+  optional int32 drop_method = 3;  // TipDropMethod enum value
+  optional double begin_tip_deposit_process = 4;
+  optional double end_tip_deposit_process = 5;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 6;
+  optional double z_position_at_end_of_a_command = 7;
+}
+message DropTipsResponse {}
+
+// --- aspirate ---
+message AspirateRequest {
+  repeated SingleChannelAspirationOp ops = 1;
+  repeated int32 use_channels = 2;
+  repeated bool jet = 3;
+  repeated bool blow_out = 4;
+  repeated double lld_search_height = 5;
+  repeated double clot_detection_height = 6;
+  repeated double pull_out_distance_transport_air = 7;
+  repeated double second_section_height = 8;
+  repeated double second_section_ratio = 9;
+  repeated double minimum_height = 10;
+  repeated double immersion_depth = 11;
+  repeated double surface_following_distance = 12;
+  repeated double transport_air_volume = 13;
+  repeated double pre_wetting_volume = 14;
+  repeated int32 lld_mode = 15;
+  repeated int32 gamma_lld_sensitivity = 16;
+  repeated int32 dp_lld_sensitivity = 17;
+  repeated double aspirate_position_above_z_touch_off = 18;
+  repeated double detection_height_difference_for_dual_lld = 19;
+  repeated double swap_speed = 20;
+  repeated double settling_time = 21;
+  repeated double mix_position_from_liquid_surface = 22;
+  repeated double mix_surface_following_distance = 23;
+  repeated int32 limit_curve_index = 24;
+  repeated bool use_2nd_section_aspiration = 25;
+  repeated double retract_height_over_2nd_section_to_empty_tip = 26;
+  repeated double dispensation_speed_during_emptying_tip = 27;
+  repeated double dosing_drive_speed_during_2nd_section_search = 28;
+  repeated double z_drive_speed_during_2nd_section_search = 29;
+  repeated double cup_upper_edge = 30;
+  repeated int32 ratio_liquid_rise_to_tip_deep_in = 31;
+  repeated double immersion_depth_2nd_section = 32;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 33;
+  optional double min_z_endpos = 34;
+  repeated double liquid_surface_no_lld = 35;
+  bool probe_liquid_height = 36;
+  bool auto_surface_following_distance = 37;
+  repeated bool disable_volume_correction = 38;
+}
+message AspirateResponse {}
+
+// --- dispense ---
+message DispenseRequest {
+  repeated SingleChannelDispenseOp ops = 1;
+  repeated int32 use_channels = 2;
+  repeated double lld_search_height = 3;
+  repeated double liquid_surface_no_lld = 4;
+  repeated double pull_out_distance_transport_air = 5;
+  repeated double second_section_height = 6;
+  repeated double second_section_ratio = 7;
+  repeated double minimum_height = 8;
+  repeated double immersion_depth = 9;
+  repeated double surface_following_distance = 10;
+  repeated double cut_off_speed = 11;
+  repeated double stop_back_volume = 12;
+  repeated double transport_air_volume = 13;
+  repeated int32 lld_mode = 14;
+  repeated double dispense_position_above_z_touch_off = 15;
+  repeated int32 gamma_lld_sensitivity = 16;
+  repeated int32 dp_lld_sensitivity = 17;
+  repeated double swap_speed = 18;
+  repeated double settling_time = 19;
+  repeated double mix_position_from_liquid_surface = 20;
+  repeated double mix_surface_following_distance = 21;
+  repeated int32 limit_curve_index = 22;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 23;
+  optional double min_z_endpos = 24;
+  double side_touch_off_distance = 25;
+  repeated bool jet = 26;
+  repeated bool blow_out = 27;
+  repeated bool empty = 28;
+  bool probe_liquid_height = 29;
+  bool auto_surface_following_distance = 30;
+  repeated bool disable_volume_correction = 31;
+}
+message DispenseResponse {}
+
+// --- pick_up_tips96 ---
+message PickUpTips96Request {
+  PickupTipRackOp pickup = 1;
+  string tip_pickup_method = 2;  // "from_rack", "from_waste", "full_blowout"
+  optional double minimum_height_command_end = 3;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 4;
+  string experimental_alignment_tipspot_identifier = 5;
+}
+message PickUpTips96Response {}
+
+// --- drop_tips96 ---
+message DropTips96Request {
+  DropTipRackOp drop = 1;
+  optional double minimum_height_command_end = 2;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 3;
+  string experimental_alignment_tipspot_identifier = 4;
+}
+message DropTips96Response {}
+
+// --- aspirate96 ---
+message Aspirate96Request {
+  // aspiration is either plate or container (oneof)
+  oneof aspiration {
+    MultiHeadAspirationPlateOp plate = 1;
+    MultiHeadAspirationContainerOp container = 2;
+  }
+  bool jet = 3;
+  bool blow_out = 4;
+  bool use_lld = 5;
+  double pull_out_distance_transport_air = 6;
+  int32 aspiration_type = 7;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 8;
+  optional double min_z_endpos = 9;
+  double lld_search_height = 10;
+  optional double minimum_height = 11;
+  double second_section_height = 12;
+  double second_section_ratio = 13;
+  double immersion_depth = 14;
+  double surface_following_distance = 15;
+  double transport_air_volume = 16;
+  double pre_wetting_volume = 17;
+  int32 gamma_lld_sensitivity = 18;
+  double swap_speed = 19;
+  double settling_time = 20;
+  double mix_position_from_liquid_surface = 21;
+  double mix_surface_following_distance = 22;
+  int32 limit_curve_index = 23;
+  bool disable_volume_correction = 24;
+}
+message Aspirate96Response {}
+
+// --- dispense96 ---
+message Dispense96Request {
+  oneof dispense_op {
+    MultiHeadDispensePlateOp plate = 1;
+    MultiHeadDispenseContainerOp container = 2;
+  }
+  bool jet = 3;
+  bool empty = 4;
+  bool blow_out = 5;
+  double pull_out_distance_transport_air = 6;
+  bool use_lld = 7;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 8;
+  optional double min_z_endpos = 9;
+  double lld_search_height = 10;
+  optional double minimum_height = 11;
+  double second_section_height = 12;
+  double second_section_ratio = 13;
+  double immersion_depth = 14;
+  double surface_following_distance = 15;
+  double transport_air_volume = 16;
+  int32 gamma_lld_sensitivity = 17;
+  double swap_speed = 18;
+  double settling_time = 19;
+  double mix_position_from_liquid_surface = 20;
+  double mix_surface_following_distance = 21;
+  int32 limit_curve_index = 22;
+  double cut_off_speed = 23;
+  double stop_back_volume = 24;
+  bool disable_volume_correction = 25;
+}
+message Dispense96Response {}
+
+// =============================================================================
+// Single channel pip (low-level firmware)
+// =============================================================================
+
+message InitializePipRequest {}
+message InitializePipResponse {}
+
+message InitializePipettingChannelsRequest {
+  repeated int32 x_positions = 1;
+  repeated int32 y_positions = 2;
+  int32 begin_of_tip_deposit_process = 3;
+  int32 end_of_tip_deposit_process = 4;
+  int32 z_position_at_end_of_a_command = 5;
+  repeated bool tip_pattern = 6;
+  int32 tip_type = 7;
+  int32 discarding_method = 8;
+}
+message InitializePipettingChannelsResponse {}
+
+message PickUpTipFwRequest {
+  repeated int32 x_positions = 1;
+  repeated int32 y_positions = 2;
+  repeated bool tip_pattern = 3;
+  int32 tip_type_idx = 4;
+  int32 begin_tip_pick_up_process = 5;
+  int32 end_tip_pick_up_process = 6;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 7;
+  int32 pickup_method = 8;
+}
+message PickUpTipFwResponse {}
+
+message DiscardTipFwRequest {
+  repeated int32 x_positions = 1;
+  repeated int32 y_positions = 2;
+  repeated bool tip_pattern = 3;
+  int32 begin_tip_deposit_process = 4;
+  int32 end_tip_deposit_process = 5;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 6;
+  int32 z_position_at_end_of_a_command = 7;
+  int32 discarding_method = 8;
+}
+message DiscardTipFwResponse {}
+
+message AspiratePipRequest {
+  repeated int32 aspiration_type = 1;
+  repeated bool tip_pattern = 2;
+  repeated int32 x_positions = 3;
+  repeated int32 y_positions = 4;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 5;
+  int32 min_z_endpos = 6;
+  repeated int32 lld_search_height = 7;
+  repeated int32 clot_detection_height = 8;
+  repeated int32 liquid_surface_no_lld = 9;
+  repeated int32 pull_out_distance_transport_air = 10;
+  repeated int32 second_section_height = 11;
+  repeated int32 second_section_ratio = 12;
+  repeated int32 minimum_height = 13;
+  repeated int32 immersion_depth = 14;
+  repeated int32 immersion_depth_direction = 15;
+  repeated int32 surface_following_distance = 16;
+  repeated int32 aspiration_volumes = 17;
+  repeated int32 aspiration_speed = 18;
+  repeated int32 transport_air_volume = 19;
+  repeated int32 blow_out_air_volume = 20;
+  repeated int32 pre_wetting_volume = 21;
+  repeated int32 lld_mode = 22;
+  repeated int32 gamma_lld_sensitivity = 23;
+  repeated int32 dp_lld_sensitivity = 24;
+  repeated int32 aspirate_position_above_z_touch_off = 25;
+  repeated int32 detection_height_difference_for_dual_lld = 26;
+  repeated int32 swap_speed = 27;
+  repeated int32 settling_time = 28;
+  repeated int32 mix_volume = 29;
+  repeated int32 mix_cycles = 30;
+  repeated int32 mix_position_from_liquid_surface = 31;
+  repeated int32 mix_speed = 32;
+  repeated int32 mix_surface_following_distance = 33;
+  repeated int32 limit_curve_index = 34;
+  bool tadm_algorithm = 35;
+  int32 recording_mode = 36;
+  repeated bool use_2nd_section_aspiration = 37;
+  repeated int32 retract_height_over_2nd_section_to_empty_tip = 38;
+  repeated int32 dispensation_speed_during_emptying_tip = 39;
+  repeated int32 dosing_drive_speed_during_2nd_section_search = 40;
+  repeated int32 z_drive_speed_during_2nd_section_search = 41;
+  repeated int32 cup_upper_edge = 42;
+}
+message AspiratePipResponse {}
+
+message DispensePipRequest {
+  repeated bool tip_pattern = 1;
+  repeated int32 dispensing_mode = 2;
+  repeated int32 x_positions = 3;
+  repeated int32 y_positions = 4;
+  repeated int32 minimum_height = 5;
+  repeated int32 lld_search_height = 6;
+  repeated int32 liquid_surface_no_lld = 7;
+  repeated int32 pull_out_distance_transport_air = 8;
+  repeated int32 immersion_depth = 9;
+  repeated int32 immersion_depth_direction = 10;
+  repeated int32 surface_following_distance = 11;
+  repeated int32 second_section_height = 12;
+  repeated int32 second_section_ratio = 13;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 14;
+  int32 min_z_endpos = 15;
+  repeated int32 dispense_volumes = 16;
+  repeated int32 dispense_speed = 17;
+  repeated int32 cut_off_speed = 18;
+  repeated int32 stop_back_volume = 19;
+  repeated int32 transport_air_volume = 20;
+  repeated int32 blow_out_air_volume = 21;
+  repeated int32 lld_mode = 22;
+  int32 side_touch_off_distance = 23;
+  repeated int32 dispense_position_above_z_touch_off = 24;
+  repeated int32 gamma_lld_sensitivity = 25;
+  repeated int32 dp_lld_sensitivity = 26;
+  repeated int32 swap_speed = 27;
+  repeated int32 settling_time = 28;
+  repeated int32 mix_volume = 29;
+  repeated int32 mix_cycles = 30;
+  repeated int32 mix_position_from_liquid_surface = 31;
+  repeated int32 mix_speed = 32;
+  repeated int32 mix_surface_following_distance = 33;
+  repeated int32 limit_curve_index = 34;
+  bool tadm_algorithm = 35;
+  int32 recording_mode = 36;
+}
+message DispensePipResponse {}
+
+message SpreadPipChannelsRequest {}
+message SpreadPipChannelsResponse {}
+
+message MoveAllPipettingChannelsToDefinedPositionRequest {
+  bool tip_pattern = 1;
+  int32 x_positions = 2;
+  int32 y_positions = 3;
+  int32 minimum_traverse_height_at_beginning_of_command = 4;
+  int32 z_endpos = 5;
+}
+message MoveAllPipettingChannelsToDefinedPositionResponse {}
+
+message DefineTipNeedleRequest {
+  int32 tip_type_table_index = 1;
+  bool has_filter = 2;
+  int32 tip_length = 3;
+  int32 maximum_tip_volume = 4;
+  TipSizeEnum tip_size = 5;
+  TipPickupMethod pickup_method = 6;
+}
+message DefineTipNeedleResponse {}
+
+// =============================================================================
+// TADM / LLD probing RPCs
+// =============================================================================
+
+message ProbeLiquidHeightsRequest {
+  repeated string container_names = 1;
+  repeated int32 use_channels = 2;
+  repeated Coordinate resource_offsets = 3;
+  int32 lld_mode = 4;
+  double search_speed = 5;
+  int32 n_replicates = 6;
+  bool move_to_z_safety_after = 7;
+}
+message ProbeLiquidHeightsResponse { repeated double heights = 1; }
+
+message ProbeLiquidVolumesRequest {
+  repeated string container_names = 1;
+  repeated int32 use_channels = 2;
+  repeated Coordinate resource_offsets = 3;
+  int32 lld_mode = 4;
+  double search_speed = 5;
+  int32 n_replicates = 6;
+  bool move_to_z_safety_after = 7;
+}
+message ProbeLiquidVolumesResponse { repeated double volumes = 1; }
+
+message RequestTipPresenceRequest {}
+message RequestTipPresenceResponse { repeated int32 tip_presences = 1; }
+
+message ChannelsSenseTipPresenceRequest {}
+message ChannelsSenseTipPresenceResponse { repeated int32 tip_presences = 1; }
+
+message RequestPipHeightLastLldRequest {}
+message RequestPipHeightLastLldResponse { repeated double heights = 1; }
+
+message RequestTadmStatusRequest {}
+message RequestTadmStatusResponse {}
+
+message RequestVolumeInTipRequest { int32 channel = 1; }
+message RequestVolumeInTipResponse { double volume = 1; }
+
+message RequestTipLenOnChannelRequest { int32 channel_idx = 1; }
+message RequestTipLenOnChannelResponse { double length = 1; }
+
+message RequestProbeZPositionRequest { int32 channel_idx = 1; }
+message RequestProbeZPositionResponse { double z_position = 1; }
+
+message ClldProbeZHeightUsingChannelRequest {
+  int32 channel_idx = 1;
+  // All the specific parameters from the method
+  optional int32 lowest_reading_position = 2;
+  optional int32 highest_reading_position = 3;
+  optional int32 channel_speed = 4;
+  optional int32 gamma_lld_sensitivity = 5;
+}
+message ClldProbeZHeightUsingChannelResponse {}
+
+message PlldProbeZHeightUsingChannelRequest {
+  int32 channel_idx = 1;
+  optional int32 lowest_reading_position = 2;
+  optional int32 highest_reading_position = 3;
+  optional int32 channel_speed = 4;
+  optional int32 dp_lld_sensitivity = 5;
+}
+message PlldProbeZHeightUsingChannelResponse {}
+
+message ZtouchProbeZHeightUsingChannelRequest {
+  int32 channel_idx = 1;
+  optional int32 lowest_reading_position = 2;
+  optional int32 highest_reading_position = 3;
+  optional int32 channel_speed = 4;
+}
+message ZtouchProbeZHeightUsingChannelResponse {}
+
+message PierceFoilRequest {
+  int32 channel_idx = 1;
+  optional int32 x_position = 2;
+  optional int32 y_position = 3;
+  optional int32 z_start_position = 4;
+  optional int32 z_end_position = 5;
+  optional int32 z_speed = 6;
+  optional int32 minimum_traverse_height = 7;
+}
+message PierceFoilResponse {}
+
+message PierceFoilHighLevelRequest {
+  repeated string well_names = 1;
+  repeated int32 piercing_channels = 2;
+  repeated int32 hold_down_channels = 3;
+  double move_inwards = 4;
+  string spread = 5;  // "wide" or "tight"
+  bool one_by_one = 6;
+  double distance_from_bottom = 7;
+}
+message PierceFoilHighLevelResponse {}
+
+message StepOffFoilRequest {
+  int32 channel_idx = 1;
+  optional int32 x_position = 2;
+  optional int32 y_position = 3;
+  optional int32 z_position = 4;
+  optional int32 minimum_traverse_height = 5;
+}
+message StepOffFoilResponse {}
+
+message EmptyTipRequest {
+  int32 channel_idx = 1;
+  double holding_volume = 2;
+  double acceleration = 3;
+  double flow_rate = 4;
+  int32 current_limit = 5;
+}
+message EmptyTipResponse {}
+
+message EmptyTipsRequest {
+  repeated int32 channels = 1;
+  double holding_volume = 2;
+  double acceleration = 3;
+  double flow_rate = 4;
+  int32 current_limit = 5;
+}
+message EmptyTipsResponse {}
+
+// =============================================================================
+// Channel movement / queries RPCs
+// =============================================================================
+
+message MoveChannelXRequest { int32 channel = 1; double x = 2; }
+message MoveChannelXResponse {}
+message MoveChannelYRequest { int32 channel = 1; double y = 2; }
+message MoveChannelYResponse {}
+message MoveChannelZRequest { int32 channel = 1; double z = 2; }
+message MoveChannelZResponse {}
+
+message MoveChannelXRelativeRequest { int32 channel = 1; double distance = 2; }
+message MoveChannelXRelativeResponse {}
+message MoveChannelYRelativeRequest { int32 channel = 1; double distance = 2; }
+message MoveChannelYRelativeResponse {}
+message MoveChannelZRelativeRequest { int32 channel = 1; double distance = 2; }
+message MoveChannelZRelativeResponse {}
+
+message PrepareForManualChannelOperationRequest { int32 channel = 1; }
+message PrepareForManualChannelOperationResponse {}
+
+message MoveAllChannelsInZSafetyRequest {}
+message MoveAllChannelsInZSafetyResponse {}
+
+message PositionSinglePipettingChannelInYDirectionRequest {
+  int32 pipetting_channel_index = 1;
+  int32 y_position = 2;
+}
+message PositionSinglePipettingChannelInYDirectionResponse {}
+
+message PositionSinglePipettingChannelInZDirectionRequest {
+  int32 pipetting_channel_index = 1;
+  int32 z_position = 2;
+}
+message PositionSinglePipettingChannelInZDirectionResponse {}
+
+message PositionMaxFreeYForNRequest { int32 pipetting_channel_index = 1; }
+message PositionMaxFreeYForNResponse {}
+
+message RequestXPosChannelNRequest { int32 pipetting_channel_index = 1; }
+message RequestXPosChannelNResponse { double x_position = 1; }
+
+message RequestYPosChannelNRequest { int32 pipetting_channel_index = 1; }
+message RequestYPosChannelNResponse { double y_position = 1; }
+
+message RequestZPosChannelNRequest { int32 pipetting_channel_index = 1; }
+message RequestZPosChannelNResponse { double z_position = 1; }
+
+message RequestTipBottomZPositionRequest { int32 channel_idx = 1; }
+message RequestTipBottomZPositionResponse { double z_position = 1; }
+
+message GetChannelsYPositionsRequest {}
+message GetChannelsYPositionsResponse { ChannelFloatMap positions = 1; }
+
+message PositionChannelsInYDirectionRequest {
+  ChannelFloatMap ys = 1;
+  bool make_space = 2;
+}
+message PositionChannelsInYDirectionResponse {}
+
+message GetChannelsZPositionsRequest {}
+message GetChannelsZPositionsResponse { ChannelFloatMap positions = 1; }
+
+message PositionChannelsInZDirectionRequest { ChannelFloatMap zs = 1; }
+message PositionChannelsInZDirectionResponse {}
+
+message RequestPipChannelVersionRequest { int32 channel = 1; }
+message RequestPipChannelVersionResponse { string version = 1; }
+
+// =============================================================================
+// 96-head RPCs
+// =============================================================================
+
+message InitializeCore96HeadRequest {
+  string trash96_name = 1;
+  double z_position_at_the_command_end = 2;
+}
+message InitializeCore96HeadResponse {}
+
+message RequestCore96HeadInitializationStatusRequest {}
+message RequestCore96HeadInitializationStatusResponse { bool initialized = 1; }
+
+message Head96RequestFirmwareVersionRequest {}
+message Head96RequestFirmwareVersionResponse { string date = 1; }
+
+message Head96RequestTypeRequest {}
+message Head96RequestTypeResponse { int32 head_type = 1; }
+
+message Head96DispensingDriveAndSqueezerDriverInitializeRequest {
+  double squeezer_speed = 1;
+  double squeezer_acceleration = 2;
+  int32 squeezer_current_limit = 3;
+  int32 dispensing_drive_current_limit = 4;
+}
+message Head96DispensingDriveAndSqueezerDriverInitializeResponse {}
+
+message MoveCore96ToSafePositionRequest {}
+message MoveCore96ToSafePositionResponse {}
+
+message Head96MoveToZSafetyRequest {}
+message Head96MoveToZSafetyResponse {}
+
+message Head96ParkRequest {}
+message Head96ParkResponse {}
+
+message Head96MoveXRequest { double x = 1; }
+message Head96MoveXResponse {}
+
+message Head96MoveYRequest { double y = 1; bool move_up_before = 2; bool move_down_after = 3; }
+message Head96MoveYResponse {}
+
+message Head96MoveZRequest { double z = 1; }
+message Head96MoveZResponse {}
+
+message MoveCore96HeadToDefinedPositionRequest { double x = 1; double y = 2; double z = 3; }
+message MoveCore96HeadToDefinedPositionResponse {}
+
+message Head96MoveToCoordinateRequest { Coordinate coordinate = 1; }
+message Head96MoveToCoordinateResponse {}
+
+message Head96DispensingDriveMoveToHomeVolumeRequest {}
+message Head96DispensingDriveMoveToHomeVolumeResponse {}
+
+message Head96DispensingDriveMoveToPositionRequest {
+  double position = 1;
+  double flow_rate = 2;
+  int32 current_limit = 3;
+}
+message Head96DispensingDriveMoveToPositionResponse {}
+
+message Head96DispensingDriveRequestPositionMmRequest {}
+message Head96DispensingDriveRequestPositionMmResponse { double position = 1; }
+
+message Head96DispensingDriveRequestPositionUlRequest {}
+message Head96DispensingDriveRequestPositionUlResponse { double position = 1; }
+
+message Head96RequestTipPresenceRequest {}
+message Head96RequestTipPresenceResponse { int32 tip_presence = 1; }
+
+message Head96RequestPositionRequest {}
+message Head96RequestPositionResponse { Coordinate position = 1; }
+
+// Low-level 96-head tip operations
+message PickUpTipsCore96Request {
+  int32 x_position = 1;
+  int32 x_direction = 2;
+  int32 y_position = 3;
+  int32 tip_type_idx = 4;
+  int32 tip_pickup_method = 5;
+  int32 z_deposit_position = 6;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 7;
+  int32 minimum_height_command_end = 8;
+}
+message PickUpTipsCore96Response {}
+
+message DiscardTipsCore96Request {
+  int32 x_position = 1;
+  int32 x_direction = 2;
+  int32 y_position = 3;
+  int32 z_deposit_position = 4;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 5;
+  int32 minimum_height_command_end = 6;
+}
+message DiscardTipsCore96Response {}
+
+message AspirateCore96Request {
+  int32 aspiration_type = 1;
+  int32 x_position = 2;
+  int32 x_direction = 3;
+  int32 y_positions = 4;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 5;
+  int32 min_z_endpos = 6;
+  int32 lld_search_height = 7;
+  int32 liquid_surface_no_lld = 8;
+  int32 pull_out_distance_transport_air = 9;
+  int32 minimum_height = 10;
+  int32 second_section_height = 11;
+  int32 second_section_ratio = 12;
+  int32 immersion_depth = 13;
+  int32 immersion_depth_direction = 14;
+  int32 surface_following_distance = 15;
+  int32 aspiration_volumes = 16;
+  int32 aspiration_speed = 17;
+  int32 transport_air_volume = 18;
+  int32 blow_out_air_volume = 19;
+  int32 pre_wetting_volume = 20;
+  int32 lld_mode = 21;
+  int32 gamma_lld_sensitivity = 22;
+  int32 swap_speed = 23;
+  int32 settling_time = 24;
+  int32 mix_volume = 25;
+  int32 mix_cycles = 26;
+  int32 mix_position_from_liquid_surface = 27;
+  int32 mix_surface_following_distance = 28;
+  int32 speed_of_mix = 29;
+  repeated bool channel_pattern = 30;
+  int32 limit_curve_index = 31;
+  bool tadm_algorithm = 32;
+  int32 recording_mode = 33;
+}
+message AspirateCore96Response {}
+
+message DispenseCore96Request {
+  int32 dispensing_mode = 1;
+  int32 x_position = 2;
+  int32 x_direction = 3;
+  int32 y_positions = 4;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 5;
+  int32 min_z_endpos = 6;
+  int32 lld_search_height = 7;
+  int32 liquid_surface_no_lld = 8;
+  int32 pull_out_distance_transport_air = 9;
+  int32 minimum_height = 10;
+  int32 second_section_height = 11;
+  int32 second_section_ratio = 12;
+  int32 immersion_depth = 13;
+  int32 immersion_depth_direction = 14;
+  int32 surface_following_distance = 15;
+  int32 dispense_volumes = 16;
+  int32 dispense_speed = 17;
+  int32 cut_off_speed = 18;
+  int32 stop_back_volume = 19;
+  int32 transport_air_volume = 20;
+  int32 blow_out_air_volume = 21;
+  int32 lld_mode = 22;
+  int32 gamma_lld_sensitivity = 23;
+  int32 swap_speed = 24;
+  int32 settling_time = 25;
+  int32 mix_volume = 26;
+  int32 mix_cycles = 27;
+  int32 mix_position_from_liquid_surface = 28;
+  int32 mix_surface_following_distance = 29;
+  int32 speed_of_mix = 30;
+  repeated bool channel_pattern = 31;
+  int32 limit_curve_index = 32;
+  bool tadm_algorithm = 33;
+  int32 recording_mode = 34;
+}
+message DispenseCore96Response {}
+
+// =============================================================================
+// iSWAP RPCs
+// =============================================================================
+
+message InitializeIswapRequest {}
+message InitializeIswapResponse {}
+
+message PositionComponentsForFreeIswapYRangeRequest {}
+message PositionComponentsForFreeIswapYRangeResponse {}
+
+message MoveIswapXRelativeRequest { double step_size = 1; bool allow_splitting = 2; }
+message MoveIswapXRelativeResponse {}
+message MoveIswapYRelativeRequest { double step_size = 1; bool allow_splitting = 2; }
+message MoveIswapYRelativeResponse {}
+message MoveIswapZRelativeRequest { double step_size = 1; bool allow_splitting = 2; }
+message MoveIswapZRelativeResponse {}
+
+message MoveIswapXRequest { double x_position = 1; }
+message MoveIswapXResponse {}
+message MoveIswapYRequest { double y_position = 1; }
+message MoveIswapYResponse {}
+message MoveIswapZRequest { double z_position = 1; }
+message MoveIswapZResponse {}
+
+message OpenNotInitializedGripperRequest {}
+message OpenNotInitializedGripperResponse {}
+
+message IswapOpenGripperRequest { optional double open_position = 1; }
+message IswapOpenGripperResponse {}
+
+message IswapCloseGripperRequest {
+  int32 grip_strength = 1;
+  double plate_width = 2;
+  double plate_width_tolerance = 3;
+}
+message IswapCloseGripperResponse {}
+
+message ParkIswapRequest {
+  optional int32 minimum_traverse_height_at_beginning_of_a_command = 1;
+}
+message ParkIswapResponse {}
+
+message IswapGetPlateRequest {
+  int32 x_position = 1;
+  int32 x_direction = 2;
+  int32 y_position = 3;
+  int32 y_direction = 4;
+  int32 z_position = 5;
+  int32 z_direction = 6;
+  int32 grip_direction = 7;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 8;
+  int32 z_position_at_the_command_end = 9;
+  int32 grip_strength = 10;
+  int32 open_gripper_position = 11;
+  int32 plate_width = 12;
+  int32 plate_width_tolerance = 13;
+  int32 collision_control_level = 14;
+  int32 acceleration_index_high_acc = 15;
+  int32 acceleration_index_low_acc = 16;
+  bool iswap_fold_up_sequence_at_the_end_of_process = 17;
+}
+message IswapGetPlateResponse {}
+
+message IswapPutPlateRequest {
+  int32 x_position = 1;
+  int32 x_direction = 2;
+  int32 y_position = 3;
+  int32 y_direction = 4;
+  int32 z_position = 5;
+  int32 z_direction = 6;
+  int32 grip_direction = 7;
+  int32 z_position_at_the_command_end = 8;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 9;
+  int32 open_gripper_position = 10;
+  int32 grip_strength = 11;
+  bool iswap_fold_up_sequence_at_the_end_of_process = 12;
+}
+message IswapPutPlateResponse {}
+
+message MovePlateToPositionRequest {
+  int32 x_position = 1;
+  int32 x_direction = 2;
+  int32 y_position = 3;
+  int32 y_direction = 4;
+  int32 z_position = 5;
+  int32 z_direction = 6;
+  int32 grip_direction = 7;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 8;
+  int32 collision_control_level = 9;
+  int32 acceleration_index_high_acc = 10;
+  int32 acceleration_index_low_acc = 11;
+}
+message MovePlateToPositionResponse {}
+
+message CollapseGripperArmRequest {
+  int32 minimum_traverse_height_at_beginning_of_a_command = 1;
+  bool iswap_fold_up_sequence_at_the_end_of_process = 2;
+}
+message CollapseGripperArmResponse {}
+
+message IswapRotateRequest {
+  RotationDriveOrientationEnum orientation = 1;
+}
+message IswapRotateResponse {}
+
+message RotateIswapRotationDriveRequest { RotationDriveOrientationEnum orientation = 1; }
+message RotateIswapRotationDriveResponse {}
+
+message RotateIswapWristRequest { WristDriveOrientationEnum orientation = 1; }
+message RotateIswapWristResponse {}
+
+message IswapDangerousReleaseBreakRequest {}
+message IswapDangerousReleaseBreakResponse {}
+
+message IswapReengageBreakRequest {}
+message IswapReengageBreakResponse {}
+
+message IswapInitializeZAxisRequest {}
+message IswapInitializeZAxisResponse {}
+
+message RequestIswapRotationDrivePositionIncrementsRequest {}
+message RequestIswapRotationDrivePositionIncrementsResponse { int32 position = 1; }
+
+message RequestIswapRotationDriveOrientationRequest {}
+message RequestIswapRotationDriveOrientationResponse { RotationDriveOrientationEnum orientation = 1; }
+
+message RequestIswapWristDrivePositionIncrementsRequest {}
+message RequestIswapWristDrivePositionIncrementsResponse { int32 position = 1; }
+
+message RequestIswapWristDriveOrientationRequest {}
+message RequestIswapWristDriveOrientationResponse { WristDriveOrientationEnum orientation = 1; }
+
+message RequestIswapInParkingPositionRequest {}
+message RequestIswapInParkingPositionResponse {}
+
+message RequestPlateInIswapRequest {}
+message RequestPlateInIswapResponse { bool plate_in_iswap = 1; }
+
+message RequestIswapPositionRequest {}
+message RequestIswapPositionResponse { Coordinate position = 1; }
+
+message IswapRotationDriveRequestYRequest {}
+message IswapRotationDriveRequestYResponse { double y = 1; }
+
+message RequestIswapInitializationStatusRequest {}
+message RequestIswapInitializationStatusResponse { bool initialized = 1; }
+
+message RequestIswapVersionRequest {}
+message RequestIswapVersionResponse { string version = 1; }
+
+message GetIswapVersionRequest {}
+message GetIswapVersionResponse { string version = 1; }
+
+message SlowIswapRequest {
+  int32 wrist_velocity = 1;
+  int32 gripper_velocity = 2;
+}
+message SlowIswapResponse {}
+
+message IswapMovePickedUpResourceRequest {
+  Coordinate center = 1;
+  GripDirectionEnum grip_direction = 2;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 3;
+  int32 collision_control_level = 4;
+  int32 acceleration_index_high_acc = 5;
+  int32 acceleration_index_low_acc = 6;
+}
+message IswapMovePickedUpResourceResponse {}
+
+// High-level resource handling
+message PickUpResourceRequest {
+  ResourcePickupOp pickup = 1;
+  string use_arm = 2;  // "iswap" or "core"
+  int32 core_front_channel = 3;
+  int32 iswap_grip_strength = 4;
+  int32 core_grip_strength = 5;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 6;
+  optional double z_position_at_the_command_end = 7;
+  double plate_width_tolerance = 8;
+  optional double open_gripper_position = 9;
+  double hotel_depth = 10;
+  double hotel_clearance_height = 11;
+  bool high_speed = 12;
+  optional double plate_width = 13;
+  bool use_unsafe_hotel = 14;
+  int32 iswap_collision_control_level = 15;
+  bool iswap_fold_up_sequence_at_the_end_of_process = 16;
+}
+message PickUpResourceResponse {}
+
+message MovePickedUpResourceRequest {
+  ResourceMoveOp move = 1;
+  string use_arm = 2;
+}
+message MovePickedUpResourceResponse {}
+
+message DropResourceRequest {
+  ResourceDropOp drop = 1;
+  string use_arm = 2;
+  bool return_core_gripper = 3;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 4;
+  optional double z_position_at_the_command_end = 5;
+  optional double open_gripper_position = 6;
+  double hotel_depth = 7;
+  double hotel_clearance_height = 8;
+  bool hotel_high_speed = 9;
+  bool use_unsafe_hotel = 10;
+  int32 iswap_collision_control_level = 11;
+  bool iswap_fold_up_sequence_at_the_end_of_process = 12;
+}
+message DropResourceResponse {}
+
+// =============================================================================
+// Core gripper RPCs
+// =============================================================================
+
+message PickUpCoreGripperToolsRequest {
+  int32 front_channel = 1;
+  optional Coordinate front_offset = 2;
+  optional Coordinate back_offset = 3;
+}
+message PickUpCoreGripperToolsResponse {}
+
+message ReturnCoreGripperToolsRequest {
+  optional Coordinate front_offset = 1;
+  optional Coordinate back_offset = 2;
+}
+message ReturnCoreGripperToolsResponse {}
+
+message CoreOpenGripperRequest {}
+message CoreOpenGripperResponse {}
+
+message CoreGetPlateRequest {
+  int32 x_position = 1;
+  int32 x_direction = 2;
+  int32 y_position = 3;
+  int32 y_gripping_speed = 4;
+  int32 z_position = 5;
+  int32 z_speed = 6;
+  int32 open_gripper_position = 7;
+  int32 plate_width = 8;
+  int32 grip_strength = 9;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 10;
+  int32 minimum_z_position_at_the_command_end = 11;
+}
+message CoreGetPlateResponse {}
+
+message CorePutPlateRequest {
+  int32 x_position = 1;
+  int32 x_direction = 2;
+  int32 y_position = 3;
+  int32 z_position = 4;
+  int32 z_press_on_distance = 5;
+  int32 z_speed = 6;
+  int32 open_gripper_position = 7;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 8;
+  int32 z_position_at_the_command_end = 9;
+  bool return_tool = 10;
+}
+message CorePutPlateResponse {}
+
+message CoreMovePlateToPositionRequest {
+  int32 x_position = 1;
+  int32 x_direction = 2;
+  int32 x_acceleration_index = 3;
+  int32 y_position = 4;
+  int32 z_position = 5;
+  int32 z_speed = 6;
+  int32 minimum_traverse_height_at_beginning_of_a_command = 7;
+}
+message CoreMovePlateToPositionResponse {}
+
+message CorePickUpResourceRequest {
+  string resource_name = 1;
+  double pickup_distance_from_top = 2;
+  Coordinate offset = 3;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 4;
+  optional double minimum_z_position_at_the_command_end = 5;
+  int32 grip_strength = 6;
+  double z_speed = 7;
+  double y_gripping_speed = 8;
+  int32 front_channel = 9;
+}
+message CorePickUpResourceResponse {}
+
+message CoreMovePickedUpResourceRequest {
+  Coordinate center = 1;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 2;
+  int32 acceleration_index = 3;
+  double z_speed = 4;
+}
+message CoreMovePickedUpResourceResponse {}
+
+message CoreReleasePickedUpResourceRequest {
+  Coordinate location = 1;
+  string resource_name = 2;
+  double pickup_distance_from_top = 3;
+  optional double minimum_traverse_height_at_beginning_of_a_command = 4;
+  optional double z_position_at_the_command_end = 5;
+  bool return_tool = 6;
+}
+message CoreReleasePickedUpResourceResponse {}
+
+message CoreCheckResourceExistsAtLocationCenterRequest {
+  Coordinate location = 1;
+  string resource_name = 2;
+  double gripper_y_margin = 3;
+  Coordinate offset = 4;
+  double minimum_traverse_height_at_beginning_of_a_command = 5;
+  double z_position_at_the_command_end = 6;
+  bool enable_recovery = 7;
+  bool audio_feedback = 8;
+}
+message CoreCheckResourceExistsAtLocationCenterResponse { bool exists = 1; }
+
+message GetCoreRequest { int32 p1 = 1; int32 p2 = 2; }
+message GetCoreResponse {}
+
+message PutCoreRequest {}
+message PutCoreResponse {}
+
+message CoreReadBarcodeOfPickedUpResourceRequest {
+  int32 rails = 1;
+  string reading_direction = 2;
+  double minimal_z_position = 3;
+  double traverse_height_at_beginning_of_a_command = 4;
+  double z_speed = 5;
+  bool allow_manual_input = 6;
+  optional string labware_description = 7;
+}
+message CoreReadBarcodeOfPickedUpResourceResponse {}
+
+// =============================================================================
+// Autoload RPCs
+// =============================================================================
+
+message InitializeAutoloadRequest {}
+message InitializeAutoloadResponse {}
+
+message MoveAutoloadToSafeZPositionRequest {}
+message MoveAutoloadToSafeZPositionResponse {}
+
+message RequestAutoloadTrackRequest {}
+message RequestAutoloadTrackResponse { int32 track = 1; }
+
+message RequestAutoloadTypeRequest {}
+message RequestAutoloadTypeResponse { string autoload_type = 1; }
+
+message RequestPresenceOfCarriersOnDeckRequest {}
+message RequestPresenceOfCarriersOnDeckResponse { repeated int32 carriers = 1; }
+
+message RequestPresenceOfCarriersOnLoadingTrayRequest {}
+message RequestPresenceOfCarriersOnLoadingTrayResponse { repeated int32 carriers = 1; }
+
+message RequestPresenceOfSingleCarrierOnLoadingTrayRequest { int32 track = 1; }
+message RequestPresenceOfSingleCarrierOnLoadingTrayResponse { bool present = 1; }
+
+message MoveAutoloadToSlotRequest { int32 slot_number = 1; }
+message MoveAutoloadToSlotResponse {}
+
+message MoveAutoloadToTrackRequest { int32 track = 1; }
+message MoveAutoloadToTrackResponse {}
+
+message ParkAutoloadRequest {}
+message ParkAutoloadResponse {}
+
+message TakeCarrierOutToAutoloadBeltRequest { string carrier_name = 1; }
+message TakeCarrierOutToAutoloadBeltResponse {}
+
+message SetBarcodeTypeRequest { int32 barcode_symbology = 1; }
+message SetBarcodeTypeResponse {}
+
+message LoadCarrierFromTrayAndScanCarrierBarcodeRequest {
+  string carrier_name = 1;
+  bool carrier_barcode_reading = 2;
+  optional int32 barcode_symbology = 3;
+  double barcode_position = 4;
+  double barcode_reading_window_width = 5;
+  double reading_speed = 6;
+}
+message LoadCarrierFromTrayAndScanCarrierBarcodeResponse {
+  optional string barcode = 1;
+}
+
+message UnloadCarrierAfterCarcodeBarcardeScanningRequest {}
+message UnloadCarrierAfterCarcodeBarcardeScanningResponse {}
+
+message SetCarrierMonitoringRequest { bool should_monitor = 1; }
+message SetCarrierMonitoringResponse {}
+
+message LoadCarrierRequest {
+  string carrier_name = 1;
+}
+message LoadCarrierResponse {}
+
+message SetLoadingIndicatorsRequest {
+  repeated bool bit_pattern = 1;
+  repeated bool blink_pattern = 2;
+}
+message SetLoadingIndicatorsResponse {}
+
+message UnloadCarrierRequest { string carrier_name = 1; }
+message UnloadCarrierResponse {}
+
+message RequestInstrumentInitializationStatusRequest {}
+message RequestInstrumentInitializationStatusResponse { bool initialized = 1; }
+
+message RequestAutoloadInitializationStatusRequest {}
+message RequestAutoloadInitializationStatusResponse { bool initialized = 1; }
+
+// =============================================================================
+// Misc: Firmware / Config / Cover / HHS / Pump / X-arm / Special / Unsafe
+// =============================================================================
+
+// --- Cover ---
+message LockCoverRequest {}
+message LockCoverResponse {}
+
+message UnlockCoverRequest {}
+message UnlockCoverResponse {}
+
+message DisableCoverControlRequest {}
+message DisableCoverControlResponse {}
+
+message EnableCoverControlRequest {}
+message EnableCoverControlResponse {}
+
+message SetCoverOutputRequest { int32 output = 1; }
+message SetCoverOutputResponse {}
+
+message ResetOutputRequest { int32 output = 1; }
+message ResetOutputResponse {}
+
+message RequestCoverOpenRequest {}
+message RequestCoverOpenResponse { bool open = 1; }
+
+// --- HHS (Heater/Shaker) ---
+message SendHhsCommandRequest {
+  int32 index = 1;
+  string command = 2;
+}
+message SendHhsCommandResponse { string response = 1; }
+
+message CheckTypeIsHhcRequest { int32 device_number = 1; }
+message CheckTypeIsHhcResponse {}
+
+message InitializeHhcRequest { int32 device_number = 1; }
+message InitializeHhcResponse { string response = 1; }
+
+message StartTemperatureControlAtHhcRequest {
+  int32 device_number = 1;
+  double temperature = 2;
+}
+message StartTemperatureControlAtHhcResponse {}
+
+message GetTemperatureAtHhcRequest { int32 device_number = 1; }
+message GetTemperatureAtHhcResponse {
+  double current_temperature = 1;
+  double target_temperature = 2;
+}
+
+message QueryWhetherTemperatureReachedAtHhcRequest { int32 device_number = 1; }
+message QueryWhetherTemperatureReachedAtHhcResponse {}
+
+message StopTemperatureControlAtHhcRequest { int32 device_number = 1; }
+message StopTemperatureControlAtHhcResponse {}
+
+// --- Firmware queries ---
+message RequestFirmwareVersionRequest {}
+message RequestFirmwareVersionResponse {}
+
+message RequestErrorCodeRequest {}
+message RequestErrorCodeResponse {}
+
+message RequestParameterValueRequest {}
+message RequestParameterValueResponse {}
+
+message RequestDeviceSerialNumberRequest {}
+message RequestDeviceSerialNumberResponse { string serial_number = 1; }
+
+message RequestMasterStatusRequest {}
+message RequestMasterStatusResponse {}
+
+message RequestNameOfLastFaultyParameterRequest {}
+message RequestNameOfLastFaultyParameterResponse {}
+
+// --- Configuration ---
+message SetSingleStepModeRequest { bool single_step_mode = 1; }
+message SetSingleStepModeResponse {}
+
+message TriggerNextStepRequest {}
+message TriggerNextStepResponse {}
+
+message HaltRequest {}
+message HaltResponse {}
+
+message SaveAllCycleCountersRequest {}
+message SaveAllCycleCountersResponse {}
+
+message SetNotStopRequest { bool non_stop = 1; }
+message SetNotStopResponse {}
+
+message ConfigureNodeNamesRequest {}
+message ConfigureNodeNamesResponse {}
+
+message SetDeckDataRequest { int32 data_index = 1; string data_stream = 2; }
+message SetDeckDataResponse {}
+
+// --- X-arm ---
+message PositionLeftXArmRequest { int32 x_position = 1; }
+message PositionLeftXArmResponse {}
+
+message PositionRightXArmRequest { int32 x_position = 1; }
+message PositionRightXArmResponse {}
+
+message MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest { int32 x_position = 1; }
+message MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse {}
+
+message MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest { int32 x_position = 1; }
+message MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse {}
+
+message RequestLeftXArmPositionRequest {}
+message RequestLeftXArmPositionResponse { double position = 1; }
+
+message RequestRightXArmPositionRequest {}
+message RequestRightXArmPositionResponse { double position = 1; }
+
+message RequestRightXArmLastCollisionTypeRequest {}
+message RequestRightXArmLastCollisionTypeResponse { bool collision = 1; }
+
+// --- Pump ---
+message RequestPumpSettingsRequest { int32 pump_station = 1; }
+message RequestPumpSettingsResponse {}
+
+message InitializeDualPumpStationValvesRequest { int32 pump_station = 1; }
+message InitializeDualPumpStationValvesResponse {}
+
+message DrainDualChamberSystemRequest { int32 pump_station = 1; }
+message DrainDualChamberSystemResponse {}
+
+// --- Special ---
+message ViolentlyShootDownTipRequest { int32 channel_idx = 1; }
+message ViolentlyShootDownTipResponse {}
+
+message CanPickUpTipRequest { int32 channel_idx = 1; TipData tip = 2; }
+message CanPickUpTipResponse { bool can_pick_up = 1; }
+
+// =============================================================================
+// Service definition
+// =============================================================================
+
+service STARService {
+  // --- Lifecycle ---
+  rpc Setup(SetupRequest) returns (SetupResponse);
+  rpc Stop(StopRequest) returns (StopResponse);
+  rpc GetNumChannels(GetNumChannelsRequest) returns (GetNumChannelsResponse);
+  rpc GetHead96Installed(GetHead96InstalledRequest) returns (GetHead96InstalledResponse);
+  rpc GetIswapInstalled(GetIswapInstalledRequest) returns (GetIswapInstalledResponse);
+  rpc GetIswapParked(GetIswapParkedRequest) returns (GetIswapParkedResponse);
+  rpc GetCoreParked(GetCoreParkedRequest) returns (GetCoreParkedResponse);
+
+  // --- Core LH interface ---
+  rpc PickUpTips(PickUpTipsRequest) returns (PickUpTipsResponse);
+  rpc DropTips(DropTipsRequest) returns (DropTipsResponse);
+  rpc Aspirate(AspirateRequest) returns (AspirateResponse);
+  rpc Dispense(DispenseRequest) returns (DispenseResponse);
+  rpc PickUpTips96(PickUpTips96Request) returns (PickUpTips96Response);
+  rpc DropTips96(DropTips96Request) returns (DropTips96Response);
+  rpc Aspirate96(Aspirate96Request) returns (Aspirate96Response);
+  rpc Dispense96(Dispense96Request) returns (Dispense96Response);
+
+  // --- Single channel pip (low-level) ---
+  rpc InitializePip(InitializePipRequest) returns (InitializePipResponse);
+  rpc InitializePipettingChannels(InitializePipettingChannelsRequest) returns (InitializePipettingChannelsResponse);
+  rpc PickUpTipFw(PickUpTipFwRequest) returns (PickUpTipFwResponse);
+  rpc DiscardTipFw(DiscardTipFwRequest) returns (DiscardTipFwResponse);
+  rpc AspiratePip(AspiratePipRequest) returns (AspiratePipResponse);
+  rpc DispensePip(DispensePipRequest) returns (DispensePipResponse);
+  rpc SpreadPipChannels(SpreadPipChannelsRequest) returns (SpreadPipChannelsResponse);
+  rpc MoveAllPipettingChannelsToDefinedPosition(MoveAllPipettingChannelsToDefinedPositionRequest) returns (MoveAllPipettingChannelsToDefinedPositionResponse);
+  rpc DefineTipNeedle(DefineTipNeedleRequest) returns (DefineTipNeedleResponse);
+
+  // --- TADM / LLD probing ---
+  rpc ProbeLiquidHeights(ProbeLiquidHeightsRequest) returns (ProbeLiquidHeightsResponse);
+  rpc ProbeLiquidVolumes(ProbeLiquidVolumesRequest) returns (ProbeLiquidVolumesResponse);
+  rpc RequestTipPresence(RequestTipPresenceRequest) returns (RequestTipPresenceResponse);
+  rpc ChannelsSenseTipPresence(ChannelsSenseTipPresenceRequest) returns (ChannelsSenseTipPresenceResponse);
+  rpc RequestPipHeightLastLld(RequestPipHeightLastLldRequest) returns (RequestPipHeightLastLldResponse);
+  rpc RequestTadmStatus(RequestTadmStatusRequest) returns (RequestTadmStatusResponse);
+  rpc RequestVolumeInTip(RequestVolumeInTipRequest) returns (RequestVolumeInTipResponse);
+  rpc RequestTipLenOnChannel(RequestTipLenOnChannelRequest) returns (RequestTipLenOnChannelResponse);
+  rpc RequestProbeZPosition(RequestProbeZPositionRequest) returns (RequestProbeZPositionResponse);
+  rpc ClldProbeZHeightUsingChannel(ClldProbeZHeightUsingChannelRequest) returns (ClldProbeZHeightUsingChannelResponse);
+  rpc PlldProbeZHeightUsingChannel(PlldProbeZHeightUsingChannelRequest) returns (PlldProbeZHeightUsingChannelResponse);
+  rpc ZtouchProbeZHeightUsingChannel(ZtouchProbeZHeightUsingChannelRequest) returns (ZtouchProbeZHeightUsingChannelResponse);
+  rpc PierceFoil(PierceFoilRequest) returns (PierceFoilResponse);
+  rpc PierceFoilHighLevel(PierceFoilHighLevelRequest) returns (PierceFoilHighLevelResponse);
+  rpc StepOffFoil(StepOffFoilRequest) returns (StepOffFoilResponse);
+  rpc EmptyTip(EmptyTipRequest) returns (EmptyTipResponse);
+  rpc EmptyTips(EmptyTipsRequest) returns (EmptyTipsResponse);
+
+  // --- Channel movement / queries ---
+  rpc MoveChannelX(MoveChannelXRequest) returns (MoveChannelXResponse);
+  rpc MoveChannelY(MoveChannelYRequest) returns (MoveChannelYResponse);
+  rpc MoveChannelZ(MoveChannelZRequest) returns (MoveChannelZResponse);
+  rpc MoveChannelXRelative(MoveChannelXRelativeRequest) returns (MoveChannelXRelativeResponse);
+  rpc MoveChannelYRelative(MoveChannelYRelativeRequest) returns (MoveChannelYRelativeResponse);
+  rpc MoveChannelZRelative(MoveChannelZRelativeRequest) returns (MoveChannelZRelativeResponse);
+  rpc PrepareForManualChannelOperation(PrepareForManualChannelOperationRequest) returns (PrepareForManualChannelOperationResponse);
+  rpc MoveAllChannelsInZSafety(MoveAllChannelsInZSafetyRequest) returns (MoveAllChannelsInZSafetyResponse);
+  rpc PositionSinglePipettingChannelInYDirection(PositionSinglePipettingChannelInYDirectionRequest) returns (PositionSinglePipettingChannelInYDirectionResponse);
+  rpc PositionSinglePipettingChannelInZDirection(PositionSinglePipettingChannelInZDirectionRequest) returns (PositionSinglePipettingChannelInZDirectionResponse);
+  rpc PositionMaxFreeYForN(PositionMaxFreeYForNRequest) returns (PositionMaxFreeYForNResponse);
+  rpc RequestXPosChannelN(RequestXPosChannelNRequest) returns (RequestXPosChannelNResponse);
+  rpc RequestYPosChannelN(RequestYPosChannelNRequest) returns (RequestYPosChannelNResponse);
+  rpc RequestZPosChannelN(RequestZPosChannelNRequest) returns (RequestZPosChannelNResponse);
+  rpc RequestTipBottomZPosition(RequestTipBottomZPositionRequest) returns (RequestTipBottomZPositionResponse);
+  rpc GetChannelsYPositions(GetChannelsYPositionsRequest) returns (GetChannelsYPositionsResponse);
+  rpc PositionChannelsInYDirection(PositionChannelsInYDirectionRequest) returns (PositionChannelsInYDirectionResponse);
+  rpc GetChannelsZPositions(GetChannelsZPositionsRequest) returns (GetChannelsZPositionsResponse);
+  rpc PositionChannelsInZDirection(PositionChannelsInZDirectionRequest) returns (PositionChannelsInZDirectionResponse);
+  rpc RequestPipChannelVersion(RequestPipChannelVersionRequest) returns (RequestPipChannelVersionResponse);
+
+  // --- 96-head ---
+  rpc InitializeCore96Head(InitializeCore96HeadRequest) returns (InitializeCore96HeadResponse);
+  rpc RequestCore96HeadInitializationStatus(RequestCore96HeadInitializationStatusRequest) returns (RequestCore96HeadInitializationStatusResponse);
+  rpc Head96RequestFirmwareVersion(Head96RequestFirmwareVersionRequest) returns (Head96RequestFirmwareVersionResponse);
+  rpc Head96RequestType(Head96RequestTypeRequest) returns (Head96RequestTypeResponse);
+  rpc Head96DispensingDriveAndSqueezerDriverInitialize(Head96DispensingDriveAndSqueezerDriverInitializeRequest) returns (Head96DispensingDriveAndSqueezerDriverInitializeResponse);
+  rpc MoveCore96ToSafePosition(MoveCore96ToSafePositionRequest) returns (MoveCore96ToSafePositionResponse);
+  rpc Head96MoveToZSafety(Head96MoveToZSafetyRequest) returns (Head96MoveToZSafetyResponse);
+  rpc Head96Park(Head96ParkRequest) returns (Head96ParkResponse);
+  rpc Head96MoveX(Head96MoveXRequest) returns (Head96MoveXResponse);
+  rpc Head96MoveY(Head96MoveYRequest) returns (Head96MoveYResponse);
+  rpc Head96MoveZ(Head96MoveZRequest) returns (Head96MoveZResponse);
+  rpc MoveCore96HeadToDefinedPosition(MoveCore96HeadToDefinedPositionRequest) returns (MoveCore96HeadToDefinedPositionResponse);
+  rpc Head96MoveToCoordinate(Head96MoveToCoordinateRequest) returns (Head96MoveToCoordinateResponse);
+  rpc Head96DispensingDriveMoveToHomeVolume(Head96DispensingDriveMoveToHomeVolumeRequest) returns (Head96DispensingDriveMoveToHomeVolumeResponse);
+  rpc Head96DispensingDriveMoveToPosition(Head96DispensingDriveMoveToPositionRequest) returns (Head96DispensingDriveMoveToPositionResponse);
+  rpc Head96DispensingDriveRequestPositionMm(Head96DispensingDriveRequestPositionMmRequest) returns (Head96DispensingDriveRequestPositionMmResponse);
+  rpc Head96DispensingDriveRequestPositionUl(Head96DispensingDriveRequestPositionUlRequest) returns (Head96DispensingDriveRequestPositionUlResponse);
+  rpc Head96RequestTipPresence(Head96RequestTipPresenceRequest) returns (Head96RequestTipPresenceResponse);
+  rpc Head96RequestPosition(Head96RequestPositionRequest) returns (Head96RequestPositionResponse);
+  rpc PickUpTipsCore96(PickUpTipsCore96Request) returns (PickUpTipsCore96Response);
+  rpc DiscardTipsCore96(DiscardTipsCore96Request) returns (DiscardTipsCore96Response);
+  rpc AspirateCore96(AspirateCore96Request) returns (AspirateCore96Response);
+  rpc DispenseCore96(DispenseCore96Request) returns (DispenseCore96Response);
+
+  // --- iSWAP ---
+  rpc InitializeIswap(InitializeIswapRequest) returns (InitializeIswapResponse);
+  rpc PositionComponentsForFreeIswapYRange(PositionComponentsForFreeIswapYRangeRequest) returns (PositionComponentsForFreeIswapYRangeResponse);
+  rpc MoveIswapXRelative(MoveIswapXRelativeRequest) returns (MoveIswapXRelativeResponse);
+  rpc MoveIswapYRelative(MoveIswapYRelativeRequest) returns (MoveIswapYRelativeResponse);
+  rpc MoveIswapZRelative(MoveIswapZRelativeRequest) returns (MoveIswapZRelativeResponse);
+  rpc MoveIswapX(MoveIswapXRequest) returns (MoveIswapXResponse);
+  rpc MoveIswapY(MoveIswapYRequest) returns (MoveIswapYResponse);
+  rpc MoveIswapZ(MoveIswapZRequest) returns (MoveIswapZResponse);
+  rpc OpenNotInitializedGripper(OpenNotInitializedGripperRequest) returns (OpenNotInitializedGripperResponse);
+  rpc IswapOpenGripper(IswapOpenGripperRequest) returns (IswapOpenGripperResponse);
+  rpc IswapCloseGripper(IswapCloseGripperRequest) returns (IswapCloseGripperResponse);
+  rpc ParkIswap(ParkIswapRequest) returns (ParkIswapResponse);
+  rpc IswapGetPlate(IswapGetPlateRequest) returns (IswapGetPlateResponse);
+  rpc IswapPutPlate(IswapPutPlateRequest) returns (IswapPutPlateResponse);
+  rpc MovePlateToPosition(MovePlateToPositionRequest) returns (MovePlateToPositionResponse);
+  rpc CollapseGripperArm(CollapseGripperArmRequest) returns (CollapseGripperArmResponse);
+  rpc IswapRotate(IswapRotateRequest) returns (IswapRotateResponse);
+  rpc RotateIswapRotationDrive(RotateIswapRotationDriveRequest) returns (RotateIswapRotationDriveResponse);
+  rpc RotateIswapWrist(RotateIswapWristRequest) returns (RotateIswapWristResponse);
+  rpc IswapDangerousReleaseBreak(IswapDangerousReleaseBreakRequest) returns (IswapDangerousReleaseBreakResponse);
+  rpc IswapReengageBreak(IswapReengageBreakRequest) returns (IswapReengageBreakResponse);
+  rpc IswapInitializeZAxis(IswapInitializeZAxisRequest) returns (IswapInitializeZAxisResponse);
+  rpc RequestIswapRotationDrivePositionIncrements(RequestIswapRotationDrivePositionIncrementsRequest) returns (RequestIswapRotationDrivePositionIncrementsResponse);
+  rpc RequestIswapRotationDriveOrientation(RequestIswapRotationDriveOrientationRequest) returns (RequestIswapRotationDriveOrientationResponse);
+  rpc RequestIswapWristDrivePositionIncrements(RequestIswapWristDrivePositionIncrementsRequest) returns (RequestIswapWristDrivePositionIncrementsResponse);
+  rpc RequestIswapWristDriveOrientation(RequestIswapWristDriveOrientationRequest) returns (RequestIswapWristDriveOrientationResponse);
+  rpc RequestIswapInParkingPosition(RequestIswapInParkingPositionRequest) returns (RequestIswapInParkingPositionResponse);
+  rpc RequestPlateInIswap(RequestPlateInIswapRequest) returns (RequestPlateInIswapResponse);
+  rpc RequestIswapPosition(RequestIswapPositionRequest) returns (RequestIswapPositionResponse);
+  rpc IswapRotationDriveRequestY(IswapRotationDriveRequestYRequest) returns (IswapRotationDriveRequestYResponse);
+  rpc RequestIswapInitializationStatus(RequestIswapInitializationStatusRequest) returns (RequestIswapInitializationStatusResponse);
+  rpc RequestIswapVersion(RequestIswapVersionRequest) returns (RequestIswapVersionResponse);
+  rpc GetIswapVersion(GetIswapVersionRequest) returns (GetIswapVersionResponse);
+  rpc SlowIswap(SlowIswapRequest) returns (SlowIswapResponse);
+  rpc IswapMovePickedUpResource(IswapMovePickedUpResourceRequest) returns (IswapMovePickedUpResourceResponse);
+  rpc PickUpResource(PickUpResourceRequest) returns (PickUpResourceResponse);
+  rpc MovePickedUpResource(MovePickedUpResourceRequest) returns (MovePickedUpResourceResponse);
+  rpc DropResource(DropResourceRequest) returns (DropResourceResponse);
+
+  // --- Core gripper ---
+  rpc PickUpCoreGripperTools(PickUpCoreGripperToolsRequest) returns (PickUpCoreGripperToolsResponse);
+  rpc ReturnCoreGripperTools(ReturnCoreGripperToolsRequest) returns (ReturnCoreGripperToolsResponse);
+  rpc CoreOpenGripper(CoreOpenGripperRequest) returns (CoreOpenGripperResponse);
+  rpc CoreGetPlate(CoreGetPlateRequest) returns (CoreGetPlateResponse);
+  rpc CorePutPlate(CorePutPlateRequest) returns (CorePutPlateResponse);
+  rpc CoreMovePlateToPosition(CoreMovePlateToPositionRequest) returns (CoreMovePlateToPositionResponse);
+  rpc CorePickUpResource(CorePickUpResourceRequest) returns (CorePickUpResourceResponse);
+  rpc CoreMovePickedUpResource(CoreMovePickedUpResourceRequest) returns (CoreMovePickedUpResourceResponse);
+  rpc CoreReleasePickedUpResource(CoreReleasePickedUpResourceRequest) returns (CoreReleasePickedUpResourceResponse);
+  rpc CoreCheckResourceExistsAtLocationCenter(CoreCheckResourceExistsAtLocationCenterRequest) returns (CoreCheckResourceExistsAtLocationCenterResponse);
+  rpc GetCore(GetCoreRequest) returns (GetCoreResponse);
+  rpc PutCore(PutCoreRequest) returns (PutCoreResponse);
+  rpc CoreReadBarcodeOfPickedUpResource(CoreReadBarcodeOfPickedUpResourceRequest) returns (CoreReadBarcodeOfPickedUpResourceResponse);
+
+  // --- Autoload ---
+  rpc InitializeAutoload(InitializeAutoloadRequest) returns (InitializeAutoloadResponse);
+  rpc MoveAutoloadToSafeZPosition(MoveAutoloadToSafeZPositionRequest) returns (MoveAutoloadToSafeZPositionResponse);
+  rpc RequestAutoloadTrack(RequestAutoloadTrackRequest) returns (RequestAutoloadTrackResponse);
+  rpc RequestAutoloadType(RequestAutoloadTypeRequest) returns (RequestAutoloadTypeResponse);
+  rpc RequestPresenceOfCarriersOnDeck(RequestPresenceOfCarriersOnDeckRequest) returns (RequestPresenceOfCarriersOnDeckResponse);
+  rpc RequestPresenceOfCarriersOnLoadingTray(RequestPresenceOfCarriersOnLoadingTrayRequest) returns (RequestPresenceOfCarriersOnLoadingTrayResponse);
+  rpc RequestPresenceOfSingleCarrierOnLoadingTray(RequestPresenceOfSingleCarrierOnLoadingTrayRequest) returns (RequestPresenceOfSingleCarrierOnLoadingTrayResponse);
+  rpc MoveAutoloadToSlot(MoveAutoloadToSlotRequest) returns (MoveAutoloadToSlotResponse);
+  rpc MoveAutoloadToTrack(MoveAutoloadToTrackRequest) returns (MoveAutoloadToTrackResponse);
+  rpc ParkAutoload(ParkAutoloadRequest) returns (ParkAutoloadResponse);
+  rpc TakeCarrierOutToAutoloadBelt(TakeCarrierOutToAutoloadBeltRequest) returns (TakeCarrierOutToAutoloadBeltResponse);
+  rpc SetBarcodeType(SetBarcodeTypeRequest) returns (SetBarcodeTypeResponse);
+  rpc LoadCarrierFromTrayAndScanCarrierBarcode(LoadCarrierFromTrayAndScanCarrierBarcodeRequest) returns (LoadCarrierFromTrayAndScanCarrierBarcodeResponse);
+  rpc SetCarrierMonitoring(SetCarrierMonitoringRequest) returns (SetCarrierMonitoringResponse);
+  rpc LoadCarrier(LoadCarrierRequest) returns (LoadCarrierResponse);
+  rpc SetLoadingIndicators(SetLoadingIndicatorsRequest) returns (SetLoadingIndicatorsResponse);
+  rpc UnloadCarrier(UnloadCarrierRequest) returns (UnloadCarrierResponse);
+  rpc RequestInstrumentInitializationStatus(RequestInstrumentInitializationStatusRequest) returns (RequestInstrumentInitializationStatusResponse);
+  rpc RequestAutoloadInitializationStatus(RequestAutoloadInitializationStatusRequest) returns (RequestAutoloadInitializationStatusResponse);
+
+  // --- Cover ---
+  rpc LockCover(LockCoverRequest) returns (LockCoverResponse);
+  rpc UnlockCover(UnlockCoverRequest) returns (UnlockCoverResponse);
+  rpc DisableCoverControl(DisableCoverControlRequest) returns (DisableCoverControlResponse);
+  rpc EnableCoverControl(EnableCoverControlRequest) returns (EnableCoverControlResponse);
+  rpc SetCoverOutput(SetCoverOutputRequest) returns (SetCoverOutputResponse);
+  rpc ResetOutput(ResetOutputRequest) returns (ResetOutputResponse);
+  rpc RequestCoverOpen(RequestCoverOpenRequest) returns (RequestCoverOpenResponse);
+
+  // --- HHS ---
+  rpc SendHhsCommand(SendHhsCommandRequest) returns (SendHhsCommandResponse);
+  rpc CheckTypeIsHhc(CheckTypeIsHhcRequest) returns (CheckTypeIsHhcResponse);
+  rpc InitializeHhc(InitializeHhcRequest) returns (InitializeHhcResponse);
+  rpc StartTemperatureControlAtHhc(StartTemperatureControlAtHhcRequest) returns (StartTemperatureControlAtHhcResponse);
+  rpc GetTemperatureAtHhc(GetTemperatureAtHhcRequest) returns (GetTemperatureAtHhcResponse);
+  rpc QueryWhetherTemperatureReachedAtHhc(QueryWhetherTemperatureReachedAtHhcRequest) returns (QueryWhetherTemperatureReachedAtHhcResponse);
+  rpc StopTemperatureControlAtHhc(StopTemperatureControlAtHhcRequest) returns (StopTemperatureControlAtHhcResponse);
+
+  // --- Firmware ---
+  rpc RequestFirmwareVersion(RequestFirmwareVersionRequest) returns (RequestFirmwareVersionResponse);
+  rpc RequestErrorCode(RequestErrorCodeRequest) returns (RequestErrorCodeResponse);
+  rpc RequestDeviceSerialNumber(RequestDeviceSerialNumberRequest) returns (RequestDeviceSerialNumberResponse);
+  rpc RequestMasterStatus(RequestMasterStatusRequest) returns (RequestMasterStatusResponse);
+
+  // --- Configuration ---
+  rpc SetSingleStepMode(SetSingleStepModeRequest) returns (SetSingleStepModeResponse);
+  rpc TriggerNextStep(TriggerNextStepRequest) returns (TriggerNextStepResponse);
+  rpc Halt(HaltRequest) returns (HaltResponse);
+  rpc SaveAllCycleCounters(SaveAllCycleCountersRequest) returns (SaveAllCycleCountersResponse);
+  rpc SetNotStop(SetNotStopRequest) returns (SetNotStopResponse);
+  rpc ConfigureNodeNames(ConfigureNodeNamesRequest) returns (ConfigureNodeNamesResponse);
+  rpc SetDeckData(SetDeckDataRequest) returns (SetDeckDataResponse);
+
+  // --- X-arm ---
+  rpc PositionLeftXArm(PositionLeftXArmRequest) returns (PositionLeftXArmResponse);
+  rpc PositionRightXArm(PositionRightXArmRequest) returns (PositionRightXArmResponse);
+  rpc MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPosition(MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest) returns (MoveLeftXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse);
+  rpc MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPosition(MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionRequest) returns (MoveRightXArmToPositionWithAllAttachedComponentsInZSafetyPositionResponse);
+  rpc RequestLeftXArmPosition(RequestLeftXArmPositionRequest) returns (RequestLeftXArmPositionResponse);
+  rpc RequestRightXArmPosition(RequestRightXArmPositionRequest) returns (RequestRightXArmPositionResponse);
+  rpc RequestRightXArmLastCollisionType(RequestRightXArmLastCollisionTypeRequest) returns (RequestRightXArmLastCollisionTypeResponse);
+
+  // --- Pump ---
+  rpc RequestPumpSettings(RequestPumpSettingsRequest) returns (RequestPumpSettingsResponse);
+  rpc InitializeDualPumpStationValves(InitializeDualPumpStationValvesRequest) returns (InitializeDualPumpStationValvesResponse);
+  rpc DrainDualChamberSystem(DrainDualChamberSystemRequest) returns (DrainDualChamberSystemResponse);
+
+  // --- Special ---
+  rpc ViolentlyShootDownTip(ViolentlyShootDownTipRequest) returns (ViolentlyShootDownTipResponse);
+  rpc CanPickUpTip(CanPickUpTipRequest) returns (CanPickUpTipResponse);
+}
