@@ -1,12 +1,6 @@
 import warnings
 from typing import Optional
 
-from pylabrobot.resources.height_volume_functions import (
-  compute_height_from_volume_conical_frustum,
-  compute_height_from_volume_cylinder,
-  compute_volume_from_height_conical_frustum,
-  compute_volume_from_height_cylinder,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -27,6 +21,13 @@ def celltreat_6_wellplate_16300uL_Fb_lid(name: str) -> Lid:
   )
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_celltreat_6_wellplate_16300uL_Fb_height_volume_data = {
+  0.0: 0.0,
+  17.2: 16643.756802,
+}
+
+
 def celltreat_6_wellplate_16300uL_Fb(name: str, lid: Optional[Lid] = None) -> Plate:
   """
   CellTreat cat. no.: 229105
@@ -35,20 +36,13 @@ def celltreat_6_wellplate_16300uL_Fb(name: str, lid: Optional[Lid] = None) -> Pl
 
   https://www.celltreat.com/wp-content/uploads/6-Well-Plate.pdf
   """
-  UPPER_WELL_RADIUS = 17.75  # from plate specs/drawing
-  LOWER_WELL_RADIUS = 17.35  # from plate specs/drawing
 
   well_kwargs = {
     "size_x": 34.7,  # from plate specs/drawing
     "size_y": 34.7,  # from plate specs/drawing
     "size_z": 17.2,  # from plate specs/drawing
     "bottom_type": WellBottomType.FLAT,
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_conical_frustum(
-      liquid_height, LOWER_WELL_RADIUS, UPPER_WELL_RADIUS
-    ),
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_conical_frustum(
-      liquid_volume, LOWER_WELL_RADIUS, UPPER_WELL_RADIUS
-    ),
+    "height_volume_data": _celltreat_6_wellplate_16300uL_Fb_height_volume_data,
     "max_volume": 16300,  # from spec
   }
 
@@ -154,6 +148,13 @@ def celltreat_24_wellplate_3300uL_Fb(name: str, with_lid: bool = False) -> Plate
   )
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_celltreat_96_wellplate_350uL_Ub_height_volume_data = {
+  0.0: 0.0,
+  8.49: 268.871656,
+}
+
+
 def celltreat_96_wellplate_350uL_Ub(name: str, with_lid: bool = False) -> Plate:
   """
   CellTreat cat. no.: 229591
@@ -166,19 +167,12 @@ def celltreat_96_wellplate_350uL_Ub(name: str, with_lid: bool = False) -> Plate:
   # WELL_UBOTTOM_HEIGHT = 2.81 # absolute height of cylindrical segment, measured
   # WELL_DIAMETER = 6.69 # measured
 
-  WELL_RADIUS = 3.175
-
   well_kwargs = {
     "size_x": 6.35,
     "size_y": 6.35,
     "size_z": 10.04,
     "bottom_type": WellBottomType.U,
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_cylinder(
-      liquid_height, WELL_RADIUS
-    ),
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_cylinder(
-      liquid_volume, WELL_RADIUS
-    ),
+    "height_volume_data": _celltreat_96_wellplate_350uL_Ub_height_volume_data,
     "material_z_thickness": 1.55,
     "cross_section_type": CrossSectionType.CIRCLE,
     "max_volume": 300,

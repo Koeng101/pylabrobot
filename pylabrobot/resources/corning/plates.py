@@ -2,10 +2,6 @@
 
 import warnings
 
-from pylabrobot.resources.height_volume_functions import (
-  calculate_liquid_height_in_container_2segments_square_vbottom,
-  calculate_liquid_volume_container_2segments_square_vbottom,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -98,6 +94,44 @@ def cor_96_wellplate_360uL_Fb_lid(name: str) -> Lid:
 # # # # # # # # # # cor_96_wellplate_2mL_Vb # # # # # # # # # #
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_96_wellplate_2mL_Vb_height_volume_data = {
+  0.0: 0.0,
+  0.02: 1e-05,
+  0.06: 0.000274,
+  0.12: 0.00219,
+  0.2: 0.01014,
+  0.3: 0.034222,
+  0.42: 0.093907,
+  0.56: 0.222593,
+  0.72: 0.473092,
+  0.9: 0.924007,
+  1.1: 1.687043,
+  1.3: 2.784697,
+  1.49: 4.192825,
+  1.67: 5.903334,
+  1.84: 7.895896,
+  2.0: 10.14,
+  2.15: 12.59689,
+  2.3: 15.421672,
+  2.44: 18.412699,
+  2.58: 21.767426,
+  2.72: 25.506724,
+  2.85: 29.341516,
+  2.98: 33.542603,
+  3.11: 38.126693,
+  3.23: 42.712553,
+  3.35: 47.652138,
+  3.47: 52.958587,
+  3.59: 58.645044,
+  3.71: 64.724648,
+  3.82: 70.654212,
+  3.93: 76.935294,
+  4.12: 88.4208,
+  40.75: 2316.99,
+}
+
+
 def cor_96_wellplate_2mL_Vb(name: str) -> Plate:
   """
   Corning cat. no.: 3960
@@ -133,38 +167,10 @@ def cor_96_wellplate_2mL_Vb(name: str) -> Plate:
       bottom_type=WellBottomType.V,
       material_z_thickness=1.25,
       cross_section_type=CrossSectionType.RECTANGLE,
-      compute_volume_from_height=_compute_volume_from_height_Cor_96_wellplate_2mL_Vb,
-      compute_height_from_volume=_compute_height_from_volume_Cor_96_wellplate_2mL_Vb,
+      height_volume_data=_cor_96_wellplate_2mL_Vb_height_volume_data,
+      max_volume=2393.04,
       name_prefix=name,
     ),
-  )
-
-
-# Volume-height functions
-def _compute_volume_from_height_Cor_96_wellplate_2mL_Vb(
-  h: float,
-) -> float:
-  if h > 44.1:  # 5% tolerance
-    raise ValueError(f"Height {h} is too large for Cor_96_wellplate_2mL_Vb")
-  return calculate_liquid_volume_container_2segments_square_vbottom(
-    x=7.8, y=7.8, h_pyramid=4.0, h_cube=38.0, liquid_height=h
-  )
-
-
-def _compute_height_from_volume_Cor_96_wellplate_2mL_Vb(
-  liquid_volume: float,
-):
-  if liquid_volume > 2_100:  # 5% tolerance
-    raise ValueError(f"Volume {liquid_volume} is too large for Cor_96_wellplate_2mL_Vb")
-  return round(
-    calculate_liquid_height_in_container_2segments_square_vbottom(
-      x=7.8,
-      y=7.8,
-      h_pyramid=4.0,
-      h_cube=38.0,
-      liquid_volume=liquid_volume,
-    ),
-    3,
   )
 
 

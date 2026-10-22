@@ -1,9 +1,5 @@
 # https://cell-nest.oss-cn-zhangjiakou.aliyuncs.com/Resource/File/2022/11/24/NEST%20Reservoir.pdf
 
-from pylabrobot.resources.height_volume_functions import (
-  compute_height_from_volume_rectangle,
-  compute_volume_from_height_rectangle,
-)
 from pylabrobot.resources.plate import Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -11,6 +7,13 @@ from pylabrobot.resources.well import (
   Well,
   WellBottomType,
 )
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_nest_1_troughplate_195000uL_Vb_height_volume_data = {
+  0.0: 0.0,
+  25.85: 201009.6,
+}
 
 
 def nest_1_troughplate_195000uL_Vb(name: str) -> Plate:
@@ -23,12 +26,8 @@ def nest_1_troughplate_195000uL_Vb(name: str) -> Plate:
     "size_z": 26.85,  # from datasheet
     "bottom_type": WellBottomType.V,
     # an approximation: the trapezoid at the bottom is not fully defined in the datasheet
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_rectangle(
-      liquid_volume=liquid_volume, well_length=well_size_x, well_width=well_size_y
-    ),
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_rectangle(
-      liquid_height=liquid_height, well_length=well_size_x, well_width=well_size_y
-    ),
+    "height_volume_data": _nest_1_troughplate_195000uL_Vb_height_volume_data,
+    "max_volume": 208785.6,
     "material_z_thickness": 31.4 - 26.85 - 3.55,  # from datasheet
   }
 
@@ -54,6 +53,13 @@ def nest_1_troughplate_195000uL_Vb(name: str) -> Plate:
   )
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_nest_1_troughplate_185000uL_Vb_height_volume_data = {
+  0.0: 0.0,
+  25.85: 201009.6,
+}
+
+
 def nest_1_troughplate_185000uL_Vb(name: str) -> Plate:
   """NEST single-trough reagent reservoir plate, 185 mL, V-bottom (ANSI/SLAS footprint).
 
@@ -72,12 +78,7 @@ def nest_1_troughplate_185000uL_Vb(name: str) -> Plate:
     "bottom_type": WellBottomType.V,
     "cross_section_type": CrossSectionType.RECTANGLE,
     # an approximation: the trapezoid at the bottom is not fully defined in the datasheet
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_rectangle(
-      liquid_volume=liquid_volume, well_length=well_size_x, well_width=well_size_y
-    ),
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_rectangle(
-      liquid_height=liquid_height, well_length=well_size_x, well_width=well_size_y
-    ),
+    "height_volume_data": _nest_1_troughplate_185000uL_Vb_height_volume_data,
     "material_z_thickness": 31.4 - 26.85 - 3.55,  # from datasheet
   }
 
@@ -103,6 +104,13 @@ def nest_1_troughplate_185000uL_Vb(name: str) -> Plate:
   )
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_nest_8_troughplate_22000uL_Vb_height_volume_data = {
+  0.0: 0.0,
+  25.85: 22786.775,
+}
+
+
 def nest_8_troughplate_22000uL_Vb(name: str) -> Plate:
   """NEST 8-trough reagent reservoir plate, 22 mL, V-bottom (ANSI/SLAS footprint).
 
@@ -119,12 +127,7 @@ def nest_8_troughplate_22000uL_Vb(name: str) -> Plate:
     "bottom_type": WellBottomType.V,
     "cross_section_type": CrossSectionType.RECTANGLE,
     # an approximation: the trapezoid at the bottom is not fully defined in the datasheet
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_rectangle(
-      liquid_volume=liquid_volume, well_length=well_size_x, well_width=well_size_y
-    ),
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_rectangle(
-      liquid_height=liquid_height, well_length=well_size_x, well_width=well_size_y
-    ),
+    "height_volume_data": _nest_8_troughplate_22000uL_Vb_height_volume_data,
     "material_z_thickness": 31.4 - 26.85 - 3.55,  # from datasheet
   }
 
@@ -150,6 +153,13 @@ def nest_8_troughplate_22000uL_Vb(name: str) -> Plate:
   )
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_nest_12_troughplate_15000uL_Vb_height_volume_data = {
+  0.0: 0.0,
+  25.85: 15092.264,
+}
+
+
 def nest_12_troughplate_15000uL_Vb(name: str) -> Plate:
   """NEST 12-trough reagent reservoir plate, 15 mL, V-bottom (ANSI/SLAS footprint).
 
@@ -164,12 +174,7 @@ def nest_12_troughplate_15000uL_Vb(name: str) -> Plate:
     "bottom_type": WellBottomType.V,
     "cross_section_type": CrossSectionType.RECTANGLE,
     # an approximation: the trapezoid at the bottom is not fully defined in the datasheet
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_rectangle(
-      liquid_volume=liquid_volume, well_length=well_size_x, well_width=well_size_y
-    ),
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_rectangle(
-      liquid_height=liquid_height, well_length=well_size_x, well_width=well_size_y
-    ),
+    "height_volume_data": _nest_12_troughplate_15000uL_Vb_height_volume_data,
     "material_z_thickness": 31.4 - 26.85 - 3.55,  # from datasheet
   }
 

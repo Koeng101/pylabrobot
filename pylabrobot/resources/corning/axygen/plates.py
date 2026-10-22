@@ -1,9 +1,6 @@
 import warnings
 from typing import Optional
 
-from pylabrobot.resources.height_volume_functions import (
-  calculate_liquid_volume_container_2segments_square_vbottom,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -13,6 +10,78 @@ from pylabrobot.resources.well import (
 )
 
 # # # # # # # # # # cor_axy_24_wellplate_10mL_Vb # # # # # # # # # #
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_axy_24_wellplate_10mL_Vb_height_volume_data = {
+  0.0: 0.0,
+  0.02: 3.1e-05,
+  0.06: 0.000832,
+  0.12: 0.006659,
+  0.2: 0.030827,
+  0.3: 0.10404,
+  0.42: 0.285486,
+  0.56: 0.676707,
+  0.72: 1.438249,
+  0.86: 2.450936,
+  0.99: 3.738885,
+  1.11: 5.269938,
+  1.23: 7.170541,
+  1.34: 9.271521,
+  1.45: 11.747368,
+  1.55: 14.349332,
+  1.65: 17.309655,
+  1.75: 20.651458,
+  1.84: 24.004355,
+  1.93: 27.701833,
+  2.02: 31.760745,
+  2.11: 36.197947,
+  2.2: 41.030293,
+  2.28: 45.671063,
+  2.36: 50.6492,
+  2.44: 55.976541,
+  2.52: 61.664924,
+  2.6: 67.726187,
+  2.68: 74.172166,
+  2.75: 80.137292,
+  2.82: 86.413959,
+  2.89: 93.010099,
+  2.96: 99.933641,
+  3.03: 107.192516,
+  3.1: 114.794653,
+  3.17: 122.747983,
+  3.24: 131.060436,
+  3.31: 139.739943,
+  3.38: 148.794432,
+  3.45: 158.231835,
+  3.52: 168.060081,
+  3.59: 178.287102,
+  3.65: 187.376522,
+  3.71: 196.769738,
+  3.77: 206.471746,
+  3.83: 216.487538,
+  3.89: 226.822109,
+  3.95: 237.480452,
+  4.01: 248.467561,
+  4.07: 259.788431,
+  4.13: 271.448055,
+  4.19: 283.451427,
+  4.25: 295.803542,
+  4.31: 308.509392,
+  4.37: 321.573972,
+  4.43: 335.002276,
+  4.49: 348.799298,
+  4.55: 362.970032,
+  4.61: 377.519471,
+  4.67: 392.452609,
+  4.73: 407.774442,
+  4.79: 423.489961,
+  4.84: 436.890563,
+  4.89: 450.570918,
+  4.94: 464.533914,
+  4.99: 478.782443,
+  40.54: 10752.726667,
+}
 
 
 def cor_axy_24_wellplate_10mL_Vb(name: str) -> Plate:
@@ -46,18 +115,11 @@ def cor_axy_24_wellplate_10mL_Vb(name: str) -> Plate:
       size_z=42,
       material_z_thickness=1.46,
       bottom_type=WellBottomType.V,
-      compute_volume_from_height=_compute_volume_from_height_Cor_Axy_24_wellplate_10mL_Vb,
+      height_volume_data=_cor_axy_24_wellplate_10mL_Vb_height_volume_data,
+      max_volume=11174.6667,
       cross_section_type=CrossSectionType.RECTANGLE,
       name_prefix=name,
     ),
-  )
-
-
-def _compute_volume_from_height_Cor_Axy_24_wellplate_10mL_Vb(h: float):
-  if h > 42.1:
-    raise ValueError(f"Height {h} is too large for Cos_96_Vb")
-  return calculate_liquid_volume_container_2segments_square_vbottom(
-    x=17, y=17, h_pyramid=5, h_cube=37, liquid_height=h
   )
 
 
