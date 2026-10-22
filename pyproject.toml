@@ -9,7 +9,12 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 dynamic = ["version"]
-dependencies = ["typing_extensions", "websockets>=14"]
+dependencies = [
+  "typing_extensions",
+  "websockets>=14",
+  "protobuf==7.36.2",
+  "connectrpc==0.12.1",
+]
 
 [project.scripts]
 plr = "pylabrobot.cli:main"
@@ -28,6 +33,7 @@ rpc = ["grpcio==1.84.0", "protobuf==7.36.2"]
 rpc-dev = [
   "PyLabRobot[rpc,test]",
   "grpcio-tools==1.84.0",
+  "protoc-gen-connectrpc==0.12.1",
   "mypy-protobuf==5.1.0",
   "types-grpcio",
   "types-protobuf",
@@ -70,6 +76,7 @@ exclude = ["*.__pycache__"]
 [tool.setuptools.package-data]
 "pylabrobot.revvity.celigo.grpc.v1" = ["*.proto", "*.pyi"]
 "pylabrobot.rpc.v1" = ["*.proto", "*.pyi"]
+"pylabrobot.resources.store.v1" = ["*.proto", "*.pyi"]
 "*" = [
   "*.css",
   "*.csv",
@@ -101,6 +108,9 @@ extend-exclude = [
   "pylabrobot/revvity/celigo/grpc/v1/*_pb2.pyi",
   "pylabrobot/revvity/celigo/grpc/v1/*_pb2_grpc.py",
   "pylabrobot/revvity/celigo/grpc/v1/*_pb2_grpc.pyi",
+  "pylabrobot/resources/store/v1/*_pb2.py",
+  "pylabrobot/resources/store/v1/*_pb2.pyi",
+  "pylabrobot/resources/store/v1/*_connect.py",
 ]
 
 [tool.ruff.lint.per-file-ignores]
