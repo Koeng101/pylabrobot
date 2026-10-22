@@ -398,15 +398,15 @@ def load() -> Dict[str, Any]:
 # -- checking the store's geometry against them --------------------------------------------------
 
 
-def _close(a: float, b: float) -> bool:
+def close(a: float, b: float) -> bool:
   return math.isclose(a, b, rel_tol=0, abs_tol=TOLERANCE)
 
 
-def _close_vec(ours: Any, expected: Dict[str, float]) -> bool:
-  return all(_close(o, expected.get(axis, 0.0)) for o, axis in zip(ours, "xyz"))
+def close_vec(ours: Any, expected: Dict[str, float]) -> bool:
+  return all(close(o, expected.get(axis, 0.0)) for o, axis in zip(ours, "xyz"))
 
 
-def _close_angles(ours: Rotation, expected: Dict[str, float]) -> bool:
+def close_angles(ours: Rotation, expected: Dict[str, float]) -> bool:
   def wrap(angle: float) -> float:
     return (angle + 180) % 360 - 180
 
@@ -451,7 +451,7 @@ def check_case(case: Dict[str, Any]) -> List[str]:
         entry,
         "location",
         lambda: g.location_wrt(node, in_frame, x, y, z, placements),
-        _close_vec,
+        close_vec,
       )
     else:
       expect(
@@ -459,20 +459,20 @@ def check_case(case: Dict[str, Any]) -> List[str]:
         entry,
         "location",
         lambda: g.absolute_location(node, x, y, z, placements),
-        _close_vec,
+        close_vec,
       )
 
   for entry in case["resources"]:
     node = nodes[entry["resource"]]
     checks: List[Tuple[str, Any, Callable[[Any, Any], bool]]] = [
-      ("size", g.size(node), _close_vec),
-      ("absoluteSize", g.absolute_size(node), _close_vec),
-      ("absoluteRotation", g.absolute_rotation(node), _close_angles),
-      ("rotationInFrame", g.rotation_wrt(node, frame), _close_angles),
-      ("center", g.center(node), _close_vec),
+      ("size", g.size(node), close_vec),
+      ("absoluteSize", g.absolute_size(node), close_vec),
+      ("absoluteRotation", g.absolute_rotation(node), close_angles),
+      ("rotationInFrame", g.rotation_wrt(node, frame), close_angles),
+      ("center", g.center(node), close_vec),
     ]
     if "highestPoint" in entry:
-      checks.append(("highestPoint", g.highest_point(node, placements), _close))
+      checks.append(("highestPoint", g.highest_point(node, placements), close))
     for key, ours, same in checks:
       if not same(ours, entry[key]):
         wrong.append(f"{node.name} {key}: {ours} != {entry[key]}")
@@ -485,7 +485,7 @@ def check_case(case: Dict[str, Any]) -> List[str]:
         entry,
         "result",
         lambda: g.volume_from_height(node, entry["height"]),
-        _close,
+        close,
       )
     else:
       expect(
@@ -493,7 +493,7 @@ def check_case(case: Dict[str, Any]) -> List[str]:
         entry,
         "result",
         lambda: g.height_from_volume(node, entry["volume"]),
-        _close,
+        close,
       )
 
   for entry in case["seats"]:
@@ -503,7 +503,7 @@ def check_case(case: Dict[str, Any]) -> List[str]:
       entry,
       "location",
       lambda: _seat(parent, child),
-      _close_vec,
+      close_vec,
     )
 
   for entry in case["turns"]:
@@ -520,9 +520,9 @@ def check_case(case: Dict[str, Any]) -> List[str]:
       location = g.pivoted_location(
         node, rotation, Coordinate(pivot.get("x", 0), pivot.get("y", 0), pivot.get("z", 0))
       )
-    if not _close_angles(rotation, entry["rotation"]):
+    if not close_angles(rotation, entry["rotation"]):
       wrong.append(f"{node.name} turned: {rotation} != {entry['rotation']}")
-    if location is None or not _close_vec(location, entry["location"]):
+    if location is None or not close_vec(location, entry["location"]):
       wrong.append(f"{node.name} turned to {location}, expected {entry['location']}")
 
   for entry in case["jaws"]:
@@ -530,7 +530,7 @@ def check_case(case: Dict[str, Any]) -> List[str]:
 
     def standing(moved: List[Tuple[Node, Coordinate]], expected: List[Dict[str, Any]]) -> bool:
       return len(moved) == len(expected) and all(
-        part.name == want["resource"] and _close_vec(location, want["location"])
+        part.name == want["resource"] and close_vec(location, want["location"])
         for (part, location), want in zip(moved, expected)
       )
 
@@ -554,7 +554,7 @@ def check_case(case: Dict[str, Any]) -> List[str]:
       entry,
       "location",
       lambda: g.place_location(node, destination, frame, entry["rotationAppliedByMove"]),
-      _close_vec,
+      close_vec,
     )
 
   for entry in case["grips"]:
@@ -565,12 +565,12 @@ def check_case(case: Dict[str, Any]) -> List[str]:
       entry,
       "gripHeight",
       lambda: g.grip_height(node, top, bottom),
-      _close,
+      close,
     )
     if not entry.get("refused"):
       height = g.grip_height(node, top, bottom)
       location = g.grip_location(node, g.location_wrt(node, frame), frame, height)
-      if not _close_vec(location, entry["gripLocation"]):
+      if not close_vec(location, entry["gripLocation"]):
         wrong.append(f"{node.name} grip at {location}, expected {entry['gripLocation']}")
 
   for entry in case["occupancy"]:
@@ -581,7 +581,7 @@ def check_case(case: Dict[str, Any]) -> List[str]:
 
   for entry in case.get("tracks", []):
     location = g.track_location(frame, entry["track"])
-    if not _close_vec(location, entry["location"]):
+    if not close_vec(location, entry["location"]):
       wrong.append(f"track {entry['track']}: {location} != {entry['location']}")
   return wrong
 

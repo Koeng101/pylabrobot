@@ -231,7 +231,7 @@ message ListRootsResponse {
 message GeometryQuery {
   ResourceRef resource = 1;
   // Locations and rotations are along this resource's axes, from its left front bottom corner.
-  // Unset is the resource's root.
+  // Unset: absolute, as `get_absolute_location` has them - along the axes a root is turned in.
   optional ResourceRef frame = 2;
   // Each anchor is answered as one location; none answers the left front bottom corner.
   repeated Anchor anchors = 3;
@@ -386,6 +386,7 @@ message Placement {
   Rotation rotation_in_frame = 7;
   // Containers: no-go zones, height-volume data, material thickness.
   optional ContainerSpec container = 8;
+  // What it holds as it stood before this request's own changes.
   optional VolumeState volume = 9;
 }
 
