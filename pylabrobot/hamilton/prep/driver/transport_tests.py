@@ -21,7 +21,6 @@ from pylabrobot.hamilton.transport.tcp.tcp import HamiltonTCPClient
 from pylabrobot.hamilton.transport.tcp.tests.tcp_tests import _MemorySocket, _response, _SessionTest
 from pylabrobot.hamilton.transport.tcp.wire_types import F32, Str
 from pylabrobot.legacy.liquid_handling.errors import ChannelizedError
-from pylabrobot.resources.hamilton import PrepDeck
 
 
 class TestPrepTransport(_SessionTest):
@@ -42,7 +41,7 @@ class TestPrepTransport(_SessionTest):
 
   def make_driver(self) -> tuple[PrepDriver, _MemorySocket]:
     """Provide a Prep driver using the production reader and transaction code."""
-    driver = PrepDriver(deck=PrepDeck(), host="memory-only", port=0)
+    driver = PrepDriver(host="memory-only", port=0)
     io = self.start_session(driver, Address(1, 1, 257))
     self.addAsyncCleanup(driver.io.stop)
     return driver, io
@@ -128,7 +127,7 @@ class TestPrepTransport(_SessionTest):
 
   async def test_prep_session_logs_each_request_and_its_answer(self):
     """The request, the object it went to, and the decoded answer or the firmware error, at DEBUG level."""
-    driver = PrepDriver(deck=PrepDeck(), host="memory-only", port=0)
+    driver = PrepDriver(host="memory-only", port=0)
     io = self.start_session(driver, Address(1, 1, 257), session_type=_PrepTCPSession)
     self.addAsyncCleanup(driver.io.stop)
     answers = [
@@ -158,7 +157,7 @@ class TestPrepTransport(_SessionTest):
 
   async def test_prep_session_logs_probe_answers_as_values(self):
     """A probe by ids decodes nothing itself: its answer is logged as values, structures opened, not as bytes."""
-    driver = PrepDriver(deck=PrepDeck(), host="memory-only", port=0)
+    driver = PrepDriver(host="memory-only", port=0)
     address = Address(1, 1, 257)
     io = self.start_session(driver, address, session_type=_PrepTCPSession)
     self.addAsyncCleanup(driver.io.stop)
@@ -282,7 +281,7 @@ class TestPrepTransport(_SessionTest):
     self.assertEqual(client.io.connection_info.state, SessionState.CLOSED)
 
   async def test_simulation_decodes_queries_and_invalidates_retained_discovery(self):
-    client = PrepSimulationDriver(deck=PrepDeck())
+    client = PrepSimulationDriver()
     await client._open()
     self.addAsyncCleanup(client._close)
     intro = client.io.introspection

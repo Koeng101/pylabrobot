@@ -17,10 +17,20 @@ from pylabrobot.hamilton.prep.driver.simulator import (
   RECORDING_PREP_HEATER_SHAKER,
 )
 from pylabrobot.hamilton.transport.tcp.hoi_error import HoiError
-from pylabrobot.resources import Coordinate, Resource
-from pylabrobot.resources.hamilton import PrepDeck, hamilton_96_tiprack_50uL_NTR
-from pylabrobot.resources.rotation import Rotation
-from pylabrobot.resources.trash import Trash
+from pylabrobot.hamilton.prep.driver.test_helpers import make_prep_deck, parts_of
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.tree import to_coordinate
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+
+
+async def _tree(root: handles.Resource) -> list:
+  """Every resource from `root` down, as the store holds it."""
+  response = await root.store.commands.get_resources(
+    spb.GetResourcesRequest(resources=[root.ref], depth=-1)
+  )
+  return list(response.nodes)
 
 
 def test_firmware_tree_is_selectable():
@@ -28,7 +38,6 @@ def test_firmware_tree_is_selectable():
 
   async def _run() -> None:
     v1 = PrepSimulationDriver(
-      deck=PrepDeck(),
       declared_configuration_json=RECORDING_PREP,
       firmware_tree_json=FIRMWARE_TREE_V1_2_2,
     )
@@ -37,7 +46,7 @@ def test_firmware_tree_is_selectable():
       await v1.is_parked()
     await v1.stop()
 
-    v3 = PrepSimulationDriver(deck=PrepDeck(), firmware_tree_json=FIRMWARE_TREE_V3_0_20)
+    v3 = PrepSimulationDriver(firmware_tree_json=FIRMWARE_TREE_V3_0_20)
     await v3.setup()
     assert await v3.is_parked() is False
     await v3.stop()
@@ -49,7 +58,7 @@ def test_a_read_nothing_answers_is_refused():
   """A read the simulator does not answer comes back as a firmware exception, not a made-up value."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     await p.setup()
     with pytest.raises(HoiError):
       await p.request_bootloader_version()
@@ -62,11 +71,11 @@ def test_moves_update_the_model_and_reads_answer_from_it():
   """A move puts the channel where it was sent in the resource model, and a read finds it there."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     await p.pipettes.move_to_location(Coordinate(150.0, 360.0, 160.0), use_channels=0)
-    point = p.pipettes.get_reference_point_location(0)
+    point = await p.pipettes.get_reference_point_location(0)
     assert point is not None
     assert (point.x, point.y, point.z) == pytest.approx((150.0, 360.0, 160.0))
     locations = await p.pipettes.request_locations()
@@ -81,7 +90,7 @@ def test_initializes_once_when_switched_on():
   """A device switched on reports itself uninitialized until MLPrep.Initialize has run."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     sent: list = []
     send = p.send_command
 
@@ -102,7 +111,7 @@ def test_set_door_state_override_sends_the_given_state():
   """The override is built at MLPrepDebug's OverrideDoorState and sent with the given state."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     await p.setup()
     sent: list = []
     send = p.send_command
@@ -131,25 +140,34 @@ def test_setup_places_the_teaching_needle_and_waste_positions_where_the_device_r
   """The deck's defaults give way to the device's deck and waste sites at setup."""
 
   async def _run() -> None:
-    deck = PrepDeck(name_prefix=name_prefix)
-    needle = deck.teaching_needle_spot
-    waste = deck.waste_positions["waste_front"]
-    assert needle is not None and needle.location is not None
-    height = needle.location.z
-    needle.location = Coordinate(0.0, 0.0, height)
-    waste.location = Coordinate(0.0, 0.0, 0.0)
+    deck = await make_prep_deck(name_prefix=name_prefix)
+    parts = await parts_of(deck)
+    needle = parts.teaching_needle_spot
+    waste = parts.waste_positions["waste_front"]
+    assert needle is not None
+    at = await needle.get_location()
+    assert at is not None
+    height = at.z
+    block = await needle.get_parent()
+    assert block is not None
+    await block.assign_child_resource(needle, location=Coordinate(0.0, 0.0, height), index=1)
+    await deck.assign_child_resource(waste, location=Coordinate(0.0, 0.0, 0.0))
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     recorded = read_configuration(RECORDING_PREP_HEATER_SHAKER)["device"]
     site = next(s for s in recorded.deck_sites if (s.length, s.width) == (6.0, 6.0))
-    placed = needle.get_location_wrt(deck)
-    assert (placed.x, placed.y, needle.location.z) == pytest.approx(
+    placed = await needle.get_location_wrt(deck)
+    location = await needle.get_location()
+    assert location is not None
+    assert (placed.x, placed.y, location.z) == pytest.approx(
       (site.left_bottom_front_x, site.left_bottom_front_y, height)
     )
     front = next(
       s for s in recorded.waste_sites if s.index == int(PrepCmd.ChannelIndex.FrontChannel)
     )
-    assert (waste.location.x, waste.location.y, waste.location.z) == pytest.approx(
+    waste_at = await waste.get_location()
+    assert waste_at is not None
+    assert (waste_at.x, waste_at.y, waste_at.z) == pytest.approx(
       (front.x_position, front.y_position, front.z_position)
     )
     await p.stop()
@@ -159,7 +177,7 @@ def test_setup_places_the_teaching_needle_and_waste_positions_where_the_device_r
 
 def test_head8_recording_has_a_head8():
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck(), declared_configuration_json=RECORDING_PREP_HEAD8)
+    p = PrepSimulationDriver(declared_configuration_json=RECORDING_PREP_HEAD8)
     await p.setup()
     assert p.head8 is not None
     assert p.format_setup_summary().endswith("8-channel head: installed")
@@ -185,16 +203,23 @@ def test_a_turned_prep_puts_its_parts_where_an_upright_one_does():
   """A Prep turned in the room sets up as one standing square."""
 
   async def _placed(rotation: float):
-    room = Resource(name="room", size_x=9000, size_y=9000, size_z=3000)
-    room.location = Coordinate.zero()
-    prep = Prep(simulation=True, name="prep")
-    prep.rotation = Rotation(z=rotation)
-    room.assign_child_resource(prep, location=Coordinate(4000, 4000, 0))
+    store = ResourceStore.in_memory()
+    room = await store.create(build.resource("room", Coordinate(9000, 9000, 3000)), name="room")
+    prep = Prep(simulation=True, name="prep", store=store)
+    await prep.create_resources()
+    assert prep.body is not None
+    await room.assign_child_resource(prep.body, location=Coordinate(4000, 4000, 0))
+    await prep.body.rotate(z=rotation)
     await prep.setup()
     placed = {
-      r.name: (*r.location.vector(), r.get_size_x(), r.get_size_y(), r.get_size_z())
-      for r in prep.get_all_children()
-      if r.location
+      n.attributes.name: (
+        *to_coordinate(n.attributes.location).vector(),
+        n.attributes.size.x,
+        n.attributes.size.y,
+        n.attributes.size.z,
+      )
+      for n in (await _tree(prep.body))[1:]
+      if n.attributes.HasField("location")
     }
     await prep.stop()
     return placed
@@ -214,14 +239,14 @@ def test_the_arm_reference_line_spans_the_channels_combined_y_ranges():
   """The arm declares the Y its channels reach between them, from its own front edge."""
 
   async def _run() -> None:
-    deck = PrepDeck()
+    deck = await make_prep_deck()
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
-    arm = deck.get_resource(deck.get_component_name("x_arm"))
-    front = arm.get_location_wrt(deck).y
+    arm = await deck.get_resource(p.get_component_name("x_arm"))
+    front = (await arm.get_location_wrt(deck)).y
     ranges = [c.y_range for c in p.pipettes.configuration.channels if c.y_range is not None]
-    low, high = arm.reference_point["y_range"]  # type: ignore[attr-defined]
+    low, high = (await arm.get_metadata())["reference_point"]["y_range"]
     assert (low + front, high + front) == pytest.approx(
       (min(r[0] for r in ranges), max(r[1] for r in ranges))
     )
@@ -247,7 +272,7 @@ def test_a_simulation_that_keeps_time_waits_as_long_as_the_device_would_take(mon
   async def _run(keep_time: bool) -> None:
     # At the device's own time, so the waits below can be checked against it. The default is a
     # quarter of it, checked once at the end.
-    p = PrepSimulationDriver(deck=PrepDeck(), simulate_motion_time=keep_time, motion_time_scale=1.0)
+    p = PrepSimulationDriver(simulate_motion_time=keep_time, motion_time_scale=1.0)
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     waited.clear()
@@ -266,7 +291,7 @@ def test_a_simulation_that_keeps_time_waits_as_long_as_the_device_would_take(mon
 
   async def _default_scale() -> float:
     # Built inside a loop, as every driver here is: on Python 3.9 the driver needs a current one.
-    return PrepSimulationDriver(deck=PrepDeck(), simulate_motion_time=True).motion_time_scale
+    return PrepSimulationDriver(simulate_motion_time=True).motion_time_scale
 
   asyncio.run(_run(False))
   asyncio.run(_run(True))
@@ -277,23 +302,27 @@ def test_named_preps_share_a_resource_tree_and_reuse_their_components():
   """Each device owns distinct names, including resources created during repeated setup."""
 
   async def _run() -> None:
-    bench = Resource(name="bench", size_x=2000, size_y=1000, size_z=1000)
+    store = ResourceStore.in_memory()
+    bench = await store.create(build.resource("bench", Coordinate(2000, 1000, 1000)), name="bench")
     for index, name in enumerate(("prep_a", "prep_b")):
-      prep = Prep(name=name, simulation=True)
+      prep = Prep(name=name, simulation=True, store=store)
+      await prep.create_resources()
+      assert prep.body is not None
       assert prep.deck.name == f"{name}_deck"
-      assert all(child.name.startswith(f"{name}_") for child in prep.get_all_children())
-      bench.assign_child_resource(prep, location=Coordinate(index * 600, 0, 0))
+      assert all(n.attributes.name.startswith(f"{name}_") for n in (await _tree(prep.body))[1:])
+      await bench.assign_child_resource(prep.body, location=Coordinate(index * 600, 0, 0))
       await prep.setup()
       assert prep.x_arm is not None and prep.x_arm.resource is not None
       assert prep.pipettes is not None
       assert prep.x_arm.resource.name == f"{name}_x_arm"
       assert prep.pipettes.resources[0].name == f"{name}_pipette_channel_0"
-      components = prep.get_all_children()
-      assert all(child.name.startswith(f"{name}_") for child in components)
-      assert all(bench.get_resource(child.name) is child for child in components)
+      components = (await _tree(prep.body))[1:]
+      assert all(n.attributes.name.startswith(f"{name}_") for n in components)
+      for n in components:
+        assert (await bench.get_resource(n.attributes.name)).id == n.id
       await prep.stop()
       await prep.setup()
-      assert [id(child) for child in prep.get_all_children()] == [id(child) for child in components]
+      assert [n.id for n in (await _tree(prep.body))[1:]] == [n.id for n in components]
       await prep.stop()
 
   asyncio.run(_run())
@@ -305,21 +334,23 @@ def test_named_prep_drops_tips_at_its_own_waste_positions(discard):
 
   async def _run() -> None:
     prep = Prep(name="prep_a", simulation=True)
-    rack = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
-    prep.deck[3] = rack
+    parts = await prep.deck_parts()
+    rack = await prep.store.create("hamilton_96_tiprack_50uL_NTR", name="tips", parent=parts[3])
+    assert isinstance(rack, handles.TipRack)
     await prep.setup()
     assert prep.pipettes is not None
     await prep.pipettes.pick_up_tips(
       [rack.get_item("A1"), rack.get_item("B1")], use_channels=[0, 1]
     )
-    waste = prep.deck.get_resource("prep_a_waste_block")
-    assert isinstance(waste, Trash)
+    waste = await prep.deck.get_resource("prep_a_waste_block")
+    assert isinstance(waste, handles.Trash)
     if discard:
       await prep.pipettes.discard_tips(use_channels=[0, 1])
     else:
       await prep.pipettes.drop_tips([waste, waste], use_channels=[0, 1])
-    assert all(tip is None for tip in prep.pipettes.get_mounted_tips())
-    assert prep.get_resource("tips") is rack
+    assert all(tip is None for tip in await prep.pipettes.get_mounted_tips())
+    assert prep.body is not None
+    assert (await prep.body.get_resource("tips")).id == rack.id
     await prep.stop()
 
   asyncio.run(_run())

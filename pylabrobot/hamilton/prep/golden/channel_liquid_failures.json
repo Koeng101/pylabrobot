@@ -253,7 +253,7 @@
       "call": "pipettes.dispense(target['A1'], volumes=[500], use_channels=[0])",
       "error": {
         "type": "TooLittleVolumeError",
-        "message": "target_well_A1 has room for 360 uL, 500.0 uL asked to go in"
+        "message": "target_well_A1 has room for 360.0 uL, 500.0 uL asked to go in"
       },
       "sent": [],
       "result": null

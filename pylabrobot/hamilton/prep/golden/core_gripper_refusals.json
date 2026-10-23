@@ -262,7 +262,7 @@
       "call": "core_grippers.place_resource(deck[4]), deck[4] occupied",
       "error": {
         "type": "RuntimeError",
-        "message": "Cannot drop resource plate onto resource holder Prep_spot_1_0 while it already has a resource. Please remove the resource before dropping a new one."
+        "message": "'Prep_spot_1_0' already holds 'occupant'"
       },
       "sent": [],
       "result": null

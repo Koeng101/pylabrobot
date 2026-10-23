@@ -38,18 +38,10 @@ from pylabrobot.hamilton.transport.tcp.packets import Address
 from pylabrobot.hamilton.transport.tcp.wire_types import U32, Struct
 from pylabrobot.legacy.liquid_handling.errors import ChannelizedError
 from pylabrobot.lib.liquid_handling.mix import Mix
-from pylabrobot.resources import Coordinate
-from pylabrobot.resources.corning.axygen.plates import cor_axy_96_wellplate_500uL_Ub
-from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
+from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.errors import HasTipError, TooLittleVolumeError
-from pylabrobot.resources.hamilton import (
-  hamilton_96_tiprack_50uL_NTR,
-  hamilton_96_tiprack_300uL_NTR,
-  hamilton_tip_300uL,
-)
-from pylabrobot.resources.tip_tracking import does_tip_tracking, set_tip_tracking
-from pylabrobot.resources.volume_tracker import does_volume_tracking, set_volume_tracking
-from pylabrobot.testing.golden import check_golden, snapshot_changes, snapshot_resources
+from pylabrobot.resources.store import handles, library
+from pylabrobot.testing.golden import check_golden, snapshot_changes, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -97,13 +89,25 @@ class _Recording:
   step that raises what it was expected to records the error instead of a result.
   """
 
-  def __init__(self, prep: PrepDevice):
+  def __init__(self, prep: PrepDevice, resources: List[Dict[str, Any]]):
     self.prep = prep
     self.steps: List[Dict[str, Any]] = []
     self._sent: List[str] = []
     # The resources as the last step left them; a scenario changes them only through its steps.
-    self._resources = snapshot_resources(prep)
+    self._resources = resources
     self._watch(prep.driver)
+
+  @classmethod
+  async def start(cls, prep: PrepDevice) -> "_Recording":
+    """Record `prep` from here, its resources made in its store first."""
+    await prep.create_resources()
+    return cls(prep, await cls.snapshot(prep))
+
+  @staticmethod
+  async def snapshot(prep: PrepDevice) -> List[Dict[str, Any]]:
+    """The device's whole tree, from its body down."""
+    assert prep.body is not None
+    return await snapshot_store(prep.store, prep.body)
 
   def _watch(self, driver: Any) -> None:
     """Record every frame `driver`'s link exchanges, on each session it opens from here on."""
@@ -124,10 +128,10 @@ class _Recording:
 
     io._create_session = create_recorded
 
-  def forget(self) -> None:
+  async def forget(self) -> None:
     """Start the record from here: what was sent so far is dropped, and the resources are read."""
     self._sent = []
-    self._resources = snapshot_resources(self.prep)
+    self._resources = await self.snapshot(self.prep)
 
   async def step(
     self,
@@ -159,7 +163,7 @@ class _Recording:
         raise AssertionError(f"{call} was expected to raise {raises.__name__}")
     entry["sent"] = self._sent
     entry["result"] = _jsonable(result)
-    after = snapshot_resources(self.prep)
+    after = await self.snapshot(self.prep)
     entry.update(snapshot_changes(self._resources, after))
     self._resources = after
     self.steps.append(entry)
@@ -172,10 +176,38 @@ class _Recording:
 
 async def _set_up(prep: PrepDevice) -> _Recording:
   """Set `prep` up, then record from there: the setup scenario records setup itself."""
-  run = _Recording(prep)
+  run = await _Recording.start(prep)
   await prep.setup()
-  run.forget()
+  await run.forget()
   return run
+
+
+async def _labware(prep: PrepDevice, model: str, name: str, spot: int) -> handles.Resource:
+  """One of PLR's labware models, made in the device's store on one of its deck's spots."""
+  parts = await prep.deck_parts()
+  return await prep.store.create(model, name=name, parent=parts[spot])
+
+
+async def _set_volumes(wells: List[handles.Resource], volume: float) -> None:
+  for well in wells:
+    assert isinstance(well, handles.Container)
+    await well.set_volume(volume)
+
+
+def _tip_definition(model: str, is_tool: bool = False) -> PrepCmd.TipDefinition:
+  """What the firmware holds for a tip of one of PLR's models, picked up by hand."""
+  tip = library.get_model(model).definition.attributes
+  return PrepCmd.TipDefinition(
+    default_values=False,
+    id=255,
+    volume=tip.tip.maximal_volume,
+    length=tip.size.z - tip.head_tool.fitting_depth,
+    tip_type=int(PrepCmd.TipTypes.StandardVolume),
+    has_filter=tip.tip.has_filter,
+    is_needle=False,
+    is_tool=is_tool,
+    label="Pipettor Custom",
+  )
 
 
 def _refuse(
@@ -269,15 +301,6 @@ def _channel_node(driver: PrepSimulationDriver, channel: int) -> int:
 class PrepGoldenTests(unittest.TestCase):
   """Scenarios through a simulated Prep, each checked against its golden file."""
 
-  def setUp(self) -> None:
-    self._tip_tracking, self._volume_tracking = does_tip_tracking(), does_volume_tracking()
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self) -> None:
-    set_tip_tracking(self._tip_tracking)
-    set_volume_tracking(self._volume_tracking)
-
   def _check(self, name: str, scenario: Callable[[], Coroutine[Any, Any, Dict[str, Any]]]) -> None:
     check_golden(self, GOLDEN / f"{name}.json", asyncio.run(scenario()))
 
@@ -289,8 +312,8 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      prep.deck[3] = cor_96_wellplate_360uL_Fb(name="plate_on_hhs")
-      run = _Recording(prep)
+      await _labware(prep, "cor_96_wellplate_360uL_Fb", "plate_on_hhs", 3)
+      run = await _Recording.start(prep)
       await run.step("setup()", prep.setup)
       await run.step(
         "update_deck_components(Coordinate(1, 2, 0))",
@@ -309,7 +332,8 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      tips = prep.deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
+      tips = await _labware(prep, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+      assert isinstance(tips, handles.TipRack)
       run = await _set_up(prep)
       p = prep.pipettes
       assert p is not None
@@ -336,7 +360,7 @@ class PrepGoldenTests(unittest.TestCase):
         lambda: p.pick_up_tips(tips["A2", "B2"], use_channels=[0, 1]),
       )
       await run.step("pipettes.discard_tips()", lambda: p.discard_tips())
-      tips["D1"][0].disable_tip_tracking()
+      await tips["D1"][0].set_tip_tracking(False)
       await run.step(
         "pipettes.pick_up_tips(tips['D1'], use_channels=[1]), D1 untracked",
         lambda: p.pick_up_tips(tips["D1"], use_channels=[1]),
@@ -349,7 +373,7 @@ class PrepGoldenTests(unittest.TestCase):
         "pipettes.pick_up_tips(tips['D1'], use_channels=[0]), D1 untracked",
         lambda: p.pick_up_tips(tips["D1"], use_channels=[0]),
       )
-      waste_block = prep.deck.waste_block
+      waste_block = (await prep.deck_parts()).waste_block
       assert waste_block is not None
       await run.step(
         "pipettes.drop_tips([waste_block], use_channels=[0])",
@@ -365,7 +389,8 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      tips = prep.deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
+      tips = await _labware(prep, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+      assert isinstance(tips, handles.TipRack)
       run = await _set_up(prep)
       driver = prep.driver
       assert isinstance(driver, PrepSimulationDriver)
@@ -406,11 +431,13 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      tips = prep.deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-      source = prep.deck[0] = cor_96_wellplate_360uL_Fb(name="source")
-      target = prep.deck[4] = cor_96_wellplate_360uL_Fb(name="target")
-      for well in source["A1:B1"]:
-        well.tracker.set_volume(200.0)
+      tips = await _labware(prep, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+      assert isinstance(tips, handles.TipRack)
+      source = await _labware(prep, "cor_96_wellplate_360uL_Fb", "source", 0)
+      assert isinstance(source, handles.Plate)
+      target = await _labware(prep, "cor_96_wellplate_360uL_Fb", "target", 4)
+      assert isinstance(target, handles.Plate)
+      await _set_volumes(source["A1:B1"], 200.0)
       run = await _set_up(prep)
       p = prep.pipettes
       assert p is not None
@@ -448,11 +475,13 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      tips = prep.deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-      source = prep.deck[0] = cor_96_wellplate_360uL_Fb(name="source")
-      target = prep.deck[4] = cor_96_wellplate_360uL_Fb(name="target")
-      for well in source["A1:B1"]:
-        well.tracker.set_volume(200.0)
+      tips = await _labware(prep, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+      assert isinstance(tips, handles.TipRack)
+      source = await _labware(prep, "cor_96_wellplate_360uL_Fb", "source", 0)
+      assert isinstance(source, handles.Plate)
+      target = await _labware(prep, "cor_96_wellplate_360uL_Fb", "target", 4)
+      assert isinstance(target, handles.Plate)
+      await _set_volumes(source["A1:B1"], 200.0)
       run = await _set_up(prep)
       driver = prep.driver
       assert isinstance(driver, PrepSimulationDriver)
@@ -504,11 +533,13 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      tips = prep.deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-      source = prep.deck[0] = cor_96_wellplate_360uL_Fb(name="source")
-      for well in source["A1:B1"]:
-        well.tracker.set_volume(200.0)
+      tips = await _labware(prep, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+      assert isinstance(tips, handles.TipRack)
+      source = await _labware(prep, "cor_96_wellplate_360uL_Fb", "source", 0)
+      assert isinstance(source, handles.Plate)
+      await _set_volumes(source["A1:B1"], 200.0)
       run = await _set_up(prep)
+      c1_top = await source["C1"][0].get_location_wrt(prep.deck, "c", "c", "t")
       driver = prep.driver
       assert isinstance(driver, PrepSimulationDriver)
       p = prep.pipettes
@@ -540,7 +571,7 @@ class PrepGoldenTests(unittest.TestCase):
       await run.step(
         "pipettes.move_to_location(source['C1'] top, use_channels=0)",
         lambda: p.move_to_location(
-          source["C1"][0].get_location_wrt(prep.deck, "c", "c", "t") + Coordinate(0, 0, 20),
+          c1_top + Coordinate(0, 0, 20),
           use_channels=0,
         ),
       )
@@ -596,8 +627,9 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      plate = prep.deck[0] = cor_axy_96_wellplate_500uL_Ub(name="plate")
+      plate = await _labware(prep, "cor_axy_96_wellplate_500uL_Ub", "plate", 0)
       run = await _set_up(prep)
+      parts = await prep.deck_parts()
       g = prep.core_grippers
       assert g is not None
       await run.step("core_grippers.pick_up_tools()", lambda: g.pick_up_tools())
@@ -609,9 +641,7 @@ class PrepGoldenTests(unittest.TestCase):
         "core_grippers.move_resource_to_xy_position(150, 250)",
         lambda: g.move_resource_to_xy_position(150.0, 250.0),
       )
-      await run.step(
-        "core_grippers.place_resource(deck[5])", lambda: g.place_resource(prep.deck[5])
-      )
+      await run.step("core_grippers.place_resource(deck[5])", lambda: g.place_resource(parts[5]))
       await run.step(
         "core_grippers.pick_up_resource(plate, pickup_distance_from_top=5)",
         lambda: g.pick_up_resource(plate, pickup_distance_from_top=5.0),
@@ -645,16 +675,17 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      plate = prep.deck[0] = cor_axy_96_wellplate_500uL_Ub(name="plate")
-      prep.deck[4] = cor_axy_96_wellplate_500uL_Ub(name="occupant")
+      plate = await _labware(prep, "cor_axy_96_wellplate_500uL_Ub", "plate", 0)
+      await _labware(prep, "cor_axy_96_wellplate_500uL_Ub", "occupant", 4)
       run = await _set_up(prep)
+      parts = await prep.deck_parts()
       g = prep.core_grippers
       assert g is not None
       await run.step(
         "core_grippers.move_resource(plate, deck[5], pickup_distance_from_top=5, "
         "return_grippers=True)",
         lambda: g.move_resource(
-          plate, prep.deck[5], pickup_distance_from_top=5.0, return_grippers=True
+          plate, parts[5], pickup_distance_from_top=5.0, return_grippers=True
         ),
       )
       await run.step("core_grippers.pick_up_tools()", lambda: g.pick_up_tools())
@@ -664,7 +695,7 @@ class PrepGoldenTests(unittest.TestCase):
       )
       await run.step(
         "core_grippers.place_resource(deck[4]), deck[4] occupied",
-        lambda: g.place_resource(prep.deck[4]),
+        lambda: g.place_resource(parts[4]),
         raises=RuntimeError,
       )
       await run.step("stop()", prep.stop)
@@ -680,40 +711,37 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      tips = prep.deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
-      source = prep.deck[0] = cor_axy_96_wellplate_500uL_Ub(name="source")
-      target = prep.deck[4] = cor_axy_96_wellplate_500uL_Ub(name="target")
-      for well in source.column(0):
-        well.tracker.set_volume(100.0)
+      tips = await _labware(prep, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
+      assert isinstance(tips, handles.TipRack)
+      source = await _labware(prep, "cor_axy_96_wellplate_500uL_Ub", "source", 0)
+      assert isinstance(source, handles.Plate)
+      target = await _labware(prep, "cor_axy_96_wellplate_500uL_Ub", "target", 4)
+      assert isinstance(target, handles.Plate)
+      await _set_volumes(source[0:8], 100.0)
       run = await _set_up(prep)
+      parts = await prep.deck_parts()
       head = prep.head8
       assert head is not None
-      await run.step(
-        "head8.pick_up_tips(tips.column(0))", lambda: head.pick_up_tips(tips.column(0))
-      )
+      await run.step("head8.pick_up_tips(tips.column(0))", lambda: head.pick_up_tips(tips[0:8]))
       await run.step(
         "head8.aspirate(source.column(0), volume=20, disable_volume_correction=True)",
-        lambda: head.aspirate(source.column(0), volume=20.0, disable_volume_correction=True),
+        lambda: head.aspirate(source[0:8], volume=20.0, disable_volume_correction=True),
       )
       await run.step(
         "head8.dispense(target.column(0), volume=20, disable_volume_correction=True)",
-        lambda: head.dispense(target.column(0), volume=20.0, disable_volume_correction=True),
+        lambda: head.dispense(target[0:8], volume=20.0, disable_volume_correction=True),
       )
       await run.step(
         "head8.mix(target.column(0), Mix(volume=10, repetitions=2, flow_rate=40))",
-        lambda: head.mix(target.column(0), Mix(volume=10.0, repetitions=2, flow_rate=40.0)),
+        lambda: head.mix(target[0:8], Mix(volume=10.0, repetitions=2, flow_rate=40.0)),
       )
       await run.step("head8.return_tips()", lambda: head.return_tips())
-      await run.step(
-        "head8.pick_up_tips(tips.column(1))", lambda: head.pick_up_tips(tips.column(1))
-      )
+      await run.step("head8.pick_up_tips(tips.column(1))", lambda: head.pick_up_tips(tips[8:16]))
       await run.step("head8.discard_tips()", lambda: head.discard_tips())
-      await run.step(
-        "head8.pick_up_tips(tips.column(0))", lambda: head.pick_up_tips(tips.column(0))
-      )
+      await run.step("head8.pick_up_tips(tips.column(0))", lambda: head.pick_up_tips(tips[0:8]))
       await run.step(
         "head8.drop_tips([waste_mph] * 8)",
-        lambda: head.drop_tips([prep.deck.waste_positions["waste_mph"]] * 8),
+        lambda: head.drop_tips([parts.waste_positions["waste_mph"]] * 8),
       )
       return run.record()
 
@@ -725,11 +753,13 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      tips = prep.deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
-      source = prep.deck[0] = cor_axy_96_wellplate_500uL_Ub(name="source")
-      target = prep.deck[4] = cor_axy_96_wellplate_500uL_Ub(name="target")
-      for well in source.column(0):
-        well.tracker.set_volume(100.0)
+      tips = await _labware(prep, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
+      assert isinstance(tips, handles.TipRack)
+      source = await _labware(prep, "cor_axy_96_wellplate_500uL_Ub", "source", 0)
+      assert isinstance(source, handles.Plate)
+      target = await _labware(prep, "cor_axy_96_wellplate_500uL_Ub", "target", 4)
+      assert isinstance(target, handles.Plate)
+      await _set_volumes(source[0:8], 100.0)
       run = await _set_up(prep)
       driver = prep.driver
       assert isinstance(driver, PrepSimulationDriver)
@@ -740,34 +770,32 @@ class PrepGoldenTests(unittest.TestCase):
       _refuse(driver, PrepCmd.MphPickupTips, lambda: refusal)
       await run.step(
         "head8.pick_up_tips(tips.column(0)), refused",
-        lambda: head.pick_up_tips(tips.column(0)),
+        lambda: head.pick_up_tips(tips[0:8]),
         raises=HoiError,
       )
-      await run.step(
-        "head8.pick_up_tips(tips.column(0))", lambda: head.pick_up_tips(tips.column(0))
-      )
+      await run.step("head8.pick_up_tips(tips.column(0))", lambda: head.pick_up_tips(tips[0:8]))
       _refuse(driver, tuple(Head8._ASPIRATE_CMD.values()), lambda: refusal)
       await run.step(
         "head8.aspirate(source.column(0), volume=20, disable_volume_correction=True), probe 0 "
         "refused",
-        lambda: head.aspirate(source.column(0), volume=20.0, disable_volume_correction=True),
+        lambda: head.aspirate(source[0:8], volume=20.0, disable_volume_correction=True),
         raises=ChannelizedError,
       )
       await run.step(
         "head8.aspirate(source.column(0), volume=20, disable_volume_correction=True)",
-        lambda: head.aspirate(source.column(0), volume=20.0, disable_volume_correction=True),
+        lambda: head.aspirate(source[0:8], volume=20.0, disable_volume_correction=True),
       )
       _refuse(driver, tuple(Head8._DISPENSE_CMD.values()), lambda: refusal)
       await run.step(
         "head8.dispense(target.column(0), volume=20, disable_volume_correction=True), probe 0 "
         "refused",
-        lambda: head.dispense(target.column(0), volume=20.0, disable_volume_correction=True),
+        lambda: head.dispense(target[0:8], volume=20.0, disable_volume_correction=True),
         raises=ChannelizedError,
       )
       _refuse(driver, PrepCmd.MphDropTips, lambda: refusal)
       await run.step(
         "head8.drop_tips(tips.column(0)), refused",
-        lambda: head.drop_tips(tips.column(0)),
+        lambda: head.drop_tips(tips[0:8]),
         raises=HoiError,
       )
       return run.record()
@@ -783,24 +811,13 @@ class PrepGoldenTests(unittest.TestCase):
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
       assert isinstance(prep.driver, PrepSimulationDriver)
-      tip = hamilton_tip_300uL(name="definition")
       _device_holds(
         prep.driver,
         channels=[0, 1],
-        definition=PrepCmd.TipDefinition(
-          default_values=False,
-          id=255,
-          volume=tip.maximal_volume,
-          length=tip.get_size_z() - tip.fitting_depth,
-          tip_type=int(PrepCmd.TipTypes.StandardVolume),
-          has_filter=tip.has_filter,
-          is_needle=False,
-          is_tool=False,
-          label="Pipettor Custom",
-        ),
+        definition=_tip_definition("hamilton_tip_300uL"),
         until=PrepCmd.PrepDropTips,
       )
-      run = _Recording(prep)
+      run = await _Recording.start(prep)
       await run.step("setup(), tips on both channels", prep.setup)
       return run.record()
 
@@ -834,7 +851,7 @@ class PrepGoldenTests(unittest.TestCase):
         until=PrepCmd.PrepDropTool,
         plate_until=PrepCmd.PrepReleasePlate,
       )
-      run = _Recording(prep)
+      run = await _Recording.start(prep)
       await run.step("setup(), tools on, a plate gripped", prep.setup)
       g = prep.core_grippers
       assert g is not None
@@ -853,26 +870,15 @@ class PrepGoldenTests(unittest.TestCase):
       prep = Prep(simulation=True)
       driver = prep.driver
       assert isinstance(driver, PrepSimulationDriver)
-      tip = hamilton_tip_300uL(name="definition")
       _device_holds(
         driver,
         channels=[0],
-        definition=PrepCmd.TipDefinition(
-          default_values=False,
-          id=255,
-          volume=tip.maximal_volume,
-          length=tip.get_size_z() - tip.fitting_depth,
-          tip_type=int(PrepCmd.TipTypes.StandardVolume),
-          has_filter=tip.has_filter,
-          is_needle=False,
-          is_tool=False,
-          label="Pipettor Custom",
-        ),
+        definition=_tip_definition("hamilton_tip_300uL"),
         until=PrepCmd.PrepReleaseTips,
       )
       # The Pipettor forgets what it holds across a power cycle and refuses to drop it.
       _refuse(driver, PrepCmd.PrepDropTips, lambda: "0xE000.0x0001.0x1000:0x01,0x000C,0x0F03")
-      run = _Recording(prep)
+      run = await _Recording.start(prep)
       await run.step("setup(), a tip on channel 0 the device will not drop", prep.setup)
       return run.record()
 
@@ -888,8 +894,8 @@ class PrepGoldenTests(unittest.TestCase):
         declared_configuration_json=RECORDING_PREP,
         firmware_tree_json=FIRMWARE_TREE_V1_2_2,
       )
-      prep.deck[3] = cor_96_wellplate_360uL_Fb(name="plate")
-      run = _Recording(prep)
+      await _labware(prep, "cor_96_wellplate_360uL_Fb", "plate", 3)
+      run = await _Recording.start(prep)
       await run.step("setup()", prep.setup)
       await run.step("stop()", prep.stop)
       return run.record()
@@ -904,8 +910,9 @@ class PrepGoldenTests(unittest.TestCase):
 
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
-      tips = prep.deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-      plate = prep.deck[4] = cor_axy_96_wellplate_500uL_Ub(name="plate")
+      tips = await _labware(prep, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+      assert isinstance(tips, handles.TipRack)
+      plate = await _labware(prep, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
       run = await _set_up(prep)
       p, g = prep.pipettes, prep.core_grippers
       assert p is not None and g is not None

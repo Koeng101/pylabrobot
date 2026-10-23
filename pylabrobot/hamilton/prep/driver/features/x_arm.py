@@ -8,10 +8,11 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Optional, Tuple
 
-from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import store_pb2 as spb
 
 from .. import prep_commands as PrepCmd
+from ..model import position, record_positions
 
 if TYPE_CHECKING:
   from ..master import PrepDriver
@@ -100,7 +101,7 @@ class XArm:
     self.configuration = configuration or XArmConfiguration()
     # The arm on the deck, when the driver was given one. Setup puts it there; reads and moves keep it
     # in step. Without a deck it stays None and nothing is modelled.
-    self.resource: Optional[Resource] = None
+    self.resource: Optional[handles.Resource] = None
     # Speed (mm/s) and acceleration (mm/s2) `move_to_x_position` uses when none is given: 60 and 80
     # percent of the X axis profile read on a V1.2.2 Prep, 400 mm/s and 2250 mm/s2.
     self.default_speed: float = 240.0
@@ -112,23 +113,29 @@ class XArm:
   # Movement
   # ----------------------------------------
 
-  def update_location_by_reference_point(self, x: float) -> None:
-    """Record where the arm is on the resource that models it.
+  def location_by_reference_point(self, x: float) -> Optional[spb.DevicePosition]:
+    """Where the arm is, as the store records it, from where its reference point is.
 
     The gantry's x refers to the channels' axis, which sits a fixed distance from the arm's left edge,
     while a resource is located by its left front bottom corner, so the two differ by that distance.
-    Does nothing when the driver was given no deck to model into.
+    None when nothing models the arm.
 
     Args:
       x: where the reference point is now, in mm on the deck.
     """
-    if self.resource is None or self.resource.location is None:
-      return
-    self.resource.location = Coordinate(
-      x - self.configuration.reference_point_from_left,
-      self.resource.location.y,
-      self.resource.location.z,
-    )
+    if self.resource is None:
+      return None
+    return position(self.resource.id, x=x - self.configuration.reference_point_from_left)
+
+  async def update_location_by_reference_point(self, x: float) -> None:
+    """Record where the arm is on the resource that models it. Does nothing while nothing models it.
+
+    Args:
+      x: where the reference point is now, in mm on the deck.
+    """
+    where = self.location_by_reference_point(x)
+    if where is not None and self.resource is not None:
+      await record_positions(self.resource.store, [where])
 
   async def _request_axis_offset(self) -> float:
     """Read the unrounded frame offset for internal motion calculations."""
@@ -136,7 +143,7 @@ class XArm:
     if not response or not response.positions:
       raise RuntimeError("the channels reported no positions")
     x = float(response.positions[0].position_x)
-    self.update_location_by_reference_point(x)
+    await self.update_location_by_reference_point(x)
     commanded = await self._driver.send_command(PrepCmd.PrepXAxisGetCommandedPosition())
     return x - float(commanded.value)
 
@@ -166,7 +173,7 @@ class XArm:
     if not response or not response.positions:
       return None
     x = float(response.positions[0].position_x)
-    self.update_location_by_reference_point(x)
+    await self.update_location_by_reference_point(x)
     return round(x, 2)
 
   async def _record_where_it_stopped(self) -> None:
@@ -335,7 +342,7 @@ class XArm:
     try:
       async with self._temporary_x_axis_profile(speed=speed, acceleration=acceleration):
         await self._unchecked_fw_move_absolute(x - offset)
-        self.update_location_by_reference_point(x)
+        await self.update_location_by_reference_point(x)
     finally:
       await self._record_where_it_stopped()
 

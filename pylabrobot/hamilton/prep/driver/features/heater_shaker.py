@@ -11,8 +11,8 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Optional, Tuple
 
-from pylabrobot.resources.carrier import PlateHolder
 from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store import handles
 
 from .. import prep_commands as PrepCmd
 
@@ -76,7 +76,7 @@ class PrepHamiltonHeaterShaker:
     self.configuration = configuration or HeaterShakerConfiguration()
     self.target_temperature: Optional[float] = None
     # The deck spot it stands in, as the driver models it at setup, or None without a Prep deck.
-    self.resource: Optional[PlateHolder] = None
+    self.resource: Optional[handles.PlateHolder] = None
 
   # ----------------------------------------
   # Checks
