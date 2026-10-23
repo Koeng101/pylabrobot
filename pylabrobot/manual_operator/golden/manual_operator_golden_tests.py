@@ -7,9 +7,10 @@ order, with the events it emits and the resources under the deck after each step
 from __future__ import annotations
 
 import dataclasses
+import inspect
 import pathlib
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Union
+from typing import Any, Awaitable, Callable, Dict, List, Sequence, Union
 
 from pylabrobot.events import EventBus, PLREvent, use_event_bus
 from pylabrobot.manual_operator import (
@@ -17,12 +18,17 @@ from pylabrobot.manual_operator import (
   OperatorActionRequest,
   OperatorActionResult,
 )
-from pylabrobot.resources import Coordinate, Resource, ResourceHolder, Rotation
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources import Coordinate, Rotation
+from pylabrobot.resources.store import ResourceStore, build, handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
-Outcome = Union[OperatorActionResult, Callable[[OperatorActionRequest], OperatorActionResult]]
+Outcome = Union[
+  OperatorActionResult,
+  Callable[[OperatorActionRequest], Union[OperatorActionResult, Awaitable[OperatorActionResult]]],
+]
 
 
 def _jsonable(value: Any) -> Any:
@@ -42,7 +48,7 @@ class _Recorder:
   Operation ids are uuids; they are recorded as `op-1`, `op-2`... in the order they appear.
   """
 
-  def __init__(self, root: Resource):
+  def __init__(self, root: handles.Resource):
     self.root = root
     self.outcomes: List[Outcome] = []
     self.sent: List[Dict[str, Any]] = []
@@ -71,7 +77,8 @@ class _Recorder:
     outcome = self.outcomes.pop(0)
     if isinstance(outcome, OperatorActionResult):
       return outcome
-    return outcome(action)
+    answer = outcome(action)
+    return await answer if inspect.isawaitable(answer) else answer
 
   def _on_event(self, event: PLREvent) -> None:
     raw_id = event.context.get("operation_id")
@@ -92,7 +99,7 @@ class _Recorder:
     self.outcomes = list(outcomes)
     self.sent = []
     self.events = []
-    before = snapshot_resources(self.root)
+    before = await self.snapshot()
     record: Dict[str, Any] = {"call": call}
     result: Any = None
     with use_event_bus(self.bus):
@@ -103,14 +110,17 @@ class _Recorder:
         record["result"] = {"error": type(error).__name__, "message": str(error)}
     record["sent"] = self.sent
     record["events"] = self.events
-    after = snapshot_resources(self.root)
+    after = await self.snapshot()
     if after != before:
       record["resources"] = after
     self.steps.append(record)
     return result
 
-  def record(self) -> Dict[str, Any]:
-    return {"steps": self.steps, "resources": snapshot_resources(self.root)}
+  async def snapshot(self) -> List[Dict[str, Any]]:
+    return await snapshot_store(self.root.store, self.root)
+
+  async def record(self) -> Dict[str, Any]:
+    return {"steps": self.steps, "resources": await self.snapshot()}
 
 
 def _result(result: Any) -> Any:
@@ -121,35 +131,79 @@ def _result(result: Any) -> Any:
 
 @dataclasses.dataclass
 class _Bench:
-  deck: Resource
-  module: ResourceHolder
-  nest: ResourceHolder
-  shelf: Resource
-  plate: Resource
+  deck: handles.Resource
+  module: handles.ResourceHolder
+  nest: handles.ResourceHolder
+  shelf: handles.Resource
+  plate: handles.Resource
 
 
-def _bench() -> _Bench:
-  """A deck with a plate module, a handover nest that sets its own child location, a shelf and
-  a plate on the module."""
-  deck = Resource("deck", size_x=1000, size_y=600, size_z=10)
-  module = ResourceHolder("plate_module", size_x=130, size_y=90, size_z=20)
-  nest = ResourceHolder(
-    "handover_nest", size_x=130, size_y=90, size_z=20, child_location=Coordinate(1.5, 2.5, 3)
+def _holder(
+  name: str,
+  location: Coordinate,
+  child_location: Coordinate,
+  accepts: Sequence["pb.ResourceKind"] = (),
+) -> pb.ResourceDefinition:
+  return build.resource(
+    name,
+    Coordinate(130, 90, 20),
+    kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
+    type_name="ResourceHolder",
+    category="resource_holder",
+    location=location,
+    holder=pb.HolderSpec(child_location=build.vec3(child_location), accepts=accepts),
   )
-  shelf = Resource("shelf", size_x=300, size_y=100, size_z=5)
-  deck.assign_child_resource(module, location=Coordinate(100, 100, 0))
-  deck.assign_child_resource(nest, location=Coordinate(400, 100, 0))
-  deck.assign_child_resource(shelf, location=Coordinate(600, 300, 50))
-  plate = Resource("plate", size_x=127.76, size_y=85.48, size_z=14.2, rotation=Rotation(z=90))
-  module.assign_child_resource(plate)
+
+
+async def _bench(nest_accepts: Sequence["pb.ResourceKind"] = ()) -> _Bench:
+  """A deck with a plate module, a handover nest that sets its own child location, a shelf and
+  a plate on the module, in a store of their own. A nest that accepts only some kinds refuses
+  the plate, which is a plain resource."""
+  store = ResourceStore.in_memory()
+  deck = await store.create(
+    build.resource(
+      "deck",
+      Coordinate(1000, 600, 10),
+      type_name="Resource",
+      children=[
+        _holder("plate_module", Coordinate(100, 100, 0), Coordinate.zero()),
+        _holder("handover_nest", Coordinate(400, 100, 0), Coordinate(1.5, 2.5, 3), nest_accepts),
+        build.resource(
+          "shelf", Coordinate(300, 100, 5), type_name="Resource", location=Coordinate(600, 300, 50)
+        ),
+      ],
+    ),
+    name="deck",
+  )
+  plate = await _resource(store, "plate", rotation=Rotation(z=90))
+  module = await deck.get_resource("plate_module")
+  nest = await deck.get_resource("handover_nest")
+  shelf = await deck.get_resource("shelf")
+  assert isinstance(module, handles.ResourceHolder) and isinstance(nest, handles.ResourceHolder)
+  await module.assign_child_resource(plate)
   return _Bench(deck=deck, module=module, nest=nest, shelf=shelf, plate=plate)
+
+
+async def _resource(
+  store: ResourceStore,
+  name: str,
+  kind: "pb.ResourceKind" = pb.RESOURCE_KIND_RESOURCE,
+  rotation: Rotation = Rotation(),
+) -> handles.Resource:
+  """A plate-sized resource, a root in `store`."""
+  return await store.create(
+    build.resource(
+      name, Coordinate(127.76, 85.48, 14.2), kind=kind, type_name="Resource", rotation=rotation
+    ),
+    name=name,
+  )
 
 
 class ManualOperatorGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_moves_with_rotation_and_location(self):
     """A plate moved to a nest with a new rotation, then onto a shelf at a given location,
     then back to the module; and a non-moving action naming the plate."""
-    bench = _bench()
+    bench = await _bench()
     plate, module, nest, shelf = bench.plate, bench.module, bench.nest, bench.shelf
     recorder = _Recorder(bench.deck)
     operator = recorder.operator
@@ -193,12 +247,13 @@ class ManualOperatorGoldenTests(unittest.IsolatedAsyncioTestCase):
       OperatorActionResult.completed(message="Spun", confirmed_by="operator-1"),
     )
 
-    check_golden(self, GOLDEN / "moves_with_rotation_and_location.json", recorder.record())
+    check_golden(self, GOLDEN / "moves_with_rotation_and_location.json", await recorder.record())
 
   async def test_refusals_and_rollback(self):
     """Moves the operator cancels, reports failed, or that the model refuses, leave the plate
-    where it was; a destination that fails to take the plate puts it back as it was."""
-    bench = _bench()
+    where it was; a destination that fails to take the plate puts it back as it was. The nest
+    takes only plates, and the plate moved is a plain resource, so the nest refuses it."""
+    bench = await _bench(nest_accepts=[pb.RESOURCE_KIND_PLATE])
     plate, module, nest, shelf = bench.plate, bench.module, bench.nest, bench.shelf
     recorder = _Recorder(bench.deck)
     operator = recorder.operator
@@ -224,18 +279,14 @@ class ManualOperatorGoldenTests(unittest.IsolatedAsyncioTestCase):
       lambda: operator.move_resource(resource=plate, source=module, destination=module),
     )
 
-    other = Resource("other_plate", size_x=127.76, size_y=85.48, size_z=14.2)
-    nest.assign_child_resource(other)
+    other = await _resource(bench.deck.store, "other_plate", kind=pb.RESOURCE_KIND_PLATE)
+    await nest.assign_child_resource(other)
     await recorder.step(
       "move_resource(plate, module -> occupied nest)",
       lambda: operator.move_resource(resource=plate, source=module, destination=nest),
     )
-    nest.unassign_child_resource(other)
+    await nest.unassign_child_resource(other)
 
-    def fail_assignment(resource: Resource) -> None:
-      raise RuntimeError(f"nest refused {resource.name}")
-
-    nest.register_will_assign_resource_callback(fail_assignment)
     await recorder.step(
       "move_resource(plate, module -> nest, destination_rotation=z0) assignment fails",
       lambda: operator.move_resource(
@@ -243,11 +294,12 @@ class ManualOperatorGoldenTests(unittest.IsolatedAsyncioTestCase):
       ),
       OperatorActionResult.completed(),
     )
-    nest.deregister_will_assign_resource_callback(fail_assignment)
 
-    def move_elsewhere_then_complete(_request: OperatorActionRequest) -> OperatorActionResult:
-      plate.unassign()
-      shelf.assign_child_resource(plate, location=Coordinate(10, 10, 0))
+    async def move_elsewhere_then_complete(
+      _request: OperatorActionRequest,
+    ) -> OperatorActionResult:
+      await plate.unassign()
+      await shelf.assign_child_resource(plate, location=Coordinate(10, 10, 0))
       return OperatorActionResult.completed()
 
     await recorder.step(
@@ -256,7 +308,7 @@ class ManualOperatorGoldenTests(unittest.IsolatedAsyncioTestCase):
       move_elsewhere_then_complete,
     )
 
-    check_golden(self, GOLDEN / "refusals_and_rollback.json", recorder.record())
+    check_golden(self, GOLDEN / "refusals_and_rollback.json", await recorder.record())
 
 
 if __name__ == "__main__":

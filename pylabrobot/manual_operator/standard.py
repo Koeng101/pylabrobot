@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Literal, Optional, Sequence
 
-from pylabrobot.resources import Resource
+from pylabrobot.resources.store.handles import Resource
 
 OperatorActionStatus = Literal["completed", "cancelled", "failed"]
 """Outcome reported by an operator-action provider."""
@@ -13,6 +13,7 @@ OperatorActionStatus = Literal["completed", "cancelled", "failed"]
 class OperatorActionRequest:
   """A transport-independent request for a person to perform one action.
 
+  ``resources``, ``source`` and ``destination`` are handles to resources in a resource store.
   ``action`` identifies the kind of work. A provider may add its own transport-specific
   correlation identifier when publishing the request through a GUI, API, or message broker.
   """

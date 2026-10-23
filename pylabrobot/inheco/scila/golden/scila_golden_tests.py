@@ -14,8 +14,10 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 from unittest.mock import patch
 
 from pylabrobot.inheco.scila import SCILA
-from pylabrobot.resources import Plate
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -85,7 +87,10 @@ class _FakeSiLA:
 
 
 class _Recorder:
-  """A SCILA on the fake SiLA interface, recording each step's commands and resources."""
+  """A SCILA on the fake SiLA interface, recording each step's commands and resources.
+
+  Its body and drawers are made in its store before the first step, as `setup` would.
+  """
 
   def __init__(self, gas_mixer_connected: bool = True):
     self.sila = _FakeSiLA()
@@ -99,7 +104,14 @@ class _Recorder:
         gas_mixer_connected=gas_mixer_connected,
       )
     self.steps: List[Dict[str, Any]] = []
-    self.initial = snapshot_resources(self.scila)
+    self.initial: List[Dict[str, Any]] = []
+
+  async def start(self) -> None:
+    await self.scila.create_resources()
+    self.initial = await self.snapshot()
+
+  async def snapshot(self) -> List[Dict[str, Any]]:
+    return await snapshot_store(self.scila.store, self.scila.body)
 
   def _made(self, client_ip: Optional[str], machine_ip: str) -> _FakeSiLA:
     self.transport = {"client_ip": client_ip, "machine_ip": machine_ip}
@@ -110,7 +122,7 @@ class _Recorder:
   async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> Any:
     """Run one call and record what it sent, returned and changed."""
     self.sila.sent = []
-    before = snapshot_resources(self.scila)
+    before = await self.snapshot()
     record: Dict[str, Any] = {"call": call}
     result: Any = None
     try:
@@ -119,34 +131,46 @@ class _Recorder:
     except Exception as error:
       record["result"] = {"error": type(error).__name__, "message": str(error)}
     record["sent"] = self.sila.sent
-    after = snapshot_resources(self.scila)
+    after = await self.snapshot()
     if after != before:
       record["resources"] = after
     self.steps.append(record)
     return result
 
-  def record(self) -> Dict[str, Any]:
+  async def record(self) -> Dict[str, Any]:
     return {
       "transport": self.transport,
       "initial_resources": self.initial,
       "steps": self.steps,
-      "resources": snapshot_resources(self.scila),
+      "resources": await self.snapshot(),
     }
 
 
-def _plate(name: str) -> Plate:
-  return Plate(name, size_x=127.76, size_y=85.48, size_z=14.2, ordered_items={})
+async def _plate(recorder: _Recorder, name: str) -> handles.Resource:
+  """A plate with no wells, a root in the SCILA's store."""
+  return await recorder.scila.store.create(
+    build.resource(
+      name,
+      Coordinate(127.76, 85.48, 14.2),
+      kind=pb.RESOURCE_KIND_PLATE,
+      type_name="Plate",
+      plate=pb.PlateSpec(plate_type="skirted"),
+      itemized=pb.ItemizedSpec(),
+    ),
+    name=name,
+  )
 
 
 class SCILAGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_setup_and_drawers(self):
     """Set up; open drawer 2, put a plate in it by hand and close it; read the drawers."""
     recorder = _Recorder()
+    await recorder.start()
     scila = recorder.scila
-    plate = _plate("culture_plate")
+    plate = await _plate(recorder, "culture_plate")
 
     async def place_plate() -> None:
-      scila.drawers[2].assign_child_resource(plate)
+      await scila.drawers[2].assign_child_resource(plate)
 
     await recorder.step("setup()", scila.setup)
     await recorder.step("request_status()", scila.request_status)
@@ -158,11 +182,12 @@ class SCILAGoldenTests(unittest.IsolatedAsyncioTestCase):
     await recorder.step("request_drawer_status(5)", lambda: scila.request_drawer_status(5))
     await recorder.step("stop()", scila.stop)
 
-    check_golden(self, GOLDEN / "setup_and_drawers.json", recorder.record())
+    check_golden(self, GOLDEN / "setup_and_drawers.json", await recorder.record())
 
   async def test_temperature_and_status(self):
     """Temperature control on and off, and the status reads."""
     recorder = _Recorder()
+    await recorder.start()
     scila = recorder.scila
 
     await recorder.step("set_temperature(37.0)", lambda: scila.set_temperature(37.0))
@@ -176,12 +201,13 @@ class SCILAGoldenTests(unittest.IsolatedAsyncioTestCase):
     await recorder.step("request_co2_flow_status()", scila.request_co2_flow_status)
     await recorder.step("request_valve_status()", scila.request_valve_status)
 
-    check_golden(self, GOLDEN / "temperature_and_status.json", recorder.record())
+    check_golden(self, GOLDEN / "temperature_and_status.json", await recorder.record())
 
   async def test_drawer_warnings(self):
     """A CO2-flow warning on a door command does not fail it, with or without a gas mixer; any
     other door error does."""
     recorder = _Recorder(gas_mixer_connected=True)
+    await recorder.start()
     scila = recorder.scila
     warning = "command OpenDoor failed with code 2: 'Warning: CO2 flow NOK'"
 
@@ -196,7 +222,7 @@ class SCILAGoldenTests(unittest.IsolatedAsyncioTestCase):
     await recorder.step("drawers[3].open() obstructed", scila.drawers[3].open)
     await recorder.step("request_drawer_statuses()", scila.request_drawer_statuses)
 
-    check_golden(self, GOLDEN / "drawer_warnings.json", recorder.record())
+    check_golden(self, GOLDEN / "drawer_warnings.json", await recorder.record())
 
 
 if __name__ == "__main__":

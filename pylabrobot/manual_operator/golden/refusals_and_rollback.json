@@ -372,7 +372,7 @@
       "call": "move_resource(plate, module -> nest, destination_rotation=z0) assignment fails",
       "result": {
         "error": "RuntimeError",
-        "message": "nest refused plate"
+        "message": "'handover_nest' does not take 'plate'"
       },
       "sent": [
         {

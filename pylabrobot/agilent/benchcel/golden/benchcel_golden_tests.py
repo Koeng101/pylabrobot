@@ -3,7 +3,8 @@
 The seam is the TCP socket: every frame written is recorded in order as hex. The fake socket
 answers each frame the way the BenchCel does (a `0x69` ACK after motion, sensor and status
 replies, a `0x9f` echo after labware settings), or with a `0x02` error frame when a scenario asks
-for one. Events emitted through `pylabrobot.events` are recorded with their payloads.
+for one. Events emitted through `pylabrobot.events` are recorded with their payloads. The
+BenchCel's resources are made in its store before the first step, as `setup` would.
 """
 
 from __future__ import annotations
@@ -20,16 +21,12 @@ from pylabrobot.agilent.benchcel import (
   apply_benchcel_labware_settings,
 )
 from pylabrobot.agilent.benchcel.benchcel import Frame, parse_frame_from_buffer
+from pylabrobot.agilent.benchcel.stacks import benchcel_4r_stacks
 from pylabrobot.events import EventBus, PLREvent, use_event_bus
-from pylabrobot.resources import (
-  Coordinate,
-  Plate,
-  ResourceStack,
-  Well,
-  cor_96_wellplate_360uL_Fb,
-  create_ordered_items_2d,
-)
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import ResourceStore, build, handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -114,7 +111,10 @@ class _Recorder:
   Operation ids are uuids; they are recorded as `op-1`, `op-2`... in the order they appear.
   """
 
-  def __init__(self, labware: Optional[Plate] = None):
+  def __init__(
+    self, store: Optional[ResourceStore] = None, labware: Optional[handles.Plate] = None
+  ):
+    self.store = store or ResourceStore.in_memory()
     self.benchcel = BenchCel4R(
       name="benchcel",
       host="192.168.0.100",
@@ -123,6 +123,7 @@ class _Recorder:
       loading_tray_teachpoint_id=LOADING_TRAY_TEACHPOINT,
       labware=labware,
       loading_tray_location=Coordinate(-200, 50, 0),
+      store=self.store,
     )
     self.socket = _FakeSocket()
     self.benchcel.io = self.socket  # type: ignore[assignment]
@@ -132,6 +133,12 @@ class _Recorder:
     self._operation_ids: Dict[str, str] = {}
     self.bus = EventBus()
     self.bus.subscribe(self._on_event)
+
+  async def start(self) -> None:
+    await self.benchcel.create_resources()
+
+  async def snapshot(self) -> List[Dict[str, Any]]:
+    return await snapshot_store(self.store, self.benchcel.body)
 
   def _on_event(self, event: PLREvent) -> None:
     raw_id = event.context.get("operation_id")
@@ -151,7 +158,7 @@ class _Recorder:
     """Run one call and record what it sent, emitted, returned and changed."""
     self.socket.sent = []
     self.events = []
-    before = snapshot_resources(self.benchcel)
+    before = await self.snapshot()
     if self.initial is None:
       self.initial = before
     record: Dict[str, Any] = {"call": call}
@@ -164,22 +171,22 @@ class _Recorder:
         record["result"] = {"error": type(error).__name__, "message": str(error)}
     record["sent"] = self.socket.sent
     record["events"] = self.events
-    after = snapshot_resources(self.benchcel)
+    after = await self.snapshot()
     if after != before:
       record["resources"] = after
     self.steps.append(record)
     return result
 
-  def record(self) -> Dict[str, Any]:
+  async def record(self) -> Dict[str, Any]:
     return {
       "initial_resources": self.initial,
       "steps": self.steps,
-      "resources": snapshot_resources(self.benchcel),
+      "resources": await self.snapshot(),
     }
 
 
 def _result(result: Any) -> Any:
-  if isinstance(result, Plate):
+  if isinstance(result, handles.Plate):
     return {"plate": result.name}
   if isinstance(result, BenchCelLabwareSettings):
     return result.to_dict()
@@ -188,34 +195,58 @@ def _result(result: Any) -> Any:
   return _jsonable(result)
 
 
-def _plate(name: str, size_z: float = 14.2) -> Plate:
-  """An SBS plate with one row of two wells: enough to show its wells move with it."""
-  wells = create_ordered_items_2d(
-    Well,
-    num_items_x=2,
-    num_items_y=1,
-    dx=10,
-    dy=40,
-    dz=1,
-    item_dx=9,
-    item_dy=None,
-    name_prefix=name,
-    size_x=6.9,
-    size_y=6.9,
-    size_z=size_z - 1,
-    max_volume=360,
+async def _plate(store: ResourceStore, name: str, size_z: float = 14.2) -> handles.Plate:
+  """An SBS plate with one row of two wells, a root in `store`: enough to show its wells move
+  with it."""
+  well = build.resource(
+    f"{name}_well_{{identifier}}",
+    Coordinate(6.9, 6.9, size_z - 1),
+    kind=pb.RESOURCE_KIND_WELL,
+    type_name="Well",
+    category="well",
+    container=pb.ContainerSpec(max_volume=360),
+    state=pb.ResourceState(volume=pb.VolumeState()),
   )
-  return Plate(
-    name, size_x=127.76, size_y=85.48, size_z=size_z, ordered_items=wells, model="assay_plate"
+  plate = await store.create(
+    build.resource(
+      name,
+      Coordinate(127.76, 85.48, size_z),
+      kind=pb.RESOURCE_KIND_PLATE,
+      type_name="Plate",
+      category="plate",
+      model="assay_plate",
+      plate=pb.PlateSpec(plate_type="skirted"),
+      itemized=pb.ItemizedSpec(
+        num_items_x=2,
+        num_items_y=1,
+        grid=pb.ItemGrid(item=well, offset=build.vec3(Coordinate(10, 40, 1)), item_dx=9, item_dy=0),
+      ),
+    ),
+    name=name,
   )
+  assert isinstance(plate, handles.Plate)
+  return plate
 
 
-def _bare_plate(name: str) -> Plate:
+async def _bare_plate(store: ResourceStore, name: str) -> handles.Plate:
   """A plate with no wells, which the loading tray cannot take."""
-  return Plate(name, size_x=127.76, size_y=85.48, size_z=14.2, ordered_items={})
+  plate = await store.create(
+    build.resource(
+      name,
+      Coordinate(127.76, 85.48, 14.2),
+      kind=pb.RESOURCE_KIND_PLATE,
+      type_name="Plate",
+      category="plate",
+      plate=pb.PlateSpec(plate_type="skirted"),
+      itemized=pb.ItemizedSpec(),
+    ),
+    name=name,
+  )
+  assert isinstance(plate, handles.Plate)
+  return plate
 
 
-async def _sensor(benchcel: BenchCel4R, stack: ResourceStack) -> Dict[str, Any]:
+async def _sensor(benchcel: BenchCel4R, stack: handles.ResourceStack) -> Dict[str, Any]:
   status = await benchcel.request_stacker_sensor_status(stack)
   return {
     "stacker": status.stacker,
@@ -240,11 +271,12 @@ class BenchCelGoldenTests(unittest.IsolatedAsyncioTestCase):
     """Plates downstacked to the loading tray, upstacked onto other stacks, and moved between
     stacks; with the arm, clamp and status commands of a run."""
     recorder = _Recorder()
-    benchcel = recorder.benchcel
+    await recorder.start()
+    benchcel, store = recorder.benchcel, recorder.store
     stacks = benchcel.stacks
     for name in ("plate_1", "plate_2", "plate_3"):
-      stacks[0].assign_child_resource(_plate(name))
-    stacks[2].assign_child_resource(_plate("plate_4", size_z=20))
+      await stacks[0].assign_child_resource(await _plate(store, name))
+    await stacks[2].assign_child_resource(await _plate(store, "plate_4", size_z=20))
 
     await recorder.step("setup()", benchcel.setup)
     await recorder.step(
@@ -272,17 +304,20 @@ class BenchCelGoldenTests(unittest.IsolatedAsyncioTestCase):
     )
     await recorder.step("stop()", benchcel.stop)
 
-    check_golden(self, GOLDEN / "downstack_and_upstack.json", recorder.record())
+    check_golden(self, GOLDEN / "downstack_and_upstack.json", await recorder.record())
 
   async def test_refused_and_failed_transfers(self):
     """Transfers the BenchCel refuses before sending anything, and transfers the device fails
     part way: none of them changes the stacks or the tray."""
     recorder = _Recorder()
-    benchcel = recorder.benchcel
+    await recorder.start()
+    benchcel, store = recorder.benchcel, recorder.store
     stacks = benchcel.stacks
-    stacks[0].assign_child_resource(_plate("plate_1"))
-    stacks[0].assign_child_resource(_plate("plate_2"))
-    foreign = ResourceStack(name=stacks[1].name, direction="z")
+    await stacks[0].assign_child_resource(await _plate(store, "plate_1"))
+    await stacks[0].assign_child_resource(await _plate(store, "plate_2"))
+    # A stack of the same name as stacker 2's, outside the BenchCel.
+    foreign = await store.create(benchcel_4r_stacks()[1], name=stacks[1].name)
+    assert isinstance(foreign, handles.ResourceStack)
 
     await recorder.step("downstack(stacks[1]) empty", lambda: benchcel.downstack(stacks[1]))
     await recorder.step("upstack(stacks[1]) tray empty", lambda: benchcel.upstack(stacks[1]))
@@ -313,31 +348,35 @@ class BenchCelGoldenTests(unittest.IsolatedAsyncioTestCase):
     benchcel.loading_tray_teachpoint_id = LOADING_TRAY_TEACHPOINT
 
     await recorder.step("upstack(stacks[2])", lambda: benchcel.upstack(stacks[2]))
-    stacks[3].assign_child_resource(_bare_plate("bare_plate"))
+    await stacks[3].assign_child_resource(await _bare_plate(store, "bare_plate"))
     await recorder.step(
       "downstack(stacks[3]) a plate the tray cannot take", lambda: benchcel.downstack(stacks[3])
     )
 
-    check_golden(self, GOLDEN / "refused_and_failed_transfers.json", recorder.record())
+    check_golden(self, GOLDEN / "refused_and_failed_transfers.json", await recorder.record())
 
   async def test_labware(self):
     """Labware settings from a plate at construction and pushed to the device; the pickup
     location they give a plate, and a plate of another size refused."""
-    labware_plate = cor_96_wellplate_360uL_Fb("labware_plate")
-    recorder = _Recorder(labware=labware_plate)
+    store = ResourceStore.in_memory()
+    labware_plate = await store.create("cor_96_wellplate_360uL_Fb", name="labware_plate")
+    assert isinstance(labware_plate, handles.Plate)
+    recorder = _Recorder(store, labware=labware_plate)
+    await recorder.start()
     benchcel = recorder.benchcel
-    deep = _plate("deep_plate", size_z=44.0)
-    assay = cor_96_wellplate_360uL_Fb("assay")
+    deep = await _plate(store, "deep_plate", size_z=44.0)
+    assay = await store.create("cor_96_wellplate_360uL_Fb", name="assay")
+    assert isinstance(assay, handles.Plate)
 
     async def settings() -> Any:
       return benchcel.labware_settings
 
-    async def apply(plate: Plate, labware: Optional[BenchCelLabwareSettings] = None) -> Any:
-      apply_benchcel_labware_settings(plate, labware)
-      return plate.preferred_pickup_location
+    async def apply(plate: handles.Plate, labware: Optional[BenchCelLabwareSettings] = None) -> Any:
+      await apply_benchcel_labware_settings(plate, labware)
+      return await plate.get_preferred_pickup_location()
 
-    async def pickup(plate: Plate) -> Any:
-      return plate.preferred_pickup_location
+    async def pickup(plate: handles.Plate) -> Any:
+      return await plate.get_preferred_pickup_location()
 
     await recorder.step("labware_settings at construction", settings)
     await recorder.step("set_labware(deep_plate)", lambda: benchcel.set_labware(deep))
@@ -373,7 +412,7 @@ class BenchCelGoldenTests(unittest.IsolatedAsyncioTestCase):
       ),
     )
 
-    check_golden(self, GOLDEN / "labware.json", recorder.record())
+    check_golden(self, GOLDEN / "labware.json", await recorder.record())
 
 
 if __name__ == "__main__":

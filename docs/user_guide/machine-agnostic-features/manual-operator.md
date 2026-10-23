@@ -13,8 +13,8 @@ notebook pause, but `ManualOperator` gives the same physical handoff a reusable 
 - **Explicit outcomes:** providers report `completed`, `cancelled`, or `failed` rather than
   reducing every acknowledgement to Enter being pressed.
 - **Resource-model reconciliation:** `move_resource()` validates a manual transfer before and
-  after acknowledgement, then applies the corresponding PLR assignment only when the model is
-  still consistent.
+  after acknowledgement, then makes the corresponding assignment in the resource store only when
+  the model is still consistent.
 - **Native traceability:** an active EventBus receives a correlated lifecycle with the action,
   affected resources, endpoints, operator acknowledgement, and failure details where applicable.
 
@@ -52,7 +52,7 @@ class DashboardOperatorActionProvider:
 ```
 
 `OperatorActionRequest` carries any direct modeled `resources` plus optional `source` and
-`destination` endpoints. Providers that cross a process boundary can serialize those objects in
+`destination` endpoints, all handles to resources in a resource store. Providers that cross a process boundary can serialize those objects in
 their own transport format; `details` remains for operation-specific request data.
 
 For a complete notebook example using a chatterbox incubator, manual plate transfer, plate reader,
@@ -71,8 +71,9 @@ after `perform()` as appropriate.
 
 ## Moving a resource
 
-Use `move_resource()` when the manual action transfers a modeled PLR resource between two modeled
-locations:
+Use `move_resource()` when the manual action transfers a resource between two locations in a
+resource store. `sample_plate`, `centrifuge_loader` and `handover_nest` are handles in the same
+store:
 
 ```python
 from pylabrobot.resources import Rotation
@@ -87,13 +88,14 @@ await operator.move_resource(
 
 The method validates the source and destination before prompting, but leaves the resource assigned
 to its source while the operator works. After the provider reports completion, it validates the
-model again, detaches the resource from its source, and assigns it to the destination using PLR's
-normal resource-assignment machinery. This supports transfers between holders on the same deck
-root. A `ResourceHolder` supplies its normal child location; other destinations can use an
-explicit `destination_location=Coordinate(...)`. Pass an explicit
-`destination_rotation=Rotation(...)` when the manual move changes orientation. The rotation is
-never inferred from the destination holder and is applied before a holder calculates its child
-location. If final assignment fails, the original parent, location, and rotation are restored.
+model again and assigns it to the destination in the store, in one assignment. This supports
+transfers between holders on the same deck root or in different roots of one store. A holder
+supplies its normal child location; other destinations can use an explicit
+`destination_location=Coordinate(...)`. Pass an explicit `destination_rotation=Rotation(...)` when
+the manual move changes orientation: the resource is then taken out of its source, turned, and
+assigned. The rotation is never inferred from the destination holder and is applied before a holder
+calculates its child location. If the destination refuses the resource, `move_resource()` raises a
+`RuntimeError` and the original parent, location, and rotation are kept or restored.
 
 `destination_rotation` is the resource's local rotation relative to `destination`, not an
 absolute/world rotation. After assignment, the resource's absolute rotation is composed from the

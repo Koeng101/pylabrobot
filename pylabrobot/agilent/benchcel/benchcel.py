@@ -81,11 +81,28 @@ import asyncio
 import dataclasses
 import logging
 import struct
-from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from functools import wraps
+from typing import (
+  Any,
+  Awaitable,
+  Callable,
+  Coroutine,
+  Dict,
+  List,
+  Literal,
+  Optional,
+  Sequence,
+  Tuple,
+  Union,
+)
 
-from pylabrobot.events import evented_operation, resource_reference
+from pylabrobot.events import event_operation, handle_reference, is_event_bus_active
 from pylabrobot.io.socket import Socket
-from pylabrobot.resources import Coordinate, Plate, PlateHolder, Resource, ResourceStack, Rotation
+from pylabrobot.resources import Coordinate, Rotation
+from pylabrobot.resources.store import StoreError, build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from .labware import BenchCelLabwareSettings, resolve_benchcel_labware_settings
 from .stacks import benchcel_4r_stacks
@@ -505,44 +522,61 @@ def parse_current_position_response(frame: Frame, *, selector: int = 1) -> Curre
   return CurrentPositionResponse(selector=selector, raw_payload=frame.payload)
 
 
-def _downstack_event_context(
-  self: "BenchCel4R", stack: ResourceStack, *, timeout: float = 30.0
-) -> dict:
-  plate = stack.get_top_item() if len(stack.children) > 0 else None
-  return {
-    "device": resource_reference(self),
-    "resources": [] if plate is None else [resource_reference(plate)],
-    "source": resource_reference(stack),
-    "destination": resource_reference(self.loading_tray),
-  }
+def _evented(
+  name: str, context_factory: Callable[..., Awaitable[Dict[str, Any]]]
+) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Coroutine[Any, Any, Any]]]:
+  """`evented_operation` with a context read from the store: the call's arguments go to
+  `context_factory`, which is awaited only while an event bus listens."""
+
+  def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Coroutine[Any, Any, Any]]:
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+      if not is_event_bus_active():
+        return await func(*args, **kwargs)
+      with event_operation(name, **await context_factory(*args, **kwargs)):
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+  return decorator
 
 
-def _upstack_event_context(
-  self: "BenchCel4R", stack: ResourceStack, *, timeout: float = 30.0
-) -> dict:
-  plate = self.loading_tray.resource
-  return {
-    "device": resource_reference(self),
-    "resources": [] if plate is None else [resource_reference(plate)],
-    "source": resource_reference(self.loading_tray),
-    "destination": resource_reference(stack),
-  }
-
-
-def _stack_transfer_event_context(
+async def _transfer_event_context(
   self: "BenchCel4R",
-  source: ResourceStack,
-  destination: ResourceStack,
+  plate: Optional[handles.Resource],
+  source: handles.Resource,
+  destination: handles.Resource,
+) -> Dict[str, Any]:
+  return {
+    "device": await handle_reference(self.body),
+    "resources": [] if plate is None else [await handle_reference(plate)],
+    "source": await handle_reference(source),
+    "destination": await handle_reference(destination),
+  }
+
+
+async def _downstack_event_context(
+  self: "BenchCel4R", stack: handles.ResourceStack, *, timeout: float = 30.0
+) -> Dict[str, Any]:
+  return await _transfer_event_context(self, await stack.get_top_item(), stack, self.loading_tray)
+
+
+async def _upstack_event_context(
+  self: "BenchCel4R", stack: handles.ResourceStack, *, timeout: float = 30.0
+) -> Dict[str, Any]:
+  return await _transfer_event_context(
+    self, await self.loading_tray.get_resource_held(), self.loading_tray, stack
+  )
+
+
+async def _stack_transfer_event_context(
+  self: "BenchCel4R",
+  source: handles.ResourceStack,
+  destination: handles.ResourceStack,
   *,
   timeout: float = 30.0,
-) -> dict:
-  plate = source.get_top_item() if len(source.children) > 0 else None
-  return {
-    "device": resource_reference(self),
-    "resources": [] if plate is None else [resource_reference(plate)],
-    "source": resource_reference(source),
-    "destination": resource_reference(destination),
-  }
+) -> Dict[str, Any]:
+  return await _transfer_event_context(self, await source.get_top_item(), source, destination)
 
 
 # ---------------------------------------------------------------------------
@@ -554,14 +588,16 @@ DEFAULT_PORT = 7612
 NUM_STACKERS = 4
 
 
-class BenchCel4R(Resource):
+class BenchCel4R:
   """Agilent BenchCel 4R microplate handler.
 
   The BenchCel is a sequential ("stacking access") storage device: each of its four stackers is a
   single-ended LIFO stack of plates. The device exposes ``downstack``/``upstack`` transfers and
-  tracks the expected plate order in four :class:`~pylabrobot.resources.ResourceStack` objects.
+  tracks the expected plate order in four resource stacks.
 
-  The four ``ResourceStack`` stacks track the expected plate order/content of each stacker.
+  Its body, loading tray and four stacks are resources in ``store``; ``setup`` makes them there,
+  or finds them when they are already there. A transfer moves the plate in the store in one
+  assignment once the device has moved it.
   """
 
   def __init__(
@@ -574,8 +610,8 @@ class BenchCel4R(Resource):
     read_poll_timeout: float = 0.25,
     loading_tray_teachpoint_id: Optional[int] = None,
     source_ip: Optional[str] = None,
-    stacks: Optional[Sequence[ResourceStack]] = None,
-    labware: Optional[Union[Plate, BenchCelLabwareSettings, dict]] = None,
+    stacks: Optional[Sequence[pb.ResourceDefinition]] = None,
+    labware: Optional[Union[handles.Plate, BenchCelLabwareSettings, dict]] = None,
     loading_tray_location: Optional[Coordinate] = None,
     size_x: float = 0.0,
     size_y: float = 0.0,
@@ -583,10 +619,11 @@ class BenchCel4R(Resource):
     rotation: Optional[Rotation] = None,
     category: Optional[str] = None,
     model: Optional[str] = "Agilent BenchCel 4R",
+    store: Optional[ResourceStore] = None,
   ):
     """
     Args:
-      name: Resource name for the device.
+      name: Name of the device's body in the store.
       host: IP address or DNS name of the BenchCel Ethernet interface.
       port: TCP port. Defaults to 7612, as observed in VWorks captures.
       timeout: Default command timeout in seconds.
@@ -602,12 +639,14 @@ class BenchCel4R(Resource):
         that without verifying it on your device.
       source_ip: Optional local/source IP to bind, useful on hosts with multiple
         network interfaces connected to different subnets.
-      labware: Optional PLR plate, calculated settings object, or serialized
+      labware: Optional plate in ``store``, calculated settings object, or serialized
         settings dict. The device must still be configured with matching VWorks
-        labware settings; this value is used for PLR metadata and validation.
-      stacks: Optionally provide custom ``ResourceStack`` stacks; defaults to four generic stacks.
+        labware settings; this value is used for PLR metadata and validation. Settings from a
+        plate are calculated when the BenchCel's resources are made.
+      stacks: Optionally provide custom stack definitions; defaults to four generic stacks.
       loading_tray_location: Cosmetic ``Coordinate`` of the loading-tray resource (resource tree /
         visualization only; the real transfer position is the teachpoint on the device).
+      store: The resource store its body is in; a new in-memory store by default.
     """
 
     self.host = host
@@ -616,9 +655,14 @@ class BenchCel4R(Resource):
     self.read_poll_timeout = read_poll_timeout
     self.loading_tray_teachpoint_id = loading_tray_teachpoint_id
     self.source_ip = source_ip
-    self.labware_settings = (
-      resolve_benchcel_labware_settings(labware) if labware is not None else None
-    )
+    self.labware_settings: Optional[BenchCelLabwareSettings] = None
+    self._labware_plate: Optional[handles.Plate] = None
+    if isinstance(labware, handles.Plate):
+      self._labware_plate = labware
+    elif isinstance(labware, dict):
+      self.labware_settings = BenchCelLabwareSettings.from_dict(labware)
+    elif labware is not None:
+      self.labware_settings = labware
     self.io = Socket(
       human_readable_device_name="Agilent BenchCel 4R",
       host=host,
@@ -629,36 +673,104 @@ class BenchCel4R(Resource):
     )
     self._lock = asyncio.Lock()
     self._rx_buffer = bytearray()
-    self._stacks: List[ResourceStack] = []
 
-    Resource.__init__(
-      self,
-      name=name,
-      size_x=size_x,
-      size_y=size_y,
-      size_z=size_z,
-      rotation=rotation,
-      category=category,
-      model=model,
-    )
-
-    self.loading_tray = PlateHolder(
-      name=f"{name}_tray", size_x=127.76, size_y=85.48, size_z=0, pedestal_size_z=0
-    )
-    self.assign_child_resource(
-      self.loading_tray, location=loading_tray_location or Coordinate.zero()
-    )
-
-    self._stacks = (
+    self.name = name
+    self.size = Coordinate(size_x, size_y, size_z)
+    self.rotation = rotation or Rotation()
+    self.category = category
+    self.model = model
+    self.store = store or ResourceStore.in_memory()
+    self.loading_tray_location = loading_tray_location or Coordinate.zero()
+    self._stack_definitions = (
       list(stacks) if stacks is not None else benchcel_4r_stacks(name_prefix=f"{name}_stacker")
     )
-    if len(self._stacks) != NUM_STACKERS:
+    if len(self._stack_definitions) != NUM_STACKERS:
       raise ValueError(f"BenchCel4R requires exactly {NUM_STACKERS} stacks")
-    for stack in self._stacks:
-      self.assign_child_resource(stack, location=None)
+    self._body: Optional[handles.Resource] = None
+    self._loading_tray: Optional[handles.PlateHolder] = None
+    self._stacks: List[handles.ResourceStack] = []
+
+  # -------------------------------------------------------------- resources
+
+  def definition(self) -> pb.ResourceDefinition:
+    """The BenchCel's body: its loading tray, then its four stacks."""
+    tray = build.resource(
+      f"{self.name}_tray",
+      Coordinate(127.76, 85.48, 0),
+      kind=pb.RESOURCE_KIND_PLATE_HOLDER,
+      location=self.loading_tray_location,
+      category="plate_holder",
+      type_name="PlateHolder",
+      holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero()), pedestal_size_z=0),
+    )
+    return build.resource(
+      self.name,
+      self.size,
+      rotation=self.rotation,
+      category=self.category or "",
+      model=self.model or "",
+      type_name="BenchCel4R",
+      children=[tray, *self._stack_definitions],
+    )
+
+  async def create_resources(self) -> handles.Resource:
+    """Make the BenchCel's body, tray and stacks in its store, or find them there by name, and
+    calculate the labware settings of a plate given at construction.
+
+    Called by `setup`.
+    """
+    found = await self.store.find_resources(
+      spb.ResourceFilter(names=[self.name], type_names=["BenchCel4R"])
+    )
+    body = found[0] if found else await self.store.create(self.definition(), name=self.name)
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[body.ref], depth=1)
+    )
+    parts = {
+      handle.name: handle
+      for handle in await self.store.make_handles(
+        [node for node in response.nodes if node.parent_id == body.id]
+      )
+    }
+    tray = parts.get(f"{self.name}_tray")
+    stacks = [parts.get(stack.attributes.name) for stack in self._stack_definitions]
+    if not isinstance(tray, handles.PlateHolder):
+      raise RuntimeError(f"'{self.name}' in the store has no loading tray")
+    self._loading_tray = tray
+    self._stacks = []
+    for definition, stack in zip(self._stack_definitions, stacks):
+      if not isinstance(stack, handles.ResourceStack):
+        raise RuntimeError(
+          f"'{self.name}' in the store has no stack '{definition.attributes.name}'"
+        )
+      self._stacks.append(stack)
+    self._body = body
+    if self._labware_plate is not None:
+      self.labware_settings = await resolve_benchcel_labware_settings(self._labware_plate)
+      self._labware_plate = None
+    return body
+
+  @property
+  def body(self) -> handles.Resource:
+    """The BenchCel's body in the store.
+
+    Raises:
+      RuntimeError: Its resources are not made yet: call `setup` first.
+    """
+    if self._body is None:
+      raise RuntimeError(f"'{self.name}' is not in a store yet; call setup() first")
+    return self._body
+
+  @property
+  def loading_tray(self) -> handles.PlateHolder:
+    """The loading tray's holder in the store."""
+    if self._loading_tray is None:
+      raise RuntimeError(f"'{self.name}' is not in a store yet; call setup() first")
+    return self._loading_tray
 
   async def setup(self) -> None:
-    """Open the TCP connection to the BenchCel."""
+    """Make or find the BenchCel's resources in the store, then open the TCP connection."""
+    await self.create_resources()
     logger.info("[benchcel] connecting to %s:%d", self.host, self.port)
     await asyncio.wait_for(self.io.setup(), timeout=self.timeout)
     logger.info("[benchcel] connected to %s:%d", self.host, self.port)
@@ -824,7 +936,7 @@ class BenchCel4R(Resource):
     """Send the lower-level ``0x48`` home command and wait for completion."""
     return await self._send_frame(Frame(CMD_HOME, b"\x01"), timeout=timeout)
 
-  async def move_to_stacker(self, stack: ResourceStack, *, timeout: float = 20.0) -> None:
+  async def move_to_stacker(self, stack: handles.ResourceStack, *, timeout: float = 20.0) -> None:
     """Move the arm to one of this BenchCel's configured stacks."""
     stacker = self._stack_to_stacker(stack)
     await self._move_to_target(_stacker_index(stacker), timeout=timeout)
@@ -934,7 +1046,7 @@ class BenchCel4R(Resource):
 
   async def open_stacker_clamps(
     self,
-    stack: ResourceStack,
+    stack: handles.ResourceStack,
     *,
     timeout: float = 15.0,
   ) -> None:
@@ -953,7 +1065,7 @@ class BenchCel4R(Resource):
 
   async def close_stacker_clamps(
     self,
-    stack: ResourceStack,
+    stack: handles.ResourceStack,
     *,
     timeout: float = 15.0,
   ) -> None:
@@ -1031,23 +1143,23 @@ class BenchCel4R(Resource):
       await self._write_frame(cmd, timeout=timeout)
     logger.info("[benchcel] wrote teachpoint %d", teachpoint.teachpoint_id)
 
-  @evented_operation("benchcel.move_plate_between_stacks", _stack_transfer_event_context)
+  @_evented("benchcel.move_plate_between_stacks", _stack_transfer_event_context)
   async def move_plate_between_stacks(
     self,
-    source: ResourceStack,
-    destination: ResourceStack,
+    source: handles.ResourceStack,
+    destination: handles.ResourceStack,
     *,
     timeout: float = 30.0,
-  ) -> Plate:
-    """Move the accessible plate between two configured stacks and update PLR state."""
+  ) -> handles.Plate:
+    """Move the accessible plate between two configured stacks and update the store."""
     source_stacker = self._stack_to_stacker(source)
     destination_stacker = self._stack_to_stacker(destination)
-    if source is destination:
+    if source == destination:
       raise ValueError("Source and destination stacks must be different")
-    if len(source.children) == 0:
+    plate = await source.get_top_item()
+    if plate is None:
       raise EmptyStackError(f"Stack {source.name!r} is empty")
-    plate = source.get_top_item()
-    if not isinstance(plate, Plate):
+    if not isinstance(plate, handles.Plate):
       raise TypeError(f"Top item in stack {source.name!r} is not a Plate")
 
     async with self._lock:
@@ -1063,8 +1175,7 @@ class BenchCel4R(Resource):
         Frame(CMD_PLACE, _target_payload(_stacker_index(destination_stacker))),
         timeout=timeout,
       )
-    plate.unassign()
-    destination.assign_child_resource(plate)
+    await destination.assign_child_resource(plate)
     logger.info(
       "[benchcel] moved %s from stacker %d to stacker %d",
       plate.name,
@@ -1077,7 +1188,7 @@ class BenchCel4R(Resource):
 
   async def set_labware(
     self,
-    labware: Union[Plate, BenchCelLabwareSettings],
+    labware: Union[handles.Plate, BenchCelLabwareSettings],
     *,
     timeout: float = 10.0,
   ) -> None:
@@ -1086,14 +1197,14 @@ class BenchCel4R(Resource):
     VWorks sends the labware settings as a 77-byte ``0x7d`` frame followed by an
     empty ``0x9f`` commit, which the device echoes back. Invalid geometry (for
     example, gripper hold positions that are too close) is rejected with a
-    ``0x02`` error. ``labware`` may be a PLR :class:`~pylabrobot.resources.Plate`
+    ``0x02`` error. ``labware`` may be a plate in a resource store
     (settings are calculated from its dimensions), a
     :class:`~pylabrobot.agilent.benchcel.labware.BenchCelLabwareSettings`
     object.
 
     On success, the resolved settings are stored on ``self.labware_settings``.
     """
-    settings = resolve_benchcel_labware_settings(labware)
+    settings = await resolve_benchcel_labware_settings(labware)
     payload = settings.to_device_payload()
     async with self._lock:
       await self._write_frame(Frame(CMD_SET_LABWARE, payload), timeout=timeout)
@@ -1139,7 +1250,7 @@ class BenchCel4R(Resource):
       return parse_sensor_response(frame)
 
   async def request_stacker_sensor_status(
-    self, stack: ResourceStack, *, timeout: float = 5.0
+    self, stack: handles.ResourceStack, *, timeout: float = 5.0
   ) -> SensorStatus:
     """Return the sensor status for one configured stack."""
     return await self._request_stacker_sensor_status(self._stack_to_stacker(stack), timeout=timeout)
@@ -1227,14 +1338,16 @@ class BenchCel4R(Resource):
   # -------------------------------------------------------------- stacker API
 
   @property
-  def stacks(self) -> Sequence[ResourceStack]:
-    """The four configured stacks, ordered by human stacker number."""
+  def stacks(self) -> Sequence[handles.ResourceStack]:
+    """The four configured stacks in the store, ordered by human stacker number."""
+    if self._body is None:
+      raise RuntimeError(f"'{self.name}' is not in a store yet; call setup() first")
     return tuple(self._stacks)
 
-  def _stack_to_stacker(self, stack: ResourceStack) -> int:
-    """Map a configured ``ResourceStack`` to its human stacker number (1-4)."""
-    for index, configured_stack in enumerate(self._stacks, start=1):
-      if configured_stack is stack:
+  def _stack_to_stacker(self, stack: handles.ResourceStack) -> int:
+    """Map a configured stack to its human stacker number (1-4)."""
+    for index, configured_stack in enumerate(self.stacks, start=1):
+      if configured_stack == stack:
         return index
     raise ValueError(f"Stack {stack.name!r} is not configured on this BenchCel")
 
@@ -1251,13 +1364,27 @@ class BenchCel4R(Resource):
       raise ValueError(f"teachpoint_id must fit in one byte, got {target!r}")
     return target
 
-  @evented_operation("benchcel.downstack", _downstack_event_context)
+  async def _top_and_tray(
+    self, stack: handles.ResourceStack
+  ) -> Tuple[Optional[handles.Resource], Optional[str]]:
+    """The plate on top of `stack`, and the name of what the tray holds, in one read."""
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[stack.ref, self.loading_tray.ref], depth=1)
+    )
+    stack_node = next(node for node in response.nodes if node.id == stack.id)
+    on_tray = [node for node in response.nodes if node.parent_id == self.loading_tray.id]
+    tray_name = on_tray[0].attributes.name if on_tray else None
+    if not stack_node.child_ids:
+      return None, tray_name
+    return await self.store.get_by_id(stack_node.child_ids[-1]), tray_name
+
+  @_evented("benchcel.downstack", _downstack_event_context)
   async def downstack(
     self,
-    stack: ResourceStack,
+    stack: handles.ResourceStack,
     *,
     timeout: float = 30.0,
-  ) -> Plate:
+  ) -> handles.Plate:
     """Move the accessible plate of ``stack`` to the loading teachpoint.
 
     The BenchCel firmware addresses whole stackers; ``stack`` selects which configured stacker
@@ -1266,15 +1393,13 @@ class BenchCel4R(Resource):
     """
     source_stacker = self._stack_to_stacker(stack)
     destination_target = self._loading_tray_target()
-    if len(stack.children) == 0:
+    plate, on_tray = await self._top_and_tray(stack)
+    if plate is None:
       raise EmptyStackError(f"Stack {stack.name!r} is empty")
-    plate = stack.get_top_item()
-    if not isinstance(plate, Plate):
+    if not isinstance(plate, handles.Plate):
       raise TypeError(f"Top item in stack {stack.name!r} is not a Plate")
-    if self.loading_tray.resource is not None:
-      raise LoadingTrayOccupiedError(
-        f"Loading tray already holds {self.loading_tray.resource.name!r}"
-      )
+    if on_tray is not None:
+      raise LoadingTrayOccupiedError(f"Loading tray already holds {on_tray!r}")
     async with self._lock:
       await self._send_frame_expect_ack_no_lock(
         Frame(CMD_ROBOT_GRIPPER, b"\x01"),
@@ -1288,15 +1413,19 @@ class BenchCel4R(Resource):
         Frame(CMD_PLACE, _target_payload(destination_target)),
         timeout=timeout,
       )
-    plate.unassign()
-    self.loading_tray.assign_child_resource(plate)
+    try:
+      await self.loading_tray.assign_child_resource(plate)
+    except StoreError as error:
+      # The tray refuses a plate it cannot seat, as PLR's PlateHolder does: with an
+      # AssertionError. The plate stays on top of its stack.
+      raise AssertionError(str(error)) from error
     logger.info("[benchcel] downstacked %s from stacker %d", plate.name, source_stacker)
     return plate
 
-  @evented_operation("benchcel.upstack", _upstack_event_context)
+  @_evented("benchcel.upstack", _upstack_event_context)
   async def upstack(
     self,
-    stack: ResourceStack,
+    stack: handles.ResourceStack,
     *,
     timeout: float = 30.0,
   ) -> None:
@@ -1306,10 +1435,10 @@ class BenchCel4R(Resource):
     (``0x63``), and updates the resource model after the motion succeeds.
     """
     source_target = self._loading_tray_target()
-    plate = self.loading_tray.resource
+    plate = await self.loading_tray.get_resource_held()
     if plate is None:
       raise LoadingTrayEmptyError("BenchCel loading tray is empty")
-    if not isinstance(plate, Plate):
+    if not isinstance(plate, handles.Plate):
       raise TypeError(f"Resource {plate.name!r} on the BenchCel loading tray is not a Plate")
     destination_stacker = self._stack_to_stacker(stack)
     async with self._lock:
@@ -1325,6 +1454,5 @@ class BenchCel4R(Resource):
         Frame(CMD_PLACE, _target_payload(_stacker_index(destination_stacker))),
         timeout=timeout,
       )
-    plate.unassign()
-    stack.assign_child_resource(plate)
+    await stack.assign_child_resource(plate)
     logger.info("[benchcel] upstacked %s onto stacker %d", plate.name, destination_stacker)

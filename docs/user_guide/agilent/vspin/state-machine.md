@@ -52,10 +52,11 @@ loader_status = await loader.driver.request_status()
 | Bucket confirmed at the load opening | `vspin.at_bucket`: `vspin.bucket1`, `vspin.bucket2`, or `None` |
 | Access2 connection, operation or transfer progress, recovery flag, and last confirmed teachpoint | `loader.driver.state` |
 | Access2 initialization, homing, faults, axis positions, and optical plate sensor | `await loader.driver.request_status()` |
-| Recorded plate locations | `vspin.bucket1.resource`, `vspin.bucket2.resource`, and `loader.resource` |
+| Recorded plate locations | `await vspin.bucket1.get_resource_held()`, `await vspin.bucket2.get_resource_held()`, and `await loader.get_resource_held()` |
 
 A saved snapshot does not update as the device moves; read `.state` again to observe
-progress. Recorded plate locations represent PLR's resource assignments. They do not
+progress. Recorded plate locations are the assignments in the resource store that the
+buckets and the loader stage are in (`vspin.store`). They do not
 measure plate mass or prove that a manually placed plate is present.
 
 ## Connection and readiness
@@ -153,8 +154,8 @@ Load and unload follow the same phases with opposite source and destination rout
 
 The driver checks source plate presence, grip, destination motion, gripper opening,
 and return to park before completing the transfer. On success, Access2 returns to
-`IDLE`, its last teachpoint is park, and PLR moves the plate's resource assignment to
-the destination. The same VSpin bucket remains presented.
+`IDLE`, its last teachpoint is park, and the plate is assigned to the destination in the
+resource store, in one assignment. The same VSpin bucket remains presented.
 
 Your workflow must keep the loader clear before rotor motion, keep transfer destinations
 empty, and provide compatible, balanced plates for spinning. The state model and resource

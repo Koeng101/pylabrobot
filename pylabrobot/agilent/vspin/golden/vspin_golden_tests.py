@@ -6,7 +6,8 @@ write the way the hardware does: the VSpin's door, door-lock and bucket-lock sen
 output word and the rotor reports the position it was last sent to; the Access2 reports itself
 ready, its gripper where it was last sent and its plate sensor as the scenario sets it. Events
 emitted through `pylabrobot.events` are recorded with their payloads. The resources are the
-loader and the two buckets, each the root of its own tree.
+loader and the two buckets, each the root of its own tree in one resource store, made there
+before the first step as `setup` would.
 
 The VSpin's network bring-up is not run: as in the VSpin's own tests, the centrifuge starts
 connected, initialized and homed, with the status masks its setup configures, and its bucket-1
@@ -33,8 +34,10 @@ from pylabrobot.agilent.vspin.access2 import Access2
 from pylabrobot.agilent.vspin.vspin import VSpin
 from pylabrobot.events import EventBus, PLREvent, use_event_bus
 from pylabrobot.io.binary import Reader, Writer
-from pylabrobot.resources import Plate, Well, create_ordered_items_2d
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -173,18 +176,24 @@ class _Recorder:
       initialization=VSpinInitializationState.INITIALIZED,
       homing=VSpinHomingState.HOMED,
     )
-    self.initial = self.snapshot()
+    self.initial: List[Dict[str, Any]] = []
     self.steps: List[Dict[str, Any]] = []
     self.events: List[Dict[str, Any]] = []
     self._operation_ids: Dict[str, str] = {}
     self.bus = EventBus()
     self.bus.subscribe(self._on_event)
 
-  def snapshot(self) -> List[Dict[str, Any]]:
+  async def start(self) -> None:
+    await self.vspin.create_resources()
+    await self.loader.create_resources()
+    self.initial = await self.snapshot()
+
+  async def snapshot(self) -> List[Dict[str, Any]]:
+    store = self.vspin.store
     return (
-      snapshot_resources(self.loader)
-      + snapshot_resources(self.vspin.bucket1)
-      + snapshot_resources(self.vspin.bucket2)
+      await snapshot_store(store, self.loader.body)
+      + await snapshot_store(store, self.vspin.bucket1)
+      + await snapshot_store(store, self.vspin.bucket2)
     )
 
   def _on_event(self, event: PLREvent) -> None:
@@ -205,7 +214,7 @@ class _Recorder:
     """Run one call and record what it sent, emitted, returned and changed."""
     self.sent.clear()
     self.events = []
-    before = self.snapshot()
+    before = await self.snapshot()
     record: Dict[str, Any] = {"call": call}
     result: Any = None
     with use_event_bus(self.bus):
@@ -216,34 +225,48 @@ class _Recorder:
         record["result"] = {"error": type(error).__name__, "message": str(error)}
     record["sent"] = list(self.sent)
     record["events"] = self.events
-    after = self.snapshot()
+    after = await self.snapshot()
     if after != before:
       record["resources"] = after
     self.steps.append(record)
     return result
 
-  def record(self) -> Dict[str, Any]:
-    return {"initial_resources": self.initial, "steps": self.steps, "resources": self.snapshot()}
+  async def record(self) -> Dict[str, Any]:
+    return {
+      "initial_resources": self.initial,
+      "steps": self.steps,
+      "resources": await self.snapshot(),
+    }
 
 
-def _plate(name: str) -> Plate:
-  """An SBS plate with one row of two wells: enough to show its wells move with it."""
-  wells = create_ordered_items_2d(
-    Well,
-    num_items_x=2,
-    num_items_y=1,
-    dx=10,
-    dy=40,
-    dz=1,
-    item_dx=9,
-    item_dy=None,
-    name_prefix=name,
-    size_x=6.9,
-    size_y=6.9,
-    size_z=10,
-    max_volume=360,
+async def _plate(recorder: _Recorder, name: str) -> handles.Resource:
+  """An SBS plate with one row of two wells, a root in the store: enough to show its wells move
+  with it."""
+  well = build.resource(
+    f"{name}_well_{{identifier}}",
+    Coordinate(6.9, 6.9, 10),
+    kind=pb.RESOURCE_KIND_WELL,
+    type_name="Well",
+    category="well",
+    container=pb.ContainerSpec(max_volume=360),
+    state=pb.ResourceState(volume=pb.VolumeState()),
   )
-  return Plate(name, size_x=127.76, size_y=85.48, size_z=14.2, ordered_items=wells)
+  return await recorder.vspin.store.create(
+    build.resource(
+      name,
+      Coordinate(127.76, 85.48, 14.2),
+      kind=pb.RESOURCE_KIND_PLATE,
+      type_name="Plate",
+      category="plate",
+      plate=pb.PlateSpec(plate_type="skirted"),
+      itemized=pb.ItemizedSpec(
+        num_items_x=2,
+        num_items_y=1,
+        grid=pb.ItemGrid(item=well, offset=build.vec3(Coordinate(10, 40, 1)), item_dx=9, item_dy=0),
+      ),
+    ),
+    name=name,
+  )
 
 
 class VSpinAccess2GoldenTests(unittest.IsolatedAsyncioTestCase):
@@ -251,11 +274,12 @@ class VSpinAccess2GoldenTests(unittest.IsolatedAsyncioTestCase):
     """The loader set up; a plate loaded into bucket 1 and unloaded, then into bucket 2 with
     per-call settings, a spin refused while it is there, and unloaded."""
     recorder = _Recorder()
+    await recorder.start()
     vspin, loader = recorder.vspin, recorder.loader
-    plate = _plate("sample_plate")
+    plate = await _plate(recorder, "sample_plate")
 
     async def place_plate() -> None:
-      loader.assign_child_resource(plate)
+      await loader.assign_child_resource(plate)
 
     await recorder.step("loader.setup()", loader.setup)
     await recorder.step("loader.assign_child_resource(plate) by hand", place_plate)
@@ -280,20 +304,21 @@ class VSpinAccess2GoldenTests(unittest.IsolatedAsyncioTestCase):
     )
     await recorder.step("loader.stop()", loader.stop)
 
-    check_golden(self, GOLDEN / "load_and_unload_both_buckets.json", recorder.record())
+    check_golden(self, GOLDEN / "load_and_unload_both_buckets.json", await recorder.record())
 
   async def test_refused_transfers(self):
     """Loads and unloads refused before the loader moves: none of them moves the plate."""
     recorder = _Recorder()
+    await recorder.start()
     vspin, loader = recorder.vspin, recorder.loader
-    plate = _plate("sample_plate")
-    other = _plate("other_plate")
+    plate = await _plate(recorder, "sample_plate")
+    other = await _plate(recorder, "other_plate")
 
-    async def place(holder_plate: Plate, on: Any) -> None:
-      on.assign_child_resource(holder_plate)
+    async def place(holder_plate: handles.Resource, on: Any) -> None:
+      await on.assign_child_resource(holder_plate)
 
-    async def take(holder_plate: Plate) -> None:
-      holder_plate.unassign()
+    async def take(holder_plate: handles.Resource) -> None:
+      await holder_plate.unassign()
 
     await recorder.step("loader.setup()", loader.setup)
     await recorder.step("loader.assign_child_resource(plate) by hand", lambda: place(plate, loader))
@@ -316,18 +341,19 @@ class VSpinAccess2GoldenTests(unittest.IsolatedAsyncioTestCase):
     await recorder.step("take plate off the loader by hand", lambda: take(plate))
     await recorder.step("loader.load() loader empty", loader.load)
 
-    check_golden(self, GOLDEN / "refused_transfers.json", recorder.record())
+    check_golden(self, GOLDEN / "refused_transfers.json", await recorder.record())
 
   async def test_loader_finds_no_plate(self):
     """The loader reaches the bucket and finds no plate on unload, then none on the stage on
     load: the plates stay where the model had them, and later transfers are refused."""
     recorder = _Recorder()
+    await recorder.start()
     vspin, loader = recorder.vspin, recorder.loader
-    plate = _plate("sample_plate")
-    spun = _plate("spun_plate")
+    plate = await _plate(recorder, "sample_plate")
+    spun = await _plate(recorder, "spun_plate")
 
-    async def place(holder_plate: Plate, on: Any) -> None:
-      on.assign_child_resource(holder_plate)
+    async def place(holder_plate: handles.Resource, on: Any) -> None:
+      await on.assign_child_resource(holder_plate)
 
     await recorder.step("loader.setup()", loader.setup)
     await recorder.step("vspin.go_to_bucket1()", vspin.go_to_bucket1)
@@ -341,16 +367,17 @@ class VSpinAccess2GoldenTests(unittest.IsolatedAsyncioTestCase):
     await recorder.step("loader.load() after the loader fault", loader.load)
     await recorder.step("loader.unload() after the loader fault", loader.unload)
 
-    check_golden(self, GOLDEN / "loader_finds_no_plate.json", recorder.record())
+    check_golden(self, GOLDEN / "loader_finds_no_plate.json", await recorder.record())
 
   async def test_load_finds_no_plate(self):
     """The loader finds no plate on its stage when loading: the plate stays on the loader."""
     recorder = _Recorder()
+    await recorder.start()
     vspin, loader = recorder.vspin, recorder.loader
-    plate = _plate("sample_plate")
+    plate = await _plate(recorder, "sample_plate")
 
     async def place() -> None:
-      loader.assign_child_resource(plate)
+      await loader.assign_child_resource(plate)
 
     await recorder.step("loader.setup()", loader.setup)
     await recorder.step("vspin.go_to_bucket1()", vspin.go_to_bucket1)
@@ -358,7 +385,7 @@ class VSpinAccess2GoldenTests(unittest.IsolatedAsyncioTestCase):
     recorder.access2_io.plate_sensed = False
     await recorder.step("loader.load() no plate sensed", loader.load)
 
-    check_golden(self, GOLDEN / "load_finds_no_plate.json", recorder.record())
+    check_golden(self, GOLDEN / "load_finds_no_plate.json", await recorder.record())
 
 
 if __name__ == "__main__":

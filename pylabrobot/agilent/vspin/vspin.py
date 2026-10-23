@@ -7,7 +7,7 @@ import logging
 import os
 import warnings
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 from pylabrobot.agilent.vspin import _nmc
 from pylabrobot.agilent.vspin._state import (
@@ -19,9 +19,19 @@ from pylabrobot.agilent.vspin._state import (
   VSpinMachineState,
 )
 from pylabrobot.agilent.vspin.errors import CentrifugeDoorError
-from pylabrobot.events import device_reference, evented_operation, resource_reference
+from pylabrobot.events import (
+  device_reference,
+  event_operation,
+  evented_operation,
+  handle_reference,
+  is_event_bus_active,
+)
 from pylabrobot.io.ftdi import FTDI, is_ftdi_transport_error
-from pylabrobot.resources import Coordinate, ResourceHolder
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 logger = logging.getLogger(__name__)
 
@@ -147,31 +157,30 @@ def _vspin_lifecycle_event_context(self: "VSpin") -> dict[str, object]:
   return {"device": device_reference(self, name=self.name)}
 
 
-def _vspin_event_context(
-  self: "VSpin",
-  g: float = 500,
-  duration: float = 60,
-  acceleration: float = 0.8,
-  deceleration: float = 0.8,
-) -> dict:
-  """Describe the currently loaded buckets and requested centrifuge run."""
-  bucket_resources = [
-    {
-      "holder": resource_reference(bucket),
-      "resource": resource_reference(bucket.resource),
-    }
-    for bucket in (self.bucket1, self.bucket2)
-    if bucket.resource is not None
-  ]
-  return {
-    "device": device_reference(self, name=self.name),
-    "resources": [bucket["resource"] for bucket in bucket_resources],
-    "bucket_resources": bucket_resources,
-    "relative_centrifugal_force": g,
-    "duration": duration,
-    "acceleration_fraction": acceleration,
-    "deceleration_fraction": deceleration,
-  }
+def bucket_definition(name: str) -> pb.ResourceDefinition:
+  """A VSpin bucket: a holder that takes one SBS plate at its origin."""
+  return build.resource(
+    name,
+    Coordinate(127.76, 85.48, 0),
+    kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
+    category="resource_holder",
+    type_name="ResourceHolder",
+    holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero())),
+  )
+
+
+async def find_or_create_holder(
+  store: ResourceStore, definition: pb.ResourceDefinition
+) -> handles.ResourceHolder:
+  """The holder of the definition's name and type in `store`, made as a root if it is not there."""
+  attributes = definition.attributes
+  found = await store.find_resources(
+    spb.ResourceFilter(names=[attributes.name], type_names=[attributes.type_name])
+  )
+  holder = found[0] if found else await store.create(definition, name=attributes.name)
+  if not isinstance(holder, handles.ResourceHolder):
+    raise RuntimeError(f"'{attributes.name}' in the store is not a holder")
+  return holder
 
 
 # ---------------------------------------------------------------------------
@@ -185,14 +194,19 @@ class VSpin:
   Owns the USB connection, low-level command protocol, and hardware status queries.
   """
 
-  def __init__(self, name: str, device_id: Optional[str] = None):
+  def __init__(
+    self, name: str, device_id: Optional[str] = None, store: Optional[ResourceStore] = None
+  ):
     """
     Args:
+      name: The device's name; its buckets are `{name}_bucket1` and `{name}_bucket2`.
       device_id: The libftdi id for the centrifuge. Find using
         `python -m pylibftdi.examples.list_devices`
+      store: The resource store its buckets are in; a new in-memory store by default.
     """
     super().__init__()
     self.name = name
+    self.store = store or ResourceStore.in_memory()
     self.io = FTDI(human_readable_device_name="Agilent VSpin Centrifuge", device_id=device_id)
     self.device_id = device_id
     self._servo_status_mask = 0
@@ -210,23 +224,35 @@ class VSpin:
     if device_id is not None:
       self._bucket_1_remainder = _load_vspin_calibrations(device_id)
 
-    self.bucket1 = ResourceHolder(
-      name=f"{name}_bucket1",
-      size_x=127.76,
-      size_y=85.48,
-      size_z=0,
-      child_location=Coordinate.zero(),
-    )
-    self.bucket2 = ResourceHolder(
-      name=f"{name}_bucket2",
-      size_x=127.76,
-      size_y=85.48,
-      size_z=0,
-      child_location=Coordinate.zero(),
-    )
+    self._buckets: Optional[tuple[handles.ResourceHolder, handles.ResourceHolder]] = None
 
     # The controller has no query for which bucket is parked at the load position.
-    self._at_bucket: Optional[ResourceHolder] = None
+    self._at_bucket: Optional[handles.ResourceHolder] = None
+
+  async def create_resources(self) -> None:
+    """Make the two buckets in the store, each a root, or find them there by name.
+
+    Called by `setup`.
+    """
+    self._buckets = (
+      await find_or_create_holder(self.store, bucket_definition(f"{self.name}_bucket1")),
+      await find_or_create_holder(self.store, bucket_definition(f"{self.name}_bucket2")),
+    )
+
+  def _bucket(self, index: int) -> handles.ResourceHolder:
+    if self._buckets is None:
+      raise RuntimeError(f"'{self.name}' has no buckets in a store yet; call setup() first")
+    return self._buckets[index]
+
+  @property
+  def bucket1(self) -> handles.ResourceHolder:
+    """Bucket 1's holder in the store."""
+    return self._bucket(0)
+
+  @property
+  def bucket2(self) -> handles.ResourceHolder:
+    """Bucket 2's holder in the store."""
+    return self._bucket(1)
 
   @property
   def state(self) -> VSpinMachineState:
@@ -234,7 +260,7 @@ class VSpin:
     return self._state
 
   @property
-  def at_bucket(self) -> Optional[ResourceHolder]:
+  def at_bucket(self) -> Optional[handles.ResourceHolder]:
     """The bucket parked at the load position, or None if the rotor is elsewhere."""
     return self._at_bucket
 
@@ -309,7 +335,9 @@ class VSpin:
 
   @evented_operation("centrifuge.setup", _vspin_lifecycle_event_context)
   async def setup(self) -> None:
-    """Connect, initialize, home, and place the VSpin in its safe setup position."""
+    """Make or find the buckets in the store, then connect, initialize, home, and place the
+    VSpin in its safe setup position."""
+    await self.create_resources()
     async with self._command_scope("set up VSpin", require_ready=False) as transition:
       try:
         await self._setup(transition=transition)
@@ -996,14 +1024,14 @@ class VSpin:
   @asynccontextmanager
   async def reserve_transfer(
     self,
-    bucket: ResourceHolder,
+    bucket: handles.ResourceHolder,
   ) -> AsyncIterator[TransitionToken]:
     """Reserve the load opening while a paired loader may enter the rotor."""
     async with self._command_scope(
       "transfer a plate",
       activity=VSpinActivity.TRANSFERRING,
     ) as transition:
-      if self._at_bucket is not bucket:
+      if self._at_bucket != bucket:
         raise RuntimeError("Requested bucket is not confirmed at the load opening")
       if not await self.request_door_open():
         raise CentrifugeDoorError("Centrifuge door-open sensor must be active")
@@ -1217,7 +1245,7 @@ class VSpin:
 
   async def _go_to_bucket(
     self,
-    bucket: ResourceHolder,
+    bucket: handles.ResourceHolder,
     position: int,
     *,
     transition: TransitionToken,
@@ -1309,7 +1337,37 @@ class VSpin:
   def g_to_rpm(g: float) -> int:
     return int(_nmc.rcf_to_rpm(g))
 
-  @evented_operation("centrifuge.spin", _vspin_event_context)
+  async def _spin_event_data(
+    self, g: float, duration: float, acceleration: float, deceleration: float
+  ) -> Dict[str, Any]:
+    """Describe the currently loaded buckets and requested centrifuge run."""
+    bucket_resources = []
+    if self._buckets is not None:
+      response = await self.store.commands.get_resources(
+        spb.GetResourcesRequest(resources=[bucket.ref for bucket in self._buckets], depth=1)
+      )
+      ids = [bucket.id for bucket in self._buckets]
+      first_children = [n for n in response.nodes if n.parent_id in ids and n.index == 0]
+      held = await self.store.make_handles(first_children)
+      by_bucket = {node.parent_id: handle for node, handle in zip(first_children, held)}
+      bucket_resources = [
+        {
+          "holder": await handle_reference(bucket),
+          "resource": await handle_reference(by_bucket[bucket.id]),
+        }
+        for bucket in self._buckets
+        if bucket.id in by_bucket
+      ]
+    return {
+      "device": device_reference(self, name=self.name),
+      "resources": [bucket["resource"] for bucket in bucket_resources],
+      "bucket_resources": bucket_resources,
+      "relative_centrifugal_force": g,
+      "duration": duration,
+      "acceleration_fraction": acceleration,
+      "deceleration_fraction": deceleration,
+    }
+
   async def spin(
     self,
     g: float = 500,
@@ -1325,6 +1383,15 @@ class VSpin:
       acceleration: Acceleration rate as a fraction of maximum (0 to 1, exclusive of 0).
       deceleration: Deceleration rate as a fraction of maximum (0 to 1, exclusive of 0).
     """
+    data: Dict[str, Any] = {}
+    if is_event_bus_active():
+      data = await self._spin_event_data(g, duration, acceleration, deceleration)
+    with event_operation("centrifuge.spin", **data):
+      await self._spin(g, duration, acceleration, deceleration)
+
+  async def _spin(
+    self, g: float, duration: float, acceleration: float, deceleration: float
+  ) -> None:
     if acceleration <= 0 or acceleration > 1:
       raise ValueError("Acceleration must be within 0-1.")
     if deceleration <= 0 or deceleration > 1:

@@ -2184,7 +2184,7 @@
       "call": "downstack(stacks[3]) a plate the tray cannot take",
       "result": {
         "error": "AssertionError",
-        "message": "All wells must have the same z location"
+        "message": "the wells of 'bare_plate' do not all stand at the same height"
       },
       "sent": [
         "6a010001",
@@ -2202,9 +2202,9 @@
               "type": "BenchCel4R",
               "model": "Agilent BenchCel 4R",
               "rotation": {
-                "x": 0,
-                "y": 0,
-                "z": 0
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
               }
             },
             "resources": [
@@ -2212,9 +2212,9 @@
                 "name": "bare_plate",
                 "type": "Plate",
                 "rotation": {
-                  "x": 0,
-                  "y": 0,
-                  "z": 0
+                  "x": 0.0,
+                  "y": 0.0,
+                  "z": 0.0
                 },
                 "ancestors": [
                   {
@@ -2233,9 +2233,9 @@
               "name": "benchcel_stacker_4",
               "type": "ResourceStack",
               "rotation": {
-                "x": 0,
-                "y": 0,
-                "z": 0
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
               },
               "ancestors": [
                 {
@@ -2249,9 +2249,9 @@
               "name": "benchcel_tray",
               "type": "PlateHolder",
               "rotation": {
-                "x": 0,
-                "y": 0,
-                "z": 0
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
               },
               "ancestors": [
                 {
@@ -2260,44 +2260,6 @@
                   "model": "Agilent BenchCel 4R"
                 }
               ]
-            }
-          }
-        },
-        {
-          "name": "resource.unassigned",
-          "operation": "benchcel.downstack",
-          "operation_id": "op-13",
-          "data": {
-            "resource": {
-              "name": "bare_plate",
-              "type": "Plate",
-              "rotation": {
-                "x": 0,
-                "y": 0,
-                "z": 0
-              }
-            },
-            "previous_parent": {
-              "name": "benchcel_stacker_4",
-              "type": "ResourceStack",
-              "rotation": {
-                "x": 0,
-                "y": 0,
-                "z": 0
-              },
-              "ancestors": [
-                {
-                  "name": "benchcel",
-                  "type": "BenchCel4R",
-                  "model": "Agilent BenchCel 4R"
-                }
-              ]
-            },
-            "previous_location": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "type": "Coordinate"
             }
           }
         },
@@ -2311,9 +2273,9 @@
               "type": "BenchCel4R",
               "model": "Agilent BenchCel 4R",
               "rotation": {
-                "x": 0,
-                "y": 0,
-                "z": 0
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
               }
             },
             "resources": [
@@ -2321,9 +2283,9 @@
                 "name": "bare_plate",
                 "type": "Plate",
                 "rotation": {
-                  "x": 0,
-                  "y": 0,
-                  "z": 0
+                  "x": 0.0,
+                  "y": 0.0,
+                  "z": 0.0
                 },
                 "ancestors": [
                   {
@@ -2342,9 +2304,9 @@
               "name": "benchcel_stacker_4",
               "type": "ResourceStack",
               "rotation": {
-                "x": 0,
-                "y": 0,
-                "z": 0
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
               },
               "ancestors": [
                 {
@@ -2358,9 +2320,9 @@
               "name": "benchcel_tray",
               "type": "PlateHolder",
               "rotation": {
-                "x": 0,
-                "y": 0,
-                "z": 0
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
               },
               "ancestors": [
                 {
@@ -2371,109 +2333,8 @@
               ]
             },
             "error_type": "AssertionError",
-            "error_message": "All wells must have the same z location"
+            "error_message": "the wells of 'bare_plate' do not all stand at the same height"
           }
-        }
-      ],
-      "resources": [
-        {
-          "name": "benchcel",
-          "parent": "",
-          "kind": "RESOURCE_KIND_RESOURCE"
-        },
-        {
-          "name": "benchcel_tray",
-          "parent": "benchcel",
-          "kind": "RESOURCE_KIND_PLATE_HOLDER",
-          "location": [
-            -200.0,
-            50.0,
-            0.0
-          ]
-        },
-        {
-          "name": "benchcel_stacker_1",
-          "parent": "benchcel",
-          "kind": "RESOURCE_KIND_RESOURCE_STACK"
-        },
-        {
-          "name": "plate_1",
-          "parent": "benchcel_stacker_1",
-          "kind": "RESOURCE_KIND_PLATE",
-          "location": [
-            0.0,
-            0.0,
-            0.0
-          ]
-        },
-        {
-          "name": "plate_1_well_A1",
-          "parent": "plate_1",
-          "kind": "RESOURCE_KIND_WELL",
-          "location": [
-            10.0,
-            40.0,
-            1.0
-          ],
-          "volume": 0.0
-        },
-        {
-          "name": "plate_1_well_A2",
-          "parent": "plate_1",
-          "kind": "RESOURCE_KIND_WELL",
-          "location": [
-            19.0,
-            40.0,
-            1.0
-          ],
-          "volume": 0.0
-        },
-        {
-          "name": "benchcel_stacker_2",
-          "parent": "benchcel",
-          "kind": "RESOURCE_KIND_RESOURCE_STACK"
-        },
-        {
-          "name": "benchcel_stacker_3",
-          "parent": "benchcel",
-          "kind": "RESOURCE_KIND_RESOURCE_STACK"
-        },
-        {
-          "name": "plate_2",
-          "parent": "benchcel_stacker_3",
-          "kind": "RESOURCE_KIND_PLATE",
-          "location": [
-            0.0,
-            0.0,
-            0.0
-          ]
-        },
-        {
-          "name": "plate_2_well_A1",
-          "parent": "plate_2",
-          "kind": "RESOURCE_KIND_WELL",
-          "location": [
-            10.0,
-            40.0,
-            1.0
-          ],
-          "volume": 0.0
-        },
-        {
-          "name": "plate_2_well_A2",
-          "parent": "plate_2",
-          "kind": "RESOURCE_KIND_WELL",
-          "location": [
-            19.0,
-            40.0,
-            1.0
-          ],
-          "volume": 0.0
-        },
-        {
-          "name": "benchcel_stacker_4",
-          "parent": "benchcel",
-          "kind": "RESOURCE_KIND_RESOURCE_STACK"
         }
       ]
     }
@@ -2577,6 +2438,16 @@
       "name": "benchcel_stacker_4",
       "parent": "benchcel",
       "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    },
+    {
+      "name": "bare_plate",
+      "parent": "benchcel_stacker_4",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
     }
   ]
 }
