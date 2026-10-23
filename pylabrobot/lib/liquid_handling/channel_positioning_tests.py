@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from pylabrobot.lib.liquid_handling.channel_positioning import (
   _centers_to_offsets,
@@ -9,8 +9,10 @@ from pylabrobot.lib.liquid_handling.channel_positioning import (
   _position_channels_wide,
   _resolve_channel_spacings,
   _space_needed,
+  ChannelFootprint,
   compute_channel_offsets,
-  compute_nonconsecutive_channel_offsets,
+  footprint_of,
+  nonconsecutive_channel_offsets,
   required_spacing_between,
 )
 from pylabrobot.lib.liquid_handling.errors import ChannelsDoNotFitError
@@ -32,7 +34,7 @@ def _make_container(size_y, no_go_zones=None, name="test"):
 class TestGetCompartments(unittest.TestCase):
   def test_no_zones(self):
     c = _make_container(100)
-    result = _get_compartments(c)
+    result = _get_compartments(footprint_of(c))
     self.assertEqual(result, [(2.0, 98.0)])
 
   def test_single_center_zone(self):
@@ -42,7 +44,7 @@ class TestGetCompartments(unittest.TestCase):
         (Coordinate(0, 48, 0), Coordinate(19, 52, 50)),
       ],
     )
-    result = _get_compartments(c)
+    result = _get_compartments(footprint_of(c))
     self.assertEqual(len(result), 2)
     self.assertAlmostEqual(result[0][0], 2.0)
     self.assertAlmostEqual(result[0][1], 46.0)
@@ -56,7 +58,7 @@ class TestGetCompartments(unittest.TestCase):
         (Coordinate(0, 0, 0), Coordinate(19, 10, 50)),
       ],
     )
-    result = _get_compartments(c)
+    result = _get_compartments(footprint_of(c))
     self.assertEqual(len(result), 1)
     self.assertAlmostEqual(result[0][0], 12.0)
     self.assertAlmostEqual(result[0][1], 48.0)
@@ -68,7 +70,7 @@ class TestGetCompartments(unittest.TestCase):
         (Coordinate(0, 40, 0), Coordinate(19, 50, 50)),
       ],
     )
-    result = _get_compartments(c)
+    result = _get_compartments(footprint_of(c))
     self.assertEqual(len(result), 1)
     self.assertAlmostEqual(result[0][0], 2.0)
     self.assertAlmostEqual(result[0][1], 38.0)
@@ -81,14 +83,14 @@ class TestGetCompartments(unittest.TestCase):
         (Coordinate(0, 3, 0), Coordinate(19, 17, 50)),
       ],
     )
-    result = _get_compartments(c)
+    result = _get_compartments(footprint_of(c))
     # front compartment [0, 3] -> too narrow (3mm < 4mm)
     # back compartment [17, 20] -> too narrow (3mm < 4mm)
     self.assertEqual(result, [])
 
   def test_custom_edge_clearance(self):
     c = _make_container(10)
-    result = _get_compartments(c, edge_clearance=1.0)
+    result = _get_compartments(footprint_of(c), edge_clearance=1.0)
     self.assertEqual(result, [(1.0, 9.0)])
 
   def test_multiple_zones(self):
@@ -99,7 +101,7 @@ class TestGetCompartments(unittest.TestCase):
         (Coordinate(0, 65, 0), Coordinate(19, 70, 50)),
       ],
     )
-    result = _get_compartments(c)
+    result = _get_compartments(footprint_of(c))
     self.assertEqual(len(result), 3)
 
   def test_overlapping_zones(self):
@@ -110,7 +112,7 @@ class TestGetCompartments(unittest.TestCase):
         (Coordinate(0, 40, 0), Coordinate(19, 60, 50)),
       ],
     )
-    result = _get_compartments(c)
+    result = _get_compartments(footprint_of(c))
     # Should merge: gap is [0,30] and [60,100]
     self.assertEqual(len(result), 2)
     self.assertAlmostEqual(result[0][0], 2.0)
@@ -225,19 +227,19 @@ class TestCentersToOffsets(unittest.TestCase):
   def test_sorted_back_to_front(self):
     resource = Resource(name="r", size_x=10, size_y=100, size_z=10)
     centers = [20.0, 50.0, 80.0]
-    offsets = _centers_to_offsets(centers, resource)
+    offsets = _centers_to_offsets(centers, footprint_of(resource))
     # Should be sorted descending by y
     self.assertGreater(offsets[0].y, offsets[1].y)
     self.assertGreater(offsets[1].y, offsets[2].y)
 
   def test_offset_relative_to_center(self):
     resource = Resource(name="r", size_x=10, size_y=100, size_z=10)
-    offsets = _centers_to_offsets([50.0], resource)
+    offsets = _centers_to_offsets([50.0], footprint_of(resource))
     self.assertAlmostEqual(offsets[0].y, 0.0)
 
   def test_x_and_z_are_zero(self):
     resource = Resource(name="r", size_x=10, size_y=100, size_z=10)
-    offsets = _centers_to_offsets([30.0, 70.0], resource)
+    offsets = _centers_to_offsets([30.0, 70.0], footprint_of(resource))
     for o in offsets:
       self.assertAlmostEqual(o.x, 0.0)
       self.assertAlmostEqual(o.z, 0.0)
@@ -407,20 +409,18 @@ class TestComputeChannelOffsets(unittest.TestCase):
 class TestComputeSingleContainerOffsets(unittest.TestCase):
   S = [9.0] * 8
 
-  def _mock_container(self, size_y: float):
-    c = MagicMock(spec=["get_absolute_size_y"])
-    c.get_absolute_size_y.return_value = size_y
-    return c
+  def _mock_container(self, size_y: float) -> ChannelFootprint:
+    return ChannelFootprint(name="c", size_y=size_y, absolute_size_y=size_y, center_y=size_y / 2)
 
-  @patch("pylabrobot.lib.liquid_handling.channel_positioning.compute_channel_offsets")
+  @patch("pylabrobot.lib.liquid_handling.channel_positioning.channel_offsets")
   def test_even_span_no_center_offset(self, mock_offsets):
     mock_offsets.return_value = [Coordinate(0, 4.5, 0), Coordinate(0, -4.5, 0)]
-    result = compute_nonconsecutive_channel_offsets(self._mock_container(50.0), [0, 1], self.S)
+    result = nonconsecutive_channel_offsets(self._mock_container(50.0), [0, 1], self.S)
     assert result is not None
     self.assertAlmostEqual(result[0].y, 4.5)
     self.assertAlmostEqual(result[1].y, -4.5)
 
-  @patch("pylabrobot.lib.liquid_handling.channel_positioning.compute_channel_offsets")
+  @patch("pylabrobot.lib.liquid_handling.channel_positioning.channel_offsets")
   def test_odd_span_passes_through_offsets(self, mock_offsets):
     mock_offsets.return_value = [
       Coordinate(0, 9.0, 0),
@@ -428,42 +428,38 @@ class TestComputeSingleContainerOffsets(unittest.TestCase):
       Coordinate(0, -9.0, 0),
     ]
     # No additional shift; compute_channel_offsets handles no-go zones directly
-    result = compute_nonconsecutive_channel_offsets(self._mock_container(50.0), [0, 1, 2], self.S)
+    result = nonconsecutive_channel_offsets(self._mock_container(50.0), [0, 1, 2], self.S)
     assert result is not None
     self.assertAlmostEqual(result[0].y, 9.0)
 
   def test_container_too_small_returns_none(self):
-    self.assertIsNone(
-      compute_nonconsecutive_channel_offsets(self._mock_container(10.0), [0, 1], self.S)
-    )
+    self.assertIsNone(nonconsecutive_channel_offsets(self._mock_container(10.0), [0, 1], self.S))
 
-  @patch("pylabrobot.lib.liquid_handling.channel_positioning.compute_channel_offsets")
+  @patch("pylabrobot.lib.liquid_handling.channel_positioning.channel_offsets")
   def test_non_consecutive_uses_full_physical_span(self, mock_offsets):
     mock_offsets.return_value = [
       Coordinate(0, 10.0, 0),
       Coordinate(0, 0.0, 0),
       Coordinate(0, -10.0, 0),
     ]
-    result = compute_nonconsecutive_channel_offsets(self._mock_container(50.0), [0, 2], self.S)
+    result = nonconsecutive_channel_offsets(self._mock_container(50.0), [0, 2], self.S)
     assert result is not None
     self.assertEqual(len(result), 2)
     mock_offsets.assert_called_once_with(
-      resource=unittest.mock.ANY, num_channels=3, spread="wide", channel_spacings=[9.0] * 3
+      footprint=unittest.mock.ANY, num_channels=3, spread="wide", channel_spacings=[9.0] * 3
     )
 
-  @patch("pylabrobot.lib.liquid_handling.channel_positioning.compute_channel_offsets")
+  @patch("pylabrobot.lib.liquid_handling.channel_positioning.channel_offsets")
   def test_mixed_spacing_uses_effective(self, mock_offsets):
     mock_offsets.return_value = [
       Coordinate(0, 18.0, 0),
       Coordinate(0, 0.0, 0),
       Coordinate(0, -18.0, 0),
     ]
-    result = compute_nonconsecutive_channel_offsets(
-      self._mock_container(100.0), [0, 2], [9.0, 9.0, 18.0]
-    )
+    result = nonconsecutive_channel_offsets(self._mock_container(100.0), [0, 2], [9.0, 9.0, 18.0])
     self.assertIsNotNone(result)
     mock_offsets.assert_called_once_with(
-      resource=unittest.mock.ANY, num_channels=3, spread="wide", channel_spacings=[18.0] * 3
+      footprint=unittest.mock.ANY, num_channels=3, spread="wide", channel_spacings=[18.0] * 3
     )
 
 
