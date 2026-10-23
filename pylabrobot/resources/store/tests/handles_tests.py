@@ -205,6 +205,14 @@ class ChangingTests(HandleTestCase):
     assert barcode is not None
     self.assertEqual(barcode.data, "123")
 
+  async def test_a_preferred_pickup_location_is_set_and_cleared(self):
+    plate = await self.store.get("plate", root=self.deck)
+    self.assertIsNone(await plate.get_preferred_pickup_location())
+    await plate.set_preferred_pickup_location(Coordinate(63.88, 42.74, 5))
+    self.assertEqual(await plate.get_preferred_pickup_location(), Coordinate(63.88, 42.74, 5))
+    await plate.set_preferred_pickup_location(None)
+    self.assertIsNone(await plate.get_preferred_pickup_location())
+
   async def test_a_locked_deck_refuses_other_clients(self):
     other = ResourceStore.in_memory(self.store.memory)
     plate = await self.store.get("plate", root=self.deck)

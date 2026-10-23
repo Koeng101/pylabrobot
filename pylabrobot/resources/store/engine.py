@@ -967,6 +967,19 @@ class Engine:
 
     self.set_attributes(node, steps, apply)
 
+  def set_preferred_pickup_location(
+    self, request: pb.SetPreferredPickupLocation, steps: List[Step]
+  ) -> None:
+    node = self.resolve(request.resource)
+
+    def apply() -> None:
+      if request.HasField("location"):
+        node.attributes.preferred_pickup_location.CopyFrom(request.location)
+      else:
+        node.attributes.ClearField("preferred_pickup_location")
+
+    self.set_attributes(node, steps, apply)
+
   def set_jaw_width(self, gripper: Node, width: float, steps: List[Step]) -> None:
     if gripper.kind != K.RESOURCE_KIND_MECHANICAL_GRIPPER:
       raise StoreError(pb.PROBLEM_WRONG_KIND, f"'{gripper.name}' has no jaws", gripper.name)
@@ -995,6 +1008,9 @@ class Engine:
     if which == "tip_presence":
       self.set_tip_presence(update.tip_presence, steps)
       return [self.resolve(ref) for ref in update.tip_presence.spots]
+    if which == "preferred_pickup_location":
+      self.set_preferred_pickup_location(update.preferred_pickup_location, steps)
+      return [self.resolve(update.preferred_pickup_location.resource)]
     raise StoreError(pb.PROBLEM_UNSPECIFIED, "an empty update")
 
   def touched_by(self, update: spb.ResourceUpdate) -> List[Node]:
@@ -1012,6 +1028,8 @@ class Engine:
       return [self.resolve(update.volume.resource)]
     if which == "tip_presence":
       return [self.resolve(ref) for ref in update.tip_presence.spots]
+    if which == "preferred_pickup_location":
+      return [self.resolve(update.preferred_pickup_location.resource)]
     return []
 
   # -- reading -----------------------------------------------------------------------------------

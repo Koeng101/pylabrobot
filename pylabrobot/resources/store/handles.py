@@ -336,6 +336,20 @@ class Resource:
       change.barcode.CopyFrom(barcode)
     await self._update(spb.ResourceUpdate(barcode=change))
 
+  async def get_preferred_pickup_location(self) -> Optional[Coordinate]:
+    """Where a gripper should take hold of it, in its own frame; unset when it names none."""
+    attributes = await self.attributes()
+    if not attributes.HasField("preferred_pickup_location"):
+      return None
+    return to_coordinate(attributes.preferred_pickup_location)
+
+  async def set_preferred_pickup_location(self, location: Optional[Coordinate]) -> None:
+    """Say where a gripper should take hold of it, in its own frame; None clears it."""
+    change = pb.SetPreferredPickupLocation(resource=self.ref)
+    if location is not None:
+      change.location.CopyFrom(to_vec3(location))
+    await self._update(spb.ResourceUpdate(preferred_pickup_location=change))
+
   async def set_volume_tracking(self, enabled: bool) -> None:
     """Track volumes in it and every container and tip under it, or stop."""
     await self._update(

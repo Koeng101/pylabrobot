@@ -162,6 +162,7 @@ message ResourceUpdate {
     // `set_volume`, `set_well_volumes`: what a person says is there.
     SetVolume volume = 5;
     SetTipPresence tip_presence = 6;
+    SetPreferredPickupLocation preferred_pickup_location = 7;
   }
 }
 

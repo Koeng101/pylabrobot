@@ -566,6 +566,12 @@ message SetBarcode {
   optional Barcode barcode = 2;
 }
 
+// Where a gripper should take hold of a resource, in its own frame; unset clears it.
+message SetPreferredPickupLocation {
+  ResourceRef resource = 1;
+  optional Vec3 location = 2;
+}
+
 message SetTracking {
   // This and every container or spot under it.
   ResourceRef scope = 1;

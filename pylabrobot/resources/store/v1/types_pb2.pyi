@@ -752,6 +752,14 @@ class SetBarcode(_message.Message):
     barcode: Barcode
     def __init__(self, resource: _Optional[_Union[ResourceRef, _Mapping]] = ..., barcode: _Optional[_Union[Barcode, _Mapping]] = ...) -> None: ...
 
+class SetPreferredPickupLocation(_message.Message):
+    __slots__ = ("resource", "location")
+    RESOURCE_FIELD_NUMBER: _ClassVar[int]
+    LOCATION_FIELD_NUMBER: _ClassVar[int]
+    resource: ResourceRef
+    location: Vec3
+    def __init__(self, resource: _Optional[_Union[ResourceRef, _Mapping]] = ..., location: _Optional[_Union[Vec3, _Mapping]] = ...) -> None: ...
+
 class SetTracking(_message.Message):
     __slots__ = ("scope", "volume_tracking", "tip_tracking")
     SCOPE_FIELD_NUMBER: _ClassVar[int]

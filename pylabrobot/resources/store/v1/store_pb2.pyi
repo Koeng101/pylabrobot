@@ -205,20 +205,22 @@ class UnassignResourcesResponse(_message.Message):
     def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ...) -> None: ...
 
 class ResourceUpdate(_message.Message):
-    __slots__ = ("rotation", "metadata", "barcode", "tracking", "volume", "tip_presence")
+    __slots__ = ("rotation", "metadata", "barcode", "tracking", "volume", "tip_presence", "preferred_pickup_location")
     ROTATION_FIELD_NUMBER: _ClassVar[int]
     METADATA_FIELD_NUMBER: _ClassVar[int]
     BARCODE_FIELD_NUMBER: _ClassVar[int]
     TRACKING_FIELD_NUMBER: _ClassVar[int]
     VOLUME_FIELD_NUMBER: _ClassVar[int]
     TIP_PRESENCE_FIELD_NUMBER: _ClassVar[int]
+    PREFERRED_PICKUP_LOCATION_FIELD_NUMBER: _ClassVar[int]
     rotation: _types_pb2.RotationChange
     metadata: _types_pb2.SetMetadata
     barcode: _types_pb2.SetBarcode
     tracking: _types_pb2.SetTracking
     volume: _types_pb2.SetVolume
     tip_presence: _types_pb2.SetTipPresence
-    def __init__(self, rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., metadata: _Optional[_Union[_types_pb2.SetMetadata, _Mapping]] = ..., barcode: _Optional[_Union[_types_pb2.SetBarcode, _Mapping]] = ..., tracking: _Optional[_Union[_types_pb2.SetTracking, _Mapping]] = ..., volume: _Optional[_Union[_types_pb2.SetVolume, _Mapping]] = ..., tip_presence: _Optional[_Union[_types_pb2.SetTipPresence, _Mapping]] = ...) -> None: ...
+    preferred_pickup_location: _types_pb2.SetPreferredPickupLocation
+    def __init__(self, rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., metadata: _Optional[_Union[_types_pb2.SetMetadata, _Mapping]] = ..., barcode: _Optional[_Union[_types_pb2.SetBarcode, _Mapping]] = ..., tracking: _Optional[_Union[_types_pb2.SetTracking, _Mapping]] = ..., volume: _Optional[_Union[_types_pb2.SetVolume, _Mapping]] = ..., tip_presence: _Optional[_Union[_types_pb2.SetTipPresence, _Mapping]] = ..., preferred_pickup_location: _Optional[_Union[_types_pb2.SetPreferredPickupLocation, _Mapping]] = ...) -> None: ...
 
 class UpdateResourcesRequest(_message.Message):
     __slots__ = ("lock_tokens", "updates")
