@@ -199,6 +199,8 @@ message ResourceFilter {
   repeated string models = 3;
   repeated string categories = 4;
   string name_prefix = 5;
+  // Exactly these names.
+  repeated string names = 6;
 }
 
 message FindResourcesRequest {

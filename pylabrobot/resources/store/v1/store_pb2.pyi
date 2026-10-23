@@ -242,18 +242,20 @@ class GetResourcesResponse(_message.Message):
     def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ...) -> None: ...
 
 class ResourceFilter(_message.Message):
-    __slots__ = ("kinds", "type_names", "models", "categories", "name_prefix")
+    __slots__ = ("kinds", "type_names", "models", "categories", "name_prefix", "names")
     KINDS_FIELD_NUMBER: _ClassVar[int]
     TYPE_NAMES_FIELD_NUMBER: _ClassVar[int]
     MODELS_FIELD_NUMBER: _ClassVar[int]
     CATEGORIES_FIELD_NUMBER: _ClassVar[int]
     NAME_PREFIX_FIELD_NUMBER: _ClassVar[int]
+    NAMES_FIELD_NUMBER: _ClassVar[int]
     kinds: _containers.RepeatedScalarFieldContainer[_types_pb2.ResourceKind]
     type_names: _containers.RepeatedScalarFieldContainer[str]
     models: _containers.RepeatedScalarFieldContainer[str]
     categories: _containers.RepeatedScalarFieldContainer[str]
     name_prefix: str
-    def __init__(self, kinds: _Optional[_Iterable[_Union[_types_pb2.ResourceKind, str]]] = ..., type_names: _Optional[_Iterable[str]] = ..., models: _Optional[_Iterable[str]] = ..., categories: _Optional[_Iterable[str]] = ..., name_prefix: _Optional[str] = ...) -> None: ...
+    names: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, kinds: _Optional[_Iterable[_Union[_types_pb2.ResourceKind, str]]] = ..., type_names: _Optional[_Iterable[str]] = ..., models: _Optional[_Iterable[str]] = ..., categories: _Optional[_Iterable[str]] = ..., name_prefix: _Optional[str] = ..., names: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class FindResourcesRequest(_message.Message):
     __slots__ = ("scope", "filter", "view", "page_size", "page_token")
