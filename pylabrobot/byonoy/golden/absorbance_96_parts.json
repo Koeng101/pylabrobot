@@ -1,0 +1,133 @@
+{
+  "steps": [
+    {
+      "call": "assign byonoy_a96a_parking_unit, byonoy_sbs_adapter, ByonoyAbsorbance96",
+      "result": null,
+      "sent": [],
+      "resources": [
+        {
+          "name": "parts",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "parking_unit",
+          "parent": "parts",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "parking_unit_plate_holder",
+          "parent": "parking_unit",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            22.5,
+            5.0,
+            16.0
+          ]
+        },
+        {
+          "name": "parking_unit_illumination_unit_holder",
+          "parent": "parking_unit",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            14.1
+          ]
+        },
+        {
+          "name": "sbs_adapter",
+          "parent": "parts",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        },
+        {
+          "name": "detection_unit",
+          "parent": "parts",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "detection_unit_plate_holder",
+          "parent": "detection_unit",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            22.5,
+            5.0,
+            16.0
+          ]
+        },
+        {
+          "name": "detection_unit_illumination_unit_holder",
+          "parent": "detection_unit",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            14.1
+          ]
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "parts",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "parking_unit",
+      "parent": "parts",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "parking_unit_plate_holder",
+      "parent": "parking_unit",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        22.5,
+        5.0,
+        16.0
+      ]
+    },
+    {
+      "name": "parking_unit_illumination_unit_holder",
+      "parent": "parking_unit",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        14.1
+      ]
+    },
+    {
+      "name": "sbs_adapter",
+      "parent": "parts",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+    },
+    {
+      "name": "detection_unit",
+      "parent": "parts",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "detection_unit_plate_holder",
+      "parent": "detection_unit",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        22.5,
+        5.0,
+        16.0
+      ]
+    },
+    {
+      "name": "detection_unit_illumination_unit_holder",
+      "parent": "detection_unit",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        14.1
+      ]
+    }
+  ]
+}
