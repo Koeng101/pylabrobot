@@ -30,19 +30,25 @@ from pylabrobot.hamilton.star.driver.errors import STARFirmwareError
 from pylabrobot.hamilton.star.driver.features.head import Head, HeadConfiguration
 from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.liquid_classes.mapping import get_star_liquid_class
-from pylabrobot.lib.liquid_handling.head_alignment import get_a1_coordinate, plan_drop, plan_pick_up
+from pylabrobot.hamilton.star.driver import model
+from pylabrobot.lib.liquid_handling.head_alignment import (
+  GridLayout,
+  SpotTip,
+  a1_coordinate,
+  identifiers_under_channels,
+  plan_tip_drop,
+  plan_tip_pick_up,
+)
 from pylabrobot.lib.liquid_handling.mix import Mix
-from pylabrobot.resources.container import Container
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.hamilton.tip_creators import HamiltonTip
 from pylabrobot.resources.liquid import Liquid
-from pylabrobot.resources.n_channel_pipettes import TipMountingShaft
-from pylabrobot.resources.plate import Plate
-from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.tip import Tip
-from pylabrobot.resources.tip_rack import TipRack, TipSpot, check_tip_racks_available, tip_origin
-from pylabrobot.resources.volume_tracker import VolumeTracker, does_volume_tracking
-from pylabrobot.resources.well import Well
+from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.tree import to_coordinate, to_rotation
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 if TYPE_CHECKING:
   from pylabrobot.hamilton.star.driver.master import STARDriver
@@ -249,6 +255,69 @@ class Head96Configuration(HeadConfiguration):
     return self.squeezer_drive_increments_to_mm(increments)
 
 
+@dataclass
+class _Rack:
+  """A 96 tip rack as a tip command reads it: its grid, its frame, its spots and their tips."""
+
+  rack: handles.TipRack
+  layout: GridLayout
+  frame_height: Optional[float]
+  spots: Dict[str, pb.ResourceNode]
+  tips: Dict[str, pb.ResourceNode]
+
+  def tracks_tips(self, identifier: str) -> bool:
+    """Whether a spot gives up and takes back tips, rather than handing out fresh ones."""
+    state = self.spots[identifier].state
+    return not state.HasField("tip_tracking_enabled") or state.tip_tracking_enabled
+
+  def spot_tips(self) -> Dict[str, SpotTip]:
+    return {i: SpotTip(self.tracks_tips(i), i in self.tips) for i in self.spots}
+
+  def tip_for_pickup(self, identifier: str) -> pb.ResourceAttributes:
+    """What a channel picking up from a spot collects: its tip, or a fresh one when untracked."""
+    if self.tracks_tips(identifier) and identifier in self.tips:
+      return self.tips[identifier].attributes
+    return self.spots[identifier].attributes.tip_spot.prototype_tip
+
+
+def _count_ancestors(response: spb.GetResourcesResponse) -> int:
+  """How many of a read's nodes are the first resource's ancestors, read after its subtree."""
+  first = response.nodes[0]
+  by_id = {node.id: node for node in response.nodes}
+  count, parent = 0, first.parent_id
+  while parent and parent in by_id:
+    count, parent = count + 1, by_id[parent].parent_id
+  return count
+
+
+async def _resolve_all(store: ResourceStore, operation: pb.Operation, succeeded: bool) -> None:
+  """Commit, or roll back, every item of a staged operation."""
+  await store.commands.resolve_operation(
+    spb.ResolveOperationRequest(
+      lock_tokens=store.lock_tokens,
+      operation_id=operation.id,
+      outcomes=[spb.ItemOutcome(item=i.item, succeeded=succeeded) for i in operation.items],
+    )
+  )
+
+
+async def _tracks_volume(container: handles.Container) -> bool:
+  """Whether a container's volume is tracked."""
+  state = await container.state()
+  return state.HasField("volume") and state.volume.tracking_enabled
+
+
+async def _record_volume(container: handles.Container, volume: float) -> None:
+  """Record what a container was measured to hold."""
+  store = container.store
+  await store.commands.record_measurements(
+    spb.RecordMeasurementsRequest(
+      lock_tokens=store.lock_tokens,
+      measurements=[spb.Measurement(resource=container.ref, volume=volume)],
+    )
+  )
+
+
 class Head96(Head):
   """The 96-head.
 
@@ -356,7 +425,7 @@ class Head96(Head):
   # Movement
   # ----------------------------------------
 
-  def _position_centred_in(self, resource: Resource) -> Coordinate:
+  async def _position_centred_in(self, resource: handles.Resource) -> Coordinate:
     """Where head channel A1 lands with the channel array centred over a resource, in deck mm.
 
     A1 is the array's back-left channel: half the array left of the resource's centre and half
@@ -375,16 +444,26 @@ class Head96(Head):
     if deck is None:
       raise RuntimeError("this driver has no deck, so a resource has no position to centre in")
     c = self.configuration
-    location = resource.get_location_wrt(deck)
+    (located,) = await model.resolve_geometry(deck.store, [model.query(resource, deck)])
+    location, size = to_coordinate(located.locations[0]), located.size
     return Coordinate(
-      location.x + (resource.get_size_x() - c.channel_array_size_x) / 2,
-      location.y + (resource.get_size_y() + c.channel_array_size_y) / 2,
+      location.x + (size.x - c.channel_array_size_x) / 2,
+      location.y + (size.y + c.channel_array_size_y) / 2,
       location.z,
     )
 
-  def _get_target(
-    self, resource: Union[Plate, Container, List[Well]], offset: Optional[Coordinate]
-  ) -> Tuple[Container, Coordinate, float, float]:
+  async def _plate_of(self, container: handles.Container) -> Optional[handles.Plate]:
+    """The plate a container is a well of, or None when it stands on its own."""
+    if not isinstance(container, handles.Well):
+      return None
+    parent = await container.get_parent()
+    return parent if isinstance(parent, handles.Plate) else None
+
+  async def _get_target(
+    self,
+    resource: Union[handles.Plate, handles.Container, List[handles.Well]],
+    offset: Optional[Coordinate],
+  ) -> Tuple[handles.Container, Coordinate, float, float]:
     """The container a head operation works in, where head channel A1 goes, its floor and its top.
 
     Over a plate of many wells A1 goes over well A1; over a single container, or a plate of one
@@ -404,23 +483,54 @@ class Head96(Head):
     deck = self._driver.deck
     if deck is None:
       raise RuntimeError("containers are placed from the deck; this driver was given none")
-    if isinstance(resource, Plate):
-      anchor: Container = resource.get_item(0)
+    if isinstance(resource, handles.Plate):
+      anchor = cast(handles.Container, resource.get_item(0))
       centred = resource.num_items == 1
     elif isinstance(resource, list):
       anchor, centred = resource[0], False
     else:
       anchor = resource
-      plate = anchor.parent if isinstance(anchor, Well) else None
-      centred = not isinstance(plate, Plate) or plate.num_items == 1
-    a1 = anchor.get_location_wrt(deck, x="c", y="c", z="cavity_bottom")
+      plate = await self._plate_of(anchor)
+      centred = plate is None or plate.num_items == 1
+    (located,) = await model.resolve_geometry(
+      deck.store,
+      [
+        model.query(
+          anchor, deck, [handles.anchor("c", "c", "cavity_bottom"), handles.anchor("c", "c", "t")]
+        )
+      ],
+    )
+    a1, top = to_coordinate(located.locations[0]), located.locations[1].z
     bottom = a1.z
     if centred:
-      centre = self._position_centred_in(anchor)
+      centre = await self._position_centred_in(anchor)
       a1 = Coordinate(centre.x, centre.y, a1.z)
     a1 += offset or Coordinate.zero()
-    top = anchor.get_location_wrt(deck, x="c", y="c", z="t").z
     return anchor, a1, bottom, top
+
+  async def _get_containers_under_channels(
+    self, resource: Union[handles.Plate, handles.Container, List[handles.Well]]
+  ) -> Optional[List[handles.Container]]:
+    """The container under each channel, in channel order; None where one takes all 96.
+
+    Raises:
+      ValueError: A plate of neither 1 nor 96 wells, a list not of 96 wells, or one well of a
+        plate of many.
+    """
+    if isinstance(resource, handles.Plate):
+      if resource.num_items == 1:
+        return None
+      if resource.num_items != 96:
+        raise ValueError(f"{resource.name} has {resource.num_items} wells; the head works 96 or 1")
+      return [cast(handles.Container, well) for well in resource.items]
+    if isinstance(resource, list):
+      if len(resource) != 96:
+        raise ValueError(f"the head works 96 wells at once, not {len(resource)}")
+      return list(resource)
+    plate = await self._plate_of(resource)
+    if plate is not None and plate.num_items > 1:
+      raise ValueError(f"{resource.name} is one well of {plate.name}; give the plate or its wells")
+    return None
 
   # -- head initialization -------------------------------------------------------------------------
 
@@ -531,11 +641,140 @@ class Head96(Head):
       logger.warning("could not request whether the 96-head carries tips after the failure")
       return None
 
+  # -- what the model has on the head and in a rack ------------------------------------------------
+
+  async def _read_rack(self, rack: handles.TipRack, action: str) -> _Rack:
+    """A 96 tip rack as a tip command needs it, in one read of the rack and one of its geometry.
+
+    Args:
+      rack: the rack.
+      action: what the command does with it, for the refusal, e.g. "pick up tips from".
+
+    Raises:
+      ValueError: If the rack does not have 96 spots, or a head cannot reach it.
+    """
+    if rack.num_items != 96:
+      raise ValueError("Tip rack must have 96 tips")
+    store = rack.store
+    response = await store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[rack.ref], depth=2, ancestors=True)
+    )
+    in_rack = {node.id: node for node in response.nodes}
+    # The rack's subtree comes first, then its ancestors, parent first.
+    in_subtree = {n.id for n in response.nodes[: len(response.nodes) - _count_ancestors(response)]}
+    node = response.nodes[0]
+    parent = next((n for n in response.nodes if n.id == node.parent_id), None)
+    spots: Dict[str, pb.ResourceNode] = {}
+    tips: Dict[str, pb.ResourceNode] = {}
+    lidded = False
+    for child_id in node.child_ids:
+      child = in_rack.get(child_id)
+      if child is None:
+        continue
+      if child.attributes.kind == pb.RESOURCE_KIND_LID:
+        lidded = True
+      if child.attributes.kind == pb.RESOURCE_KIND_TIP_SPOT:
+        spots[child.attributes.identifier] = child
+    for identifier, spot in spots.items():
+      held = [in_rack[i] for i in spot.child_ids if i in in_rack]
+      tip = next((n for n in held if n.attributes.kind == pb.RESOURCE_KIND_TIP), None)
+      if tip is not None:
+        tips[identifier] = tip
+    # Whether a head can reach this rack's tips: it is placed, has no lid on, and no other rack
+    # stands on it in its stack.
+    available = node.attributes.HasField("location") and not lidded
+    if (
+      available
+      and parent is not None
+      and parent.attributes.kind == pb.RESOURCE_KIND_RESOURCE_STACK
+      and parent.attributes.stack.direction == pb.STACK_DIRECTION_Z
+    ):
+      available = parent.child_ids[-1] == node.id
+    if not available:
+      raise ValueError(f"Cannot {action} {rack.name!r}: it is not available for tip handling.")
+    # Its rotation along its root's axes: each ancestor's, root first, then its own.
+    turned = Rotation()
+    for each in [n for n in response.nodes if n.id not in in_subtree][::-1] + [node]:
+      turned = turned + to_rotation(each.attributes.rotation)
+    a1, a2, b1 = (spots[i].attributes.location for i in ("A1", "A2", "B1"))
+    layout = GridLayout(
+      name=rack.name,
+      num_items_x=rack.num_items_x,
+      num_items_y=rack.num_items_y,
+      item_dx=a2.x - a1.x,
+      item_dy=a1.y - b1.y,
+      absolute_rotation=turned,
+    )
+    spec = node.attributes.tip_rack
+    return _Rack(
+      rack=rack,
+      layout=layout,
+      frame_height=spec.frame_height if spec.HasField("frame_height") else None,
+      spots=spots,
+      tips=tips,
+    )
+
+  def _frame_height(self, rack: _Rack, channel: str, tip_spot: str) -> float:
+    """The rack's frame height where a channel stands past its edge, else 0.
+
+    Raises:
+      ValueError: A channel stands past the edge and the rack does not declare its frame height.
+    """
+    assert self._layout is not None
+    under = identifiers_under_channels(self._layout, rack.layout, channel, tip_spot)
+    if not any(None in row for row in under):
+      return 0
+    if rack.frame_height is None:
+      raise ValueError(f"frame_height is not defined for this tip rack: {rack.rack.name!r}")
+    return rack.frame_height
+
+  async def _a1_over(self, rack: _Rack, channel: str, tip_spot: str) -> Coordinate:
+    """Where head channel A1 goes with `channel` over the centre of `tip_spot`, in deck mm; the Z
+    is the spot's bottom."""
+    deck = cast(handles.Deck, self._driver.deck)
+    (centre,) = await model.locations_in([rack.rack.get_tip_spot(tip_spot)], deck, "c", "c", "b")
+    assert self._layout is not None
+    return a1_coordinate(self._layout, channel, centre)
+
+  async def _begin_tool_pickup(
+    self, rack: _Rack, pairs: Sequence[Tuple[str, str]]
+  ) -> spb.BeginToolPickupResponse:
+    """Stage each channel of `pairs` taking a tip from the spot paired with it."""
+    deck = cast(handles.Deck, self._driver.deck)
+    return await deck.store.commands.begin_tool_pickup(
+      spb.BeginToolPickupRequest(
+        lock_tokens=deck.store.lock_tokens,
+        frame=deck.ref,
+        items=[
+          spb.ToolPickupItem(source=rack.rack.get_tip_spot(spot).ref, shaft=self.shafts[shaft].ref)
+          for shaft, spot in pairs
+        ],
+        on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
+      )
+    )
+
+  async def _begin_tool_drop(
+    self, targets: Sequence[Tuple[str, handles.Resource]]
+  ) -> spb.BeginToolDropResponse:
+    """Stage each channel of `targets` letting its tip go into the resource paired with it."""
+    deck = cast(handles.Deck, self._driver.deck)
+    return await deck.store.commands.begin_tool_drop(
+      spb.BeginToolDropRequest(
+        lock_tokens=deck.store.lock_tokens,
+        frame=deck.ref,
+        items=[
+          spb.ToolDropItem(shaft=self.shafts[shaft].ref, target=target.ref)
+          for shaft, target in targets
+        ],
+        on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
+      )
+    )
+
   # -- tip pickup ----------------------------------------------------------------------------------
 
   async def pick_up_tips(
     self,
-    tip_rack: TipRack,
+    tip_rack: handles.TipRack,
     offset: Optional[Coordinate] = None,
     tip_pickup_method: Literal["from_rack", "from_waste", "full_blowout"] = "from_rack",
     minimum_traverse_height_end: Optional[float] = None,
@@ -578,29 +817,36 @@ class Head96(Head):
     # whatever tips still on the head hold.
     if await self.request_tip_presence():
       raise RuntimeError("the head already carries tips; drop them before picking up more")
-    if tip_rack.num_items != 96:
-      raise ValueError("Tip rack must have 96 tips")
-    check_tip_racks_available(tip_rack.get_all_items()[:1], "pick up tips from")
-    if self.resource is None:
+    rack = await self._read_rack(tip_rack, "pick up tips from")
+    if self.resource is None or self._layout is None:
       raise RuntimeError("the head is not modelled, so its tips cannot be checked")
-    pairs = plan_pick_up(self.resource, tip_rack, channel, tip_spot)
+    carrying = {name for name, tool in (await self._get_tools()).items() if tool is not None}
+    pairs = plan_tip_pick_up(
+      self._layout,
+      rack.layout,
+      self._frame_height(rack, channel, tip_spot),
+      channel,
+      tip_spot,
+      carrying,
+      rack.spot_tips(),
+    )
     # The tip the first channel would collect: an untracked spot hands one out whether or not the
-    # model holds one, so its own may be None.
-    prototypical_tip = pairs[0][1].tip_for_pickup()
-    if not isinstance(prototypical_tip, HamiltonTip):
+    # model holds one.
+    prototypical_tip = rack.tip_for_pickup(pairs[0][1])
+    if prototypical_tip.kind != pb.RESOURCE_KIND_TIP or not prototypical_tip.tip.HasField(
+      "hamilton"
+    ):
       raise TypeError("Tip type must be HamiltonTip.")
     tip_type_index = await self._driver.get_or_assign_tip_type_index(prototypical_tip)
 
     # The offset corrects where the head goes; which spot is under which channel is the model's.
-    location = get_a1_coordinate(self.resource, tip_rack, deck, channel, tip_spot) + (
-      offset or Coordinate.zero()
-    )
+    location = await self._a1_over(rack, channel, tip_spot) + (offset or Coordinate.zero())
     traverse_z, end_z = self._resolve_tip_command_heights(
       minimum_traverse_height_start, minimum_traverse_height_end
     )
     self._check_tip_command(location, traverse_z, end_z, skip_z=True)
 
-    picked_up = False
+    staged: Optional[spb.BeginToolPickupResponse] = None
     command_error: Optional[BaseException] = None
     try:
       # Over the spots first, so the pick-up itself is straight down: Z, then X and Y together.
@@ -611,6 +857,9 @@ class Head96(Head):
         await self.move_dispensing_drive_to_position(
           self.configuration.dispensing_drive_position_before_rack_pickup
         )
+      # A tracked spot's own tip moves onto the channel, leaving it empty; an untracked spot
+      # hands out a fresh one and stays as it is.
+      staged = await self._begin_tool_pickup(rack, pairs)
       await self._driver.send_command(
         module="C0",
         command="EP",
@@ -624,19 +873,19 @@ class Head96(Head):
         zh=f"{round(traverse_z * 10):04}",
         ze=f"{round(end_z * 10):04}",
       )
-      picked_up = True
     except BaseException as failure:
       # A move or the command can stop part way; what the firmware then holds is taken over
-      # the error.
+      # the error, asked once the model no longer shows tips it may not have.
       command_error = failure
-      picked_up = bool(await self._request_tips_after_failure())
+      if staged is not None:
+        await _resolve_all(deck.store, staged.operation, succeeded=False)
+        staged = None
+      if await self._request_tips_after_failure():
+        staged = await self._begin_tool_pickup(rack, pairs)
       raise
     finally:
-      if picked_up:
-        # A tracked spot's own tip moves onto the channel, leaving it empty; an untracked spot
-        # hands out a fresh one and stays as it is.
-        for shaft, spot in pairs:
-          shaft.mount_tip(spot.tip_for_pickup())
+      if staged is not None:
+        await _resolve_all(deck.store, staged.operation, succeeded=True)
       await self._record_after_tip_command(command_error)
     await self.dispensing_drive_request_uL_position()
 
@@ -644,7 +893,7 @@ class Head96(Head):
 
   async def drop_tips(
     self,
-    resource: Resource,
+    resource: handles.Resource,
     offset: Optional[Coordinate] = None,
     minimum_traverse_height_end: Optional[float] = None,
     minimum_traverse_height_start: Optional[float] = None,
@@ -679,23 +928,50 @@ class Head96(Head):
     deck = self._driver.deck
     if deck is None:
       raise RuntimeError("tip commands are placed from the deck; this driver was given none")
-    pairs: Optional[List[Tuple[TipMountingShaft, TipSpot]]] = None
-    if isinstance(resource, TipRack):
-      if resource.num_items != 96:
-        raise ValueError("Tip rack must have 96 tips")
-      check_tip_racks_available(resource.get_all_items()[:1], "drop tips into")
-      if self.resource is None:
+    tools = await self._get_tools()
+    carrying = [name for name, tool in tools.items() if tool is not None]
+    targets: List[Tuple[str, handles.Resource]] = []
+    if isinstance(resource, handles.TipRack):
+      rack = await self._read_rack(resource, "drop tips into")
+      if self.resource is None or self._layout is None:
         raise RuntimeError("the head is not modelled, so its tips cannot be checked")
-      pairs = plan_drop(self.resource, resource, channel, tip_spot)
-      location = get_a1_coordinate(self.resource, resource, deck, channel, tip_spot)
+      pairs = plan_tip_drop(
+        self._layout,
+        rack.layout,
+        self._frame_height(rack, channel, tip_spot),
+        channel,
+        tip_spot,
+        set(carrying),
+        rack.spot_tips(),
+      )
+      targets = [(shaft, resource.get_tip_spot(spot)) for shaft, spot in pairs]
+      location = await self._a1_over(rack, channel, tip_spot)
     else:
-      location = self._position_centred_in(resource)
+      if resource.kind == pb.RESOURCE_KIND_TRASH:
+        targets = [(shaft, resource) for shaft in carrying]
+      location = await self._position_centred_in(resource)
     location += offset or Coordinate.zero()
     traverse_z, end_z = self._resolve_tip_command_heights(
       minimum_traverse_height_start, minimum_traverse_height_end
     )
     self._check_tip_command(location, traverse_z, end_z, skip_z=True)
 
+    async def let_go() -> Optional[spb.BeginToolDropResponse]:
+      """Stage the tips leaving the head; anywhere but a tip rack or a trash they belong to nothing
+      afterwards, and leave the model at once."""
+      if targets:
+        return await self._begin_tool_drop(targets)
+      released = [cast(pb.ResourceNode, tools[name]).id for name in carrying]
+      if released:
+        await deck.store.commands.delete_resources(
+          spb.DeleteResourcesRequest(
+            lock_tokens=deck.store.lock_tokens,
+            resources=[pb.ResourceRef(id=i) for i in released],
+          )
+        )
+      return None
+
+    staged: Optional[spb.BeginToolDropResponse] = None
     dropped = False
     command_error: Optional[BaseException] = None
     try:
@@ -703,6 +979,8 @@ class Head96(Head):
       await self.move_to_xy_position(
         location.x, location.y, minimum_traverse_height_start=traverse_z
       )
+      if targets:
+        staged = await self._begin_tool_drop(targets)
       await self._driver.send_command(
         module="C0",
         command="ER",
@@ -717,19 +995,19 @@ class Head96(Head):
       dropped = True
     except BaseException as failure:
       # A move or the command can stop part way; what the firmware then holds is taken over
-      # the error.
+      # the error, asked once the model shows the tips where they were.
       command_error = failure
-      dropped = await self._request_tips_after_failure() is False
+      if staged is not None:
+        await _resolve_all(deck.store, staged.operation, succeeded=False)
+        staged = None
+      if await self._request_tips_after_failure() is False:
+        staged = await let_go()
       raise
     finally:
-      if dropped and pairs is not None:
-        for shaft, spot in pairs:
-          spot.assign_tip(cast(Tip, shaft.release_tip()))
-      elif dropped and self.resource is not None:
-        # Anywhere but a tip rack, the tips belong to nothing afterwards.
-        for shaft in self.resource.get_all_items():
-          if shaft.has_tip():
-            shaft.release_tip()
+      if dropped and not targets:
+        await let_go()
+      if staged is not None:
+        await _resolve_all(deck.store, staged.operation, succeeded=True)
       await self._record_after_tip_command(command_error)
     await self.dispensing_drive_request_uL_position()
 
@@ -750,30 +1028,60 @@ class Head96(Head):
     deck = self._driver.deck
     if deck is None:
       raise RuntimeError("tip commands are placed from the deck; this driver was given none")
-    if self.resource is None:
+    if self.resource is None or self._layout is None:
       raise RuntimeError("the head is not modelled, so where its tips came from is not known")
-    shafts = self.resource.get_all_items()
-    carrying = next((shaft for shaft in shafts if isinstance(shaft.tip, Tip)), None)
-    if carrying is None:
-      raise RuntimeError("No tips have been picked up.")
-    origin = tip_origin(cast(Tip, carrying.tip), deck)
-    if origin is None or not isinstance(origin.parent, TipRack):
-      raise RuntimeError(f"the tip on {carrying.name} did not come from a tip rack on the deck")
-    tip_rack = origin.parent
-    # Any one tip names the pick-up: its channel stood over the spot it came from.
-    channel = self.resource.get_child_identifier(carrying)
-    tip_spot = tip_rack.get_child_identifier(origin)
-    under = {
-      shaft.name: spot for shaft, spot in plan_drop(self.resource, tip_rack, channel, tip_spot)
+    tools = {
+      name: tool
+      for name, tool in (await self._get_tools()).items()
+      if tool is not None and tool.attributes.kind == pb.RESOURCE_KIND_TIP
     }
-    for shaft in shafts:
-      tip = shaft.tip
-      if isinstance(tip, Tip) and tip_origin(tip, deck) is not under.get(shaft.name):
+    if not tools:
+      raise RuntimeError("No tips have been picked up.")
+    carrying, tip = next(iter(tools.items()))
+    # A spot names each tip it makes after itself, so the name leads back to it.
+    origin = await self._tip_origin(deck, tip)
+    if origin is None:
+      raise RuntimeError(
+        f"the tip on {self.shafts[carrying].name} did not come from a tip rack on the deck"
+      )
+    tip_rack, spot = origin
+    # Any one tip names the pick-up: its channel stood over the spot it came from.
+    rack = await self._read_rack(tip_rack, "drop tips into")
+    pairs = plan_tip_drop(
+      self._layout,
+      rack.layout,
+      self._frame_height(rack, carrying, spot),
+      carrying,
+      spot,
+      set(tools),
+      rack.spot_tips(),
+    )
+    spot_under = dict(pairs)
+    for name, held in tools.items():
+      came_from = held.attributes.name.rpartition("#")[0]
+      expected = spot_under.get(name)
+      if expected is None or tip_rack.get_tip_spot(expected).name != came_from:
         raise RuntimeError(
-          f"{shaft.name}'s tip {tip.name} did not stand under it in {tip_rack.name}; the head "
-          "returns tips only as it picked them up from one rack"
+          f"{self.shafts[name].name}'s tip {held.attributes.name} did not stand under it in "
+          f"{tip_rack.name}; the head returns tips only as it picked them up from one rack"
         )
-    await self.drop_tips(tip_rack, channel=channel, tip_spot=tip_spot, **kwargs)
+    await self.drop_tips(tip_rack, channel=carrying, tip_spot=spot, **kwargs)
+
+  async def _tip_origin(
+    self, deck: handles.Deck, tip: pb.ResourceNode
+  ) -> Optional[Tuple[handles.TipRack, str]]:
+    """The tip rack on the deck a tip was made in and the spot's identifier, or None."""
+    spot_name, separator, _ = tip.attributes.name.rpartition("#")
+    if not separator:
+      return None
+    found = await deck.find_resources(names=[spot_name])
+    if not found or not isinstance(found[0], handles.TipSpot):
+      return None
+    rack = await found[0].get_parent()
+    if not isinstance(rack, handles.TipRack):
+      return None
+    identifier = next(i for i in rack.identifiers if rack.get_item(i) == found[0])
+    return rack, identifier
 
   async def discard_tips(self, **kwargs) -> None:
     """Drop the head's tips into the deck's 96-head trash, whatever the model says it carries.
@@ -782,18 +1090,21 @@ class Head96(Head):
       kwargs: passed on to `drop_tips`.
 
     Raises:
-      RuntimeError: If the driver was given no deck.
-      NotImplementedError: If the deck has no 96-head trash.
+      RuntimeError: If the driver was given no deck, or it has no 96-head trash.
     """
     deck = self._driver.deck
     if deck is None:
       raise RuntimeError("tip commands are placed from the deck; this driver was given none")
-    await self.drop_tips(deck.get_trash_area96(), **kwargs)
+    trash = await self._driver._find_on_deck(self._driver._deck_component_name("trash_core96"))
+    if trash is None:
+      raise RuntimeError(
+        "Trash area for 96-well plates was not created. Initialize with `with_trash96=True`."
+      )
+    await self.drop_tips(trash, **kwargs)
 
   # ----------------------------------------
   # Probing
   # ----------------------------------------
-
   # -- z probing (capacitive) ----------------------------------------------------------------------
 
   async def _unchecked_fw_probe_z_using_clld(
@@ -870,7 +1181,8 @@ class Head96(Head):
       raise RuntimeError("the head reports no tips; cLLD needs them for a conductive path")
     if self.resource is None:
       return
-    tipped = {name: self.resource.get_item(name).has_tip() for name in ("A1", "B2", "G11", "H12")}
+    tools = await self._get_tools(["A1", "B2", "G11", "H12"])
+    tipped = {name: tools[name] is not None for name in ("A1", "B2", "G11", "H12")}
     sensor_0, sensor_1 = tipped["G11"] or tipped["H12"], tipped["A1"] or tipped["B2"]
     if not {
       "G11 or H12": sensor_0,
@@ -1111,7 +1423,7 @@ class Head96(Head):
 
   async def probe_liquid_height(
     self,
-    resource: Union[Plate, Container, List[Well]],
+    resource: Union[handles.Plate, handles.Container, List[handles.Well]],
     offset: Optional[Coordinate] = None,
     lld_sensor: Literal["A1 or B2", "G11 or H12", "any", "all"] = "any",
     search_speed: Optional[float] = None,
@@ -1145,7 +1457,7 @@ class Head96(Head):
     """
     if n_replicates < 1:
       raise ValueError(f"n_replicates must be at least 1, is {n_replicates}")
-    anchor, a1, bottom, top = self._get_target(resource, offset)
+    anchor, a1, bottom, top = await self._get_target(resource, offset)
     if not await self.request_tip_presence():
       raise RuntimeError("the head reports no tips; pick up tips first")
     await self.move_to_xy_position(
@@ -1175,7 +1487,7 @@ class Head96(Head):
 
   async def probe_liquid_volume(
     self,
-    resource: Union[Plate, Container, List[Well]],
+    resource: Union[handles.Plate, handles.Container, List[handles.Well]],
     offset: Optional[Coordinate] = None,
     lld_sensor: Literal["A1 or B2", "G11 or H12", "any", "all"] = "any",
     search_speed: Optional[float] = None,
@@ -1198,8 +1510,8 @@ class Head96(Head):
       ValueError: If the container has no height-to-volume function, or as `probe_liquid_height`.
       RuntimeError: As `probe_liquid_height`.
     """
-    anchor = self._get_target(resource, offset)[0]
-    if not anchor.supports_compute_height_volume_functions():
+    anchor = (await self._get_target(resource, offset))[0]
+    if not await self._converts(anchor):
       raise ValueError(f"no height-to-volume function for {anchor.name}")
     height = await self.probe_liquid_height(
       resource,
@@ -1210,7 +1522,7 @@ class Head96(Head):
       minimum_traverse_height_start=minimum_traverse_height_start,
       minimum_traverse_height_end=minimum_traverse_height_end,
     )
-    return anchor.compute_volume_from_height(height)
+    return await anchor.compute_volume_from_height(height)
 
   # ----------------------------------------
   # Liquid handling
@@ -1419,32 +1731,8 @@ class Head96(Head):
     bits = "".join("1" if involved else "0" for involved in reversed(channel_pattern))
     return f"{int(bits, 2):X}"
 
-  def _get_containers_under_channels(
-    self, resource: Union[Plate, Container, List[Well]]
-  ) -> Optional[List[Container]]:
-    """The container under each channel, in channel order; None where one takes all 96.
-
-    Raises:
-      ValueError: A plate of neither 1 nor 96 wells, a list not of 96 wells, or one well of a
-        plate of many.
-    """
-    if isinstance(resource, Plate):
-      if resource.num_items == 1:
-        return None
-      if resource.num_items != 96:
-        raise ValueError(f"{resource.name} has {resource.num_items} wells; the head works 96 or 1")
-      return [well for well in resource.get_all_items()]
-    if isinstance(resource, list):
-      if len(resource) != 96:
-        raise ValueError(f"the head works 96 wells at once, not {len(resource)}")
-      return [well for well in resource]
-    plate = resource.parent if isinstance(resource, Well) else None
-    if isinstance(plate, Plate) and plate.num_items > 1:
-      raise ValueError(f"{resource.name} is one well of {plate.name}; give the plate or its wells")
-    return None
-
-  def _get_mounted_tips(self) -> List[Optional[HamiltonTip]]:
-    """The tip on each channel as the model has it, None where there is none.
+  async def _get_mounted_tips(self) -> List[Optional[pb.ResourceNode]]:
+    """The tip on each channel as the model has it, None where there is none, in channel order.
 
     Raises:
       RuntimeError: If the head is not modelled, or carries no tip in the model.
@@ -1452,19 +1740,22 @@ class Head96(Head):
     """
     if self.resource is None:
       raise RuntimeError("the head is not modelled, so what its tips hold is not known")
-    tips: List[Optional[HamiltonTip]] = []
-    for shaft in self.resource.get_all_items():
-      tip = shaft.tip
-      if tip is not None and not isinstance(tip, HamiltonTip):
-        raise TypeError(f"{shaft.name} carries {tip.name}, not a Hamilton tip")
-      tips.append(tip)
+    tips: List[Optional[pb.ResourceNode]] = []
+    for name, tool in (await self._get_tools()).items():
+      if tool is not None and not (
+        tool.attributes.kind == pb.RESOURCE_KIND_TIP and tool.attributes.tip.HasField("hamilton")
+      ):
+        raise TypeError(
+          f"{self.shafts[name].name} carries {tool.attributes.name}, not a Hamilton tip"
+        )
+      tips.append(tool)
     if not any(tip is not None for tip in tips):
       raise RuntimeError("the head is modelled with no tips; pick up tips first")
     return tips
 
   @staticmethod
   def _get_liquid_and_piston_volume(
-    tip: HamiltonTip,
+    tip: pb.ResourceAttributes,
     volume: Optional[float],
     piston_volume: Optional[float],
     hamilton_liquid_class: Optional[HamiltonLiquidClass],
@@ -1496,18 +1787,18 @@ class Head96(Head):
     if volume is None:
       return cast(float, piston_volume), cast(float, piston_volume), None
     hlc = hamilton_liquid_class or get_star_liquid_class(
-      tip_volume=tip.maximal_volume,
+      tip_volume=tip.tip.maximal_volume,
       is_core=True,
       is_tip=True,
-      has_filter=tip.has_filter,
+      has_filter=tip.tip.has_filter,
       liquid=Liquid.WATER,
       jet=jet,
       blow_out=blow_out,
     )
     if hlc is None:
       raise ValueError(
-        f"no 96-head liquid class is known for {tip.maximal_volume} uL tips, "
-        f"{'with' if tip.has_filter else 'without'} filter, water, jet={jet}, "
+        f"no 96-head liquid class is known for {tip.tip.maximal_volume} uL tips, "
+        f"{'with' if tip.tip.has_filter else 'without'} filter, water, jet={jet}, "
         f"blow_out={blow_out}. Give hamilton_liquid_class or piston_volume"
       )
     return volume, round(hlc.compute_corrected_volume(volume), 2), hlc
@@ -1574,46 +1865,55 @@ class Head96(Head):
     return lld_mode
 
   @staticmethod
-  def _get_surface_change(container: Container, height: float, volume: float) -> float:
+  async def _converts(container: handles.Container) -> bool:
+    """Whether a container's height and volume convert into each other: it has the data."""
+    return len((await container.attributes()).container.height_volume_data) >= 2
+
+  @staticmethod
+  async def _get_surface_change(
+    container: handles.Container, height: float, volume: float
+  ) -> float:
     """How far `volume` uL added moves a surface `height` mm over the cavity bottom, in mm.
 
     A negative volume is drawn, and lowers it.
     """
-    held = container.compute_volume_from_height(height)
-    return round(container.compute_height_from_volume(max(held + volume, 0.0)) - height, 1)
+    held = await container.compute_volume_from_height(height)
+    return round(await container.compute_height_from_volume(max(held + volume, 0.0)) - height, 1)
 
-  def _get_mix_following(self, mix: Mix, container: Container, height: float, share: int) -> Mix:
+  async def _get_mix_following(
+    self, mix: Mix, container: handles.Container, height: float, share: int
+  ) -> Mix:
     """`mix` with its auto surface following as a distance: what one draw lowers a surface
     `height` mm over the cavity bottom, `share` channels drawing from `container`."""
     if not mix.auto_surface_following:
       return mix
-    drop = -self._get_surface_change(container, height, -mix.volume * share)
+    drop = -(await self._get_surface_change(container, height, -mix.volume * share))
     return replace(
       mix, surface_following_distance=round(max(drop, 0.0), 1), auto_surface_following=False
     )
 
-  def _update_volume_from_surface(
-    self, container: Container, surface: float, bottom: float
+  async def _update_volume_from_surface(
+    self, container: handles.Container, surface: float, bottom: float
   ) -> None:
-    """Set a container's tracker to the volume a found surface stands for, warning when 20 % off.
+    """Record the volume a found surface stands for in a container, warning when 20 % off.
 
     Args:
       container: where the surface was found.
       surface: the surface found, in deck mm.
       bottom: the container's cavity bottom, in deck mm.
     """
+    expected = await container.get_volume()
     try:
-      measured = container.compute_volume_from_height(max(round(surface - bottom, 2), 0.0))
-    except ValueError:
+      measured = await container.compute_volume_from_height(max(round(surface - bottom, 2), 0.0))
+    except StoreError:
       logger.warning(
         "the 96-head found the liquid of %s %.2f mm above its cavity bottom, outside its "
         "height-volume data; the model keeps %.1f uL",
         container.name,
         surface - bottom,
-        container.tracker.get_used_volume(),
+        expected,
       )
       return
-    expected = container.tracker.get_used_volume()
     if abs(measured - expected) > 0.2 * expected:
       logger.warning(
         "the 96-head measured %.1f uL in %s where the model had %.1f uL",
@@ -1621,12 +1921,13 @@ class Head96(Head):
         container.name,
         expected,
       )
-    container.tracker.set_volume(measured)
+    await _record_volume(container, measured)
 
   async def _book_and_send(
     self,
     send: Callable[[], Awaitable[None]],
-    pairs: Sequence[Tuple[VolumeTracker, VolumeTracker]],
+    direction: "spb.TransferDirection",
+    items: Sequence[Tuple[handles.Container, str, pb.ResourceNode]],
     liquid: Sequence[float],
     *,
     piston_before: float,
@@ -1637,63 +1938,91 @@ class Head96(Head):
     held_less_message: str,
     moved_before_failure_message: str,
   ) -> None:
-    """Book the liquid on the trackers, send the command, and move the piston model.
+    """Stage the liquid moving, send the command, and move the piston model.
 
-    Booked before the command; committed as it succeeds; rolled back on its failure, with a read
-    of the piston to book what did move.
+    Staged before the command; committed as it succeeds; rolled back on its failure, with a read
+    of the piston to book what did move. A giver is booked for no more than it holds.
 
     Args:
       send: the command.
-      pairs: per channel with a tip, the tracker the liquid leaves and the one it enters.
-      liquid: per pair, what is asked, in uL.
+      direction: aspirate, the containers giving to the tips; or dispense, the other way.
+      items: per channel with a tip, the container, the channel's name and the tip on it.
+      liquid: per item, what is asked, in uL.
       piston_before: where the piston stands before the command, in uL.
       piston_after: where it stands after it, in uL.
       air_before_liquid: the air the piston moves before the liquid, in uL.
       piston_sign: 1 where the command draws, -1 where it pushes out.
-      tracking: whether volumes are tracked.
+      tracking: whether volumes are tracked; a failed command's piston is read only then.
       held_less_message: the log line for givers holding less than asked: the channels.
       moved_before_failure_message: the log line for what a failed command still moved: the
         volume per channel.
     """
-    booked: List[VolumeTracker] = []
+    deck = cast(handles.Deck, self._driver.deck)
+    store = deck.store
+    aspirate = direction == spb.TRANSFER_DIRECTION_ASPIRATE
+    containers = {container.id: container for container, _, _ in items}
+    held: Dict[bytes, float] = {}
+    tracked: Dict[bytes, bool] = {}
+    for node in await model.get_nodes(store, list(containers.values())):
+      held[node.id] = node.state.volume.pending_volume
+      tracked[node.id] = node.state.HasField("volume") and node.state.volume.tracking_enabled
+    for _, _, tip in items:
+      held[tip.id] = tip.state.volume.pending_volume
+      tracked[tip.id] = tip.state.HasField("volume") and tip.state.volume.tracking_enabled
     moves: List[float] = []
+    short: List[int] = []
+    for channel, ((container, _, tip), asked) in enumerate(zip(items, liquid)):
+      giver = container.id if aspirate else tip.id
+      moved = asked
+      if tracked[giver]:
+        moved = min(asked, held[giver])
+        held[giver] -= moved
+        if moved < asked:
+          short.append(channel)
+      moves.append(moved)
+    staged: Optional[spb.BeginLiquidTransferResponse] = None
     try:
-      if tracking:
-        short: List[int] = []
-        for channel, ((giver, taker), asked) in enumerate(zip(pairs, liquid)):
-          moved = min(asked, giver.get_used_volume())
-          if moved < asked:
-            short.append(channel)
-          # Booked before either tracker may refuse, so a refusal rolls back what came before it.
-          booked += [giver, taker]
-          giver.remove_liquid(moved)
-          taker.add_liquid(moved)
-          moves.append(moved)
-        if short:
-          logger.warning(held_less_message, short)
+      staged = await store.commands.begin_liquid_transfer(
+        spb.BeginLiquidTransferRequest(
+          lock_tokens=store.lock_tokens,
+          frame=deck.ref,
+          direction=direction,
+          items=[
+            spb.TransferItem(container=container.ref, shaft=self.shafts[name].ref, volume=moved)
+            for (container, name, _), moved in zip(items, moves)
+          ],
+          on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
+        )
+      )
+      if short:
+        logger.warning(held_less_message, short)
       await send()
     except BaseException:
-      for tracker in booked:
-        tracker.rollback()
+      if staged is None:
+        raise
       # A command that failed part way moved liquid: the piston's travel past the air is liquid.
-      if tracking and len(moves) == len(pairs):
-        travel = 0.0
+      travel = 0.0
+      if tracking:
         try:
           now = await self.dispensing_drive_request_uL_position()
           travel = round(max(piston_sign * (now - piston_before) - air_before_liquid, 0.0), 1)
         except Exception:
           logger.warning("could not read the 96-head's piston; what it moved is not in the model")
+      outcomes = []
+      for item, most in zip(staged.operation.items, moves):
+        outcome = spb.ItemOutcome(item=item.item, succeeded=False)
         if travel > 0:
-          for (giver, taker), most in zip(pairs, moves):
-            moved = min(travel, most, giver.get_used_volume())
-            giver.remove_liquid(moved)
-            taker.add_liquid(moved)
-            giver.commit()
-            taker.commit()
-          logger.warning(moved_before_failure_message, travel)
+          outcome.volume = min(travel, most)
+        outcomes.append(outcome)
+      await store.commands.resolve_operation(
+        spb.ResolveOperationRequest(
+          lock_tokens=store.lock_tokens, operation_id=staged.operation.id, outcomes=outcomes
+        )
+      )
+      if travel > 0:
+        logger.warning(moved_before_failure_message, travel)
       raise
-    for tracker in booked:
-      tracker.commit()
+    await _resolve_all(store, staged.operation, succeeded=True)
     self.piston_position = round(piston_after, 1)
 
   # -- aspirating ----------------------------------------------------------------------------------
@@ -1995,7 +2324,7 @@ class Head96(Head):
 
   async def aspirate(
     self,
-    resource: Union[Plate, Container, List[Well]],
+    resource: Union[handles.Plate, handles.Container, List[handles.Well]],
     volume: Optional[float] = None,
     offset: Optional[Coordinate] = None,
     liquid_height: Optional[float] = None,
@@ -2031,7 +2360,7 @@ class Head96(Head):
 
     Placed as `mix`. The firmware never searches: OFF draws at `liquid_height` above the cavity
     bottom, the cavity bottom when None; CAPACITIVE draws the blow-out air at the traverse height,
-    finds the surface by cLLD, sets the tracker to the volume found, draws under the surface and
+    finds the surface by cLLD, records the volume found, draws under the surface and
     follows it down, and refuses a container without liquid. The floor is the cavity bottom unless
     given. Over a plate of 96 wells each well is booked to the channel over it; a single container
     gives to all 96.
@@ -2099,16 +2428,14 @@ class Head96(Head):
       raise ValueError("pre_mix's auto_surface_following under lld_mode OFF needs a liquid_height")
     if searched and liquid_height is not None:
       raise ValueError("liquid_height given under CAPACITIVE, whose search finds the surface")
-    containers = self._get_containers_under_channels(resource)
-    anchor, a1, bottom, top = self._get_target(resource, offset)
-    if (searched or auto_surface_following or auto_mix) and (
-      not anchor.supports_compute_height_volume_functions()
-    ):
+    containers = await self._get_containers_under_channels(resource)
+    anchor, a1, bottom, top = await self._get_target(resource, offset)
+    if (searched or auto_surface_following or auto_mix) and not await self._converts(anchor):
       raise RuntimeError(
         f"{anchor.name} has no height-volume functions, so a surface cannot become a volume"
       )
-    tips = self._get_mounted_tips()
-    tip = next(t for t in tips if t is not None)
+    tips = await self._get_mounted_tips()
+    tip = next(t for t in tips if t is not None).attributes
     liquid, drawn, hlc = self._get_liquid_and_piston_volume(
       tip, volume, piston_volume, hamilton_liquid_class, jet, blow_out, "drawn"
     )
@@ -2146,21 +2473,25 @@ class Head96(Head):
         f"{room:.1f} uL; it holds {standing:.1f} uL now"
       )
     for t in tips:
-      if t is not None and t.tracker.get_used_volume() + travel > t.maximal_volume:
+      if t is None:
+        continue
+      used, most = t.state.volume.pending_volume, t.attributes.tip.maximal_volume
+      if used + travel > most:
         raise ValueError(
-          f"{t.name} would hold {t.tracker.get_used_volume() + travel:.1f} uL, over its "
-          f"{t.maximal_volume:.1f} uL"
+          f"{t.attributes.name} would hold {used + travel:.1f} uL, over its {most:.1f} uL"
         )
 
+    names = list(self.shafts)
     channels = [channel for channel, t in enumerate(tips) if t is not None]
     pairs = [
       (
-        (anchor if containers is None else containers[channel]).tracker,
-        cast(HamiltonTip, tips[channel]).tracker,
+        anchor if containers is None else containers[channel],
+        names[channel],
+        cast(pb.ResourceNode, tips[channel]),
       )
       for channel in channels
     ]
-    tracking = does_volume_tracking()
+    tracking = await _tracks_volume(anchor)
     surface = round(a1.z + (liquid_height or 0.0), 2)
     start = minimum_traverse_height_start
     if not searched:
@@ -2179,7 +2510,7 @@ class Head96(Head):
           raise RuntimeError(f"no liquid found in {anchor.name} down to its cavity bottom")
         surface = start = found
         if tracking:
-          self._update_volume_from_surface(anchor, surface, bottom)
+          await self._update_volume_from_surface(anchor, surface, bottom)
         floor = (
           bottom if minimum_allowed_z_position_during is None else minimum_allowed_z_position_during
         )
@@ -2192,12 +2523,12 @@ class Head96(Head):
         floor = (
           bottom if minimum_allowed_z_position_during is None else minimum_allowed_z_position_during
         )
-        drop = -self._get_surface_change(anchor, height, -liquid * share)
+        drop = -(await self._get_surface_change(anchor, height, -liquid * share))
         surface_following_distance = round(
           max(min(drop, surface - (immersion_depth or 0.0) - floor), 0.0), 1
         )
       if pre_mix is not None:
-        pre_mix = self._get_mix_following(pre_mix, anchor, height, share)
+        pre_mix = await self._get_mix_following(pre_mix, anchor, height, share)
 
       async def send() -> None:
         await self._aspirate_in_one_move(
@@ -2228,6 +2559,7 @@ class Head96(Head):
 
       await self._book_and_send(
         send,
+        spb.TRANSFER_DIRECTION_ASPIRATE,
         pairs,
         [liquid] * len(pairs),
         piston_before=standing,
@@ -2584,7 +2916,7 @@ class Head96(Head):
 
   async def dispense(
     self,
-    resource: Union[Plate, Container, List[Well]],
+    resource: Union[handles.Plate, handles.Container, List[handles.Well]],
     volume: Optional[float] = None,
     offset: Optional[Coordinate] = None,
     liquid_height: Optional[float] = None,
@@ -2623,7 +2955,7 @@ class Head96(Head):
 
     Placed as `mix`. The firmware never searches: OFF dispenses at `liquid_height` above the
     cavity bottom, the cavity bottom when None; CAPACITIVE finds the surface by cLLD, sets the
-    tracker to the volume found and dispenses at the surface, following it up. The floor is the
+    volume found and dispenses at the surface, following it up. The floor is the
     cavity bottom unless given. `jet`, `blow_out` and `empty` pick the firmware's mode. Booked as
     `aspirate`; the head goes to safe Z on a failure.
 
@@ -2694,16 +3026,14 @@ class Head96(Head):
       raise ValueError("post_mix's auto_surface_following under lld_mode OFF needs a liquid_height")
     if searched and liquid_height is not None:
       raise ValueError("liquid_height given under CAPACITIVE, whose search finds the surface")
-    containers = self._get_containers_under_channels(resource)
-    anchor, a1, bottom, top = self._get_target(resource, offset)
-    if (searched or auto_surface_following or auto_mix) and (
-      not anchor.supports_compute_height_volume_functions()
-    ):
+    containers = await self._get_containers_under_channels(resource)
+    anchor, a1, bottom, top = await self._get_target(resource, offset)
+    if (searched or auto_surface_following or auto_mix) and not await self._converts(anchor):
       raise RuntimeError(
         f"{anchor.name} has no height-volume functions, so a surface cannot become a volume"
       )
-    tips = self._get_mounted_tips()
-    tip = next(t for t in tips if t is not None)
+    tips = await self._get_mounted_tips()
+    tip = next(t for t in tips if t is not None).attributes
     asked, pushed, hlc = self._get_liquid_and_piston_volume(
       tip, volume, piston_volume, hamilton_liquid_class, jet, blow_out, "pushed out"
     )
@@ -2726,21 +3056,24 @@ class Head96(Head):
     swap_speed = by_class("swap_speeds", swap_speed)
     mode = self._get_dispensing_mode(jet, blow_out, empty)
 
+    names = list(self.shafts)
     channels = [channel for channel, t in enumerate(tips) if t is not None]
-    tipped = [cast(HamiltonTip, tips[channel]) for channel in channels]
+    tipped = [cast(pb.ResourceNode, tips[channel]) for channel in channels]
     # An empty pushes out whatever each tip holds, whatever volume was asked.
-    liquid = [t.tracker.get_used_volume() if empty else asked for t in tipped]
+    liquid = [t.state.volume.pending_volume if empty else asked for t in tipped]
     givers = [anchor] * len(channels) if containers is None else [containers[c] for c in channels]
 
-    def check_room(error: Type[Exception]) -> None:
-      needed: Dict[int, float] = {}
+    async def check_room(error: Type[Exception]) -> None:
+      needed: Dict[bytes, float] = {}
       for container, moved in zip(givers, liquid):
-        needed[id(container)] = needed.get(id(container), 0.0) + moved
-      for container in {id(c): c for c in givers}.values():
-        if needed[id(container)] > container.tracker.get_free_volume() + 1e-6:
+        needed[container.id] = needed.get(container.id, 0.0) + moved
+      unique = list({c.id: c for c in givers}.values())
+      for container, node in zip(unique, await model.get_nodes(anchor.store, unique)):
+        free = node.attributes.container.max_volume - node.state.volume.pending_volume
+        if needed[container.id] > free + 1e-6:
           raise error(
-            f"{container.name} has room for {container.tracker.get_free_volume():.1f} uL, not "
-            f"the {needed[id(container)]:.1f} uL the 96-head is to dispense"
+            f"{container.name} has room for {free:.1f} uL, not "
+            f"the {needed[container.id]:.1f} uL the 96-head is to dispense"
           )
 
     standing = await self.dispensing_drive_request_uL_position()
@@ -2750,12 +3083,14 @@ class Head96(Head):
         f"the 96-head's piston holds {standing:.1f} uL of travel for the {travel:.1f} uL it is to "
         "push out"
       )
-    check_room(ValueError)
+    await check_room(ValueError)
     if searched:
       await self._require_tips_feeding(lld_sensor)
 
-    pairs = [(t.tracker, container.tracker) for t, container in zip(tipped, givers)]
-    tracking = does_volume_tracking()
+    pairs = [
+      (container, names[channel], t) for channel, t, container in zip(channels, tipped, givers)
+    ]
+    tracking = await _tracks_volume(anchor)
     surface = round(a1.z + (liquid_height or 0.0), 2)
     start = minimum_traverse_height_start
     if not searched:
@@ -2770,18 +3105,18 @@ class Head96(Head):
           raise RuntimeError(f"no liquid found in {anchor.name} down to its cavity bottom")
         surface = start = found
         if tracking:
-          self._update_volume_from_surface(anchor, surface, bottom)
+          await self._update_volume_from_surface(anchor, surface, bottom)
           # The search may have found more liquid than the model had.
-          check_room(RuntimeError)
+          await check_room(RuntimeError)
       height = max(round(surface - bottom, 2), 0.0)
       if auto_surface_following:
         # A container under all 96 takes what every channel dispenses; a well takes one's.
         given = sum(v for container, v in zip(givers, liquid) if container is anchor)
-        rise = self._get_surface_change(anchor, height, given)
+        rise = await self._get_surface_change(anchor, height, given)
         surface_following_distance = round(max(min(rise, top - surface), 0.0), 1)
       if post_mix is not None:
         share = len(channels) if containers is None else 1
-        post_mix = self._get_mix_following(post_mix, anchor, height, share)
+        post_mix = await self._get_mix_following(post_mix, anchor, height, share)
 
       async def send() -> None:
         await self._dispense_in_one_move(
@@ -2818,6 +3153,7 @@ class Head96(Head):
       left = 0.0 if mode == 4 else max(standing - travel, 0.0)
       await self._book_and_send(
         send,
+        spb.TRANSFER_DIRECTION_DISPENSE,
         pairs,
         liquid,
         piston_before=standing,
@@ -2840,7 +3176,7 @@ class Head96(Head):
 
   async def mix(
     self,
-    resource: Union[Plate, Container, List[Well]],
+    resource: Union[handles.Plate, handles.Container, List[handles.Well]],
     mix: Mix,
     offset: Optional[Coordinate] = None,
     *,
@@ -2863,7 +3199,7 @@ class Head96(Head):
     `mix.auto_surface_following`, and each expel follows it back up, so the tips do not drift; no
     stroke goes below the cavity bottom. OFF mixes at `offset` z above the cavity bottom, with
     the blowout air drawn and expelled over the well. CAPACITIVE draws the air at the traverse
-    height, finds the surface by cLLD, sets the tracker to the volume found, mixes
+    height, finds the surface by cLLD, records the volume found, mixes
     `mix_position_from_liquid_surface` below it and expels the air once risen.
 
     Args:
@@ -2910,22 +3246,23 @@ class Head96(Head):
       )
     if swap_speed is None:
       swap_speed = self.default_mix_swap_speed
-    anchor, a1, bottom, z_top = self._get_target(resource, offset)
-    if mix.auto_surface_following and not anchor.supports_compute_height_volume_functions():
+    anchor, a1, bottom, z_top = await self._get_target(resource, offset)
+    converts = await self._converts(anchor)
+    if mix.auto_surface_following and not converts:
       raise RuntimeError(
         f"{anchor.name} has no height-volume functions, so a surface cannot become a volume"
       )
     # A container under all 96 gives what every channel draws; a well gives one's.
-    channels = sum(t is not None for t in self._get_mounted_tips())
+    channels = sum(t is not None for t in await self._get_mounted_tips())
     per_draw = mix.volume * (
-      channels if self._get_containers_under_channels(resource) is None else 1
+      channels if await self._get_containers_under_channels(resource) is None else 1
     )
 
-    def get_following(height: float) -> float:
+    async def get_following(height: float) -> float:
       """How far each draw follows the surface down from `height` mm over the cavity bottom."""
       if not mix.auto_surface_following:
         return mix.surface_following_distance
-      return max(-self._get_surface_change(anchor, max(height, 0.0), -per_draw), 0.0)
+      return max(-(await self._get_surface_change(anchor, max(height, 0.0), -per_draw)), 0.0)
 
     following = 0.0
     if not await self.request_tip_presence():
@@ -2978,10 +3315,11 @@ class Head96(Head):
       if found is None:
         raise RuntimeError(f"no liquid found in {anchor.name} down to its cavity bottom")
       surface = found
-      if anchor.supports_compute_height_volume_functions():
-        anchor.tracker.set_volume(anchor.compute_volume_from_height(max(surface - bottom, 0.0)))
+      if converts:
+        volume = await anchor.compute_volume_from_height(max(surface - bottom, 0.0))
+        await _record_volume(anchor, volume)
       start = max(round(surface - mix_position_from_liquid_surface, 2), bottom)
-      following = round(min(get_following(surface - bottom), start - bottom), 1)
+      following = round(min(await get_following(surface - bottom), start - bottom), 1)
       await self.move_tool_bottom_to_z_position(start, speed=swap_speed)
       await strokes()
     except BaseException:

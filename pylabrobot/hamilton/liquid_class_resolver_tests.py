@@ -14,9 +14,8 @@ from pylabrobot.hamilton.liquid_class_resolver import (
   get_volumes_and_classes,
 )
 from pylabrobot.hamilton.liquid_classes import HamiltonLiquidClass
-from pylabrobot.resources.container import Container
-from pylabrobot.resources.hamilton import HamiltonTip, TipPickupMethod, TipSize
 from pylabrobot.resources.liquid import Liquid
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
 def _hlc(**overrides: Any) -> HamiltonLiquidClass:
@@ -44,15 +43,8 @@ def _hlc(**overrides: Any) -> HamiltonLiquidClass:
   return HamiltonLiquidClass(**base)
 
 
-def _tip(maximal_volume: float = 300.0) -> HamiltonTip:
-  return HamiltonTip(
-    name="tip",
-    has_filter=False,
-    size_z=59.9,
-    maximal_volume=maximal_volume,
-    tip_size=TipSize.STANDARD_VOLUME,
-    pickup_method=TipPickupMethod.OUT_OF_RACK,
-  )
+def _tip(maximal_volume: float = 300.0) -> pb.TipSpec:
+  return pb.TipSpec(diameter=8.2, has_filter=False, maximal_volume=maximal_volume)
 
 
 def test_from_class_takes_what_is_given_else_the_class_else_none():
@@ -87,19 +79,18 @@ def test_get_volumes_and_classes_looks_up_corrects_and_rounds():
     keys.append(kwargs)
     return hlc
 
-  well = Container(name="w", size_x=1, size_y=1, size_z=1)
   liquid, piston, classes = get_volumes_and_classes(
-    [well], [0], [_tip()], [100.0], None, None, [True], [False], lookup=lookup
+    ["w"], [0], [_tip()], [100.0], None, None, [True], [False], lookup=lookup
   )
   assert (liquid, piston, classes) == ([100.0], [100.12], [hlc])
   assert keys[0]["jet"] is True and keys[0]["blow_out"] is False
   assert keys[0]["liquid"] == Liquid.WATER and keys[0]["tip_volume"] == 300.0
-  assert get_volumes_and_classes([well], [0], [_tip()], None, [5.0], None, [False], [False]) == (
+  assert get_volumes_and_classes(["w"], [0], [_tip()], None, [5.0], None, [False], [False]) == (
     [5.0],
     [5.0],
     None,
   )
   with pytest.raises(ValueError, match="no liquid class is known for channel 1's tip on w"):
     get_volumes_and_classes(
-      [well], [1], [_tip()], [1.0], None, None, [False], [False], lookup=lambda **kw: None
+      ["w"], [1], [_tip()], [1.0], None, None, [False], [False], lookup=lambda **kw: None
     )

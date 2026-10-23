@@ -8,7 +8,7 @@ siblings, and records it through `STARRecorder`. The JSON files beside this one 
 
 import pathlib
 import unittest
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from pylabrobot.hamilton.star.device import (
   RECORDING_STAR_HEAD384,
@@ -25,18 +25,8 @@ from pylabrobot.hamilton.star.driver.features.pipettes import Pipettes
 from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.golden.recorder import STARRecorder
 from pylabrobot.lib.liquid_handling.mix import Mix
-from pylabrobot.resources import set_tip_tracking, set_volume_tracking
-from pylabrobot.resources.agenbio.plates import agenbio_1_troughplate_190mL_Fl
-from pylabrobot.resources.azenta.plates import azenta_96_wellplate_200uL_Vb_4titudeframestar
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
-from pylabrobot.resources.hamilton import (
-  PLT_CAR_L5AC_A00,
-  TIP_CAR_480_A00,
-  hamilton_96_tiprack_300uL_filter,
-)
-from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.store import build, handles
 from pylabrobot.testing.golden import check_golden
 
 HERE = pathlib.Path(__file__).parent
@@ -45,11 +35,19 @@ HERE = pathlib.Path(__file__).parent
 class _Scenario(unittest.IsolatedAsyncioTestCase):
   """Tip and volume tracking on, as a protocol that books what it moves runs."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-    self.addCleanup(set_tip_tracking, False)
-    self.addCleanup(set_volume_tracking, False)
+  async def built(self, device: STARDevice, call: str) -> STARRecorder:
+    """Start recording a device whose resources the scenario has built, tracking everything on it.
+
+    Args:
+      device: the device, its resources made.
+      call: how it was built, as a scenario writes it.
+    """
+    assert device.body is not None
+    await device.body.set_tip_tracking(True)
+    await device.body.set_volume_tracking(True)
+    recorder = STARRecorder(device)
+    await recorder.built(call)
+    return recorder
 
   def check(self, name: str, recorder: STARRecorder) -> None:
     check_golden(self, HERE / f"{name}.json", recorder.record())
@@ -59,8 +57,8 @@ class SetupTests(_Scenario):
   """What each frame builds and sends at setup, and at stop."""
 
   async def _set_up(self, name: str, device: STARDevice, built: str) -> None:
-    recorder = STARRecorder(device)
-    recorder.built(built)
+    await device.create_resources()
+    recorder = await self.built(device, built)
     await recorder.step("setup()", device.setup())
     await recorder.step("stop()", device.stop())
     self.check(name, recorder)
@@ -82,13 +80,16 @@ class SetupTests(_Scenario):
     )
 
   async def test_a_turned_starlet_with_its_side_panel(self):
-    room = Resource(name="room", size_x=9000, size_y=9000, size_z=3000)
-    room.location = Coordinate.zero()
     device = STARlet(
       simulation=True, name="turned", extension_housing=False, left_side_panel_installed=True
     )
-    device.rotation = Rotation(z=90)
-    room.assign_child_resource(device, location=Coordinate(4000, 4000, 0))
+    room = await device.store.create(
+      build.resource("room", Coordinate(9000, 9000, 3000)), name="room"
+    )
+    await device.create_resources()
+    assert device.body is not None
+    await device.body.rotate(z=90)
+    await room.assign_child_resource(device.body, location=Coordinate(4000, 4000, 0))
     await self._set_up(
       "setup_turned_starlet",
       device,
@@ -100,25 +101,43 @@ class SetupTests(_Scenario):
 class PipettesTests(_Scenario):
   """The eight channels of a STARlet: tips, transfers, probing, and what a failure leaves."""
 
-  def build(self, built: str, partly_filled_rack: bool = False) -> STARRecorder:
+  async def build(self, built: str, partly_filled_rack: bool = False) -> STARRecorder:
     """A STARlet with a tip rack on track 1 and, beside it, a second rack holding only its last
     ten tips or a plate on track 7 with 200 uL in every well."""
     self.star = STARlet(simulation=True)
-    tip_carrier = TIP_CAR_480_A00(name="tip_carrier")
-    tip_carrier[1] = self.tips = hamilton_96_tiprack_300uL_filter(name="tips")
-    self.star.deck.assign_child_resource(tip_carrier, track=1)
+    await self.star.create_resources()
+    store = self.star.store
+    tip_carrier = cast(
+      handles.Carrier,
+      await store.create(
+        "hamilton_tip_carrier_L5", name="tip_carrier", parent=self.star.deck, track=1
+      ),
+    )
+    self.tips = cast(
+      handles.TipRack,
+      await store.create("hamilton_96_tiprack_300uL_filter", name="tips", parent=tip_carrier[1]),
+    )
     if partly_filled_rack:
-      tip_carrier[2] = self.more_tips = hamilton_96_tiprack_300uL_filter(name="more_tips")
-      self.more_tips.set_tip_state([index >= 86 for index in range(96)])
+      self.more_tips = cast(
+        handles.TipRack,
+        await store.create(
+          "hamilton_96_tiprack_300uL_filter", name="more_tips", parent=tip_carrier[2]
+        ),
+      )
+      await self.more_tips.set_tip_state([index >= 86 for index in range(96)])
     else:
-      plate_carrier = PLT_CAR_L5AC_A00(name="plate_carrier")
-      plate_carrier[0] = self.plate = cor_96_wellplate_360uL_Fb(name="plate")
-      self.star.deck.assign_child_resource(plate_carrier, track=7)
-      for well in self.plate.get_all_items():
-        well.tracker.set_volume(200.0)
-    recorder = STARRecorder(self.star)
-    recorder.built(built)
-    return recorder
+      plate_carrier = cast(
+        handles.Carrier,
+        await store.create(
+          "hamilton_plate_carrier_L5_ac", name="plate_carrier", parent=self.star.deck, track=7
+        ),
+      )
+      self.plate = cast(
+        handles.Plate,
+        await store.create("cor_96_wellplate_360uL_Fb", name="plate", parent=plate_carrier[0]),
+      )
+      await self.plate.set_well_volumes(200.0)
+    return await self.built(self.star, built)
 
   @property
   def pipettes(self) -> Pipettes:
@@ -126,37 +145,47 @@ class PipettesTests(_Scenario):
     return self.star.pipettes
 
   async def test_a_transfer_protocol(self):
-    r = self.build("STARlet with tips on track 1 and plate on track 7, 200 uL in every well")
+    r = await self.build("STARlet with tips on track 1 and plate on track 7, 200 uL in every well")
     await r.step("setup()", self.star.setup())
     p, tips, plate = self.pipettes, self.tips, self.plate
-    await r.step("pick_up_tips(tips['A1:H1'])", p.pick_up_tips(tips["A1:H1"]))
-    await r.step("aspirate(plate['A1:H1'], [50.0] * 8)", p.aspirate(plate["A1:H1"], [50.0] * 8))
-    await r.step("dispense(plate['A2:H2'], [50.0] * 8)", p.dispense(plate["A2:H2"], [50.0] * 8))
-    await r.step("drop_tips(tips['A1:H1'])", p.drop_tips(tips["A1:H1"]))
-    await r.step("pick_up_tips(tips['A2:H2'])", p.pick_up_tips(tips["A2:H2"]))
-    await r.step("probe_liquid_heights(plate['A1:D1'])", p.probe_liquid_heights(plate["A1:D1"]))
-    await r.step("probe_liquid_volumes(plate['A1:D1'])", p.probe_liquid_volumes(plate["A1:D1"]))
+    await r.step("pick_up_tips(tips['A1:H1'])", p.pick_up_tips(tips.get_tip_spots("A1:H1")))
+    await r.step(
+      "aspirate(plate['A1:H1'], [50.0] * 8)", p.aspirate(plate.get_wells("A1:H1"), [50.0] * 8)
+    )
+    await r.step(
+      "dispense(plate['A2:H2'], [50.0] * 8)", p.dispense(plate.get_wells("A2:H2"), [50.0] * 8)
+    )
+    await r.step("drop_tips(tips['A1:H1'])", p.drop_tips(tips.get_tip_spots("A1:H1")))
+    await r.step("pick_up_tips(tips['A2:H2'])", p.pick_up_tips(tips.get_tip_spots("A2:H2")))
+    await r.step(
+      "probe_liquid_heights(plate['A1:D1'])", p.probe_liquid_heights(plate.get_wells("A1:D1"))
+    )
+    await r.step(
+      "probe_liquid_volumes(plate['A1:D1'])", p.probe_liquid_volumes(plate.get_wells("A1:D1"))
+    )
     await r.step(
       "aspirate(plate['A3:D3'], [20.0] * 4, lld_mode=LLDMode.CAPACITIVE)",
-      p.aspirate(plate["A3:D3"], [20.0] * 4, lld_mode=LLDMode.CAPACITIVE),
+      p.aspirate(plate.get_wells("A3:D3"), [20.0] * 4, lld_mode=LLDMode.CAPACITIVE),
     )
-    await r.step("dispense(plate['A4:D4'], [20.0] * 4)", p.dispense(plate["A4:D4"], [20.0] * 4))
+    await r.step(
+      "dispense(plate['A4:D4'], [20.0] * 4)", p.dispense(plate.get_wells("A4:D4"), [20.0] * 4)
+    )
     await r.step("empty_tip(0)", p.empty_tip(0))
     await r.step("return_tips()", p.return_tips())
     await r.step(
       "pick_up_tips(tips['A3:B3'], use_channels=[0, 1])",
-      p.pick_up_tips(tips["A3:B3"], use_channels=[0, 1]),
+      p.pick_up_tips(tips.get_tip_spots("A3:B3"), use_channels=[0, 1]),
     )
     await r.step(
       "drop_tips(tips['A1:B1'], use_channels=[0, 1]), both spots holding a tip",
-      p.drop_tips(tips["A1:B1"], use_channels=[0, 1]),
+      p.drop_tips(tips.get_tip_spots("A1:B1"), use_channels=[0, 1]),
     )
     await r.step("discard_tips()", p.discard_tips())
     await r.step("stop()", self.star.stop())
     self.check("pipettes_transfer", r)
 
   async def test_failures_part_way(self):
-    r = self.build("STARlet with tips on track 1 and plate on track 7, 200 uL in every well")
+    r = await self.build("STARlet with tips on track 1 and plate on track 7, 200 uL in every well")
     await r.step("setup()", self.star.setup())
     p, tips, plate, driver = self.pipettes, self.tips, self.plate, r.driver
 
@@ -165,7 +194,8 @@ class PipettesTests(_Scenario):
 
     r.fail("C0", "TP", "C0TPid0000er99/00 P308/75", before=channels_0_1_and_3_hold_their_tips)
     await r.step(
-      "pick_up_tips(tips['A1:D1']), channel 2 meeting no tip", p.pick_up_tips(tips["A1:D1"])
+      "pick_up_tips(tips['A1:D1']), channel 2 meeting no tip",
+      p.pick_up_tips(tips.get_tip_spots("A1:D1")),
     )
 
     def channel_1_drew_nothing(_: Dict[str, Any]) -> None:
@@ -174,15 +204,15 @@ class PipettesTests(_Scenario):
     r.fail("C0", "AS", "C0ASid0000er99/00", before=channel_1_drew_nothing)
     await r.step(
       "aspirate(plate['A1:B1'], piston_volumes=[50.0, 20.0]), stopping before channel 1 drew",
-      p.aspirate(plate["A1:B1"], piston_volumes=[50.0, 20.0]),
+      p.aspirate(plate.get_wells("A1:B1"), piston_volumes=[50.0, 20.0]),
     )
     await r.step(
       "aspirate(plate['C1'], piston_volumes=[30.0], use_channels=[3])",
-      p.aspirate(plate["C1"], piston_volumes=[30.0], use_channels=[3]),
+      p.aspirate([plate.get_well("C1")], piston_volumes=[30.0], use_channels=[3]),
     )
     await r.step(
       "aspirate(plate['D1'], piston_volumes=[5000.0], use_channels=[3]), past the piston",
-      p.aspirate(plate["D1"], piston_volumes=[5000.0], use_channels=[3]),
+      p.aspirate([plate.get_well("D1")], piston_volumes=[5000.0], use_channels=[3]),
     )
     standing = dict(driver.dispensing_drive_uL)
 
@@ -193,14 +223,14 @@ class PipettesTests(_Scenario):
     await r.step(
       "dispense(plate['A2:B2'], piston_volumes=[40.0, 30.0], use_channels=[0, 3]), "
       "stopping before channel 3 gave",
-      p.dispense(plate["A2:B2"], piston_volumes=[40.0, 30.0], use_channels=[0, 3]),
+      p.dispense(plate.get_wells("A2:B2"), piston_volumes=[40.0, 30.0], use_channels=[0, 3]),
     )
     await r.step("initialize()", p.initialize())
     await r.step("stop()", self.star.stop())
     self.check("pipettes_failures", r)
 
   async def test_tip_inventory(self):
-    r = self.build(
+    r = await self.build(
       "STARlet with tips and more_tips (its last ten spots filled) on track 1",
       partly_filled_rack=True,
     )
@@ -217,13 +247,13 @@ class PipettesTests(_Scenario):
     r.fail("C0", "TP", "C0TPid0000er99/00 P208/75", before=channel_0_holds_its_tip)
     await r.step(
       "probe_tip_presence_via_pickup(tips['A1:B1'], use_channels=[0, 1]), B1 empty on the device",
-      p.probe_tip_presence_via_pickup(tips["A1:B1"], use_channels=[0, 1]),
+      p.probe_tip_presence_via_pickup(tips.get_tip_spots("A1:B1"), use_channels=[0, 1]),
     )
     # The inventory picks up two at a time: the third pick-up is E2 and F2.
     r.fail("C0", "TP", "C0TPid0000er99/00 P208/75", before=channel_0_holds_its_tip, skip=2)
     await r.step(
       "probe_tip_inventory(tips['A2:H2'], use_channels=[0, 1]), F2 empty on the device",
-      p.probe_tip_inventory(tips["A2:H2"], use_channels=[0, 1]),
+      p.probe_tip_inventory(tips.get_tip_spots("A2:H2"), use_channels=[0, 1]),
     )
     await r.step("stop()", self.star.stop())
     self.check("pipettes_tip_inventory", r)
@@ -234,22 +264,39 @@ class Head96Tests(_Scenario):
 
   async def test_a_protocol_and_its_failures(self):
     star = STARlet(simulation=True)
-    tip_carrier = TIP_CAR_480_A00(name="tip_carrier")
-    tip_carrier[1] = tips = hamilton_96_tiprack_300uL_filter(name="tips")
-    tip_carrier[2] = gappy = hamilton_96_tiprack_300uL_filter(name="gappy")
-    star.deck.assign_child_resource(tip_carrier, track=1)
-    plate_carrier = PLT_CAR_L5AC_A00(name="plate_carrier")
-    plate_carrier[1] = source = cor_96_wellplate_360uL_Fb(name="source")
-    plate_carrier[3] = trough = agenbio_1_troughplate_190mL_Fl(name="trough")
-    star.deck.assign_child_resource(plate_carrier, track=7)
-    for well in source.get_all_items():
-      well.tracker.set_volume(200.0)
-    trough.get_item(0).tracker.set_volume(100_000.0)
-    for name in ("A1", "B2"):
-      gappy.get_item(name).tracker.remove_tip(commit=True)
-    r = STARRecorder(star)
-    r.built(
-      "STARlet with tips and gappy (A1 and B2 empty) on track 1, source and trough on track 7"
+    await star.create_resources()
+    store = star.store
+    tip_carrier = cast(
+      handles.Carrier,
+      await store.create("hamilton_tip_carrier_L5", name="tip_carrier", parent=star.deck, track=1),
+    )
+    tips = cast(
+      handles.TipRack,
+      await store.create("hamilton_96_tiprack_300uL_filter", name="tips", parent=tip_carrier[1]),
+    )
+    gappy = cast(
+      handles.TipRack,
+      await store.create("hamilton_96_tiprack_300uL_filter", name="gappy", parent=tip_carrier[2]),
+    )
+    plate_carrier = cast(
+      handles.Carrier,
+      await store.create(
+        "hamilton_plate_carrier_L5_ac", name="plate_carrier", parent=star.deck, track=7
+      ),
+    )
+    source = cast(
+      handles.Plate,
+      await store.create("cor_96_wellplate_360uL_Fb", name="source", parent=plate_carrier[1]),
+    )
+    trough = cast(
+      handles.Plate,
+      await store.create("agenbio_1_troughplate_190mL_Fl", name="trough", parent=plate_carrier[3]),
+    )
+    await source.set_well_volumes(200.0)
+    await trough.set_well_volumes(100_000.0)
+    await gappy.set_tip_state([identifier not in ("A1", "B2") for identifier in gappy.identifiers])
+    r = await self.built(
+      star, "STARlet with tips and gappy (A1 and B2 empty) on track 1, source and trough on track 7"
     )
 
     await r.step("setup()", star.setup())
@@ -302,11 +349,15 @@ class CoreGrippersTests(_Scenario):
 
   async def test_a_plate_moved_and_returned(self):
     star = STAR(simulation=True)
-    carrier = PLT_CAR_L5AC_A00(name="plate_carrier")
-    star.deck.assign_child_resource(carrier, track=30)
-    carrier[0] = plate = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-    r = STARRecorder(star)
-    r.built("STAR with plate on plate_carrier[0], track 30")
+    await star.create_resources()
+    carrier = await star.store.create(
+      "hamilton_plate_carrier_L5_ac", name="plate_carrier", parent=star.deck, track=30
+    )
+    assert isinstance(carrier, handles.Carrier)
+    plate = await star.store.create(
+      "azenta_96_wellplate_200uL_Vb_4titudeframestar", name="plate", parent=carrier[0]
+    )
+    r = await self.built(star, "STAR with plate on plate_carrier[0], track 30")
 
     await r.step("setup()", star.setup())
     assert isinstance(star.core_grippers, CoreGrippers)
@@ -361,8 +412,8 @@ class ArmTests(_Scenario):
 
   async def test_iswap_pose_and_jaws(self):
     star = STAR(simulation=True)
-    r = STARRecorder(star)
-    r.built("STAR(simulation=True)")
+    await star.create_resources()
+    r = await self.built(star, "STAR(simulation=True)")
     await r.step("setup()", star.setup())
     assert isinstance(star.iswap, iSWAP)
     iswap = star.iswap
@@ -401,8 +452,8 @@ class ArmTests(_Scenario):
 
   async def test_x_arm(self):
     star = STAR(simulation=True)
-    r = STARRecorder(star)
-    r.built("STAR(simulation=True)")
+    await star.create_resources()
+    r = await self.built(star, "STAR(simulation=True)")
     await r.step("setup()", star.setup())
     arm = star.x_arm
     await r.step("move_to_x_position(600.0)", arm.move_to_x_position(600.0))
@@ -417,10 +468,11 @@ class AutoloadTests(_Scenario):
 
   async def test_load_and_unload(self):
     star = STAR(simulation=True)
-    carrier = PLT_CAR_L5AC_A00(name="carrier")
-    star.deck.assign_child_resource(carrier, track=20)
-    r = STARRecorder(star)
-    r.built("STAR with carrier on track 20")
+    await star.create_resources()
+    carrier = await star.store.create(
+      "hamilton_plate_carrier_L5_ac", name="carrier", parent=star.deck, track=20
+    )
+    r = await self.built(star, "STAR with carrier on track 20")
     await r.step("setup()", star.setup())
     assert isinstance(star.autoload, Autoload)
     autoload = star.autoload

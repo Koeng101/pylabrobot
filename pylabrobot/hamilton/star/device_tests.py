@@ -3,9 +3,9 @@ import json
 import pathlib
 import tempfile
 import unittest
-from typing import Callable, Optional, Tuple, cast
+from typing import Callable, List, Optional, Tuple, cast
 
-from pylabrobot.hamilton.star.conftest import BARE_X_ARM
+from pylabrobot.hamilton.star.conftest import BARE_X_ARM, make_deck
 from pylabrobot.hamilton.star.device import (
   EXTENSION_HOUSING_SIZE_X,
   RECORDING_STAR,
@@ -23,11 +23,14 @@ from pylabrobot.hamilton.star.driver.configuration import (
 )
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.hamilton import STARDeck
-from pylabrobot.resources.hamilton.hamilton_decks import STAR_NUM_TRACKS, STARLET_NUM_TRACKS
-from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.serializer import serialize
+
+# How many tracks each frame's deck has.
+STAR_NUM_TRACKS = 54
+STARLET_NUM_TRACKS = 30
 
 # The device this package ships a recording of, read through the one reader there is: tests need a
 # device to start from, and this is the one they stand in for.
@@ -61,63 +64,94 @@ def declaring(**parts: object) -> str:
 class TestConstruction(unittest.IsolatedAsyncioTestCase):
   """What the device wires up when it is built."""
 
-  def test_the_device_deck_is_what_gets_modelled(self):
-    """The deck the device carries is its child and is what the driver models into, whether
+  async def test_the_device_deck_is_what_gets_modelled(self):
+    """The deck the device carries is in its body and is what the driver models into, whether
     the driver was built here or handed in pointing at another deck."""
     star = STAR(simulation=True)
-    self.assertIs(star.driver.deck, star.deck)
-    self.assertIn(star.deck, star.children)
+    await star.create_resources()
+    assert star.deck is not None and star.body is not None
+    self.assertEqual(star.driver.deck, star.deck)
+    self.assertIn(star.deck, await star.body.get_children())
 
-    deck = STARDeck()
+    deck = await make_deck()
     supplied = STARDevice(
       deck=deck,
-      driver=STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR),
+      driver=STARSimulationDriver(
+        deck=await make_deck(), declared_configuration_json=RECORDING_STAR
+      ),
     )
-    self.assertIs(supplied.driver.deck, deck)
+    self.assertEqual(supplied.driver.deck, deck)
 
-  def test_needs_something_to_drive(self):
+  async def test_needs_something_to_drive(self):
     with self.assertRaises(ValueError):
-      STARDevice(deck=STARDeck())
+      STARDevice(deck=await make_deck())
+
+  async def test_a_device_finds_its_resources_again(self):
+    """A device built again on the store its resources are in takes them up rather than making
+    new ones."""
+    first = STAR(simulation=True)
+    await first.create_resources()
+    again = STAR(simulation=True, store=first.store)
+    await again.create_resources()
+    self.assertEqual(again.body, first.body)
+    self.assertEqual(again.deck, first.deck)
+    self.assertEqual(again.left_extension_housing, first.left_extension_housing)
 
 
 class TestFactories(unittest.IsolatedAsyncioTestCase):
   """Each factory builds one device, on the deck that device has."""
 
-  def test_each_factory_builds_its_own_deck(self):
-    self.assertEqual(STAR(simulation=True).deck.num_tracks, STAR_NUM_TRACKS)
-    self.assertEqual(STARlet(simulation=True).deck.num_tracks, STARLET_NUM_TRACKS)
+  async def test_each_factory_builds_its_own_deck(self):
+    for factory, tracks in ((STAR, STAR_NUM_TRACKS), (STARlet, STARLET_NUM_TRACKS)):
+      star = factory(simulation=True)
+      await star.create_resources()
+      assert star.deck is not None
+      self.assertEqual((await star.deck.get_hamilton_tracks()).num_tracks, tracks)
 
-  def test_extension_housing_stands_to_the_left(self):
+  async def test_extension_housing_stands_to_the_left(self):
     """The housing is a resource beside the chassis, not something that grows the device.
 
     It bolts to the left, so it sits at a negative x. Growing the device instead would move its
     origin, and everything measured from that origin with it.
     """
     star = STAR(simulation=True)
-    self.assertEqual(star.get_absolute_size_x(), STAR_SIZE_X)
-    self.assertEqual(cast(Coordinate, star.deck.location).x, STAR_DECK_LOCATION.x)
+    await star.create_resources()
+    assert star.body is not None and star.deck is not None
+    self.assertEqual((await star.body.attributes()).size.x, STAR_SIZE_X)
+    self.assertEqual(cast(Coordinate, await star.deck.get_location()).x, STAR_DECK_LOCATION.x)
 
-    housing = star.get_resource(f"{star.name}_left_extension_housing")
-    self.assertEqual(cast(Coordinate, housing.location).x, -EXTENSION_HOUSING_SIZE_X)
-    self.assertEqual(housing.get_absolute_size_x(), EXTENSION_HOUSING_SIZE_X)
+    housing = await star.body.get_resource(f"{star.name}_left_extension_housing")
+    self.assertEqual(cast(Coordinate, await housing.get_location()).x, -EXTENSION_HOUSING_SIZE_X)
+    self.assertEqual((await housing.get_absolute_size()).x, EXTENSION_HOUSING_SIZE_X)
 
-  def test_extension_housing_is_fitted_unless_declined(self):
-    def fitted(star):
-      return any(child.name == f"{star.name}_left_extension_housing" for child in star.children)
+  async def test_extension_housing_is_fitted_unless_declined(self):
+    async def fitted(star: STARDevice) -> bool:
+      await star.create_resources()
+      assert star.body is not None
+      names = [child.name for child in await star.body.get_children()]
+      return f"{star.name}_left_extension_housing" in names
 
-    self.assertTrue(fitted(STAR(simulation=True)))
-    self.assertFalse(fitted(STAR(simulation=True, extension_housing=False)))
+    self.assertTrue(await fitted(STAR(simulation=True)))
+    self.assertFalse(await fitted(STAR(simulation=True, extension_housing=False)))
 
-  def test_default_names_and_left_side_accessors(self):
+  async def test_default_names_and_left_side_accessors(self):
     star = STAR(simulation=True)
+    await star.create_resources()
+    assert star.body is not None
     self.assertEqual(star.name, "STAR")
     self.assertEqual(STARlet(simulation=True).name, "STARlet")
     self.assertEqual(STARPlus(simulation=True).name, "STARplus")
-    self.assertIs(star.left_extension_housing, star.get_resource("STAR_left_extension_housing"))
+    self.assertEqual(
+      star.left_extension_housing, await star.body.get_resource("STAR_left_extension_housing")
+    )
     self.assertIsNone(star.left_side_panel)
 
     paneled = STAR(simulation=True, extension_housing=False, left_side_panel_installed=True)
-    self.assertIs(paneled.left_side_panel, paneled.get_resource("STAR_left_side_panel"))
+    await paneled.create_resources()
+    assert paneled.body is not None
+    self.assertEqual(
+      paneled.left_side_panel, await paneled.body.get_resource("STAR_left_side_panel")
+    )
     self.assertIsNone(paneled.left_extension_housing)
 
 
@@ -151,15 +185,17 @@ class TestCapabilities(unittest.IsolatedAsyncioTestCase):
       right_arm=None,
     )
     star = STARDevice(
-      deck=STARDeck(),
-      driver=STARSimulationDriver(
-        deck=STARDeck(),
-        declared_configuration_json=declaring(device=bare),
-      ),
+      deck=await make_deck(),
+      driver=STARSimulationDriver(declared_configuration_json=declaring(device=bare)),
     )
     await star.setup()
     for name in ("pipettes", "head96", "head384", "autoload", "right_x_arm", "front_cover"):
       self.assertIsNone(getattr(star, name), name)
+
+
+async def _names_under(resource: handles.Resource) -> List[str]:
+  """Every name under a resource, itself left out."""
+  return [found.name for found in await resource.find_resources() if found != resource]
 
 
 class TestComponentNames(unittest.IsolatedAsyncioTestCase):
@@ -167,7 +203,8 @@ class TestComponentNames(unittest.IsolatedAsyncioTestCase):
 
   async def test_device_components_are_unique_and_reused(self):
     """Every built-in component, including nested head and iSWAP parts, belongs to its name."""
-    bench = Resource(name="bench", size_x=10000, size_y=2000, size_z=2000)
+    store = ResourceStore.in_process()
+    bench = await store.create(build.resource("bench", Coordinate(10000, 2000, 2000)), name="bench")
     cases: Tuple[Tuple[Callable[..., STARDevice], str, Optional[str], bool], ...] = (
       (STAR, "star_a", None, False),
       (STAR, "star_b", RECORDING_STAR_HEAD384, False),
@@ -182,47 +219,58 @@ class TestComponentNames(unittest.IsolatedAsyncioTestCase):
           declared_configuration_json=recording,
           extension_housing=not side_panel,
           left_side_panel_installed=side_panel,
+          store=store,
         )
+        await star.create_resources()
+        assert star.deck is not None and star.body is not None
         self.assertEqual(star.deck.name, f"{name}_deck")
-        self.assertTrue(all(child.name.startswith(f"{name}_") for child in star.get_all_children()))
-        bench.assign_child_resource(star, location=Coordinate(index * 2500, 0, 0))
+        self.assertTrue(all(n.startswith(f"{name}_") for n in await _names_under(star.body)))
+        await bench.assign_child_resource(star.body, location=Coordinate(index * 2500, 0, 0))
         try:
           await star.setup()
-          components = star.get_all_children()
-          self.assertTrue(all(child.name.startswith(f"{name}_") for child in components))
-          for child in components:
-            self.assertIs(bench.get_resource(child.name), child)
+          components = await _names_under(star.body)
+          self.assertTrue(all(n.startswith(f"{name}_") for n in components))
+          for component in components:
+            found = await bench.get_resource(component)
+            self.assertTrue(await found.is_in_subtree_of(star.body))
           assert star.pipettes is not None
           self.assertEqual(star.pipettes.resources[0].name, f"{name}_pipette_channel_0")
           if star.head96 is not None:
             self.assertEqual(
               star.head96.configuration.tip_discard_location,
-              star.head96._position_centred_in(star.deck.get_trash_area96()),
+              await star.head96._position_centred_in(
+                await star.deck.get_resource(f"{name}_deck_trash_core96")
+              ),
             )
+          ids = [found.id for found in await star.body.find_resources()]
           await star.stop()
           await star.setup()
-          self.assertEqual(
-            [id(child) for child in star.get_all_children()], [id(child) for child in components]
-          )
+          self.assertEqual([found.id for found in await star.body.find_resources()], ids)
         finally:
           await star.stop()
 
   async def test_supplied_deck_and_labware_keep_their_names(self):
     """Discovery uses the device name without renaming caller-owned deck resources."""
-    deck = STARDeck(name="custom_deck")
-    labware = Resource(name="user_labware", size_x=100, size_y=100, size_z=10)
-    deck.assign_child_resource(labware, track=1)
-    existing_names = [child.name for child in deck.get_all_children()]
+    deck = await make_deck(name="custom_deck")
+    labware = await deck.store.create(
+      build.resource("user_labware", Coordinate(100, 100, 10)),
+      name="user_labware",
+      parent=deck,
+      track=1,
+    )
+    existing_names = await _names_under(deck)
     star = STAR(name="star_a", deck=deck, simulation=True)
     try:
       await star.setup()
-      self.assertIs(star.deck, deck)
-      self.assertIs(star.get_resource("user_labware"), labware)
+      assert star.body is not None
+      self.assertEqual(star.deck, deck)
+      self.assertEqual(await star.body.get_resource("user_labware"), labware)
+      under = await _names_under(star.body)
       for name in existing_names:
-        self.assertTrue(star.has_resource(name))
+        self.assertIn(name, under)
       assert star.x_arm.resource is not None
       self.assertEqual(star.x_arm.resource.name, "star_a_left_x_arm")
-      self.assertEqual(star.deck.get_trash_area96().name, "custom_deck_trash_core96")
+      self.assertIn("custom_deck_trash_core96", under)
     finally:
       await star.stop()
 
@@ -236,17 +284,31 @@ class TestTurnedDevice(unittest.IsolatedAsyncioTestCase):
         with self.subTest(device=factory.__name__, angle=angle):
           placed = []
           for rotation in (0, angle):
-            room = Resource(name="room", size_x=9000, size_y=9000, size_z=3000)
-            room.location = Coordinate.zero()
             device = factory(simulation=True, name="device")
-            device.rotation = Rotation(z=rotation)
-            room.assign_child_resource(device, location=Coordinate(4000, 4000, 0))
+            room = await device.store.create(
+              build.resource("room", Coordinate(9000, 9000, 3000), location=Coordinate.zero()),
+              name="room",
+            )
+            await device.create_resources()
+            assert device.body is not None
+            await device.body.rotate(z=rotation)
+            await room.assign_child_resource(device.body, location=Coordinate(4000, 4000, 0))
             await device.setup()
+            response = await device.store.commands.get_resources(
+              spb.GetResourcesRequest(resources=[device.body.ref], depth=-1)
+            )
             placed.append(
               {
-                r.name: (*r.location.vector(), r.get_size_x(), r.get_size_y(), r.get_size_z())
-                for r in device.get_all_children()
-                if r.location
+                node.attributes.name: (
+                  node.attributes.location.x,
+                  node.attributes.location.y,
+                  node.attributes.location.z,
+                  node.attributes.size.x,
+                  node.attributes.size.y,
+                  node.attributes.size.z,
+                )
+                for node in response.nodes[1:]
+                if node.attributes.HasField("location")
               }
             )
             await device.stop()

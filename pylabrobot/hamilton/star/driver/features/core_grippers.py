@@ -6,30 +6,30 @@ import dataclasses
 import logging
 import warnings
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional, Tuple, Union, cast
+from typing import (
+  TYPE_CHECKING,
+  Any,
+  AsyncIterator,
+  Dict,
+  List,
+  Optional,
+  Sequence,
+  Tuple,
+  Union,
+  cast,
+)
 
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.errors import STARFirmwareError
 from pylabrobot.hamilton.star.driver.lock import _FirmwareLock
-from pylabrobot.lib.pick_and_place.assignment import assign_placed_resource
-from pylabrobot.lib.pick_and_place.locations import (
-  get_grip_height,
-  get_grip_location,
-  get_pick_location,
-  get_place_location,
-  get_rotation_wrt,
-)
-from pylabrobot.lib.spatial.occupancy import get_resource_at_location
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.deck import Deck
 from pylabrobot.resources.errors import HasTipError
-from pylabrobot.resources.hamilton.core_gripper_tools import (
-  HamiltonCoreGripperTool,
-  hamilton_core_gripper_tool,
-)
-from pylabrobot.resources.hamilton.core_grippers import HamiltonCoreGrippers
-from pylabrobot.resources.head_tool import HeadTool
-from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.resource_holder import ResourceHolder
+from pylabrobot.resources.store import handles, library
+from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.tree import to_coordinate, to_rotation, to_vec3
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 if TYPE_CHECKING:
   from ..master import STARDriver
@@ -43,6 +43,35 @@ _DEPOSIT_BELOW_PICK_UP = 20.0
 # How far below its top a resource may be gripped, in mm: lower, its top presses into the pipetting
 # head the grippers hang from.
 _MAX_PICKUP_DISTANCE_FROM_TOP = 20.0
+
+# Where each holder model keeps its two tools: the y of the back and of the front channel's tool
+# centre from the holder's front edge, in mm. The store keeps a holder's shape, not this.
+HOLDER_CHANNEL_Y_CENTERS: Dict[str, Tuple[float, float]] = {
+  "hamilton_core_gripper_1000ul_5ml_on_waste": (18 + 21.5, 0 + 21.5),
+  "hamilton_core_gripper_1000ul_at_waste": (26 + 9.5, 0 + 9.5),
+}
+
+# The tool the channels are taken to carry when they hold tools nothing models: what the grip
+# line's reach is checked by.
+_DEFAULT_TOOL_MODEL = "hamilton_core_gripper_tool"
+
+# What a resource is put back into as the parent seats it, rather than at a point on the deck.
+_HOLDER_KINDS = (
+  pb.RESOURCE_KIND_RESOURCE_HOLDER,
+  pb.RESOURCE_KIND_PLATE_HOLDER,
+  pb.RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER,
+)
+
+
+def _center(geometry: spb.Geometry) -> Coordinate:
+  """A resource's footprint centre on its bottom, turned as it stands in the frame asked of."""
+  size = geometry.size
+  return Coordinate(size.x / 2, size.y / 2, 0).rotated(to_rotation(geometry.rotation_in_frame))
+
+
+def _tool_overhang(tool: pb.ResourceAttributes) -> float:
+  """How far a tool's grip line hangs below the stop disc of the channel carrying it, in mm."""
+  return tool.size.z - tool.head_tool.fitting_depth - resource_model.grip_line_height(tool)
 
 
 @dataclasses.dataclass
@@ -80,11 +109,13 @@ class CoreGrippers:
     # x, rear y, front y, seek z and end z of the pick-up the channels hold the tools from, in mm.
     self._tools_taken_from: Optional[Tuple[float, float, float, float, float]] = None
     # Each mounted tool, the holder it came from and where in it, to put it back in the model.
-    self._parked_tools: List[Tuple[HeadTool, Optional[Resource], Optional[Coordinate]]] = []
+    self._parked_tools: List[Tuple[handles.Resource, handles.Resource, Optional[Coordinate]]] = []
     self._grip_height: Optional[float] = None
     self._holding_resource_width: Optional[float] = None
-    self._held_resource: Optional[Resource] = None
-    self._taken_from: Optional[Tuple[Resource, Optional[Coordinate]]] = None
+    self._held_resource: Optional[handles.Resource] = None
+    # What the held resource was taken from: its parent, its location there, and whether the parent
+    # is a holder, which takes it back as it seats a child.
+    self._taken_from: Optional[Tuple[handles.Resource, Optional[Coordinate], bool]] = None
 
   # -- what carries them ---------------------------------------------------------------------------
 
@@ -106,7 +137,7 @@ class CoreGrippers:
     return pipettes
 
   @property
-  def _deck(self) -> Deck:
+  def _deck(self) -> handles.Deck:
     """The deck positions are measured from.
 
     Raises:
@@ -116,16 +147,16 @@ class CoreGrippers:
       raise RuntimeError("the CoRe grippers are placed from the deck; this driver was given none")
     return self._driver.deck
 
-  def _holder(self) -> HamiltonCoreGrippers:
+  async def _holder(self) -> handles.Resource:
     """The CO-RE gripper holder the deck carries.
 
     Raises:
       TypeError: If the deck carries none.
     """
-    for resource in self._deck.get_all_children():
-      if isinstance(resource, HamiltonCoreGrippers):
-        return resource
-    raise TypeError("the deck carries no CO-RE gripper holder")
+    found = await self._deck.find_resources(models=list(HOLDER_CHANNEL_Y_CENTERS))
+    if not found:
+      raise TypeError("the deck carries no CO-RE gripper holder")
+    return found[0]
 
   # -- state ---------------------------------------------------------------------------------------
 
@@ -169,44 +200,61 @@ class CoreGrippers:
     self._held_resource = None
     self._taken_from = None
 
-  def _front_tool(self) -> Optional[Resource]:
+  async def _tools_on(self, channels: List[int]) -> List[Optional[pb.ResourceNode]]:
+    """What the model has on each of these channels' shafts, in one read; None where nothing."""
+    shafts = [self._pipettes.shaft(channel) for channel in channels]
+    found: List[Optional[pb.ResourceNode]] = [None] * len(channels)
+    modelled = [shaft for shaft in shafts if shaft is not None]
+    if not modelled:
+      return found
+    index = {shaft.id: i for i, shaft in enumerate(shafts) if shaft is not None}
+    for node in await model.get_nodes(modelled[0].store, modelled, depth=1):
+      i = index.get(node.parent_id)
+      kind = node.attributes.kind
+      if (
+        i is not None
+        and found[i] is None
+        and kind in (pb.RESOURCE_KIND_TIP, pb.RESOURCE_KIND_HEAD_TOOL)
+      ):
+        found[i] = node
+    return found
+
+  async def _front_tool(self) -> Optional[handles.Resource]:
     """The tool the model has on the front channel, or None while it has none."""
     if self._front_channel is None:
       return None
-    shaft = self._pipettes.shaft(self._front_channel)
-    return shaft.tip if shaft is not None and shaft.has_tip() else None
+    (tool,) = await self._tools_on([self._front_channel])
+    return None if tool is None else self._deck.store.handle_from_node(tool, ())
 
-  def _hang_held_resource_on_the_front_tool(self) -> None:
+  async def _hang_held_resource_on_the_front_tool(self) -> None:
     """Hang the held resource from the front tool where the fingers hold it, so it rides with them.
 
     Its centre at the fingers' centre, its bottom `_grip_height` below the grip line - the front
     channel's stop disc less the tool's overhang. Nothing happens while nothing models them.
     """
-    held, grip_height, tool = self._held_resource, self._grip_height, self._front_tool()
-    if held is None or grip_height is None or not isinstance(tool, HamiltonCoreGripperTool):
+    held, grip_height = self._held_resource, self._grip_height
+    if held is None or grip_height is None or self._front_channel is None:
       return
-    back = self._pipettes.get_reference_point_location(cast(int, self._back_channel))
-    front = self._pipettes.get_reference_point_location(cast(int, self._front_channel))
+    (tool,) = await self._tools_on([self._front_channel])
+    if tool is None or tool.attributes.model not in resource_model.GRIP_LINE_HEIGHTS:
+      return
+    points = await self._pipettes.get_reference_point_locations()
+    back, front = points[cast(int, self._back_channel)], points[self._front_channel]
     if back is None or front is None:
       return
-    grip_line = front.z - (tool.get_size_z() - tool.fitting_depth - tool.grip_line_height)
-    center = held.center().rotated(get_rotation_wrt(held, self._deck))
+    deck = self._deck
+    handle = deck.store.handle_from_node(tool, ())
+    held_at, tool_at = await model.resolve_geometry(
+      deck.store, [model.query(held, deck), model.query(handle, deck)]
+    )
+    grip_line = front.z - _tool_overhang(tool.attributes)
+    center = _center(held_at)
     lfb = Coordinate(
       front.x - center.x,
       (back.y + front.y) / 2 - center.y,
       grip_line - grip_height,
     )
-    held.unassign()
-    tool.assign_child_resource(held, location=lfb - tool.get_location_wrt(self._deck))
-
-  def _put_held_resource_on_the_deck(self) -> None:
-    """Put a resource hanging from the front tool on the deck, where it is now."""
-    held, tool = self._held_resource, self._front_tool()
-    if held is None or tool is None or held.parent is not tool:
-      return
-    where = held.get_location_wrt(self._deck)
-    held.unassign()
-    self._deck.assign_child_resource(held, location=where)
+    await handle.assign_child_resource(held, location=lfb - to_coordinate(tool_at.locations[0]))
 
   # ----------------------------------------
   # Movement
@@ -353,6 +401,8 @@ class CoreGrippers:
   ) -> None:
     """Pick up the tools (`C0 ZT`) as tip type 14; to safe Z only if it fails.
 
+    What it picks up is not modelled: `pick_up_tools` takes the deck's tools in the model too.
+
     Args:
       tool_position_x: the tools' x, in mm.
       tool_position_z: where the pick-up ends, in mm.
@@ -397,9 +447,9 @@ class CoreGrippers:
         f"the rear tool must be at least {spacing} mm behind the front one; got rear "
         f"{rear_channel_position_y}, front {front_channel_position_y}"
       )
-    for channel in (back_channel, front_channel):
-      shaft = pipettes.shaft(channel)
-      if shaft is not None and shaft.has_tip():
+    carried = await self._tools_on([back_channel, front_channel])
+    for channel, tool in zip((back_channel, front_channel), carried):
+      if tool is not None:
         raise HasTipError(f"channel {channel} already carries something")
     await pipettes._require_iswap_parked()
 
@@ -488,14 +538,48 @@ class CoreGrippers:
 
   # -- mounting ------------------------------------------------------------------------------------
 
-  def _park_tools(self) -> None:
-    """Put the tools back in the holder in the model, where they were taken from."""
+  async def _park_tools(self) -> None:
+    """Put the tools back in the holder in the model, where and in the order they were taken.
+
+    The tools left the channels as the device put them back; nothing stages that, since a holder
+    does not seat a tool where its own model has it.
+    """
     for tool, holder, location in self._parked_tools:
-      if tool.parent is not None:
-        tool.parent.unassign_child_resource(tool)
-      if holder is not None:
-        holder.assign_child_resource(tool, location=location)
+      await holder.assign_child_resource(tool, location=location)
     self._parked_tools = []
+
+  async def _mount_tools(
+    self, holder: handles.Resource, tools: Sequence[handles.Resource], channels: Dict[bytes, int]
+  ) -> None:
+    """Take the tools out of the holder and onto the channels' shafts in the model, one tool each.
+
+    A holder gives up the first tool it holds, so the tools are taken in the order it holds them.
+
+    Args:
+      holder: what they are taken from.
+      tools: the tools, in the order the holder holds them.
+      channels: the channel each tool goes on, by the tool's id.
+    """
+    deck = self._deck
+    for tool in tools:
+      channel = channels.get(tool.id)
+      shaft = None if channel is None else self._pipettes.shaft(channel)
+      if shaft is None:
+        continue
+      response = await deck.store.commands.begin_tool_pickup(
+        spb.BeginToolPickupRequest(
+          lock_tokens=deck.store.lock_tokens,
+          frame=deck.ref,
+          items=[spb.ToolPickupItem(source=holder.ref, shaft=shaft.ref)],
+        )
+      )
+      await deck.store.commands.resolve_operation(
+        spb.ResolveOperationRequest(
+          lock_tokens=deck.store.lock_tokens,
+          operation_id=response.operation.id,
+          outcomes=[spb.ItemOutcome(item=0, succeeded=True)],
+        )
+      )
 
   async def pick_up_tools(self, front_channel: Optional[int] = None) -> None:
     """Take the tools out of the deck's holder and onto two channels.
@@ -509,42 +593,50 @@ class CoreGrippers:
     """
     if self._tools_mounted:
       raise RuntimeError("the CoRe gripper tools are already mounted")
-    holder = self._holder()
-    tools = [child for child in holder.children if isinstance(child, HeadTool)]
+    holder = await self._holder()
+    tools = [child for child in await holder.get_children() if isinstance(child, handles.HeadTool)]
     if not tools:
       raise TypeError("the holder carries no CO-RE grip tools to pick up")
 
     # As legacy: the holder's centre x, its channel y centres, and a 10 mm window below the tops.
     deck = self._deck
-    loc = holder.get_location_wrt(deck, x="c")
-    top = max(tool.get_location_wrt(deck, z="t").z for tool in tools)
+    queries = [model.query(holder, deck, [handles.anchor("c", "f", "b")])]
+    for tool in tools:
+      queries.append(
+        model.query(tool, deck, [handles.anchor("l", "f", "t"), handles.anchor("c", "c", "b")])
+      )
+    located = await model.resolve_geometry(deck.store, queries)
+    nodes = await model.get_nodes(deck.store, [holder, *tools])
+    back_y, front_y = HOLDER_CHANNEL_Y_CENTERS[nodes[0].attributes.model]
+    loc = to_coordinate(located[0].locations[0])
+    top = max(answer.locations[0].z for answer in located[1:])
     await self.pick_up_tools_at_location(
       tool_position_x=loc.x,
       tool_position_z=top - 10.0,
-      front_channel_position_y=loc.y + holder.front_channel_y_center,
-      rear_channel_position_y=loc.y + holder.back_channel_y_center,
+      front_channel_position_y=loc.y + front_y,
+      rear_channel_position_y=loc.y + back_y,
       tool_seek=top,
       front_channel=front_channel,
     )
     pair = (cast(int, self._back_channel), cast(int, self._front_channel))
 
-    # A taken tool rides where the channel rides, as a tip does.
-    # The back channel takes the rear tool.
-    self._parked_tools = [(tool, tool.parent, tool.location) for tool in tools]
-    rear_first = sorted(tools, key=lambda tool: tool.get_location_wrt(deck, y="c").y)
-    taken = []
-    for channel, tool in zip(pair, reversed(rear_first)):
-      shaft = self._pipettes.shaft(channel)
-      if shaft is not None:
-        shaft.mount_tip(tool)
-        taken.append(channel)
+    # A taken tool rides where the channel rides, as a tip does. The back channel takes the rear
+    # tool.
+    self._parked_tools = [
+      (tool, holder, model.location_of(node)) for tool, node in zip(tools, nodes[1:])
+    ]
+    centre_y = {tool.id: answer.locations[1].y for tool, answer in zip(tools, located[1:])}
+    rear_first = sorted(tools, key=lambda tool: centre_y[tool.id])
+    channels = {tool.id: channel for channel, tool in zip(pair, reversed(rear_first))}
+    await self._mount_tools(holder, tools, channels)
+    taken = [channel for channel in pair if channel in channels.values()]
     await self._pipettes._record_where_they_stopped("z")
 
     # The command returning is not the tools being on: asked of the device, once per mount.
     presence = await self._pipettes.sense_tip_presence()
     missing = [channel for channel in taken if not presence[channel]]
     if missing:
-      self._park_tools()
+      await self._park_tools()
       await self._pipettes._record_where_they_stopped("z")
       raise RuntimeError(
         f"the pick-up ran, but {'channel' if len(missing) == 1 else 'channels'} "
@@ -562,7 +654,7 @@ class CoreGrippers:
       return
     await self.drop_tools()
     self._tools_mounted = False
-    self._park_tools()
+    await self._park_tools()
     await self._pipettes._record_where_they_stopped("z")
 
   @asynccontextmanager
@@ -678,7 +770,7 @@ class CoreGrippers:
 
   # -- by resource ---------------------------------------------------------------------------------
 
-  def _check_held_move(
+  async def _check_held_move(
     self,
     xyz: Coordinate,
     traverse_heights: Tuple[float, float],
@@ -700,11 +792,13 @@ class CoreGrippers:
     for z in traverse_heights:
       pipettes._check_reachable("z", z)
     c = pipettes.configuration
-    front = self._front_tool()
-    tool = front if isinstance(front, HamiltonCoreGripperTool) else hamilton_core_gripper_tool("_")
-    below_stop_disc = tool.get_size_z() - tool.fitting_depth - tool.grip_line_height
-    lowest = round(c.z_range[0] + tool.grip_line_height, 2)
-    highest = round(c.z_range[1] - below_stop_disc, 2)
+    (front,) = await self._tools_on([cast(int, self._front_channel)])
+    if front is not None and front.attributes.model in resource_model.GRIP_LINE_HEIGHTS:
+      tool = front.attributes
+    else:
+      tool = library.get_model(_DEFAULT_TOOL_MODEL).definition.attributes
+    lowest = round(c.z_range[0] + resource_model.grip_line_height(tool), 2)
+    highest = round(c.z_range[1] - _tool_overhang(tool), 2)
     if not lowest <= xyz.z <= highest:
       raise ValueError(
         f"the grip line reaches {lowest} to {highest} mm with the tools on, not {xyz.z}"
@@ -716,9 +810,20 @@ class CoreGrippers:
       if not low <= checked <= high:
         raise ValueError(f"{name} must be between {low} and {high}, is {checked}")
 
+  async def _resolve(self, operation: pb.Operation, succeeded: bool) -> None:
+    """Commit or roll back a staged move of one resource."""
+    store = self._deck.store
+    await store.commands.resolve_operation(
+      spb.ResolveOperationRequest(
+        lock_tokens=store.lock_tokens,
+        operation_id=operation.id,
+        outcomes=[spb.ItemOutcome(item=0, succeeded=succeeded)],
+      )
+    )
+
   async def pick_up_resource(
     self,
-    resource: Resource,
+    resource: handles.Resource,
     offset: Coordinate = Coordinate.zero(),
     pickup_distance_from_top: Optional[float] = None,
     pickup_distance_from_bottom: Optional[float] = None,
@@ -771,12 +876,11 @@ class CoreGrippers:
     if self._held_resource is not None:
       raise RuntimeError(f"the grippers already hold {self._held_resource.name}; place it first")
     pipettes = self._pipettes
+    deck = self._deck
     if minimum_traverse_height_start is None:
       minimum_traverse_height_start = self.default_minimum_traverse_height
     if minimum_traverse_height_end is None:
       minimum_traverse_height_end = self.default_minimum_traverse_height
-    if resource_size_y is None:
-      resource_size_y = resource.get_absolute_size_y()
     if grip_strength is None:
       grip_strength = self.default_grip_strength
     if z_speed is None:
@@ -784,21 +888,38 @@ class CoreGrippers:
     if z_acceleration is None:
       z_acceleration = self.default_z_acceleration_with_resource_held
 
-    grip_height = get_grip_height(
-      resource,
-      pickup_distance_from_top=pickup_distance_from_top,
-      pickup_distance_from_bottom=pickup_distance_from_bottom,
-    )
-    from_top = resource.get_absolute_size_z() - grip_height
+    try:
+      (located,) = await model.resolve_geometry(deck.store, [model.query(resource, deck)])
+    except StoreError as error:
+      raise ValueError(f"{resource.name} is not on the deck: {error}") from error
+    if resource_size_y is None:
+      resource_size_y = located.absolute_size.y
+    size_z = located.absolute_size.z
+    if pickup_distance_from_top is not None and pickup_distance_from_bottom is None:
+      grip_height = size_z - pickup_distance_from_top
+    elif pickup_distance_from_bottom is not None and pickup_distance_from_top is None:
+      grip_height = pickup_distance_from_bottom
+    else:
+      raise ValueError(
+        "exactly one of pickup_distance_from_top and pickup_distance_from_bottom must be given, "
+        f"got {pickup_distance_from_top} and {pickup_distance_from_bottom}"
+      )
+    if not 0 <= grip_height <= size_z:
+      raise ValueError(
+        f"the grip must lie within {resource.name}'s height, 0 to {size_z} mm above its bottom, "
+        f"is {grip_height} mm"
+      )
+    from_top = size_z - grip_height
     if from_top > _MAX_PICKUP_DISTANCE_FROM_TOP:
       raise ValueError(
         f"the grip must be at most {_MAX_PICKUP_DISTANCE_FROM_TOP} mm below {resource.name}'s "
         f"top, is {from_top} mm: gripped lower, its top is pressed into the pipetting head the "
         "grippers hang from."
       )
-    location = get_pick_location(resource, self._deck)
-    grip = get_grip_location(resource, location, self._deck, grip_height) + offset
-    self._check_held_move(
+    location = to_coordinate(located.locations[0])
+    grip = location + _center(located)
+    grip = Coordinate(grip.x, grip.y, grip.z + grip_height) + offset
+    await self._check_held_move(
       grip, (minimum_traverse_height_start, minimum_traverse_height_end), z_speed, z_acceleration
     )
     weakest, strongest = self.configuration.grip_strength_range
@@ -818,7 +939,36 @@ class CoreGrippers:
       raise ValueError(f"the fingers would close to {closed} mm; squeeze_mm is too large")
     await pipettes._require_iswap_parked()
 
-    source = (resource.parent, resource.location)
+    response = await deck.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[resource.ref], ancestors=True)
+    )
+    taken_from: Optional[Tuple[handles.Resource, Optional[Coordinate], bool]] = None
+    if len(response.nodes) > 1:
+      parent = response.nodes[1]
+      taken_from = (
+        deck.store.handle_from_node(parent, ()),
+        model.location_of(response.nodes[0]),
+        parent.attributes.kind in _HOLDER_KINDS,
+      )
+
+    # The resource moves onto the front tool as the fingers close on it; staged when there is a
+    # modelled tool to carry it.
+    tool = await self._front_tool()
+    staged: Optional[pb.Operation] = None
+    if tool is not None:
+      grip_from = spb.Grip(distance_from_bottom=grip_height)
+      staged = (
+        await deck.store.commands.begin_resource_pickup(
+          spb.BeginResourcePickupRequest(
+            lock_tokens=deck.store.lock_tokens,
+            frame=deck.ref,
+            resource=resource.ref,
+            carrier=tool.ref,
+            grip=grip_from,
+          )
+        )
+      ).operation
+    succeeded = False
     try:
       async with pipettes._temporary_z_drive_profile(
         acceleration=z_acceleration, channels=[back, front]
@@ -835,18 +985,20 @@ class CoreGrippers:
           minimum_traverse_height_start=round(minimum_traverse_height_start * 10),
           minimum_z_position_end=round(minimum_traverse_height_end * 10),
         )
+      succeeded = True
     finally:
+      if staged is not None:
+        await self._resolve(staged, succeeded)
       await pipettes._record_after_command()
     self._grip_height = grip_height
     self._holding_resource_width = resource_size_y
     self._held_resource = resource
-    source_parent, source_location = source
-    self._taken_from = None if source_parent is None else (source_parent, source_location)
-    self._hang_held_resource_on_the_front_tool()
+    self._taken_from = taken_from
+    await self._hang_held_resource_on_the_front_tool()
 
   async def place_resource(
     self,
-    to: Union[Resource, Coordinate],
+    to: Union[handles.Resource, Coordinate],
     offset: Coordinate = Coordinate.zero(),
     *,
     minimum_traverse_height_start: Optional[float] = None,
@@ -876,16 +1028,16 @@ class CoreGrippers:
         `default_minimum_traverse_height` when None.
 
     Raises:
-      RuntimeError: If nothing is held, the iSWAP is not parked, or the destination refuses it
-        (`check_can_drop_resource_here`).
+      RuntimeError: If nothing is held, the iSWAP is not parked, or the destination refuses it.
       ValueError: If a position, height, speed, acceleration, level or distance is out of range, a
-        `Coordinate` falls inside a resource on the deck, the destination refuses it
-        (`check_can_drop_resource_here`), or it cannot be placed there (`get_place_location`).
+        `Coordinate` falls inside a resource on the deck, or it cannot be placed into the
+        destination as that is.
     """
     held, grip_height = self._held_resource, self._grip_height
     if held is None or grip_height is None or self._holding_resource_width is None:
       raise RuntimeError("Not holding anything; pick_up_resource first")
     pipettes = self._pipettes
+    deck = self._deck
     back, front = cast(int, self._back_channel), cast(int, self._front_channel)
     if minimum_traverse_height_start is None:
       minimum_traverse_height_start = self.default_minimum_traverse_height
@@ -896,57 +1048,65 @@ class CoreGrippers:
     if z_acceleration is None:
       z_acceleration = self.default_z_acceleration_with_resource_held
 
-    if isinstance(to, Coordinate):
-      # The arms move, and what they carry goes with them:
-      # only what stands on the deck is in the way.
-      arms = [c for c in self._deck.children if c.category == "x_arm"]
-      occupant = get_resource_at_location(to, self._deck, exclude=[held, *arms])
-      if occupant is not None:
-        raise ValueError(
-          f"{to} is inside '{occupant.name}': a coordinate puts {held.name} on the deck. To put it "
-          f"into '{occupant.name}' or what holds it, pass that resource as `to`."
-        )
-      # The centre-bottom goes to `to`, so the resource's own origin goes this far from it.
-      center = held.center().rotated(get_rotation_wrt(held, self._deck))
-      destination: Union[Resource, Coordinate] = to - Coordinate(center.x, center.y, 0)
-      self._deck.check_can_drop_resource_here(held)
-    else:
-      destination = to
-      destination.check_can_drop_resource_here(held)
-    location = get_place_location(held, destination, self._deck)
-    release = get_grip_location(held, location, self._deck, grip_height) + offset
-    self._check_held_move(
-      release,
-      (minimum_traverse_height_start, minimum_traverse_height_end),
-      z_speed,
-      z_acceleration,
+    request = spb.BeginResourcePlaceRequest(
+      lock_tokens=deck.store.lock_tokens,
+      frame=deck.ref,
+      resource=held.ref,
+      grip=spb.Grip(distance_from_bottom=grip_height),
     )
-    if x_acceleration_level is not None and not 1 <= x_acceleration_level <= 5:
-      raise ValueError(f"x_acceleration_level must be between 1 and 5, is {x_acceleration_level}")
-    if not 0 <= press_on_distance <= 99.9:
-      raise ValueError(f"press_on_distance must be between 0 and 99.9, is {press_on_distance}")
-    if y_clearance < 0:
-      raise ValueError(f"y_clearance must be 0 or more, is {y_clearance}")
-    await pipettes._require_iswap_parked()
-
+    if isinstance(to, Coordinate):
+      # The centre-bottom goes to `to`, so the resource's own origin goes this far from it.
+      (located,) = await model.resolve_geometry(deck.store, [model.query(held, deck)])
+      center = _center(located)
+      request.destination_location.CopyFrom(to_vec3(to - Coordinate(center.x, center.y, 0)))
+    else:
+      request.destination_resource.CopyFrom(to.ref)
     try:
-      async with pipettes._temporary_z_drive_profile(
-        acceleration=z_acceleration, channels=[back, front]
-      ):
-        await self._unchecked_fw_place_resource(
-          x_position=round(release.x * 10),
-          y_position=round(release.y * 10),
-          z_position=round(release.z * 10),
-          press_on_distance=round(press_on_distance * 10),
-          z_speed=round(z_speed * 10),
-          open_gripper_position=round((self._holding_resource_width + 2 * y_clearance) * 10),
-          minimum_traverse_height_start=round(minimum_traverse_height_start * 10),
-          minimum_z_position_end=round(minimum_traverse_height_end * 10),
-          x_acceleration_level=x_acceleration_level,
-        )
+      staged = await deck.store.commands.begin_resource_place(request)
+    except StoreError as error:
+      # The arms move, and what they carry goes with them: only what stands on the deck is in the
+      # way of a coordinate, and only what the destination takes goes into it.
+      if isinstance(to, Coordinate) or error.problem == pb.PROBLEM_WRONG_KIND:
+        raise ValueError(str(error)) from error
+      raise RuntimeError(str(error)) from error
+
+    succeeded = False
+    try:
+      release = to_coordinate(staged.grip_location) + offset
+      await self._check_held_move(
+        release,
+        (minimum_traverse_height_start, minimum_traverse_height_end),
+        z_speed,
+        z_acceleration,
+      )
+      if x_acceleration_level is not None and not 1 <= x_acceleration_level <= 5:
+        raise ValueError(f"x_acceleration_level must be between 1 and 5, is {x_acceleration_level}")
+      if not 0 <= press_on_distance <= 99.9:
+        raise ValueError(f"press_on_distance must be between 0 and 99.9, is {press_on_distance}")
+      if y_clearance < 0:
+        raise ValueError(f"y_clearance must be 0 or more, is {y_clearance}")
+      await pipettes._require_iswap_parked()
+
+      try:
+        async with pipettes._temporary_z_drive_profile(
+          acceleration=z_acceleration, channels=[back, front]
+        ):
+          await self._unchecked_fw_place_resource(
+            x_position=round(release.x * 10),
+            y_position=round(release.y * 10),
+            z_position=round(release.z * 10),
+            press_on_distance=round(press_on_distance * 10),
+            z_speed=round(z_speed * 10),
+            open_gripper_position=round((self._holding_resource_width + 2 * y_clearance) * 10),
+            minimum_traverse_height_start=round(minimum_traverse_height_start * 10),
+            minimum_z_position_end=round(minimum_traverse_height_end * 10),
+            x_acceleration_level=x_acceleration_level,
+          )
+        succeeded = True
+      finally:
+        await pipettes._record_after_command()
     finally:
-      await pipettes._record_after_command()
-    assign_placed_resource(held, destination, self._deck, location=location)
+      await self._resolve(staged.operation, succeeded)
     self._clear_held_state()
 
   async def drop_resource(self, *args: Any, **kwargs: Any) -> None:
@@ -994,14 +1154,21 @@ class CoreGrippers:
       "y_clearance": y_clearance,
       "minimum_traverse_height_end": minimum_traverse_height_end,
     }
-    parent, location = self._taken_from
-    if isinstance(parent, ResourceHolder):
+    parent, location, is_holder = self._taken_from
+    if is_holder:
       await self.place_resource(parent, **kwargs)
       return
     # Anywhere else it stood is a point on the deck.
-    held = self._held_resource
-    center = held.center().rotated(get_rotation_wrt(held, self._deck))
-    lfb = parent.get_location_wrt(self._deck, "l", "f", "b") + (location or Coordinate.zero())
+    deck = self._deck
+    # The deck itself is not asked where it is: it is the frame, and a question about it reads
+    # everything on it.
+    queries = [model.query(self._held_resource, deck)]
+    if parent != deck:
+      queries.append(model.query(parent, deck))
+    located = await model.resolve_geometry(deck.store, queries)
+    center = _center(located[0])
+    origin = to_coordinate(located[1].locations[0]) if parent != deck else Coordinate.zero()
+    lfb = origin + (location or Coordinate.zero())
     await self.place_resource(lfb + Coordinate(center.x, center.y, 0), **kwargs)
 
   # -- probing ------------------------------------------------------------------------------------
@@ -1009,7 +1176,7 @@ class CoreGrippers:
   async def probe_resource_exists_using_ztouch(
     self,
     location: Coordinate,
-    resource: Resource,
+    resource: handles.Resource,
     gripper_y_margin: float = 1.0,
     offset: Coordinate = Coordinate.zero(),
     minimum_traverse_height_start: Optional[float] = None,
@@ -1043,10 +1210,12 @@ class CoreGrippers:
     if minimum_traverse_height_end is None:
       minimum_traverse_height_end = self.default_minimum_traverse_height
 
-    center = location + resource.centers()[0] + offset
-    y_width_to_gripper_bump = resource.get_absolute_size_y() - gripper_y_margin * 2
+    (located,) = await model.resolve_geometry(resource.store, [model.query(resource)])
+    size = located.size
+    center = location + Coordinate(size.x / 2, size.y / 2, size.z / 2) + offset
+    y_width_to_gripper_bump = located.absolute_size.y - gripper_y_margin * 2
     min_width = pipettes._min_spacing_between(back, front)
-    max_width = round(resource.get_absolute_size_y())
+    max_width = round(located.absolute_size.y)
     if not min_width <= y_width_to_gripper_bump <= max_width:
       raise ValueError(
         f"width between channels must be between {min_width} and {max_width} mm, is "

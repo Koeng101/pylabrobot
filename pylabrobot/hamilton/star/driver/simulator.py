@@ -55,16 +55,15 @@ from pylabrobot.hamilton.star.driver.features.x_arm import XArm
 from pylabrobot.hamilton.star.driver.master import STARDriver
 from pylabrobot.io.io import IOBase
 from pylabrobot.io.validation_utils import LOG_LEVEL_IO
-from pylabrobot.resources.carrier import Carrier
-from pylabrobot.resources.container import Container
-from pylabrobot.resources.hamilton.core_gripper_tools import HamiltonCoreGripperTool
-from pylabrobot.resources.hamilton.hamilton_decks import (
-  HamiltonDeck,
-)
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
+from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.hamilton.tip_creators import TipDropMethod, TipPickupMethod
-from pylabrobot.resources.n_channel_pipettes import TipMountingShaft
-from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.trash import Trash
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.tree import to_coordinate
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 logger = logging.getLogger(__name__)
 
@@ -94,29 +93,6 @@ SIMULATED_CHANNEL_DRIVE_PARAMETERS = {"zv": 12_000, "zr": 75, "yv": 6_000, "yr":
 
 # What its scanner reads. A simulated deck holds no carriers, so nothing.
 SIMULATED_BARCODE: Optional[str] = None
-
-
-def _get_container_under(deck: Resource, x: float, y: float) -> Optional[Container]:
-  """The smallest container on the deck whose footprint holds the point, or None.
-
-  A stand-in for a lookup by position the model does not have yet: every container is asked in
-  turn, which is fine for a deck of hundreds and no more.
-  """
-  found: Optional[Container] = None
-  for resource in deck.get_all_children():
-    if not isinstance(resource, Container) or isinstance(resource, Trash):
-      continue
-    corner = resource.get_location_wrt(deck)
-    if not (
-      corner.x <= x <= corner.x + resource.get_size_x()
-      and corner.y <= y <= corner.y + resource.get_size_y()
-    ):
-      continue
-    if found is None or resource.get_size_x() * resource.get_size_y() < (
-      found.get_size_x() * found.get_size_y()
-    ):
-      found = resource
-  return found
 
 
 class _UnusedTransport(IOBase):
@@ -179,6 +155,78 @@ class _Simulated:
     return None
 
 
+# What liquid stands in: every kind of container but a trash.
+_LIQUID_KINDS = (
+  pb.RESOURCE_KIND_CONTAINER,
+  pb.RESOURCE_KIND_WELL,
+  pb.RESOURCE_KIND_TROUGH,
+  pb.RESOURCE_KIND_TUBE,
+  pb.RESOURCE_KIND_PETRI_DISH,
+)
+
+
+async def _get_container_under(
+  deck: handles.Deck, x: float, y: float
+) -> Optional[handles.Container]:
+  """The smallest container on the deck whose footprint holds the point, or None.
+
+  Every container is asked in one read, which is fine for a deck of hundreds and no more.
+  """
+  containers = [
+    c for c in await deck.find_resources(kinds=_LIQUID_KINDS) if isinstance(c, handles.Container)
+  ]
+  answers = await model.resolve_geometry(deck.store, [model.query(c, deck) for c in containers])
+  found: Optional[handles.Container] = None
+  found_area = 0.0
+  for container, answer in zip(containers, answers):
+    corner, size = answer.locations[0], answer.size
+    if not (corner.x <= x <= corner.x + size.x and corner.y <= y <= corner.y + size.y):
+      continue
+    if found is None or size.x * size.y < found_area:
+      found, found_area = container, size.x * size.y
+  return found
+
+
+async def _height_of(container: handles.Container, volume: float) -> float:
+  """How high `volume` stands above a container's cavity bottom, in mm.
+
+  Raises:
+    RuntimeError: The container has no height-volume data to say.
+  """
+  try:
+    return await container.compute_height_from_volume(volume)
+  except StoreError as error:
+    if error.problem != pb.PROBLEM_NO_HEIGHT_VOLUME_DATA:
+      raise
+    raise RuntimeError(
+      f"the simulator cannot say where {volume} uL stands in {container.name}: the container "
+      "has no height-volume data. Generate a height_volume_data dictionary for it and consider "
+      "contributing it back to PyLabRobot :)"
+    ) from None
+
+
+async def _held_volume(container: handles.Container) -> float:
+  """What a container holds, counting what is booked and not yet resolved."""
+  return (await container.state()).volume.pending_volume
+
+
+def _is_tool(node: pb.ResourceNode) -> bool:
+  return node.attributes.kind in (pb.RESOURCE_KIND_TIP, pb.RESOURCE_KIND_HEAD_TOOL)
+
+
+def _below_stop_disc_of(tool: Optional[pb.ResourceNode]) -> float:
+  """How far a tool's Z reference sits below the stop disc of the shaft carrying it, in mm.
+
+  CO-RE grippers are measured at the grip line; tips are measured at their bottom.
+  """
+  if tool is None:
+    return 0.0
+  bottom = tool.attributes.location.z
+  if tool.attributes.model in resource_model.GRIP_LINE_HEIGHTS:
+    return -bottom - resource_model.grip_line_height(tool.attributes)
+  return -bottom
+
+
 class SimulatedPipettes(_Simulated, Pipettes):
   """The pipetting channels, answering for themselves."""
 
@@ -215,129 +263,102 @@ class SimulatedPipettes(_Simulated, Pipettes):
       return 2 * math.sqrt(distance / acceleration)
     return distance / speed + speed / acceleration
 
-  def _shaft(self, channel: int) -> Optional[TipMountingShaft]:
-    """The mounting shaft that models a channel, or None while nothing models it yet."""
-    if channel >= len(self.resources):
-      return None
-    return next(
-      (child for child in self.resources[channel].children if isinstance(child, TipMountingShaft)),
-      None,
-    )
+  async def _tools(self) -> List[Optional[pb.ResourceNode]]:
+    """What each channel carries, per channel: what the model has on its shaft, or what it had
+    when a tool command staged its change, until the command is resolved - the device carries
+    that while the command runs."""
+    if self.carried_while_staged is not None:
+      return list(self.carried_while_staged)
+    tools = await self.get_tools()
+    return tools + [None] * (self.num_channels - len(tools))
 
-  def _carries_tip(self, channel: int) -> bool:
-    """Whether a channel carries a tip: one on its shaft, or one it was started with."""
-    shaft = self._shaft(channel)
-    if shaft is not None and shaft.has_tip():
-      return True
+  async def _carries_tips(self) -> List[bool]:
+    """Whether each channel carries a tip: one on its shaft, or one it was started with."""
     mounted = self.device.tips_mounted
-    return channel < len(mounted) and mounted[channel]
+    return [
+      tool is not None or (channel < len(mounted) and mounted[channel])
+      for channel, tool in enumerate(await self._tools())
+    ]
 
-  def _below_stop_disc(self, channel: int) -> float:
-    """How far the tool's Z reference sits below its stop disc, in mm.
+  async def _below_stop_discs(self) -> List[float]:
+    """How far each channel's tool's Z reference sits below its stop disc, in mm."""
+    return [_below_stop_disc_of(tool) for tool in await self._tools()]
 
-    CO-RE grippers are measured at the grip line; tips are measured at their bottom.
-    """
-    shaft = self._shaft(channel)
-    if shaft is None:
-      return 0.0
-    bottom = shaft.tip_bottom()
-    if bottom is None:
-      return 0.0
-    if isinstance(shaft.tip, HamiltonCoreGripperTool):
-      return -bottom.z - shaft.tip.grip_line_height
-    return -bottom.z
+  async def _below_stop_disc(self, channel: int) -> float:
+    """How far the tool on one channel sits below its stop disc, in mm. See `_below_stop_discs`."""
+    return (await self._below_stop_discs())[channel]
 
-  def _modelled_y(self, channel: int) -> float:
-    """Where the model has one channel along Y, in mm.
+  async def _modelled_ys(self) -> List[float]:
+    """Where the model has every channel along Y, in mm, or where initialization spreads one that
+    nothing models yet."""
+    defaults = self.default_initialize_y_positions()
+    return [
+      defaults[channel] if point is None else point.y
+      for channel, point in enumerate(await self.get_reference_point_locations())
+    ]
 
-    Args:
-      channel: which channel, 0-indexed from the back.
+  async def _modelled_zs(self) -> List[float]:
+    """Where the model has every channel's stop disc along Z, in mm, or the top of the drive's
+    window for one nothing models yet, which is where Z safety leaves a device just switched on."""
+    top = self.configuration.z_range[1]
+    return [
+      top if point is None else point.z for point in await self.get_reference_point_locations()
+    ]
 
-    Returns:
-      Where the model has it, or where initialization spreads it when nothing models it yet.
-    """
-    point = self.get_reference_point_location(channel)
-    return self.default_initialize_y_positions()[channel] if point is None else point.y
+  async def _modelled_y(self, channel: int) -> float:
+    """Where the model has one channel along Y, in mm. See `_modelled_ys`."""
+    return (await self._modelled_ys())[channel]
 
-  def _modelled_z(self, channel: int) -> float:
-    """Where the model has one channel's stop disc along Z, in mm.
-
-    Args:
-      channel: which channel, 0-indexed from the back.
-
-    Returns:
-      Where the model has it, or the top of the drive's window when nothing models it yet, which
-      is where Z safety leaves a device that has just been switched on.
-    """
-    point = self.get_reference_point_location(channel)
-    return self.configuration.z_range[1] if point is None else point.z
-
-  def update_location_by_reference_point(
-    self, channel: int, y: Optional[float] = None, z: Optional[float] = None
+  async def update_locations_by_reference_point(
+    self, positions: Dict[int, Tuple[Optional[float], Optional[float]]]
   ) -> None:
-    """Record where a channel is, and charge the device for the time the drives would take.
+    """Record where channels are, and charge the device for the time the drives would take.
 
     A simulated device answers at once, so a run is over before anything watching it has been given
     a turn. What a move would have taken is owed here and waited out before the next command, which
     paces a run without any command pretending to be slow in itself.
     """
     if self.device.simulate_motion_time:
-      self.device.owe_motion_time(
-        self._get_travel_time(
-          0.0 if y is None else y - self._modelled_y(channel), self.default_y_speed, None
-        ),
-        self._get_travel_time(
-          0.0 if z is None else z - self._modelled_z(channel),
-          self.default_z_speed,
-          self.default_z_acceleration,
-        ),
-      )
-    super().update_location_by_reference_point(channel, y=y, z=z)
+      ys, zs = await self._modelled_ys(), await self._modelled_zs()
+      for channel, (y, z) in positions.items():
+        self.device.owe_motion_time(
+          self._get_travel_time(0.0 if y is None else y - ys[channel], self.default_y_speed, None),
+          self._get_travel_time(
+            0.0 if z is None else z - zs[channel],
+            self.default_z_speed,
+            self.default_z_acceleration,
+          ),
+        )
+    await super().update_locations_by_reference_point(positions)
 
-  def _container_under(self, channel: int) -> Optional[Container]:
+  async def _container_under(self, channel: int) -> Optional[handles.Container]:
     """The smallest container on the deck whose footprint has the channel's tip over it, or None."""
     deck = self._driver.deck
-    point = self.get_reference_point_location(channel)
+    point = await self.get_reference_point_location(channel)
     if deck is None or point is None:
       return None
-    return _get_container_under(deck, point.x, point.y)
+    return await _get_container_under(deck, point.x, point.y)
 
-  def _liquid_surface(self, channel: int) -> Tuple[Optional[Container], Optional[float]]:
+  async def _liquid_surface(
+    self, channel: int
+  ) -> Tuple[Optional[handles.Container], Optional[float]]:
     """The container a channel searches and where its liquid stands, in mm on the deck.
 
     The container is the one the batch search named, else the one under the tip. The surface is
-    None for no container or an empty one. A container that knows only volume from height is
-    inverted by bisection over its depth.
+    None for no container or an empty one.
     """
-    container = self.device.liquid_searches.get(channel) or self._container_under(channel)
+    container = self.device.liquid_searches.get(channel) or await self._container_under(channel)
     if container is None:
       return None, None
-    volume = container.tracker.get_used_volume()
+    volume = await _held_volume(container)
     if volume <= 0:
       return container, None
     deck = self._driver.deck
     assert deck is not None
-    bottom = container.get_location_wrt(deck, "c", "c", "cavity_bottom").z
-    try:
-      return container, round(bottom + container.compute_height_from_volume(volume), 2)
-    except NotImplementedError:
-      pass
-    if not container.supports_compute_height_volume_functions():
-      try:
-        container.compute_volume_from_height(0.0)
-      except NotImplementedError:
-        raise RuntimeError(
-          f"the simulator cannot say where {volume} uL stands in {container.name}: the container "
-          "has no height-volume functions. Generate a height_volume_data dictionary for it and "
-          "consider contributing it back to PyLabRobot :)"
-        ) from None
-    low, high = 0.0, container.get_size_z()
-    for _ in range(40):
-      mid = (low + high) / 2
-      low, high = (mid, high) if container.compute_volume_from_height(mid) < volume else (low, mid)
-    return container, round(bottom + low, 2)
+    (bottom,) = await model.locations_in([container], deck, "c", "c", "cb")
+    return container, round(bottom.z + await _height_of(container, volume), 2)
 
-  def _answer_liquid_search(
+  async def _answer_liquid_search(
     self, channel: int, command: str, **kwargs: Any
   ) -> Optional[Tuple[Any, str]]:
     """What `ZL` or `ZE` answers: the surface in the container the channel searches, or nothing.
@@ -347,18 +368,18 @@ class SimulatedPipettes(_Simulated, Pipettes):
     the latch, and answers as the device does, with trace 70.
     """
     c = self.configuration
-    container, surface = self._liquid_surface(channel)
-    below = self._below_stop_disc(channel)
+    container, surface = await self._liquid_surface(channel)
+    below = await self._below_stop_disc(channel)
     end = c.z_drive_increments_to_mm(int(kwargs["zh"]))
     if surface is None or surface + below < end:
-      self.update_location_by_reference_point(channel, z=end)
+      await self.update_location_by_reference_point(channel, z=end)
       self.device.last_lld_heights[channel] = 0.0
       check_fw_string_error(f"{self.channel_id(channel)}{command}id0000er70")
     assert container is not None and surface is not None
     detected = round(surface + below, 2)
     retreat = c.z_drive_increments_to_mm(int(kwargs.get("zi", 0)))
     up = str(kwargs.get("zj", 1)) == "1"
-    self.update_location_by_reference_point(
+    await self.update_location_by_reference_point(
       channel, z=round(detected + (retreat if up else -retreat), 2)
     )
     self.device.last_lld_heights[channel] = surface
@@ -368,7 +389,7 @@ class SimulatedPipettes(_Simulated, Pipettes):
       return {"if": [c.z_drive_mm_to_increments(detected), 0]}, source
     return None, source
 
-  def _answer_ztouch(self, channel: int, **kwargs: Any) -> Tuple[Any, str]:
+  async def _answer_ztouch(self, channel: int, **kwargs: Any) -> Tuple[Any, str]:
     """What `ZH` answers: the stop disc where the tip met the floor of the container under it.
 
     The floor is the container's cavity bottom, as the model has it. Nothing under the tip, or a
@@ -376,16 +397,16 @@ class SimulatedPipettes(_Simulated, Pipettes):
     """
     c = self.configuration
     end = c.z_drive_increments_to_mm(int(kwargs["za"]))
-    container = self._container_under(channel)
+    container = await self._container_under(channel)
     deck = self._driver.deck
     stopped = end
     source = "the end of an untouched search"
     if container is not None and deck is not None:
-      floor = container.get_location_wrt(deck, "c", "c", "cavity_bottom").z
-      touched = round(floor + self._below_stop_disc(channel), 2)
+      (floor,) = await model.locations_in([container], deck, "c", "c", "cb")
+      touched = round(floor.z + await self._below_stop_disc(channel), 2)
       if touched > end:
         stopped, source = touched, f"the floor of {container.name}"
-    self.update_location_by_reference_point(channel, z=stopped)
+    await self.update_location_by_reference_point(channel, z=stopped)
     return {"rz": c.z_drive_mm_to_increments(stopped)}, source
 
   async def answer(self, module: str, command: str, **kwargs: Any) -> Optional[Tuple[Any, str]]:
@@ -398,25 +419,21 @@ class SimulatedPipettes(_Simulated, Pipettes):
     if module == "C0":
       if command == "RY":
         return (
-          {"ry": [round(self._modelled_y(channel) * 10) for channel in range(self.num_channels)]},
+          {"ry": [round(y * 10) for y in await self._modelled_ys()]},
           "where the model has the channels along Y",
         )
 
       if command == "RT":
         return (
-          {"rt": [int(self._carries_tip(channel)) for channel in range(self.num_channels)]},
+          {"rt": [int(carries) for carries in await self._carries_tips()]},
           "what the channels carry",
         )
 
       if command == "RZ":
         # The master reports the bottom of what a channel carries, or its stop disc when empty.
+        zs, below = await self._modelled_zs(), await self._below_stop_discs()
         return (
-          {
-            "rz": [
-              round((self._modelled_z(channel) - self._below_stop_disc(channel)) * 10)
-              for channel in range(self.num_channels)
-            ]
-          },
+          {"rz": [round((z - b) * 10) for z, b in zip(zs, below)]},
           "where the model has the bottom of what each channel carries",
         )
       if command == "RL":
@@ -442,14 +459,14 @@ class SimulatedPipettes(_Simulated, Pipettes):
         # The command moves the channels itself: each involved one to its Y and, at the end, its
         # tip bottom to `te`. That is what the model has to show when the driver reads back.
         end = int(kwargs["te"]) / 10
+        below = await self._below_stop_discs()
+        moved: Dict[int, Tuple[Optional[float], Optional[float]]] = {}
         # The per-channel lists run over the channels involved, in order, not over the pattern.
         used = 0
         for index, (involved, y) in enumerate(zip(kwargs["tm"], kwargs["yp"])):
           if not involved:
             continue
-          self.update_location_by_reference_point(
-            index, y=int(y) / 10, z=round(end + self._below_stop_disc(index), 2)
-          )
+          moved[index] = (int(y) / 10, round(end + below[index], 2))
           # The piston draws the blow-out air, the volume and the transport air, and stands there.
           drawn = sum(int(kwargs[field][used]) for field in ("ba", "av", "ta")) / 10
           self.device.dispensing_drive_uL[index] = round(
@@ -458,16 +475,17 @@ class SimulatedPipettes(_Simulated, Pipettes):
           held = self.device.transport_air_uL.get(index, 0.0)
           self.device.transport_air_uL[index] = round(held + int(kwargs["ta"][used]) / 10, 1)
           used += 1
+        await self.update_locations_by_reference_point(moved)
         return None
       if command == "DS":
         end = int(kwargs["te"]) / 10
+        below = await self._below_stop_discs()
+        moved = {}
         used = 0
         for index, (involved, y) in enumerate(zip(kwargs["tm"], kwargs["yp"])):
           if not involved:
             continue
-          self.update_location_by_reference_point(
-            index, y=int(y) / 10, z=round(end + self._below_stop_disc(index), 2)
-          )
+          moved[index] = (int(y) / 10, round(end + below[index], 2))
           # The piston pushes out the transport air the tip holds and the volume; the blow-out air
           # too in a blow-out mode; everything in an empty.
           standing = self.device.dispensing_drive_uL.get(index, 0.0)
@@ -482,6 +500,7 @@ class SimulatedPipettes(_Simulated, Pipettes):
           self.device.transport_air_uL[index] = air
           self.device.dispensing_drive_uL[index] = round(left + air, 1)
           used += 1
+        await self.update_locations_by_reference_point(moved)
         return None
 
       return None
@@ -502,7 +521,7 @@ class SimulatedPipettes(_Simulated, Pipettes):
 
     if command == "RZ":
       return (
-        {"rz": c.z_drive_mm_to_increments(self._modelled_z(channel))},
+        {"rz": c.z_drive_mm_to_increments((await self._modelled_zs())[channel])},
         f"where the model has channel {channel}'s stop disc",
       )
     if command == "DC":
@@ -516,15 +535,16 @@ class SimulatedPipettes(_Simulated, Pipettes):
     if command == "DS":
       # The piston moves by the distance, up to draw or down to push; a push sends the tip's
       # transport air out first.
-      moved = c.dispensing_drive_increments_to_uL(int(kwargs["ds"]))
+      moved_uL = c.dispensing_drive_increments_to_uL(int(kwargs["ds"]))
       pushing = kwargs["dt"] == "1"
       self.device.dispensing_drive_uL[channel] = round(
-        self.device.dispensing_drive_uL.get(channel, 0.0) + (-moved if pushing else moved), 1
+        self.device.dispensing_drive_uL.get(channel, 0.0) + (-moved_uL if pushing else moved_uL),
+        1,
       )
       if pushing:
         held = self.device.transport_air_uL.pop(channel, 0.0)
-        if held > moved:
-          self.device.transport_air_uL[channel] = round(held - moved, 1)
+        if held > moved_uL:
+          self.device.transport_air_uL[channel] = round(held - moved_uL, 1)
       return None
     if command == "RD":
       uL = self.device.dispensing_drive_uL.get(channel, 0.0)
@@ -533,9 +553,9 @@ class SimulatedPipettes(_Simulated, Pipettes):
         f"where channel {channel}'s piston stands, from what it drew",
       )
     if command in ("ZL", "ZE"):
-      return self._answer_liquid_search(channel, command, **kwargs)
+      return await self._answer_liquid_search(channel, command, **kwargs)
     if command == "ZH":
-      return self._answer_ztouch(channel, **kwargs)
+      return await self._answer_ztouch(channel, **kwargs)
 
     # A channel's drive keeps what `AA` writes, and what its own `ZA` moves with.
     stored = self.device.channel_drive_parameters.setdefault(
@@ -557,8 +577,10 @@ class SimulatedPipettes(_Simulated, Pipettes):
     # The firmware retract inside the probe is what puts the channels at their ceiling, and the
     # probe reads them back before it returns, so the model is written before the read rather
     # than after. `move_to_safe_z` runs this probe, so it needs no override of its own.
-    for channel in range(self.num_channels):
-      self.update_location_by_reference_point(channel, z=self.configuration.z_range[1])
+    top = self.configuration.z_range[1]
+    await self.update_locations_by_reference_point(
+      {channel: (None, top) for channel in range(self.num_channels)}
+    )
     return await super().probe_z_max()
 
   async def _probe_batch_liquid_heights(
@@ -578,8 +600,10 @@ class SimulatedPipettes(_Simulated, Pipettes):
     # method refuses never happened. The move places the lowest point - the end of a carried tip,
     # or the stop disc - and the model holds the stop disc, so a tip puts it that much higher.
     resp = await super()._unchecked_fw_move_lowest_point_to_z_positions(zs)
-    for channel, z in zs.items():
-      self.update_location_by_reference_point(channel, z=z + self._below_stop_disc(channel))
+    below = await self._below_stop_discs()
+    await self.update_locations_by_reference_point(
+      {channel: (None, z + below[channel]) for channel, z in zs.items()}
+    )
     return resp
 
   async def _record_tip_command(
@@ -615,7 +639,7 @@ class SimulatedPipettes(_Simulated, Pipettes):
     involved = [i for i, used in enumerate(tip_pattern) if used and i < self.num_channels]
     if not involved:
       return
-    self.arm.update_location_by_reference_point(x_positions[involved[-1]] / 10)
+    await self.arm.update_location_by_reference_point(x_positions[involved[-1]] / 10)
 
     # One rail, so the channels not named are moved as far as the spacing asks - the rule a Y
     # move already goes by.
@@ -627,17 +651,19 @@ class SimulatedPipettes(_Simulated, Pipettes):
       planned = sent
     # The stroke as the device makes it: across at the height it starts from, down onto the spots,
     # and back up. Recorded as one stop, the whole command is a single jump to wherever it ended.
-    for channel, y in planned.items():
-      self.update_location_by_reference_point(channel, y=y)
+    await self.update_locations_by_reference_point(
+      {channel: (y, None) for channel, y in planned.items()}
+    )
     if descend_to is not None:
       await self.device.pay_motion_time()
-      for channel in involved:
-        self.update_location_by_reference_point(
-          channel, z=descend_to / 10 + self._below_stop_disc(channel)
-        )
+      below = await self._below_stop_discs()
+      await self.update_locations_by_reference_point(
+        {channel: (None, descend_to / 10 + below[channel]) for channel in involved}
+      )
       await self.device.pay_motion_time()
-    for channel in involved:
-      self.update_location_by_reference_point(channel, z=z / 10 + overhang)
+    await self.update_locations_by_reference_point(
+      {channel: (None, z / 10 + overhang) for channel in involved}
+    )
 
   async def _unchecked_fw_pick_up_tips(
     self,
@@ -705,7 +731,7 @@ class SimulatedPipettes(_Simulated, Pipettes):
 
   async def move_stop_disc_to_z_position(self, channel: int, z: float, *args: Any, **kwargs: Any):
     resp = await super().move_stop_disc_to_z_position(channel, z, *args, **kwargs)
-    self.update_location_by_reference_point(channel, z=z)
+    await self.update_location_by_reference_point(channel, z=z)
     return resp
 
   async def request_firmware_version(self, channel: int) -> Tuple[str, datetime.date]:
@@ -778,8 +804,9 @@ class SimulatedXArm(_Simulated, XArm):
   async def request_position(self) -> float:
     # Where the arm is is what the model says: a simulated device has no drive to ask. Until setup
     # has put it on the deck there is nothing to read, and it answers where it powered up.
-    if self.resource is not None and self.resource.location is not None:
-      return self.resource.location.x + self.configuration.reference_point_from_left
+    modelled = await self.get_reference_point_x()
+    if modelled is not None:
+      return modelled
     if self.side == "left" or self.configuration.x_range is None:
       return SIMULATED_LEFT_X_ARM_POSITION
     return self.configuration.x_range[1]
@@ -833,6 +860,27 @@ class _SimulatedHead(_Simulated, Head):
       )
     return cast(Dict[str, int], stored)
 
+  async def _carries_a_tool(self) -> bool:
+    """Whether the model has a tip or a tool on any of the head's shafts."""
+    if self.resource is None:
+      return False
+    response = await self.resource.store.commands.find_resources(
+      spb.FindResourcesRequest(
+        scope=self.resource.ref,
+        filter=spb.ResourceFilter(kinds=[pb.RESOURCE_KIND_TIP, pb.RESOURCE_KIND_HEAD_TOOL]),
+        page_size=1,
+      )
+    )
+    return bool(response.nodes)
+
+  async def _modelled_a1(self) -> Optional[Coordinate]:
+    """Where the model has channel A1's shaft corner, in mm on the deck; None while unmodelled."""
+    deck = self.device.deck
+    if self.resource is None or deck is None:
+      return None
+    (a1,) = await model.locations_in([self.shafts[HEAD_REFERENCE_SHAFT]], deck)
+    return a1
+
   async def answer(self, module: str, command: str, **kwargs: Any) -> Optional[Tuple[Any, str]]:
     c = self.configuration
     if module == "C0" and command == "RA" and kwargs.get("ra") == c.x_offset_parameter:
@@ -844,17 +892,15 @@ class _SimulatedHead(_Simulated, Head):
       return {c.x_offset_parameter: round(x_offset * 10)}, f"the {self._label}'s declared X offset"
 
     if module == "C0" and command in (c.tip_presence_command, c.position_command):
-      deck = self.device.deck
-      if self.resource is None or self.resource.location is None or deck is None:
+      a1 = await self._modelled_a1()
+      if a1 is None:
         raise RuntimeError(f"the simulated {self._label} is not modelled, so it has nothing to say")
       if command == c.tip_presence_command:
-        carries = any(shaft.has_tip() for shaft in self.resource.get_all_items())
+        carries = await self._carries_a_tool()
         return {command.lower(): int(carries)}, f"whether the {self._label} is modelled with tips"
       # Channel A1, at the bottom of whatever it carries, as the master reports it.
-      shaft = self.resource.get_item(HEAD_REFERENCE_SHAFT)
-      a1 = shaft.get_location_wrt(deck)
-      bottom = shaft.tip_bottom()
-      z = a1.z + (bottom.z if bottom is not None else 0.0)
+      tool = (await self._get_tools([HEAD_REFERENCE_SHAFT]))[HEAD_REFERENCE_SHAFT]
+      z = a1.z + (tool.attributes.location.z if tool is not None else 0.0)
       return (
         {
           "xs": abs(round(a1.x * 10)),
@@ -882,10 +928,9 @@ class _SimulatedHead(_Simulated, Head):
       # in the deck's frame, so the model is read in the deck's too - the resource hangs off the
       # arm, whose own position would otherwise come through. Before setup has put the head on the
       # arm there is nothing to read, and it answers from the middle of its travel.
-      deck = self.device.deck
-      if self.resource is not None and self.resource.location is not None and deck is not None:
-        shaft = self.resource.get_item(HEAD_REFERENCE_SHAFT)
-        y = round(shaft.get_location_wrt(deck, "c", "c", "b").y, 2)
+      point = await self.get_reference_point_location()
+      if point is not None:
+        y = round(point.y, 2)
       else:
         # Nothing models it yet, so where it parks: the home slot of its own stored table.
         y = c.y_drive_increments_to_mm(self._stored("py")["home"] + c.predefined_y_position_origin)
@@ -894,11 +939,7 @@ class _SimulatedHead(_Simulated, Head):
       return {"ry": [increments, increments]}, f"where the {self._label} is modelled along Y"
 
     if command == "RZ":
-      deck = self.device.deck
-      if self.resource is not None and self.resource.location is not None and deck is not None:
-        z = round(self.resource.get_item(HEAD_REFERENCE_SHAFT).get_location_wrt(deck).z, 2)
-      else:
-        z = self._z_safety
+      z = await self._modelled_z()
       increments = c.z_drive_mm_to_increments(z)
       return {"rz": [increments, increments]}, f"where the {self._label} is modelled along Z"
 
@@ -961,7 +1002,7 @@ class _SimulatedHead(_Simulated, Head):
   async def probe_z_max(self, *args: Any, **kwargs: Any) -> float:
     # The firmware retract inside the probe is what puts the head at its safety height. Its own
     # `move_to_safe_z` needs no such override: it is an ordinary move, which this already records.
-    self.update_location_by_reference_point(z=self._z_safety)
+    await self.update_location_by_reference_point(z=self._z_safety)
     return await super().probe_z_max(*args, **kwargs)
 
   async def move_to_y_position(self, y: float, *args: Any, **kwargs: Any):
@@ -970,13 +1011,19 @@ class _SimulatedHead(_Simulated, Head):
     # Written after the move, not before: one the real method refuses never happened, and a model
     # updated first would put the head where it was told to go rather than where it is.
     resp = await super().move_to_y_position(y, *args, **kwargs)
-    self.update_location_by_reference_point(y=y)
+    await self.update_location_by_reference_point(y=y)
     return resp
 
   async def move_stop_disc_to_z_position(self, z: float, *args: Any, **kwargs: Any):
     resp = await super().move_stop_disc_to_z_position(z, *args, **kwargs)
-    self.update_location_by_reference_point(z=z)
+    await self.update_location_by_reference_point(z=z)
     return resp
+
+  async def _modelled_z(self) -> float:
+    """Where the model has the head's stop disc, in mm on the deck, or where a retract leaves it
+    while nothing models it."""
+    a1 = await self._modelled_a1()
+    return self._z_safety if a1 is None else round(a1.z, 2)
 
   async def initialize(self, *args, **kwargs):
     """Whatever was mounted on the head comes off, and it reports itself up. Goes through the
@@ -1021,14 +1068,7 @@ class SimulatedHead96(_SimulatedHead, Head96):
       return documented[parameter]
     return super()._simulated_drive_parameter(parameter)
 
-  def _modelled_z(self) -> float:
-    """Where the model has the head's stop disc, in mm on the deck."""
-    deck = self.device.deck
-    if self.resource is None or self.resource.location is None or deck is None:
-      return self._z_safety
-    return round(self.resource.get_item(HEAD_REFERENCE_SHAFT).get_location_wrt(deck).z, 2)
-
-  def _answer_clld_search(self, **kwargs: Any) -> Tuple[Any, str]:
+  async def _answer_clld_search(self, **kwargs: Any) -> Tuple[Any, str]:
     """What `ZL` answers: the surface under the sensing channels, or nothing.
 
     `lm` picks the sensing channels, those with a tip only: G11/H12, A1/B2, or all four corners.
@@ -1042,46 +1082,50 @@ class SimulatedHead96(_SimulatedHead, Head96):
     end = c.z_drive_increments_to_mm(int(kwargs["zh"]))
     mode = int(kwargs.get("lm", 2))
     names = {0: ("G11", "H12"), 1: ("A1", "B2")}.get(mode, ("A1", "B2", "G11", "H12"))
-    detections: List[Tuple[float, Optional[Container]]] = []
+    detections: List[Tuple[float, Optional[handles.Container]]] = []
     if self.resource is not None and deck is not None:
-      for name in names:
-        shaft = self.resource.get_item(name)
-        bottom = shaft.tip_bottom()
-        if not shaft.has_tip() or bottom is None:
+      tools = await self._get_tools(list(names))
+      tipped = [name for name in names if tools[name] is not None]
+      points = await model.locations_in([self.shafts[n] for n in tipped], deck, "c", "c", "b")
+      for name, point in zip(tipped, points):
+        bottom = cast(pb.ResourceNode, tools[name]).attributes.location.z
+        container = await _get_container_under(deck, point.x, point.y)
+        if container is None:
           continue
-        point = shaft.get_location_wrt(deck, "c", "c", "b")
-        container = _get_container_under(deck, point.x, point.y)
-        if container is None or not container.supports_compute_height_volume_functions():
-          continue
-        volume = container.tracker.get_used_volume()
+        volume = await _held_volume(container)
         if volume <= 0:
           continue
-        surface = container.get_location_wrt(deck, "c", "c", "cavity_bottom").z + round(
-          container.compute_height_from_volume(volume), 2
-        )
-        detections.append((round(surface - bottom.z, 2), container))
+        try:
+          height = await container.compute_height_from_volume(volume)
+        except StoreError:
+          continue
+        (cavity,) = await model.locations_in([container], deck, "c", "c", "cb")
+        surface = cavity.z + round(height, 2)
+        detections.append((round(surface - bottom, 2), container))
     if mode == 3 and len(detections) < len(names):
       detections = []
     detected, found_in = (
       (min if mode == 3 else max)(detections, key=lambda d: d[0]) if detections else (end - 1, None)
     )
     if found_in is None or detected < end:
-      self.update_location_by_reference_point(z=end)
+      await self.update_location_by_reference_point(z=end)
       self.device.head96_last_lld_z = 0.0
       check_fw_string_error("H0ZLid0000er70")
       raise AssertionError("unreachable: a trace-70 answer raises")
     retreat = c.z_drive_increments_to_mm(int(kwargs.get("zi", 0)))
     up = str(kwargs.get("zj", 1)) == "1"
-    self.update_location_by_reference_point(z=round(detected + (retreat if up else -retreat), 2))
+    await self.update_location_by_reference_point(
+      z=round(detected + (retreat if up else -retreat), 2)
+    )
     self.device.head96_last_lld_z = detected
     return None, f"the liquid in {found_in.name}"
 
-  def _answer_stroke(self, command: str, **kwargs: Any) -> Tuple[Any, str]:
+  async def _answer_stroke(self, command: str, **kwargs: Any) -> Tuple[Any, str]:
     """What `PA` or `PB` does: Z follows the surface by `zd` down or `ze` up, never below `zh`,
     and the piston draws `da` or pushes `db` out and draws `dd` back. The liquid is the layer
     above's to book: a mix returns what it draws."""
     c = self.configuration
-    z = self._modelled_z()
+    z = await self._modelled_z()
     floor = c.z_drive_increments_to_mm(int(kwargs["zh"]))
     piston = self.device.head96_dispensing_drive_uL
     if command == "PA":
@@ -1092,18 +1136,18 @@ class SimulatedHead96(_SimulatedHead, Head96):
       pushed = c.dispensing_drive_increments_to_uL(int(kwargs["db"]))
       drawn_back = c.dispensing_drive_increments_to_uL(int(kwargs.get("dd", 0)))
       piston = max(piston - pushed, 0.0) + drawn_back
-    self.update_location_by_reference_point(z=round(z, 2))
+    await self.update_location_by_reference_point(z=round(z, 2))
     self.device.head96_dispensing_drive_uL = round(piston, 2)
     return None, f"the 96-head's piston at {self.device.head96_dispensing_drive_uL} uL"
 
-  def _get_tip_overhang(self) -> float:
+  async def _get_tip_overhang(self) -> float:
     """How far the tip on channel A1 hangs below the stop disc, in mm; 0.0 with none on."""
     if self.resource is None:
       return 0.0
-    bottom = self.resource.get_item(HEAD_REFERENCE_SHAFT).tip_bottom()
-    return 0.0 if bottom is None else -bottom.z
+    tool = (await self._get_tools([HEAD_REFERENCE_SHAFT]))[HEAD_REFERENCE_SHAFT]
+    return 0.0 if tool is None else -tool.attributes.location.z
 
-  def _record_master_move(self, overhang: float, **kwargs: Any) -> None:
+  async def _record_master_move(self, overhang: float, **kwargs: Any) -> None:
     """Put the arm, the head's Y and its stop disc where a master command leaves them.
 
     `xs`/`xd` and `yh` place channel A1, whose X is the arm's less `x_offset`. `ze` is the tip
@@ -1113,19 +1157,19 @@ class SimulatedHead96(_SimulatedHead, Head96):
     arm = self.arm
     if arm is not None and c.x_offset is not None:
       x = int(kwargs["xs"]) / 10 * (-1 if str(kwargs.get("xd", 0)) == "1" else 1)
-      arm.update_location_by_reference_point(round(x + c.x_offset, 2))
-    self.update_location_by_reference_point(
+      await arm.update_location_by_reference_point(round(x + c.x_offset, 2))
+    await self.update_location_by_reference_point(
       y=int(kwargs["yh"]) / 10, z=round(int(kwargs["ze"]) / 10 + overhang, 2)
     )
 
-  def _answer_liquid_command(self, command: str, **kwargs: Any) -> None:
+  async def _answer_liquid_command(self, command: str, **kwargs: Any) -> None:
     """What `C0 EA` or `C0 ED` does: the head ends over A1 at `ze`, and the piston moves.
 
     EA draws the blow-out air `bv`, the volume `af` and the transport air `vt`. ED pushes out `vt`
     and `df`, `bv` too in a blow-out mode (`da` 1 or 3), everything in an empty (`da` 4), and draws
     the stop-back volume `ev` back. All in 0.1 uL. The liquid is the layer above's to book.
     """
-    self._record_master_move(self._get_tip_overhang(), **kwargs)
+    await self._record_master_move(await self._get_tip_overhang(), **kwargs)
     piston = self.device.head96_dispensing_drive_uL
     if command == "EA":
       piston += sum(int(kwargs.get(field, 0)) for field in ("bv", "af", "vt")) / 10
@@ -1142,24 +1186,24 @@ class SimulatedHead96(_SimulatedHead, Head96):
     c = self.configuration
     if module == "C0":
       if command in ("EA", "ED"):
-        self._answer_liquid_command(command, **kwargs)
+        await self._answer_liquid_command(command, **kwargs)
         return None
       if command == "EP":
         # The stop disc ends a tip of the collected type above `ze`, as the channels' pick-up does.
         tip_length = self.device.defined_tip_lengths.get(int(kwargs["tt"]), 0.0)
-        self._record_master_move(tip_length, **kwargs)
+        await self._record_master_move(tip_length, **kwargs)
         return None
       if command == "ER":
-        self._record_master_move(0.0, **kwargs)
+        await self._record_master_move(0.0, **kwargs)
         return None
     if module == c.module:
       if command == "ZL":
-        return self._answer_clld_search(**kwargs)
+        return await self._answer_clld_search(**kwargs)
       if command == "RH":
         increments = c.z_drive_mm_to_increments(self.device.head96_last_lld_z)
         return {"rh": increments}, "where the 96-head last detected liquid"
       if command in ("PA", "PB"):
-        return self._answer_stroke(command, **kwargs)
+        return await self._answer_stroke(command, **kwargs)
       if command == "RD":
         # The drive answers twice; the read takes the second.
         increments = c.dispensing_drive_uL_to_increments(self.device.head96_dispensing_drive_uL)
@@ -1204,14 +1248,14 @@ class SimulatedISWAP(_Simulated, iSWAP):
     if any(table is None for table in stops):
       return resp
     y_stops, z_stops, elbow_stops, wrist_stops, gripper_stops = cast(Tuple[Any, ...], stops)
-    self.update_location_by_reference_point(
+    await self.update_location_by_reference_point(
       y=c.y_increments_to_mm(y_stops.parking),
       z=c.z_increments_to_mm(z_stops.parking) + c.elbow_z_offset_above_finger,
     )
-    self.elbow_drive_update_angle(c.elbow_drive_increments_to_angle(elbow_stops.parking))
-    self.wrist_drive_update_angle(c.wrist_increments_to_deg(wrist_stops.parking))
+    await self.elbow_drive_update_angle(c.elbow_drive_increments_to_angle(elbow_stops.parking))
+    await self.wrist_drive_update_angle(c.wrist_increments_to_deg(wrist_stops.parking))
     # Parking closes the jaws, and the gripper's table names that stop its home.
-    self.gripper_update_width(c.gripper_increments_to_mm(gripper_stops.home))
+    await self.gripper_update_width(c.gripper_increments_to_mm(gripper_stops.home))
     return resp
 
   async def answer(self, module: str, command: str, **kwargs: Any) -> Optional[Tuple[Any, str]]:
@@ -1224,7 +1268,7 @@ class SimulatedISWAP(_Simulated, iSWAP):
     c = self.configuration
     if module == "R0":
       if command == "RW":
-        angle = self.elbow_drive_get_angle()
+        angle = await self.elbow_drive_get_angle()
         if angle is not None:
           return (
             {"rw": c.elbow_drive_angle_to_increments(angle)},
@@ -1235,7 +1279,7 @@ class SimulatedISWAP(_Simulated, iSWAP):
         return {"rw": parked}, "the elbow drive's parking stop"
 
       if command == "RY":
-        point = self.elbow_get_reference_point_location()
+        point = await self.elbow_get_reference_point_location()
         if point is None:
           # Nothing models it yet, so where an initialized device leaves it: its parking stop, out
           # of the stored table rather than a position written down here.
@@ -1247,7 +1291,7 @@ class SimulatedISWAP(_Simulated, iSWAP):
         return {"ry": [increments, increments]}, "where the model has the elbow along Y"
 
       if command == "RZ":
-        point = self.elbow_get_reference_point_location()
+        point = await self.elbow_get_reference_point_location()
         if point is None:
           # Nothing models it yet, so where an initialized device leaves it: its parking stop, out
           # of the stored table rather than a height written down here.
@@ -1257,7 +1301,7 @@ class SimulatedISWAP(_Simulated, iSWAP):
         increments = c.z_mm_to_increments(point.z - c.elbow_z_offset_above_finger)
         return {"rz": [increments, increments]}, "where the model has the elbow along Z"
       if command == "RT":
-        angle = self.wrist_drive_get_angle()
+        angle = await self.wrist_drive_get_angle()
         if angle is not None:
           return (
             {"rt": c.wrist_deg_to_increments(angle)},
@@ -1282,7 +1326,7 @@ class SimulatedISWAP(_Simulated, iSWAP):
           stops = (await self._request_slots("pg"))[: len(iSWAPGripperPositions.SLOTS)]
           home = stops[iSWAPGripperPositions.SLOTS.index("home")]
           return {"rg": [home, home]}, "the gripper's home and parking width"
-        width = c.gripper_mm_to_increments(gripper.jaw_width)
+        width = c.gripper_mm_to_increments(await gripper.get_jaw_width())
         return {"rg": [width, width]}, "how far the model has the jaws open"
     if (module, command) == ("C0", "QP"):
       # Whether the arm holds something is whether the model has anything hanging off the gripper
@@ -1290,8 +1334,9 @@ class SimulatedISWAP(_Simulated, iSWAP):
       gripper = self.gripper
       held = False
       if gripper is not None:
-        own = {gripper.body, *gripper.fingers}
-        held = any(child not in own for child in gripper.children)
+        spec = await self._gripper_spec()
+        own = {spec.body, *spec.fingers}
+        held = any(child.name not in own for child in await gripper.get_children())
       return {"ph": int(held)}, "whether the model has anything in the gripper"
 
     if (module, command) == ("C0", "RA") and kwargs.get("ra") == "kg":
@@ -1308,9 +1353,12 @@ class SimulatedISWAP(_Simulated, iSWAP):
     widths = [] if pipettes is None else [c.width for c in pipettes.configuration.channels]
     if pipettes is not None and not any(w is None for w in widths):
       floor = cast(DeviceConfiguration, self.device.configuration).left_arm_min_y_position
-      for channel in range(len(widths)):
-        packed = floor + sum(cast(List[float], widths[channel + 1 :]))
-        pipettes.update_location_by_reference_point(channel, y=packed)
+      await pipettes.update_locations_by_reference_point(
+        {
+          channel: (floor + sum(cast(List[float], widths[channel + 1 :])), None)
+          for channel in range(len(widths))
+        }
+      )
     return await super()._unchecked_fw_position_components_for_free_y_range()
 
   async def request_firmware_version(self) -> Tuple[str, datetime.date]:
@@ -1369,7 +1417,11 @@ class SimulatedFrontCover(_Simulated, FrontCover):
 class SimulatedAutoload(_Simulated, Autoload):
   """The autoload, answering for itself. Its deck and its loading tray are empty."""
 
-  def _modelled_track(self) -> int:
+  async def _track_x(self, track: int) -> float:
+    """Where a track starts along the deck, in mm."""
+    return (await cast(handles.Deck, self.device.deck).track_location(track)).x
+
+  async def _modelled_track(self) -> int:
     """Which track the sled is modelled on.
 
     Worked out from where the model has it rather than kept alongside: the sled's resource is
@@ -1380,14 +1432,18 @@ class SimulatedAutoload(_Simulated, Autoload):
     Returns:
       The track, counted from 1.
     """
-    deck = cast(HamiltonDeck, self.device.deck)
-    if self.resource is None or self.resource.location is None:
+    x = await self.get_reference_point_x()
+    if x is None:
       # Nothing models it yet, so where an initialized autoload leaves it: parked, at the last
       # track. Initialization parks the sled and only then is the model built from what this
       # answers, so answering the first track puts the sled at the wrong end of the deck.
       return self.track_range[-1]
-    x = self.resource.location.x + self.configuration.reference_point_from_sled_left_edge
-    return min(self.track_range, key=lambda t: abs(deck.track_to_location(t).x - x))
+    tracks = await cast(handles.Deck, self.device.deck).get_hamilton_tracks()
+    origin = to_coordinate(tracks.track_origin)
+    starts = {
+      t: (origin + Coordinate((t - 1) * tracks.track_pitch, 0, 0)).x for t in self.track_range
+    }
+    return min(self.track_range, key=lambda t: abs(starts[t] - x))
 
   async def answer(self, module: str, command: str, **kwargs: Any) -> Optional[Tuple[Any, str]]:
     declared = self.device.simulated_autoload
@@ -1403,7 +1459,7 @@ class SimulatedAutoload(_Simulated, Autoload):
           raise RuntimeError(f"{autoload_type!r} is not a type the autoload reports")
         return {"cq": code}, "the autoload it was declared to be"
       if command == "QA":
-        return {"qa": self._modelled_track()}, "the track the sled is modelled on"
+        return {"qa": await self._modelled_track()}, "the track the sled is modelled on"
       return None
 
     if module != "I0":
@@ -1450,10 +1506,8 @@ class SimulatedAutoload(_Simulated, Autoload):
       # of its left edge. Before setup has put the sled on the deck there is no model to read, and
       # the track it is on is what it has instead - which is how a park during initialization
       # survives long enough to reach the resource created after it.
-      if self.resource is not None and self.resource.location is not None:
-        x = self.resource.location.x + c.reference_point_from_sled_left_edge
-      else:
-        x = cast(HamiltonDeck, self.device.deck).track_to_location(self._modelled_track()).x
+      modelled = await self.get_reference_point_x()
+      x = modelled if modelled is not None else await self._track_x(await self._modelled_track())
       # The X drive is the one drive here that does not count in the deck's coordinates, so the
       # deck position the model holds is put back into the drive's frame before it is encoded.
       # Answered in the deck's, the read comes back a drive zero too far right - past the end of
@@ -1502,7 +1556,7 @@ class SimulatedAutoload(_Simulated, Autoload):
     await self.recorded("I0", "RB")
     return SIMULATED_BARCODE
 
-  def _carrier_tracks(self) -> List[int]:
+  async def _carrier_tracks(self) -> List[int]:
     """Which tracks hold a carrier, from the deck rather than from a sensor.
 
     A simulated device has no sensor to read, so what is on the deck is what the resource model
@@ -1512,12 +1566,12 @@ class SimulatedAutoload(_Simulated, Autoload):
     deck = self.device.deck
     if deck is None:
       return []
-    carriers = [child for child in deck.children if isinstance(child, Carrier)]
-    return sorted(deck.compute_right_track_of_carrier(carrier) for carrier in carriers)
+    carriers = [child for child in await deck.get_children() if isinstance(child, handles.Carrier)]
+    return sorted([(await deck.tracks_of(carrier))[1] for carrier in carriers])
 
   async def sense_carrier_presence_on_deck(self) -> List[int]:
     await self.recorded("C0", "RC")
-    return self._carrier_tracks()
+    return await self._carrier_tracks()
 
   async def sense_carrier_presence_on_loading_tray(self) -> List[int]:
     # Nothing is on the tray: a carrier the model holds is on the deck, which is where it was
@@ -1544,7 +1598,7 @@ class SimulatedAutoload(_Simulated, Autoload):
     resp = await super().move_to_x_position(
       x, speed=speed, acceleration_ramp=acceleration_ramp, current_limit=current_limit
     )
-    self.update_location_by_reference_point(x)
+    await self.update_location_by_reference_point(x)
     return resp
 
   async def load_carrier_from_tray_and_scan_carrier_barcode(
@@ -1569,9 +1623,8 @@ class SimulatedAutoload(_Simulated, Autoload):
     # As `move_to_x_position` records where a position move put the sled, so this records where a
     # track move did. The deck is what knows where a track is.
     await super().move_to_track(track, *args, **kwargs)
-    # A simulated device is built with a deck or refuses to be built at all, so there is one.
-    deck = cast(HamiltonDeck, self.device.deck)
-    self.update_location_by_reference_point(deck.track_to_location(track).x)
+    # A simulated device refuses to set up without a deck, so there is one.
+    await self.update_location_by_reference_point(await self._track_x(track))
 
 
 class SimulatedCoreGrippers(_Simulated, CoreGrippers):
@@ -1586,15 +1639,24 @@ class SimulatedCoreGrippers(_Simulated, CoreGrippers):
   def _simulated_pipettes(self) -> SimulatedPipettes:
     return cast(SimulatedPipettes, self._pipettes)
 
-  def _tool_overhang(self) -> float:
+  async def _tool_overhang(self) -> float:
     """How far a tool will hang below a channel's stop disc to its grip line once taken, in mm.
 
-    Measured off a tool on the deck, as `SimulatedPipettes._below_stop_disc` measures one on a
+    Measured off a tool on the deck, as `SimulatedPipettes._below_stop_discs` measures one on a
     channel. Nothing when no tool is on the deck to measure.
     """
-    for resource in self._deck.get_all_children():
-      if isinstance(resource, HamiltonCoreGripperTool):
-        return resource.get_size_z() - resource.fitting_depth - resource.grip_line_height
+    deck = self._driver.deck
+    if deck is None:
+      return 0.0
+    response = await deck.store.commands.find_resources(
+      spb.FindResourcesRequest(
+        scope=deck.ref,
+        filter=spb.ResourceFilter(models=list(resource_model.GRIP_LINE_HEIGHTS)),
+      )
+    )
+    for node in response.nodes:
+      tool = node.attributes
+      return tool.size.z - tool.head_tool.fitting_depth - resource_model.grip_line_height(tool)
     return 0.0
 
   async def _record_pair(
@@ -1627,7 +1689,7 @@ class SimulatedCoreGrippers(_Simulated, CoreGrippers):
       return
     pipettes = self._simulated_pipettes
     if overhang is None:
-      overhang = pipettes._below_stop_disc(front)
+      overhang = await pipettes._below_stop_disc(front)
     channels = pipettes.num_channels
     ys = [0] * channels
     ys[back], ys[front] = back_channel_y, front_channel_y
@@ -1679,7 +1741,7 @@ class SimulatedCoreGrippers(_Simulated, CoreGrippers):
       back_channel_y,
       front_channel_y,
       minimum_traverse_height_start,
-      overhang=self._tool_overhang(),
+      overhang=await self._tool_overhang(),
       descend_to=end_z,
     )
     return resp
@@ -1806,7 +1868,8 @@ class SimulatedCoreGrippers(_Simulated, CoreGrippers):
       return resp
     # Carried as held: the jaws stay as far apart as the grip left them.
     pipettes = self._simulated_pipettes
-    width = round((pipettes._modelled_y(back) - pipettes._modelled_y(front)) * 10)
+    ys = await pipettes._modelled_ys()
+    width = round((ys[back] - ys[front]) * 10)
     back_y, front_y = self._held_pair_ys(y_position, width)
     await self._record_pair((back, front), x_position, back_y, front_y, z_position)
     return resp
@@ -1820,7 +1883,7 @@ class STARSimulationDriver(STARDriver):
     tips_mounted: Optional[List[bool]] = None,
     simulate_motion_time: bool = False,
     motion_time_scale: float = 0.25,
-    deck: Optional[HamiltonDeck] = None,
+    deck: Optional[handles.Deck] = None,
     initialized: bool = False,
     left_side_panel_installed: bool = False,
     declared_configuration_json: Optional[str] = None,
@@ -1832,8 +1895,9 @@ class STARSimulationDriver(STARDriver):
       simulate_motion_time: whether a command that moves the channels takes the time the drives
         would take, so a run can be followed rather than being over at once.
       motion_time_scale: the share of that time a move takes when it does.
-      deck: the deck to reflect this device into. Required: a simulated device has no firmware
-        to ask, so the resource model is the only thing it can answer from.
+      deck: the deck to reflect this device into. Needed by setup: a simulated device has no
+        firmware to ask, so the resource model is the only thing it can answer from. A device
+        gives its driver its deck when it makes its resources.
       initialized: whether the device and its modules report themselves already initialized. One
         that has just been switched on does not.
       left_side_panel_installed: whether this device has its left side panel on. Declared rather
@@ -1843,10 +1907,8 @@ class STARSimulationDriver(STARDriver):
         back to what this frame documents.
 
     Raises:
-      ValueError: If no deck is given, or `tips_mounted` does not have one entry per channel.
+      ValueError: If `tips_mounted` does not have one entry per channel.
     """
-    if deck is None:
-      raise ValueError("a simulated STAR answers from its resource model, so it needs a deck")
     super().__init__(
       io=_UnusedTransport(),
       deck=deck,
@@ -1901,7 +1963,7 @@ class STARSimulationDriver(STARDriver):
     self.channel_drive_parameters: Dict[int, Dict[str, int]] = {}
     # What each channel is searching for liquid in while a batch search runs, by channel. A search
     # is answered from that container's tracker; without one, from whatever stands under the tip.
-    self.liquid_searches: Dict[int, Container] = {}
+    self.liquid_searches: Dict[int, handles.Container] = {}
     # What each channel last detected liquid at, in mm on the deck; 0.0 until a search finds any.
     self.last_lld_heights: Dict[int, float] = {}
     # Where each channel's piston stands, in uL: what its aspirations drew.
@@ -1946,6 +2008,16 @@ class STARSimulationDriver(STARDriver):
         arm.iswap = SimulatedISWAP(self)
 
   # -- the device itself ----------------------------------------------------
+
+  async def setup(self, *args: Any, **kwargs: Any):
+    """Set up as the real driver does, once there is a deck to answer from.
+
+    Raises:
+      ValueError: If the driver has no deck.
+    """
+    if self.deck is None:
+      raise ValueError("a simulated STAR answers from its resource model, so it needs a deck")
+    await super().setup(*args, **kwargs)
 
   async def _open(self):
     """There is no link to open, and no replies to read."""

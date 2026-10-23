@@ -5,36 +5,43 @@ from pylabrobot.hamilton.star.device import RECORDING_STARLET
 from pylabrobot.hamilton.star.driver.features.head import HEAD_REFERENCE_SHAFT
 from pylabrobot.hamilton.star.driver.features.head96 import Head96
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
-from pylabrobot.resources import set_tip_tracking
-from pylabrobot.resources.agenbio.plates import agenbio_1_troughplate_190mL_Fl
-from pylabrobot.resources.hamilton import (
-  TIP_CAR_480_A00,
-  STARLetDeck,
-  hamilton_96_tiprack_300uL_filter,
-)
-from pylabrobot.resources.hamilton.plate_carriers import PLT_CAR_L5AC_A00
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
 
 
 class TestSimulatedHead96MasterCommands(unittest.IsolatedAsyncioTestCase):
   """`C0 EP`, `ER`, `EA`, `ED` and `H0 RD` move and read the simulated 96-head's model."""
 
   async def asyncSetUp(self):
-    set_tip_tracking(True)
-    self.addCleanup(set_tip_tracking, False)
-    self.deck = STARLetDeck()
+    store = ResourceStore.in_process()
+    self.deck = cast(handles.Deck, await store.create("STARLetDeck", name="deck"))
     self.driver = STARSimulationDriver(
       deck=self.deck, declared_configuration_json=RECORDING_STARLET
     )
     await self.driver.setup()
     self.head = cast(Head96, self.driver.head96)
-    tip_car = TIP_CAR_480_A00(name="tip carrier")
-    tip_car[1] = self.tip_rack = hamilton_96_tiprack_300uL_filter(name="tip_rack_01")
-    self.deck.assign_child_resource(tip_car, track=1)
-    tip = self.tip_rack.get_item("A1").get_tip()
-    self.tip_length = tip.get_size_z() - tip.fitting_depth
-    plate_car = PLT_CAR_L5AC_A00(name="plate carrier")
-    plate_car[3] = self.trough_plate = agenbio_1_troughplate_190mL_Fl(name="trough")
-    self.deck.assign_child_resource(plate_car, track=7)
+    tip_car = cast(
+      handles.Carrier,
+      await store.create("hamilton_tip_carrier_L5", name="tip carrier", parent=self.deck, track=1),
+    )
+    self.tip_rack = cast(
+      handles.TipRack,
+      await store.create("hamilton_96_tiprack_300uL_filter", name="tip_rack_01", parent=tip_car[1]),
+    )
+    tip = await self.tip_rack.get_tip_spot("A1").get_tip()
+    assert tip is not None
+    attributes = await tip.attributes()
+    self.tip_length = attributes.size.z - attributes.head_tool.fitting_depth
+    plate_car = cast(
+      handles.Carrier,
+      await store.create(
+        "hamilton_plate_carrier_L5_ac", name="plate carrier", parent=self.deck, track=7
+      ),
+    )
+    self.trough_plate = cast(
+      handles.Plate,
+      await store.create("agenbio_1_troughplate_190mL_Fl", name="trough", parent=plate_car[3]),
+    )
 
   async def send(self, command: str, **kwargs: Any) -> Any:
     return await self.driver.send_command(module="C0", command=command, **kwargs)
@@ -51,9 +58,12 @@ class TestSimulatedHead96MasterCommands(unittest.IsolatedAsyncioTestCase):
       await self.head.request_z_position(),
     ]
 
+  async def spot_a1(self):
+    return await self.tip_rack.get_tip_spot("A1").get_location_wrt(self.deck, "c", "c", "b")
+
   async def test_ep_leaves_a1_over_the_spot_and_the_stop_disc_a_tip_above_ze(self):
     await self.head.pick_up_tips(self.tip_rack, minimum_traverse_height_end=245.0)
-    spot = self.tip_rack.get_item("A1").get_location_wrt(self.deck, "c", "c", "b")
+    spot = await self.spot_a1()
     x, y, z = await self.where()
     self.assertAlmostEqual(x, spot.x, delta=0.05)
     self.assertAlmostEqual(y, spot.y, delta=0.05)
@@ -62,7 +72,7 @@ class TestSimulatedHead96MasterCommands(unittest.IsolatedAsyncioTestCase):
   async def test_er_leaves_the_stop_disc_at_ze(self):
     await self.head.pick_up_tips(self.tip_rack)
     await self.head.drop_tips(self.tip_rack, minimum_traverse_height_end=250.0)
-    spot = self.tip_rack.get_item("A1").get_location_wrt(self.deck, "c", "c", "b")
+    spot = await self.spot_a1()
     x, y, z = await self.where()
     self.assertAlmostEqual(x, spot.x, delta=0.05)
     self.assertAlmostEqual(y, spot.y, delta=0.05)
@@ -70,8 +80,8 @@ class TestSimulatedHead96MasterCommands(unittest.IsolatedAsyncioTestCase):
 
   async def test_ea_moves_the_head_and_draws_blow_out_volume_and_transport_air(self):
     await self.head.pick_up_tips(self.tip_rack)
-    trough = self.trough_plate.get_item(0)
-    trough.tracker.set_volume(100_000.0)
+    trough = self.trough_plate.get_well(0)
+    await trough.set_volume(100_000.0)
     await self.send("EA", xs="03000", xd=0, yh="2500", ze="2200", af="01000", bv="00200", vt="050")
     x, y, z = await self.where()
     self.assertAlmostEqual(x, 300.0, delta=0.05)
@@ -79,7 +89,7 @@ class TestSimulatedHead96MasterCommands(unittest.IsolatedAsyncioTestCase):
     self.assertAlmostEqual(z, 220.0 + self.tip_length, delta=0.05)
     self.assertAlmostEqual(self.driver.head96_dispensing_drive_uL, 125.0)
     self.assertAlmostEqual(await self.piston(), 125.0, delta=0.05)
-    self.assertEqual(trough.tracker.get_used_volume(), 100_000.0)
+    self.assertEqual(await trough.get_volume(), 100_000.0)
 
   async def test_a_negative_x_is_read_back_negative(self):
     await self.send("EA", xs="00100", xd=1, yh="2500", ze="2200", af="00000", bv="00000")
@@ -103,9 +113,8 @@ class TestSimulatedHead96MasterCommands(unittest.IsolatedAsyncioTestCase):
 
   async def test_the_channel_a1_shaft_is_where_the_command_put_it(self):
     await self.send("EA", xs="03000", xd=0, yh="2500", ze="2200", af="00000", bv="00000")
-    assert self.head.resource is not None
-    shaft = self.head.resource.get_item(HEAD_REFERENCE_SHAFT)
-    a1 = shaft.get_location_wrt(self.deck, "c", "c", "b")
+    shaft = self.head.shafts[HEAD_REFERENCE_SHAFT]
+    a1 = await shaft.get_location_wrt(self.deck, "c", "c", "b")
     self.assertAlmostEqual(a1.x, 300.0, delta=0.05)
     self.assertAlmostEqual(a1.y, 250.0, delta=0.05)
     self.assertAlmostEqual(a1.z, 220.0, delta=0.05)
