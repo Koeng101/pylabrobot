@@ -703,18 +703,20 @@ class Operation(_message.Message):
     def __init__(self, id: _Optional[bytes] = ..., root_id: _Optional[bytes] = ..., kind: _Optional[str] = ..., items: _Optional[_Iterable[_Union[OperationItem, _Mapping]]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., holder: _Optional[str] = ...) -> None: ...
 
 class AssignChild(_message.Message):
-    __slots__ = ("child", "parent", "location", "track", "index")
+    __slots__ = ("child", "parent", "location", "track", "no_location", "index")
     CHILD_FIELD_NUMBER: _ClassVar[int]
     PARENT_FIELD_NUMBER: _ClassVar[int]
     LOCATION_FIELD_NUMBER: _ClassVar[int]
     TRACK_FIELD_NUMBER: _ClassVar[int]
+    NO_LOCATION_FIELD_NUMBER: _ClassVar[int]
     INDEX_FIELD_NUMBER: _ClassVar[int]
     child: ResourceRef
     parent: ResourceRef
     location: Vec3
     track: int
+    no_location: bool
     index: int
-    def __init__(self, child: _Optional[_Union[ResourceRef, _Mapping]] = ..., parent: _Optional[_Union[ResourceRef, _Mapping]] = ..., location: _Optional[_Union[Vec3, _Mapping]] = ..., track: _Optional[int] = ..., index: _Optional[int] = ...) -> None: ...
+    def __init__(self, child: _Optional[_Union[ResourceRef, _Mapping]] = ..., parent: _Optional[_Union[ResourceRef, _Mapping]] = ..., location: _Optional[_Union[Vec3, _Mapping]] = ..., track: _Optional[int] = ..., no_location: _Optional[bool] = ..., index: _Optional[int] = ...) -> None: ...
 
 class UnassignChild(_message.Message):
     __slots__ = ("resource",)

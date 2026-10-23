@@ -783,7 +783,8 @@ class Engine:
         )
 
   def assign(self, request: pb.AssignChild, tokens: Sequence[bytes], steps: List[Step]) -> Node:
-    """Put a resource into a parent: where asked, at a track, or where the parent seats it.
+    """Put a resource into a parent: where asked, at a track, with no location, or where the
+    parent seats it.
 
     Raises:
       StoreError: A rule of the parent refuses it, its names clash, or the parent does not seat
@@ -794,7 +795,10 @@ class Engine:
     self.check_assignment(child, parent)
     self.check_names_fit(child, parent)
     where = request.WhichOneof("where")
-    if where == "location":
+    location: Optional[Coordinate]
+    if where == "no_location":
+      location = None
+    elif where == "location":
       location = to_coordinate(request.location)
     elif where == "track":
       if not parent.attributes.deck.HasField("hamilton"):
@@ -814,7 +818,7 @@ class Engine:
           child.name,
         )
       location = seated
-    if parent.kind == K.RESOURCE_KIND_DECK:
+    if parent.kind == K.RESOURCE_KIND_DECK and location is not None:
       self._check_deck_space(parent, child, location, track=where == "track")
     index = request.index if request.HasField("index") else None
     self.move(child, parent, index, location, steps)

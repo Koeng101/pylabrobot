@@ -530,6 +530,9 @@ message AssignChild {
     Vec3 location = 3;
     // A Hamilton deck's track, from 1.
     int32 track = 4;
+    // In the parent with no location: where it is there is unknown, as PLR's
+    // `assign_child_resource(child, location=None)` leaves a child of a parent that seats none.
+    bool no_location = 6;
   }
   // Position among the parent's children; unset appends.
   optional int32 index = 5;

@@ -192,6 +192,20 @@ class TreeTests(StoreTestCase):
     self.assertEqual(plate.parent_id, holder.id)
     self.assertAlmostEqual(plate.attributes.location.z, -3.03)
 
+  async def test_assign_with_no_location_leaves_it_unlocated(self):
+    await self.commands.unassign_resources(spb.UnassignResourcesRequest(resources=[ref("plate")]))
+    deck = await self.node(ref("deck", ""))
+    await self.commands.assign_resources(
+      spb.AssignResourcesRequest(
+        assignments=[
+          pb.AssignChild(child=ref("plate", ""), parent=ref("deck", ""), no_location=True)
+        ]
+      )
+    )
+    plate = await self.node(ref("plate"))
+    self.assertEqual(plate.parent_id, deck.id)
+    self.assertFalse(plate.attributes.HasField("location"))
+
   async def test_a_holder_holding_something_refuses_more(self):
     with self.assertRaises(StoreError) as refused:
       await self.commands.assign_resources(
