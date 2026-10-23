@@ -10,7 +10,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Dict, List, Optional, Sequence, TypeVar, Union
+from typing import Dict, List, Optional, Sequence, TypeVar, Union, cast
 
 from connectrpc.errors import ConnectError
 from connectrpc.request import RequestContext
@@ -22,6 +22,7 @@ from pylabrobot.resources.store import handles, library
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.memory import ISSUE_TYPE, MemoryStore, asgi_app
 from pylabrobot.resources.store.tree import to_vec3
+from pylabrobot.resources.store.v1 import primitives_pb2 as ppb
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.store.v1.primitives_connect import ResourcePrimitivesServiceClient
@@ -71,6 +72,163 @@ class _Refusals:
       raise store_error(error) from error
 
 
+# What a store held in this process is handed for a request's context: it reads none of it.
+_NO_CONTEXT = cast(RequestContext, None)
+
+
+async def _direct(call: Awaitable[RES]) -> RES:
+  """Run one request against a store held in this process, raising its refusal as a `StoreError`."""
+  try:
+    return await call
+  except ConnectError as error:
+    raise store_error(error) from error
+
+
+class _InProcessCommands:
+  """The command API of a `MemoryStore`, called directly: no transport, and no task in between,
+  so a request completes without giving way to anything else the event loop is running."""
+
+  def __init__(self, store: MemoryStore):
+    self._store = store
+
+  async def close(self) -> None:
+    pass
+
+  async def get_store_info(self, request: spb.GetStoreInfoRequest) -> spb.StoreInfo:
+    return await _direct(self._store.get_store_info(request, _NO_CONTEXT))
+
+  async def acquire_lock(self, request: spb.AcquireLockRequest) -> spb.Lock:
+    return await _direct(self._store.acquire_lock(request, _NO_CONTEXT))
+
+  async def release_lock(self, request: spb.ReleaseLockRequest) -> spb.ReleaseLockResponse:
+    return await _direct(self._store.release_lock(request, _NO_CONTEXT))
+
+  async def get_lock(self, request: spb.GetLockRequest) -> spb.GetLockResponse:
+    return await _direct(self._store.get_lock(request, _NO_CONTEXT))
+
+  async def put_model(self, request: spb.PutModelRequest) -> pb.ResourceModel:
+    return await _direct(self._store.put_model(request, _NO_CONTEXT))
+
+  async def get_model(self, request: spb.GetModelRequest) -> pb.ResourceModel:
+    return await _direct(self._store.get_model(request, _NO_CONTEXT))
+
+  async def list_models(self, request: spb.ListModelsRequest) -> spb.ListModelsResponse:
+    return await _direct(self._store.list_models(request, _NO_CONTEXT))
+
+  async def create_resources(
+    self, request: spb.CreateResourcesRequest
+  ) -> spb.CreateResourcesResponse:
+    return await _direct(self._store.create_resources(request, _NO_CONTEXT))
+
+  async def delete_resources(
+    self, request: spb.DeleteResourcesRequest
+  ) -> spb.DeleteResourcesResponse:
+    return await _direct(self._store.delete_resources(request, _NO_CONTEXT))
+
+  async def assign_resources(
+    self, request: spb.AssignResourcesRequest
+  ) -> spb.AssignResourcesResponse:
+    return await _direct(self._store.assign_resources(request, _NO_CONTEXT))
+
+  async def unassign_resources(
+    self, request: spb.UnassignResourcesRequest
+  ) -> spb.UnassignResourcesResponse:
+    return await _direct(self._store.unassign_resources(request, _NO_CONTEXT))
+
+  async def update_resources(
+    self, request: spb.UpdateResourcesRequest
+  ) -> spb.UpdateResourcesResponse:
+    return await _direct(self._store.update_resources(request, _NO_CONTEXT))
+
+  async def get_resources(self, request: spb.GetResourcesRequest) -> spb.GetResourcesResponse:
+    return await _direct(self._store.get_resources(request, _NO_CONTEXT))
+
+  async def find_resources(self, request: spb.FindResourcesRequest) -> spb.FindResourcesResponse:
+    return await _direct(self._store.find_resources(request, _NO_CONTEXT))
+
+  async def list_roots(self, request: spb.ListRootsRequest) -> spb.ListRootsResponse:
+    return await _direct(self._store.list_roots(request, _NO_CONTEXT))
+
+  async def resolve_geometry(
+    self, request: spb.ResolveGeometryRequest
+  ) -> spb.ResolveGeometryResponse:
+    return await _direct(self._store.resolve_geometry(request, _NO_CONTEXT))
+
+  async def convert_height_volume(
+    self, request: spb.ConvertHeightVolumeRequest
+  ) -> spb.ConvertHeightVolumeResponse:
+    return await _direct(self._store.convert_height_volume(request, _NO_CONTEXT))
+
+  async def find_resources_at(
+    self, request: spb.FindResourcesAtRequest
+  ) -> spb.FindResourcesAtResponse:
+    return await _direct(self._store.find_resources_at(request, _NO_CONTEXT))
+
+  async def record_device_positions(
+    self, request: spb.RecordDevicePositionsRequest
+  ) -> spb.RecordDevicePositionsResponse:
+    return await _direct(self._store.record_device_positions(request, _NO_CONTEXT))
+
+  async def record_measurements(
+    self, request: spb.RecordMeasurementsRequest
+  ) -> spb.RecordMeasurementsResponse:
+    return await _direct(self._store.record_measurements(request, _NO_CONTEXT))
+
+  async def begin_tool_pickup(
+    self, request: spb.BeginToolPickupRequest
+  ) -> spb.BeginToolPickupResponse:
+    return await _direct(self._store.begin_tool_pickup(request, _NO_CONTEXT))
+
+  async def begin_tool_drop(self, request: spb.BeginToolDropRequest) -> spb.BeginToolDropResponse:
+    return await _direct(self._store.begin_tool_drop(request, _NO_CONTEXT))
+
+  async def begin_liquid_transfer(
+    self, request: spb.BeginLiquidTransferRequest
+  ) -> spb.BeginLiquidTransferResponse:
+    return await _direct(self._store.begin_liquid_transfer(request, _NO_CONTEXT))
+
+  async def begin_resource_pickup(
+    self, request: spb.BeginResourcePickupRequest
+  ) -> spb.BeginResourcePickupResponse:
+    return await _direct(self._store.begin_resource_pickup(request, _NO_CONTEXT))
+
+  async def begin_resource_place(
+    self, request: spb.BeginResourcePlaceRequest
+  ) -> spb.BeginResourcePlaceResponse:
+    return await _direct(self._store.begin_resource_place(request, _NO_CONTEXT))
+
+  async def resolve_operation(
+    self, request: spb.ResolveOperationRequest
+  ) -> spb.ResolveOperationResponse:
+    return await _direct(self._store.resolve_operation(request, _NO_CONTEXT))
+
+  async def get_operation(self, request: spb.GetOperationRequest) -> pb.Operation:
+    return await _direct(self._store.get_operation(request, _NO_CONTEXT))
+
+  async def list_operations(self, request: spb.ListOperationsRequest) -> spb.ListOperationsResponse:
+    return await _direct(self._store.list_operations(request, _NO_CONTEXT))
+
+  async def watch(self, request: spb.WatchRequest) -> AsyncIterator[spb.ResourceEvent]:
+    try:
+      async for each in self._store.watch(request, _NO_CONTEXT):
+        yield each
+    except ConnectError as error:
+      raise store_error(error) from error
+
+
+class _InProcessPrimitives:
+  """The primitives of a `MemoryStore`, called directly. See `_InProcessCommands`."""
+
+  def __init__(self, store: MemoryStore):
+    self._store = store
+
+  async def close(self) -> None:
+    pass
+
+  async def apply_changes(self, request: ppb.ApplyChangesRequest) -> ppb.ApplyChangesResponse:
+    return await _direct(self._store.apply_changes(request, _NO_CONTEXT))
+
+
 class ResourceStore:
   """A resource store, in this process or served elsewhere: its command API, and its primitives.
 
@@ -98,6 +256,20 @@ class ResourceStore:
     memory = store or MemoryStore()
     http = Client(transport=ASGITransport(asgi_app(memory)))
     return cls(_IN_PROCESS, http, memory)
+
+  @classmethod
+  def in_process(cls, store: Optional[MemoryStore] = None) -> ResourceStore:
+    """A store held in this process, called directly rather than over Connect.
+
+    Every request completes without giving way to other tasks, as PLR's `Resource` tree did, so
+    concurrent device commands interleave with it exactly as they did with that tree.
+    """
+    memory = store or MemoryStore()
+    made = cls.in_memory(memory)
+    # The same calls as the Connect clients make, so a caller cannot tell them apart.
+    made.commands = cast(ResourceStoreServiceClient, _InProcessCommands(memory))
+    made.primitives = cast(ResourcePrimitivesServiceClient, _InProcessPrimitives(memory))
+    return made
 
   @classmethod
   def connect(cls, url: str) -> ResourceStore:
