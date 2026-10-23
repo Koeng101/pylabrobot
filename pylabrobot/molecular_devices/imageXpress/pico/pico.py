@@ -32,9 +32,10 @@ from pylabrobot.molecular_devices.imageXpress.pico.models import (
   ImagingResult,
   Objective,
 )
-from pylabrobot.resources.plate import Plate
+from pylabrobot.molecular_devices._plate import read_plate
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.utils import row_index_to_label
-from pylabrobot.resources.well import WellBottomType
 
 try:
   import grpc  # type: ignore[import-untyped]
@@ -112,34 +113,50 @@ def _decode_intermediate_response(data: bytes) -> Tuple[bytes, Dict[str, int]]:
 # ---------------------------------------------------------------------------
 
 
-def _labware_params_from_plate(plate: Plate) -> dict:
-  """Derive Pico labware JSON from a PLR :class:`Plate`."""
-  well_a1 = plate.get_well("A1")
+async def _labware_params_from_plate(plate: handles.Plate) -> dict:
+  """Derive Pico labware JSON from a plate in a resource store.
+
+  The plate's size and well A1's attributes are read in one `GetResources`, and the corners of A1,
+  A2, B1 and the last row's first well in one `ResolveGeometry`.
+  """
   nrows = plate.num_items_y
   ncols = plate.num_items_x
-
-  col_spacing = plate.item_dx if ncols > 1 else 9.0
-  row_spacing = plate.item_dy if nrows > 1 else 9.0
-
-  a1_loc = well_a1.location
+  last_row_label = row_index_to_label(nrows - 1)
+  corner = handles.anchor()
+  geometry = await read_plate(
+    plate,
+    attributes_of=["A1"],
+    points=[("A1", corner), (f"{last_row_label}1", corner)]
+    + ([("A2", corner)] if ncols > 1 else [])
+    + ([("B1", corner)] if nrows > 1 else []),
+  )
+  a1_loc, last_row_loc, *spacing = geometry.points
   assert a1_loc is not None, "Well A1 must have a location"
-  well_size_x = well_a1.get_size_x()
-  well_size_y = well_a1.get_size_y()
+  assert last_row_loc is not None, f"Well {last_row_label}1 must have a location"
+  a2_loc = spacing.pop(0) if ncols > 1 else None
+  b1_loc = spacing.pop(0) if nrows > 1 else None
+  if (ncols > 1 and a2_loc is None) or (nrows > 1 and b1_loc is None):
+    raise ValueError("Item locations are not set.")
+
+  col_spacing = a2_loc.x - a1_loc.x if a2_loc is not None else 9.0
+  row_spacing = a1_loc.y - b1_loc.y if b1_loc is not None else 9.0
+
+  well_a1 = geometry.wells["A1"]
+  well_size_x = well_a1.size.x
+  well_size_y = well_a1.size.y
 
   dist2firstcol = a1_loc.x + well_size_x / 2.0
-
-  last_row_label = row_index_to_label(nrows - 1)
-  last_row_well = plate.get_well(f"{last_row_label}1")
-  last_row_loc = last_row_well.location
-  assert last_row_loc is not None, f"Well {last_row_label}1 must have a location"
   dist2firstrow = last_row_loc.y + well_size_y / 2.0
 
+  container = well_a1.container
   bottom_length = well_size_x
   bottom_width = well_size_y
-  volume = well_a1.max_volume or 350.0
-  bottom_thickness = well_a1.material_z_thickness
+  volume = (container.max_volume if container.HasField("max_volume") else None) or 350.0
+  bottom_thickness = (
+    container.material_z_thickness if container.HasField("material_z_thickness") else None
+  )
   bottom_elevation = a1_loc.z or 0.0
-  round_bottom = well_a1.bottom_type in (WellBottomType.U, WellBottomType.V)
+  round_bottom = container.bottom_type in (pb.WELL_BOTTOM_TYPE_U, pb.WELL_BOTTOM_TYPE_V)
 
   return {
     "LabwareType": 1,
@@ -147,9 +164,9 @@ def _labware_params_from_plate(plate: Plate) -> dict:
       "ncavities": nrows * ncols,
       "nrows": nrows,
       "columns": ncols,
-      "labware_length": plate.get_size_x(),
-      "labware_width": plate.get_size_y(),
-      "labware_height": plate.get_size_z(),
+      "labware_length": geometry.size.x,
+      "labware_width": geometry.size.y,
+      "labware_height": geometry.size.z,
       "dist2firstcol": dist2firstcol,
       "dist2firstrow": dist2firstrow,
       "row_distance": row_spacing,
@@ -601,7 +618,7 @@ class Pico:
     exposure_time: Exposure,
     focal_height: FocalPosition,
     gain: Gain,
-    plate: Plate,
+    plate: handles.Plate,
   ) -> ImagingResult:
     logger.info(
       "[Pico %s:%s] capture: row=%d, col=%d, mode=%s",
@@ -656,7 +673,7 @@ class Pico:
     snap_params["skipAutofocus"] = skip_autofocus
     snap_params["focusSettings"]["baseZPositionUm"] = base_z_um
 
-    labware_params = _labware_params_from_plate(plate)
+    labware_params = await _labware_params_from_plate(plate)
     images = await self._snap_images(labware_params, snap_params)
 
     result_images: List = []

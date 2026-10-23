@@ -13,7 +13,7 @@ from pylabrobot.agilent.biotek.el406.plate_washer import PlateWasher
 from pylabrobot.agilent.biotek.el406.syringe_dispenser import SyringeDispenser
 from pylabrobot.io.binary import Reader, Writer
 from pylabrobot.io.ftdi import FTDI
-from pylabrobot.resources import Coordinate, Plate, PlateHolder
+from pylabrobot.resources.store import handles
 
 from .enums import (
   EL406Motor,
@@ -25,7 +25,7 @@ from .enums import (
 )
 from .error_codes import get_error_message
 from .errors import EL406CommunicationError, EL406DeviceError
-from .helpers import plate_to_wire_byte
+from .helpers import PlateFormat, plate_to_wire_byte, read_plate_format
 from .protocol import build_framed_message
 
 logger = logging.getLogger(__name__)
@@ -79,28 +79,21 @@ class EL406:
     device_id: str | None = None,
   ) -> None:
     super().__init__()
+    self.name = name
     self.timeout = timeout
     self._device_id = device_id
     self.io = FTDI(human_readable_device_name="BioTek EL406", device_id=self._device_id)
     self._command_lock: asyncio.Lock | None = None
     self._in_batch: bool = False
-    self._current_plate: Plate | None = None
+    self._current_plate: handles.Plate | None = None
+    self._plate_format: PlateFormat | None = None
 
     self.washer = self.warsher = PlateWasher(self)
     self.syringe_dispenser = SyringeDispenser(self)
     self.peristaltic_dispenser = PeristalticDispenser(self)
 
-    self.plate_holder = PlateHolder(
-      name=name + "_plate_holder",
-      size_x=127.76,
-      size_y=85.48,
-      size_z=0,
-      pedestal_size_z=0,
-      child_location=Coordinate.zero(),
-    )
-
   @property
-  def plate(self) -> Plate:
+  def plate(self) -> handles.Plate:
     """The plate currently loaded in the EL406.
 
     Raises:
@@ -110,17 +103,30 @@ class EL406:
       raise RuntimeError("No plate is loaded in the EL406. Call set_plate() first.")
     return self._current_plate
 
-  def set_plate(self, plate: Plate) -> None:
-    """Record the plate now sitting in the carrier.
+  @property
+  def plate_format(self) -> PlateFormat:
+    """The format of the plate currently loaded in the EL406, as read by :meth:`set_plate`.
+
+    Raises:
+      RuntimeError: If no plate is loaded.
+    """
+    if self._plate_format is None:
+      raise RuntimeError("No plate is loaded in the EL406. Call set_plate() first.")
+    return self._plate_format
+
+  async def set_plate(self, plate: handles.Plate) -> None:
+    """Record the plate now sitting in the carrier, and read its format from its store.
 
     Operations encode the plate geometry into their wire commands, so this must match the
     labware physically loaded.
     """
+    self._plate_format = await read_plate_format(plate)
     self._current_plate = plate
 
   def clear_plate(self) -> None:
     """Forget the loaded plate. Operations raise until :meth:`set_plate` is called again."""
     self._current_plate = None
+    self._plate_format = None
 
   async def setup(self, skip_reset: bool = False) -> None:
     """Set up communication with the EL406.
@@ -679,7 +685,7 @@ class EL406:
 
     If already inside a batch, this is a no-op passthrough.
 
-    The plate must be assigned to the device's plate_holder before calling this.
+    The plate must be set with :meth:`set_plate` before calling this.
 
     Example:
       >>> async with driver.batch():
@@ -691,7 +697,7 @@ class EL406:
 
     self._in_batch = True
     try:
-      await self.start_batch(plate_to_wire_byte(self.plate))
+      await self.start_batch(plate_to_wire_byte(self.plate_format))
       yield
     finally:
       try:
@@ -1018,7 +1024,7 @@ class EL406:
     Note: The GUI forces move_home_first=True when total time exceeds 60s
     to prevent manifold drip contamination. Our default of True matches this.
 
-    The plate is read from :attr:`plate` (set by assigning to the device's plate_holder).
+    The plate's format is read from :attr:`plate_format` (see :meth:`set_plate`).
 
     Args:
       duration: Shake duration in seconds (0-3599). 0 to disable shake.
@@ -1031,7 +1037,7 @@ class EL406:
       ValueError: If parameters are invalid.
     """
     dur = int(duration)
-    plate = self.plate
+    plate = self.plate_format
 
     if dur < 0 or dur > self.MAX_SHAKE_DURATION:
       raise ValueError(f"Invalid duration {dur}. Must be 0-{self.MAX_SHAKE_DURATION}.")
@@ -1068,7 +1074,7 @@ class EL406:
 
   def _build_shake_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     shake_duration: int = 0,
     soak_duration: int = 0,
     intensity: Intensity = "Medium",
@@ -1087,7 +1093,7 @@ class EL406:
       [8-11]   Padding (4 bytes)
 
     Args:
-      plate: PLR Plate resource.
+      plate: The loaded plate's format.
       shake_duration: Shake duration in seconds.
       soak_duration: Soak duration in seconds.
       intensity: Shake intensity ("Variable", "Slow", "Medium", "Fast").

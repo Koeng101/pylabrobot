@@ -10,9 +10,8 @@ import logging
 from typing import TYPE_CHECKING, Literal, Optional
 
 from pylabrobot.io.binary import Writer
-from pylabrobot.resources import Plate
 
-from .helpers import plate_defaults, plate_to_wire_byte
+from .helpers import PlateFormat, plate_defaults, plate_to_wire_byte
 from .protocol import build_framed_message
 
 if TYPE_CHECKING:
@@ -64,7 +63,7 @@ def travel_rate_to_byte(rate: TravelRate) -> int:
   return TRAVEL_RATE_TO_BYTE[rate]
 
 
-def get_plate_wash_defaults(plate: Plate) -> dict:
+def get_plate_wash_defaults(plate: PlateFormat) -> dict:
   pt = plate_defaults(plate)
   return {
     "dispense_volume": 300.0 if pt["cols"] == 12 else 100.0,
@@ -114,7 +113,7 @@ class PlateWasher:
 
   def _validate_aspirate_params(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     vacuum_filtration: bool,
     travel_rate: TravelRate,
     delay: float,
@@ -166,7 +165,7 @@ class PlateWasher:
 
   def _validate_dispense_params(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     buffer: Buffer,
     flow_rate: int,
@@ -217,7 +216,7 @@ class PlateWasher:
 
   def _resolve_wash_defaults(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     dispense_volume: Optional[float],
     dispense_z: Optional[int],
     aspirate_z: Optional[int],
@@ -240,7 +239,7 @@ class PlateWasher:
 
   def _validate_wash_params(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     cycles: int,
     dispense_volume: Optional[float],
     *,
@@ -409,7 +408,7 @@ class PlateWasher:
       secondary_z: Secondary Z offset (1-210). None for plate-type default.
     """
     resolved_z, resolved_secondary_z, time_value, rate_byte = self._validate_aspirate_params(
-      self._el406.plate,
+      self._el406.plate_format,
       vacuum_filtration=vacuum_filtration,
       travel_rate=travel_rate,
       delay=delay,
@@ -431,7 +430,7 @@ class PlateWasher:
     )
 
     data = self._build_aspirate_command(
-      plate=self._el406.plate,
+      plate=self._el406.plate_format,
       vacuum_filtration=vacuum_filtration,
       time_value=time_value,
       travel_rate_byte=rate_byte,
@@ -473,7 +472,7 @@ class PlateWasher:
       vacuum_delay_volume: Delay start of vacuum until volume dispensed in uL/well.
     """
     resolved_z = self._validate_dispense_params(
-      self._el406.plate,
+      self._el406.plate_format,
       volume,
       buffer=buffer,
       flow_rate=flow_rate,
@@ -488,7 +487,7 @@ class PlateWasher:
     logger.info("Dispensing %.1f uL from buffer %s, flow rate %d", volume, buffer, flow_rate)
 
     data = self._build_dispense_command(
-      plate=self._el406.plate,
+      plate=self._el406.plate_format,
       volume=volume,
       buffer=buffer,
       flow_rate=flow_rate,
@@ -632,7 +631,7 @@ class PlateWasher:
       final_aspirate_delay_ms,
       sector_mask,
     ) = self._validate_wash_params(
-      self._el406.plate,
+      self._el406.plate_format,
       cycles,
       dispense_volume,
       buffer=buffer,
@@ -672,7 +671,7 @@ class PlateWasher:
     )
 
     data = self._build_wash_composite_command(
-      plate=self._el406.plate,
+      plate=self._el406.plate_format,
       cycles=cycles,
       buffer=buffer,
       dispense_volume=dispense_volume,
@@ -771,7 +770,7 @@ class PlateWasher:
     submerge_enabled = submerge_duration > 0
 
     data = self._build_prime_command(
-      plate=self._el406.plate,
+      plate=self._el406.plate_format,
       buffer=buffer,
       volume_ml=volume_ml,
       flow_rate=flow_rate,
@@ -815,7 +814,7 @@ class PlateWasher:
     logger.info("Auto-clean: buffer %s, duration %.0f s", buffer, duration)
 
     data = self._build_auto_clean_command(
-      plate=self._el406.plate,
+      plate=self._el406.plate_format,
       buffer=buffer,
       duration_min=duration_min,
     )
@@ -830,7 +829,7 @@ class PlateWasher:
 
   def _build_wash_composite_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     cycles: int = 3,
     buffer: Buffer = "A",
     dispense_volume: Optional[float] = None,
@@ -1011,7 +1010,7 @@ class PlateWasher:
 
   def _build_aspirate_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     vacuum_filtration: bool = False,
     time_value: int = 0,
     travel_rate_byte: int = 3,
@@ -1077,7 +1076,7 @@ class PlateWasher:
 
   def _build_dispense_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     buffer: Buffer,
     flow_rate: int,
@@ -1143,7 +1142,7 @@ class PlateWasher:
 
   def _build_prime_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     buffer: Buffer,
     volume_ml: float,
     flow_rate: int = 9,
@@ -1194,7 +1193,7 @@ class PlateWasher:
 
   def _build_auto_clean_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     buffer: Buffer,
     duration_min: int = 1,
   ) -> bytes:

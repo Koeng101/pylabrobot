@@ -16,10 +16,8 @@ import unittest
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 from unittest.mock import patch
 
-from pylabrobot.resources.corning.costar.plates import cor_cos_6_wellplate_16800uL_Fb
-from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
-from pylabrobot.resources.greiner.plates import Greiner_384_wellplate_28ul_Fb
-from pylabrobot.resources.plate import Plate
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.revvity.celigo.camera import CameraFrame
 from pylabrobot.revvity.celigo.celigo import Celigo, ControllerInfo, _fletcher16
 from pylabrobot.revvity.celigo.config import (
@@ -44,7 +42,7 @@ from pylabrobot.revvity.celigo.tests.helpers import (
   make_navigation_config,
   make_test_config,
 )
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -330,7 +328,7 @@ def _scan_result(result: ScanResult) -> List[Dict[str, Any]]:
 class Recorder:
   """Runs scenario steps, recording what each sent and returned."""
 
-  def __init__(self, plate: Plate) -> None:
+  def __init__(self, plate: handles.Plate) -> None:
     self.log: List[str] = []
     self.celigo = make_golden_celigo(self.log)
     self.plate = plate
@@ -361,27 +359,37 @@ class Recorder:
 
     await self.step("reference stage and dichroic wheel", reference)
 
-  def record(self) -> Dict[str, Any]:
-    return {"steps": self.steps, "resources": snapshot_resources(self.plate)}
+  async def record(self) -> Dict[str, Any]:
+    return {"steps": self.steps, "resources": await snapshot_store(self.plate.store, self.plate)}
 
 
-async def _set_plate(celigo: Celigo, plate: Plate) -> None:
+async def _plate(model: str, name: str, with_lid: bool = False) -> handles.Plate:
+  """A plate of a PLR model, with its lid when asked, in a new in-memory store."""
+  store = ResourceStore.in_memory()
+  plate = await store.create(model, name=name)
+  assert isinstance(plate, handles.Plate)
+  if with_lid:
+    await store.create(f"{model}_lid", name=f"{name}_lid", parent=plate)
+  return plate
+
+
+async def _set_plate(celigo: Celigo, plate: handles.Plate) -> None:
   celigo.set_plate(plate)
 
 
 class CeligoGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def _run_plate_protocol(
-    self, plate: Plate, wells: Tuple[str, str, str], scenario: str
+    self, plate: handles.Plate, wells: Tuple[str, str, str], scenario: str
   ) -> None:
     first, middle, last = wells
     recorder = Recorder(plate)
     celigo = recorder.celigo
-    before = snapshot_resources(plate)
+    before = await snapshot_store(plate.store, plate)
     await recorder.prepare()
     await recorder.step(f"set_plate({plate.name})", lambda: _set_plate(celigo, plate))
 
     async def well_positions() -> Any:
-      return [list(celigo.well_position_mm(name)) for name in wells]
+      return [list(await celigo.well_position_mm(name)) for name in wells]
 
     await recorder.step(f"well_position_mm({first}, {middle}, {last})", well_positions)
     await recorder.step("open_drawer()", celigo.open_drawer)
@@ -411,29 +419,29 @@ class CeligoGoldenTests(unittest.IsolatedAsyncioTestCase):
       _scan_result,
     )
     await recorder.step("move_to_well(Z99) (no such well)", lambda: celigo.move_to_well("Z99"))
-    record = recorder.record()
+    record = await recorder.record()
     self.assertEqual(record["resources"], before)
     check_golden(self, GOLDEN / f"{scenario}.json", record)
 
   async def test_96_well_plate_with_lid(self):
-    plate = cor_96_wellplate_360uL_Fb(name="plate_96", with_lid=True)
+    plate = await _plate("cor_96_wellplate_360uL_Fb", "plate_96", with_lid=True)
     await self._run_plate_protocol(plate, ("A1", "D6", "H12"), "plate_96_with_lid")
 
   async def test_384_well_plate(self):
-    plate = Greiner_384_wellplate_28ul_Fb(name="plate_384")
+    plate = await _plate("Greiner_384_wellplate_28ul_Fb", "plate_384")
     await self._run_plate_protocol(plate, ("A1", "H12", "P24"), "plate_384")
 
   async def test_6_well_plate(self):
-    plate = cor_cos_6_wellplate_16800uL_Fb(name="plate_6")
+    plate = await _plate("cor_cos_6_wellplate_16800uL_Fb", "plate_6")
     await self._run_plate_protocol(plate, ("A1", "B2", "B3"), "plate_6")
 
   async def test_navigation_without_a_plate_is_refused(self):
-    recorder = Recorder(cor_96_wellplate_360uL_Fb(name="plate_96"))
+    recorder = Recorder(await _plate("cor_96_wellplate_360uL_Fb", "plate_96"))
     celigo = recorder.celigo
     await recorder.prepare()
     await recorder.step("close_drawer(A1) (no plate set)", lambda: celigo.close_drawer("A1"))
     await recorder.step("move_to_well(A1) (no plate set)", lambda: celigo.move_to_well("A1"))
-    check_golden(self, GOLDEN / "no_plate.json", recorder.record())
+    check_golden(self, GOLDEN / "no_plate.json", await recorder.record())
 
 
 if __name__ == "__main__":

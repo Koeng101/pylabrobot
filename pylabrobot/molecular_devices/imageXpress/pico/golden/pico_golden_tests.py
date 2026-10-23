@@ -40,15 +40,9 @@ from pylabrobot.molecular_devices.imageXpress.pico.models import (  # noqa: E402
   Objective,
 )
 from pylabrobot.molecular_devices.imageXpress.pico.pico import Pico  # noqa: E402
-from pylabrobot.resources import (  # noqa: E402
-  Greiner_384_wellplate_28ul_Fb,
-  Plate,
-  celltreat_24_wellplate_3300uL_Fb,
-  celltreat_96_wellplate_350uL_Ub,
-  cor_96_wellplate_360uL_Fb,
-  cor_cos_6_wellplate_16800uL_Fb,
-)
-from pylabrobot.testing.golden import check_golden, snapshot_resources  # noqa: E402
+from pylabrobot.resources.store import handles  # noqa: E402
+from pylabrobot.resources.store.client import ResourceStore  # noqa: E402
+from pylabrobot.testing.golden import check_golden, snapshot_store  # noqa: E402
 
 HERE = pathlib.Path(__file__).parent
 
@@ -181,11 +175,20 @@ class _Rig:
         ),
       }
     )
+    self.store = ResourceStore.in_memory()
     self.pico = Pico(
       host="127.0.0.1",
       objectives={0: Objective.O_4X_PL_FL, 1: Objective.O_10X_PL_FL},
       filter_cubes={0: ImagingMode.DAPI, 1: ImagingMode.GFP},
     )
+
+  async def plate(self, model: str, name: str, lid: bool = False) -> handles.Plate:
+    """A plate of `model` in the scenario's store, with the model's lid when asked for."""
+    plate = await self.store.create(model, name=name)
+    assert isinstance(plate, handles.Plate)
+    if lid:
+      await self.store.create(f"{model}_lid", name=f"{name}_lid", parent=plate)
+    return plate
 
   def answer_snap(self, pixels: List[List[int]], exposure_us: int) -> None:
     blob = json.dumps(_snap_event(pixels, exposure_us)).encode("utf-8")
@@ -194,7 +197,7 @@ class _Rig:
       _intermediate_response(blob, checksum)
     ]
 
-  async def step(self, call: str, coro: Any, plate: Optional[Plate] = None) -> Any:
+  async def step(self, call: str, coro: Any, plate: Optional[handles.Plate] = None) -> Any:
     start = len(self.channel.sent)
     entry: Dict[str, Any] = {"call": call}
     try:
@@ -206,7 +209,7 @@ class _Rig:
       entry["error"] = f"{type(error).__name__}: {error}"
     entry["sent"] = self.channel.sent[start:]
     if plate is not None:
-      entry["resources"] = snapshot_resources(plate)
+      entry["resources"] = await snapshot_store(self.store, plate)
     self.steps.append(entry)
     return result
 
@@ -214,10 +217,11 @@ class _Rig:
     with mock.patch("grpc.insecure_channel", return_value=self.channel):
       await self.step("setup()", self.pico.setup())
 
-  def check(self, scenario: str, plate: Optional[Plate] = None) -> None:
+  async def check(self, scenario: str, plate: Optional[handles.Plate] = None) -> None:
     record: Dict[str, Any] = {"steps": self.steps}
     if plate is not None:
-      record["resources"] = snapshot_resources(plate)
+      record["resources"] = await snapshot_store(self.store, plate)
+    await self.store.close()
     check_golden(self.test, HERE / f"{scenario}.json", record)
 
 
@@ -233,7 +237,7 @@ def _result_json(result: Any) -> Any:
 
 async def _capture(
   rig: _Rig,
-  plate: Plate,
+  plate: handles.Plate,
   row: int,
   column: int,
   mode: ImagingMode = ImagingMode.DAPI,
@@ -268,11 +272,11 @@ class PicoGoldenTests(unittest.IsolatedAsyncioTestCase):
     await rig.step("enter_objective_maintenance(1)", rig.pico.enter_objective_maintenance(1))
     await rig.step("exit_objective_maintenance()", rig.pico.exit_objective_maintenance())
     await rig.step("stop()", rig.pico.stop())
-    rig.check("setup_door_and_stop")
+    await rig.check("setup_door_and_stop")
 
   async def test_capture_96_flat(self):
     rig = _Rig(self)
-    plate = cor_96_wellplate_360uL_Fb("plate")
+    plate = await rig.plate("cor_96_wellplate_360uL_Fb", "plate")
     await rig.setup()
     rig.answer_snap([[1, 2], [3, 4]], exposure_us=15000)
     await _capture(rig, plate, row=0, column=0)
@@ -287,42 +291,42 @@ class PicoGoldenTests(unittest.IsolatedAsyncioTestCase):
       exposure_time="machine-auto",
       focal_height="machine-auto",
     )
-    rig.check("capture_96_flat", plate)
+    await rig.check("capture_96_flat", plate)
 
   async def test_capture_96_round_bottom_with_lid(self):
     rig = _Rig(self)
-    plate = celltreat_96_wellplate_350uL_Ub("plate", with_lid=True)
+    plate = await rig.plate("celltreat_96_wellplate_350uL_Ub", "plate", lid=True)
     await rig.setup()
     rig.answer_snap([[9, 8], [7, 6]], exposure_us=2000)
     await _capture(rig, plate, row=3, column=5, mode=ImagingMode.BRIGHTFIELD, exposure_time=2.0)
-    rig.check("capture_96_round_bottom_with_lid", plate)
+    await rig.check("capture_96_round_bottom_with_lid", plate)
 
   async def test_capture_384(self):
     rig = _Rig(self)
-    plate = Greiner_384_wellplate_28ul_Fb("plate")
+    plate = await rig.plate("Greiner_384_wellplate_28ul_Fb", "plate")
     await rig.setup()
     rig.answer_snap([[10, 20], [30, 40]], exposure_us=15000)
     await _capture(rig, plate, row=15, column=23)
-    rig.check("capture_384", plate)
+    await rig.check("capture_384", plate)
 
   async def test_capture_24_and_6(self):
     rig = _Rig(self)
-    plate_24 = celltreat_24_wellplate_3300uL_Fb("plate_24")
-    plate_6 = cor_cos_6_wellplate_16800uL_Fb("plate_6")
+    plate_24 = await rig.plate("celltreat_24_wellplate_3300uL_Fb", "plate_24")
+    plate_6 = await rig.plate("cor_cos_6_wellplate_16800uL_Fb", "plate_6")
     await rig.setup()
     rig.answer_snap([[1]], exposure_us=15000)
     await _capture(rig, plate_24, row=3, column=5)
     rig.answer_snap([[2]], exposure_us=15000)
     await _capture(rig, plate_6, row=1, column=2)
-    rig.check("capture_24_and_6", plate_24)
+    await rig.check("capture_24_and_6", plate_24)
 
   async def test_capture_refused(self):
     rig = _Rig(self)
-    plate = cor_96_wellplate_360uL_Fb("plate")
+    plate = await rig.plate("cor_96_wellplate_360uL_Fb", "plate")
     await rig.setup()
     await _capture(rig, plate, row=0, column=0, objective=Objective.O_20X_PL_FL)
     await _capture(rig, plate, row=0, column=0, mode=ImagingMode.CY5)
-    rig.check("capture_refused", plate)
+    await rig.check("capture_refused", plate)
 
 
 if __name__ == "__main__":

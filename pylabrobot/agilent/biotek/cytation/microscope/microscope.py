@@ -27,7 +27,7 @@ from pylabrobot.agilent.biotek.cytation.microscope.models import (
   ImagingResult,
   Objective,
 )
-from pylabrobot.resources.plate import Plate
+from pylabrobot.resources.store import handles
 
 from .aravis_camera import AravisCamera
 
@@ -545,7 +545,7 @@ class CytationMicroscope:
     exposure_time: Exposure,
     focal_height: FocalPosition,
     gain: Gain,
-    plate: Plate,
+    plate: handles.Plate,
     led_intensity: int = 10,
     coverage: Union[Literal["full"], Tuple[int, int]] = (1, 1),
     center_position: Optional[Tuple[float, float]] = None,
@@ -598,8 +598,8 @@ class CytationMicroscope:
       magnification = self._objective.magnification
       img_width, img_height = image_size(magnification)
 
-      first_well = plate.get_item(0)
-      well_size_x, well_size_y = (first_well.get_size_x(), first_well.get_size_y())
+      first_well_size = (await plate.get_item(0).attributes()).size
+      well_size_x, well_size_y = (first_well_size.x, first_well_size.y)
       if coverage == "full":
         coverage = (
           math.ceil(well_size_x / image_size(magnification)[0]),

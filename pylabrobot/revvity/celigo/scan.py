@@ -10,11 +10,11 @@ from dataclasses import asdict, dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING, List, Literal, Optional, Sequence, Tuple, Union
 
-from pylabrobot.resources.plate import Plate
+from pylabrobot.resources.store import handles
 from pylabrobot.revvity.celigo.camera import CameraFrame
 from pylabrobot.revvity.celigo.config import CeligoConfig
 from pylabrobot.revvity.celigo.coordinates import CoordinateSystems
-from pylabrobot.revvity.celigo.navigation import effective_fov_mm, well_to_sample_mm
+from pylabrobot.revvity.celigo.navigation import effective_fov_mm, wells_to_sample_mm
 
 if TYPE_CHECKING:
   from pylabrobot.revvity.celigo.celigo import FocusResult
@@ -211,9 +211,9 @@ class ScanSpec:
       _validate_finite(self.initial_brightfield_z_mm, "initial_brightfield_z_mm")
 
   @classmethod
-  def wells(
+  async def wells(
     cls,
-    plate: Plate,
+    plate: handles.Plate,
     wells: Sequence[str],
     *,
     block_shape: BlockShape = (1, 1),
@@ -226,7 +226,7 @@ class ScanSpec:
     initial_brightfield_z_mm: Optional[float] = None,
   ) -> "ScanSpec":
     """Create a scan at named well centers without retaining the plate."""
-    if not isinstance(plate, Plate):
+    if not isinstance(plate, handles.Plate):
       raise TypeError("plate must be a PyLabRobot Plate")
     if isinstance(wells, str):
       raise ValueError("wells must be a sequence of well names")
@@ -235,7 +235,7 @@ class ScanSpec:
       raise ValueError("wells must contain at least one well name")
     if any(not well for well in normalized_wells):
       raise ValueError("well names must not be empty")
-    centers = tuple(well_to_sample_mm(plate, well) for well in normalized_wells)
+    centers = tuple(await wells_to_sample_mm(plate, normalized_wells))
     return cls(
       geometry=_point_geometry(centers, block_shape, normalized_wells),
       captures=_normalize_captures(channel, exposure_ms, gain, captures, machine_auto_exposure),

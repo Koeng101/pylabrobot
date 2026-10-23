@@ -4,9 +4,9 @@ import logging
 from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from pylabrobot.io.binary import Writer
-from pylabrobot.resources import Plate
 
 from .helpers import (
+  PlateFormat,
   plate_default_z,
   plate_max_columns,
   plate_max_row_groups,
@@ -109,7 +109,7 @@ class PeristalticDispenser:
       rows: List of 1-indexed row group numbers, or None for all.
         For 96-well: only 1 (no selection). For 384-well: 1-2. For 1536-well: 1-4.
     """
-    plate = self._el406.plate
+    plate = self._el406.plate_format
 
     # Group consecutive columns with the same volume, in ascending order
     groups: list[tuple[float, list[int]]] = []
@@ -182,7 +182,7 @@ class PeristalticDispenser:
     )
 
     data = self._build_peristaltic_prime_command(
-      plate=self._el406.plate,
+      plate=self._el406.plate_format,
       volume=wire_volume,
       duration=wire_duration,
       flow_rate=PERISTALTIC_FLOW_RATE_MAP[flow_rate],
@@ -241,7 +241,7 @@ class PeristalticDispenser:
     )
 
     data = self._build_peristaltic_prime_command(
-      plate=self._el406.plate,
+      plate=self._el406.plate_format,
       volume=wire_volume,
       duration=wire_duration,
       flow_rate=PERISTALTIC_FLOW_RATE_MAP[flow_rate],
@@ -257,7 +257,7 @@ class PeristalticDispenser:
 
   def _validate_well_selection(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     columns: Optional[list[int]],
     rows: Optional[list[int]],
   ) -> Optional[list[int]]:
@@ -276,7 +276,7 @@ class PeristalticDispenser:
 
   def _validate_dispense_params(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     columns: Optional[list[int]],
     flow_rate: PeristalticFlowRate,
@@ -319,7 +319,7 @@ class PeristalticDispenser:
 
   async def _peristaltic_dispense(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     columns: Optional[list[int]] = None,
     flow_rate: PeristalticFlowRate = "High",
@@ -334,7 +334,7 @@ class PeristalticDispenser:
     """Send a single peristaltic dispense command for a set of columns.
 
     Args:
-      plate: PLR Plate resource.
+      plate: The loaded plate's format.
       volume: Dispense volume in microliters (1-3000).
       columns: 1-indexed column numbers to dispense to, or None for all.
     """
@@ -380,7 +380,7 @@ class PeristalticDispenser:
 
   def _build_peristaltic_prime_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     duration: int = 0,
     flow_rate: int = 2,
@@ -428,7 +428,7 @@ class PeristalticDispenser:
 
   def _build_peristaltic_dispense_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     flow_rate: int,
     cassette: Cassette = "Any",

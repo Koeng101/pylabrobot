@@ -61,7 +61,11 @@ from pylabrobot.revvity.celigo.motion import (
   MotorController,
   StepperMotor,
 )
-from pylabrobot.revvity.celigo.navigation import well_to_sample_mm, well_to_stage_mm
+from pylabrobot.revvity.celigo.navigation import (
+  well_to_sample_mm,
+  well_to_stage_mm,
+  wells_to_sample_mm,
+)
 from pylabrobot.revvity.celigo.scan import (
   AcquisitionTiming,
   AutofocusMethod,
@@ -150,4 +154,5 @@ __all__ = [
   "load_illumination_channels",
   "well_to_sample_mm",
   "well_to_stage_mm",
+  "wells_to_sample_mm",
 ]

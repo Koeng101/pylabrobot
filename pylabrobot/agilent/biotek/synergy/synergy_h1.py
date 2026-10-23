@@ -11,7 +11,6 @@ except ImportError:
   FtdiError = Exception  # type: ignore[misc,assignment]
 
 from pylabrobot.agilent.biotek.plate_reader_base import BioTekPlateReaderDriver
-from pylabrobot.resources import Coordinate, PlateHolder
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +27,7 @@ class SynergyH1(BioTekPlateReaderDriver):
     super().__init__(
       timeout=timeout, device_id=device_id, human_readable_device_name="Agilent BioTek Synergy H1"
     )
-    self.plate_holder = PlateHolder(
-      name=name + "_plate_holder",
-      size_x=127.76,
-      size_y=85.48,
-      size_z=0,  # TODO: measure
-      pedestal_size_z=0,
-      child_location=Coordinate.zero(),  # TODO: measure
-    )
+    self.name = name
 
   @property
   def supports_heating(self):

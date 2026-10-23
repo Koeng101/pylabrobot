@@ -10,7 +10,6 @@ from unittest.mock import patch
 
 import grpc
 
-from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
 from pylabrobot.revvity.celigo.celigo import FocusResult
 from pylabrobot.revvity.celigo.grpc.client import CeligoClient, unpack_acquisition_metadata
 from pylabrobot.revvity.celigo.grpc.job_specification import JobSpecification
@@ -30,7 +29,7 @@ from pylabrobot.revvity.celigo.scan import (
   ScanSpec,
   build_scan_plan,
 )
-from pylabrobot.revvity.celigo.tests.helpers import make_celigo
+from pylabrobot.revvity.celigo.tests.helpers import make_celigo, make_plate
 from pylabrobot.rpc.v1 import device_pb2 as device_pb
 from pylabrobot.rpc.v1 import jobs_pb2 as job_pb
 
@@ -87,11 +86,11 @@ class ScanRpcTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_notebook_geometries_and_estimates_match_local_planning(self) -> None:
     """All notebook geometries survive RPC without constructing a hardware session."""
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
+    plate = await make_plate(name="plate")
     region = ScanRegion(5, 5, 8, 7)
     specs = (
       ScanSpec.points([(5, 5), (6, 6)], block_shape=(2, 3), channel="brightfield"),
-      ScanSpec.wells(plate, ["A1", "B2"], channel="brightfield", autofocus="image"),
+      await ScanSpec.wells(plate, ["A1", "B2"], channel="brightfield", autofocus="image"),
       ScanSpec.random(region, count=3, block_shape=(2, 1), seed=42, channel="brightfield"),
       ScanSpec.full_coverage(
         region, captures=[Capture("brightfield", 1, 1), Capture("green", 20, 2)]
@@ -127,8 +126,8 @@ class ScanRpcTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_scan_executes_each_planned_frame_and_preserves_focus_and_metadata(self) -> None:
     """Reuse block movement and focus propagation while retaining complete RPC images."""
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    spec = ScanSpec.wells(
+    plate = await make_plate(name="plate")
+    spec = await ScanSpec.wells(
       plate,
       ["A1", "B2"],
       block_shape=(2, 3),

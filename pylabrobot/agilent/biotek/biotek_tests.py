@@ -15,7 +15,15 @@ pytest.importorskip("pylibftdi")
 from pylabrobot.agilent.biotek import Cytation1, SynergyH1, SynergyHT
 from pylabrobot.agilent.biotek.plate_reader_base import BioTekPlateReaderDriver
 from pylabrobot.io.ftdi import FTDI
-from pylabrobot.resources import CellVis_24_wellplate_3600uL_Fb, CellVis_96_wellplate_350uL_Fb
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
+
+
+async def _plate(model: str) -> handles.Plate:
+  """A plate named "plate" of a model, in an in-memory store of its own."""
+  plate = await ResourceStore.in_memory().create(model, name="plate")
+  assert isinstance(plate, handles.Plate)
+  return plate
 
 
 def _byte_iter(s: str) -> Iterator[bytes]:
@@ -41,7 +49,7 @@ class TestCytation5Backend(unittest.IsolatedAsyncioTestCase):
     self.backend.io.set_line_property = unittest.mock.AsyncMock()
     self.backend.io.set_flowctrl = unittest.mock.AsyncMock()
     self.backend.io.set_rts = unittest.mock.AsyncMock()
-    self.plate = CellVis_24_wellplate_3600uL_Fb(name="plate")
+    self.plate = await _plate("cellvis_24_wellplate_3600uL_Fb")
 
     # Freeze the clock so the timestamp in the results is predictable.
     self.now = datetime(2024, 5, 17, 12, 34, 56)
@@ -119,7 +127,7 @@ class TestCytation5Backend(unittest.IsolatedAsyncioTestCase):
       "\x060000\x03"  # Geometry reply
       "\x060000\x03"  # Tray reply
     )
-    plate = CellVis_24_wellplate_3600uL_Fb(name="plate")
+    plate = await _plate("cellvis_24_wellplate_3600uL_Fb")
     await self.backend.close(plate=plate)
     self.backend.io.write.assert_called_with(b"A")
 
@@ -160,9 +168,9 @@ class TestCytation5Backend(unittest.IsolatedAsyncioTestCase):
       + "\x062360000\x03"  # Temperature call
     )
 
-    plate = CellVis_96_wellplate_350uL_Fb(name="plate")
+    plate = await _plate("cellvis_96_wellplate_350uL_Fb")
     resp = await self.backend.read_absorbance(
-      plate=plate, wells=plate.get_all_items(), wavelength=580
+      plate=plate, wells=plate.get_wells(plate.identifiers), wavelength=580
     )
 
     self.backend.io.write.assert_any_call(b"D")
@@ -277,8 +285,8 @@ class TestCytation5Backend(unittest.IsolatedAsyncioTestCase):
       + "\x062360000\x03"  # Temperature call
     )
 
-    plate = CellVis_96_wellplate_350uL_Fb(name="plate")
-    wells = plate["A1"] + plate["B1:G3"] + plate["D4:F4"]
+    plate = await _plate("cellvis_96_wellplate_350uL_Fb")
+    wells = plate.get_wells(["A1"]) + plate.get_wells("B1:G3") + plate.get_wells("D4:F4")
     resp = await self.backend.read_luminescence(
       focal_height=4.5,
       plate=plate,
@@ -345,10 +353,10 @@ class TestCytation5Backend(unittest.IsolatedAsyncioTestCase):
       + "\x062360000\x03"  # Temperature call
     )
 
-    plate = CellVis_96_wellplate_350uL_Fb(name="plate")
+    plate = await _plate("cellvis_96_wellplate_350uL_Fb")
     resp = await self.backend.read_fluorescence(
       plate=plate,
-      wells=plate.get_all_items(),
+      wells=plate.get_wells(plate.identifiers),
       excitation_wavelength=485,
       emission_wavelength=528,
       focal_height=7.5,
@@ -382,7 +390,7 @@ class TestCytation5Backend(unittest.IsolatedAsyncioTestCase):
 
   async def test_parse_body_asterisks_as_nan(self):
     """Unmeasured wells return ******* which should be parsed as NaN."""
-    plate = CellVis_96_wellplate_350uL_Fb(name="plate")
+    plate = await _plate("cellvis_96_wellplate_350uL_Fb")
     self.backend._plate = plate
 
     body = (
@@ -461,7 +469,7 @@ class TestBioTekLoadingTray(unittest.IsolatedAsyncioTestCase):
     self.backend.send_command = unittest.mock.AsyncMock()  # type: ignore[method-assign]
     self.manager.attach_mock(self.backend.set_plate, "set_plate")
     self.manager.attach_mock(self.backend.send_command, "send_command")
-    self.plate = CellVis_24_wellplate_3600uL_Fb(name="plate")
+    self.plate = await _plate("cellvis_24_wellplate_3600uL_Fb")
 
   async def test_close_sends_plate_geometry_then_closes(self):
     await self.backend.close(plate=self.plate)
@@ -614,7 +622,7 @@ class TestSharedBioTekReader(unittest.IsolatedAsyncioTestCase):
       for outcome in ("complete", "cancel", "temperature_timeout"):
         reader = self.make_reader(factory)
         with self.subTest(model=type(reader).__name__, outcome=outcome):
-          plate = CellVis_24_wellplate_3600uL_Fb(name="plate")
+          plate = await _plate("cellvis_24_wellplate_3600uL_Fb")
           # Capability negotiation, geometry, assay setup, and start precede the result.
           replies = (
             "\x06100000000000000000000\x03"
@@ -641,7 +649,7 @@ class TestSharedBioTekReader(unittest.IsolatedAsyncioTestCase):
             return next(data)
 
           reader.io.read.side_effect = read
-          measurement = asyncio.create_task(reader.read_absorbance(plate, [plate.get_item(0)], 580))
+          measurement = asyncio.create_task(reader.read_absorbance(plate, [plate.get_well(0)], 580))
           await asyncio.wait_for(entered.wait(), 1)
           queued = asyncio.create_task(reader.get_temperature())
           await asyncio.sleep(0)

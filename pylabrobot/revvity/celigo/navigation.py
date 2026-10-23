@@ -15,9 +15,10 @@ must step. Effective FOV = frame size minus overlap; FOVs per FOR per axis =
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
-from pylabrobot.resources.plate import Plate
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.revvity.celigo.config import (
   CalibrationConfig,
   NavigationConfig,
@@ -25,29 +26,54 @@ from pylabrobot.revvity.celigo.config import (
 from pylabrobot.revvity.celigo.coordinates import Coordinate2D, CoordinateSystems
 
 
-def well_to_sample_mm(plate: Plate, well: str) -> Coordinate2D:
-  """Return a PLR well center in the Celigo's top-left plate coordinate frame."""
-  if not isinstance(plate, Plate):
+async def wells_to_sample_mm(plate: handles.Plate, wells: Sequence[str]) -> List[Coordinate2D]:
+  """PLR well centers in the Celigo's top-left plate coordinate frame, in the order given.
+
+  The plate's size is read in one call, and every well's center in the plate's frame in another.
+
+  Raises:
+    TypeError: `plate` is not a plate.
+    ValueError: A well does not exist on the plate, or has no location.
+  """
+  if not isinstance(plate, handles.Plate):
     raise TypeError("plate must be a PyLabRobot Plate")
-  try:
-    item = plate.get_well(well.strip().upper())
-  except (IndexError, ValueError) as exc:
-    raise ValueError(f"Well {well!r} does not exist on plate {plate.name!r}") from exc
-  if item.location is None:
-    raise ValueError(f"Well {well!r} on plate {plate.name!r} has no location")
-  return (
-    item.location.x + item.get_size_x() / 2,
-    plate.get_size_y() - (item.location.y + item.get_size_y() / 2),
+  items: List[handles.Resource] = []
+  for well in wells:
+    try:
+      items.append(plate.get_item(well.strip().upper()))
+    except (IndexError, ValueError) as exc:
+      raise ValueError(f"Well {well!r} does not exist on plate {plate.name!r}") from exc
+  plate_node = await plate.node()
+  center = handles.anchor("c", "c", "b")
+  response = await plate.store.commands.resolve_geometry(
+    spb.ResolveGeometryRequest(
+      queries=[
+        spb.GeometryQuery(resource=item.ref, frame=plate.ref, anchors=[center]) for item in items
+      ]
+    )
   )
+  plate_size_y = plate_node.attributes.size.y
+  centers: List[Coordinate2D] = []
+  for well, geometry in zip(wells, response.results):
+    if geometry.HasField("issue"):
+      raise ValueError(f"Well {well!r} on plate {plate.name!r} has no location")
+    location = geometry.locations[0]
+    centers.append((location.x, plate_size_y - location.y))
+  return centers
 
 
-def well_to_stage_mm(
-  plate: Plate,
+async def well_to_sample_mm(plate: handles.Plate, well: str) -> Coordinate2D:
+  """Return a PLR well center in the Celigo's top-left plate coordinate frame."""
+  return (await wells_to_sample_mm(plate, [well]))[0]
+
+
+async def well_to_stage_mm(
+  plate: handles.Plate,
   well: str,
   coordinate_systems: CoordinateSystems,
 ) -> Coordinate2D:
   """Stage mm for the center of a named well (e.g. ``"A1"``)."""
-  sample_x_mm, sample_y_mm = well_to_sample_mm(plate, well)
+  sample_x_mm, sample_y_mm = await well_to_sample_mm(plate, well)
   return coordinate_systems.sample_mm_to_stage_mm(sample_x_mm, sample_y_mm)
 
 

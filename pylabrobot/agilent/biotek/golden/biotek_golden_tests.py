@@ -2,8 +2,8 @@
 
 Each scenario runs a reader against a scripted serial transport and records, per step, every
 byte written to the transport (hex, in order) and every camera call, with what the step
-returned. The plates are snapshotted with `snapshot_resources` before and after: readers take
-the plate as an argument and must not change it.
+returned. The plates live in an in-memory resource store and are snapshotted with `snapshot_store` before
+and after: readers take the plate as an argument and must not change it.
 """
 
 from __future__ import annotations
@@ -27,15 +27,11 @@ from pylabrobot.agilent.biotek.results import (
   LuminescenceResult,
 )
 from pylabrobot.io.ftdi import FTDI
-from pylabrobot.resources import (
-  cellvis_24_wellplate_3600uL_Fb,
-  cellvis_96_wellplate_350uL_Fb,
-  cor_96_wellplate_360uL_Fb,
-  cor_cos_6_wellplate_16800uL_Fb,
-  Greiner_384_wellplate_28ul_Fb,
-  Resource,
-)
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -243,7 +239,8 @@ def _result(value: Any) -> Any:
 class Recorder:
   """Runs a reader's steps against the fake transport and collects the golden record."""
 
-  def __init__(self, reader: BioTekPlateReaderDriver, version: str) -> None:
+  def __init__(self, reader: BioTekPlateReaderDriver, version: str, store: ResourceStore) -> None:
+    self.store = store
     self.sent: List[str] = []
     self.io = FakeReaderIO(self.sent, version)
     reader.io = cast(FTDI, self.io)
@@ -263,17 +260,55 @@ class Recorder:
     self.steps.append(entry)
     return result
 
-  def check(
-    self, test: unittest.TestCase, name: str, plates: Sequence[Resource], before: List[Any]
+  async def check(
+    self,
+    test: unittest.TestCase,
+    name: str,
+    plates: Sequence[handles.Resource],
+    before: List[Any],
   ) -> None:
     """Check the record against `<name>.json`, after checking the plates are unchanged."""
-    after = [snapshot_resources(plate) for plate in plates]
+    after = [await snapshot_store(self.store, plate) for plate in plates]
     test.assertEqual(before, after)
     check_golden(
       test,
       GOLDEN / f"{name}.json",
       {"steps": self.steps, "resources": [entry for snapshot in after for entry in snapshot]},
     )
+
+
+async def _plate(
+  store: ResourceStore,
+  model: str,
+  name: str,
+  with_lid: bool = False,
+  parent: Optional[handles.Resource] = None,
+) -> handles.Plate:
+  """A plate of a model in `store`, with the model's lid when asked."""
+  location = Coordinate.zero() if parent is not None else None
+  plate = await store.create(model, name=name, parent=parent, location=location)
+  assert isinstance(plate, handles.Plate)
+  if with_lid:
+    await store.create(f"{model}_lid", name=f"{name}_lid", parent=plate)
+  return plate
+
+
+def _store(test: unittest.IsolatedAsyncioTestCase) -> ResourceStore:
+  """An in-memory store for one test, closed after it."""
+  store = ResourceStore.in_memory()
+  test.addAsyncCleanup(store.close)
+  return store
+
+
+def _plate_holder(name: str) -> pb.ResourceDefinition:
+  """A plate holder the size of the reader's tray, as the golden records name it."""
+  return build.resource(
+    name,
+    Coordinate(127.76, 85.48, 0),
+    kind=pb.RESOURCE_KIND_PLATE_HOLDER,
+    category="plate_holder",
+    holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero()), pedestal_size_z=0),
+  )
 
 
 def _make(factory: Any) -> Any:
@@ -287,10 +322,11 @@ class CytationReadTests(unittest.IsolatedAsyncioTestCase):
   """Plate geometry, tray and reads on a Cytation 5, a Cytation 1 and a Synergy H1."""
 
   async def test_setup_and_tray(self):
+    store = _store(self)
     reader: Cytation5 = _make(lambda: Cytation5(name="cytation5", use_cam=False))
-    plate = cor_96_wellplate_360uL_Fb(name="plate_96_lid", with_lid=True)
-    before = [snapshot_resources(plate)]
-    rec = Recorder(reader, version="2.07")
+    plate = await _plate(store, "cor_96_wellplate_360uL_Fb", "plate_96_lid", with_lid=True)
+    before = [await snapshot_store(store, plate)]
+    rec = Recorder(reader, version="2.07", store=store)
     await rec.step("setup()", reader.setup())
     await rec.step("open()", reader.open())
     await rec.step("close(plate=plate_96_lid)", reader.close(plate=plate))
@@ -298,91 +334,109 @@ class CytationReadTests(unittest.IsolatedAsyncioTestCase):
     await rec.step("close(plate=plate_96_lid)", reader.close(plate=plate))
     await rec.step("close()", reader.close())
     await rec.step("request_current_temperature()", reader.request_current_temperature())
-    rec.check(self, "cytation5_setup_and_tray", [plate], before)
+    await rec.check(self, "cytation5_setup_and_tray", [plate], before)
 
   async def test_plate_geometries(self):
+    store = _store(self)
     reader: Cytation1 = _make(lambda: Cytation1(name="cytation1"))
     plates = [
-      cellvis_96_wellplate_350uL_Fb(name="plate_96"),
-      cor_96_wellplate_360uL_Fb(name="plate_96_lid", with_lid=True),
-      Greiner_384_wellplate_28ul_Fb(name="plate_384"),
-      cellvis_24_wellplate_3600uL_Fb(name="plate_24"),
-      cor_cos_6_wellplate_16800uL_Fb(name="plate_6"),
+      await _plate(store, "cellvis_96_wellplate_350uL_Fb", "plate_96"),
+      await _plate(store, "cor_96_wellplate_360uL_Fb", "plate_96_lid", with_lid=True),
+      await _plate(store, "Greiner_384_wellplate_28ul_Fb", "plate_384"),
+      await _plate(store, "cellvis_24_wellplate_3600uL_Fb", "plate_24"),
+      await _plate(store, "cor_cos_6_wellplate_16800uL_Fb", "plate_6"),
     ]
-    before = [snapshot_resources(plate) for plate in plates]
-    rec = Recorder(reader, version="1.04")
+    before = [await snapshot_store(store, plate) for plate in plates]
+    rec = Recorder(reader, version="1.04", store=store)
     for plate in plates:
       await rec.step(f"set_plate({plate.name})", reader.set_plate(plate))
     await rec.step("set_plate(plate_6)", reader.set_plate(plates[-1]))
     reader.clear_plate()
     await rec.step("set_plate(plate_6)", reader.set_plate(plates[-1]))
-    rec.check(self, "cytation1_plate_geometries", plates, before)
+    await rec.check(self, "cytation1_plate_geometries", plates, before)
 
   async def test_absorbance(self):
+    store = _store(self)
     reader: Cytation5 = _make(lambda: Cytation5(name="cytation5", use_cam=False))
-    plate_96 = cellvis_96_wellplate_350uL_Fb(name="plate_96")
-    plate_384 = Greiner_384_wellplate_28ul_Fb(name="plate_384")
-    other = cellvis_96_wellplate_350uL_Fb(name="other_96")
-    before = [snapshot_resources(plate_96), snapshot_resources(plate_384)]
-    rec = Recorder(reader, version="2.07")
+    plate_96 = await _plate(store, "cellvis_96_wellplate_350uL_Fb", "plate_96")
+    plate_384 = await _plate(store, "Greiner_384_wellplate_28ul_Fb", "plate_384")
+    other = await _plate(store, "cellvis_96_wellplate_350uL_Fb", "other_96")
+    before = [await snapshot_store(store, plate_96), await snapshot_store(store, plate_384)]
+    rec = Recorder(reader, version="2.07", store=store)
     await rec.step(
       "read_absorbance(plate_96, all wells, 450)",
-      reader.read_absorbance(plate_96, plate_96.get_all_items(), wavelength=450),
+      reader.read_absorbance(plate_96, plate_96.get_wells(plate_96.identifiers), wavelength=450),
     )
-    wells_384 = plate_384["A1:B3"] + plate_384["P24"] + plate_384["C2"]
+    wells_384 = (
+      plate_384.get_wells("A1:B3") + plate_384.get_wells(["P24"]) + plate_384.get_wells(["C2"])
+    )
     await rec.step(
       "read_absorbance(plate_384, A1:B3 + P24 + C2, 600)",
       reader.read_absorbance(plate_384, wells_384, wavelength=600),
     )
     await rec.step(
       "read_absorbance(plate_96, wells of other_96, 450)",
-      reader.read_absorbance(plate_96, other["A1:A2"], wavelength=450),
+      reader.read_absorbance(plate_96, other.get_wells("A1:A2"), wavelength=450),
     )
-    rec.check(self, "cytation5_absorbance", [plate_96, plate_384], before)
+    await rec.check(self, "cytation5_absorbance", [plate_96, plate_384], before)
 
   async def test_fluorescence_and_luminescence(self):
+    store = _store(self)
     reader: Cytation5 = _make(lambda: Cytation5(name="cytation5", use_cam=False))
-    plate_24 = cellvis_24_wellplate_3600uL_Fb(name="plate_24")
-    plate_6 = cor_cos_6_wellplate_16800uL_Fb(name="plate_6")
-    before = [snapshot_resources(plate_24), snapshot_resources(plate_6)]
-    rec = Recorder(reader, version="2.07")
+    plate_24 = await _plate(store, "cellvis_24_wellplate_3600uL_Fb", "plate_24")
+    plate_6 = await _plate(store, "cor_cos_6_wellplate_16800uL_Fb", "plate_6")
+    before = [await snapshot_store(store, plate_24), await snapshot_store(store, plate_6)]
+    rec = Recorder(reader, version="2.07", store=store)
     await rec.step(
       "read_fluorescence(plate_24, all wells, 485, 528, 7.5)",
-      reader.read_fluorescence(plate_24, plate_24.get_all_items(), 485, 528, focal_height=7.5),
+      reader.read_fluorescence(
+        plate_24, plate_24.get_wells(plate_24.identifiers), 485, 528, focal_height=7.5
+      ),
     )
     await rec.step(
       "read_luminescence(plate_6, A1 + B2:B3, 4.5, integration_time=0.4)",
       reader.read_luminescence(
-        plate_6, plate_6["A1"] + plate_6["B2:B3"], focal_height=4.5, integration_time=0.4
+        plate_6,
+        plate_6.get_wells(["A1"]) + plate_6.get_wells("B2:B3"),
+        focal_height=4.5,
+        integration_time=0.4,
       ),
     )
     await rec.step(
       "read_luminescence(plate_24, wells of plate_6, 4.5)",
-      reader.read_luminescence(plate_24, plate_6["A1"], focal_height=4.5),
+      reader.read_luminescence(plate_24, plate_6.get_wells(["A1"]), focal_height=4.5),
     )
-    rec.check(self, "cytation5_fluorescence_and_luminescence", [plate_24, plate_6], before)
+    await rec.check(self, "cytation5_fluorescence_and_luminescence", [plate_24, plate_6], before)
 
   async def test_synergy_h1_luminescence_on_a_lidded_plate(self):
+    store = _store(self)
     reader: SynergyH1 = _make(lambda: SynergyH1(name="synergy_h1"))
-    plate = cor_96_wellplate_360uL_Fb(name="plate_96_lid", with_lid=True)
-    reader.plate_holder.assign_child_resource(plate)
-    before = [snapshot_resources(reader.plate_holder)]
-    rec = Recorder(reader, version="2.07")
+    holder = await store.create(
+      _plate_holder("synergy_h1_plate_holder"), name="synergy_h1_plate_holder"
+    )
+    plate = await _plate(
+      store, "cor_96_wellplate_360uL_Fb", "plate_96_lid", with_lid=True, parent=holder
+    )
+    before = [await snapshot_store(store, holder)]
+    rec = Recorder(reader, version="2.07", store=store)
     await rec.step(
       "read_luminescence(plate_96_lid, A1:H2, 10.0, integration_time=1)",
-      reader.read_luminescence(plate, plate["A1:H2"], focal_height=10.0, integration_time=1),
+      reader.read_luminescence(
+        plate, plate.get_wells("A1:H2"), focal_height=10.0, integration_time=1
+      ),
     )
     await rec.step(
       "read_luminescence(plate_96_lid, A1, 12.0)",
-      reader.read_luminescence(plate, plate["A1"], focal_height=12.0),
+      reader.read_luminescence(plate, plate.get_wells(["A1"]), focal_height=12.0),
     )
-    rec.check(self, "synergy_h1_luminescence_lidded", [reader.plate_holder], before)
+    await rec.check(self, "synergy_h1_luminescence_lidded", [holder], before)
 
 
 class CytationMicroscopeTests(unittest.IsolatedAsyncioTestCase):
   """Capture tiling from the first well's size, on a Cytation 5 with a fake camera."""
 
   async def test_captures_on_several_plates(self):
+    store = _store(self)
     config = CytationImagingConfig(
       filters=[ImagingMode.DAPI, ImagingMode.GFP, None, None],
       objectives=[Objective.O_4X_PL_FL, Objective.O_10X_PL_FL, Objective.O_20X_PL_FL, None],
@@ -390,12 +444,12 @@ class CytationMicroscopeTests(unittest.IsolatedAsyncioTestCase):
     reader: Cytation5 = _make(
       lambda: Cytation5(name="cytation5", use_cam=False, imaging_config=config)
     )
-    plate_96 = cellvis_96_wellplate_350uL_Fb(name="plate_96")
-    plate_384 = Greiner_384_wellplate_28ul_Fb(name="plate_384")
-    plate_24 = cellvis_24_wellplate_3600uL_Fb(name="plate_24")
+    plate_96 = await _plate(store, "cellvis_96_wellplate_350uL_Fb", "plate_96")
+    plate_384 = await _plate(store, "Greiner_384_wellplate_28ul_Fb", "plate_384")
+    plate_24 = await _plate(store, "cellvis_24_wellplate_3600uL_Fb", "plate_24")
     plates = [plate_96, plate_384, plate_24]
-    before = [snapshot_resources(plate) for plate in plates]
-    rec = Recorder(reader, version="2.07")
+    before = [await snapshot_store(store, plate) for plate in plates]
+    rec = Recorder(reader, version="2.07", store=store)
     reader.microscope.camera = FakeCamera(rec.sent)
     await rec.step("setup()", reader.setup())
     await rec.step(
@@ -456,7 +510,7 @@ class CytationMicroscopeTests(unittest.IsolatedAsyncioTestCase):
       ),
     )
     await rec.step("stop()", reader.stop())
-    rec.check(self, "cytation5_microscope_captures", plates, before)
+    await rec.check(self, "cytation5_microscope_captures", plates, before)
 
 
 if __name__ == "__main__":
