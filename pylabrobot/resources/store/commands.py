@@ -110,8 +110,8 @@ def _origin(engine: Engine, tool: Node) -> Optional[Node]:
 def begin_tool_pickup(
   engine: Engine, request: spb.BeginToolPickupRequest
 ) -> spb.BeginToolPickupResponse:
-  """Stage each shaft collecting a tool: a spot's tip, a fresh one from an untracked spot, or a
-  parked tool."""
+  """Stage each shaft collecting a tool: a spot's tip, a fresh one from an untracked spot, a
+  parked tool, or a tool named itself where it is parked."""
   frame = engine.resolve(request.frame)
   issues = _Issues(request.on_tracking_problem)
   plans: List[Tuple[Node, Node, Optional[Node]]] = []  # source, shaft, tool already there
@@ -120,7 +120,7 @@ def begin_tool_pickup(
     held = tool_in(shaft)
     if held is not None:
       issues.add(pb.PROBLEM_HAS_TIP, f"'{shaft.name}' already carries '{held.name}'", shaft, index)
-    tool = tool_in(source)
+    tool = source if source.kind in g.TOOL_KINDS else tool_in(source)
     if source.kind == K.RESOURCE_KIND_TIP_SPOT:
       if _tracks_tips(source) and tool is None:
         issues.add(pb.PROBLEM_NO_TIP, f"'{source.name}' holds no tip", source, index)
@@ -150,6 +150,12 @@ def begin_tool_pickup(
       if source.kind != K.RESOURCE_KIND_TIP_SPOT:
         raise StoreError(pb.PROBLEM_NO_TIP, f"'{source.name}' holds no tool", source.name)
       tool = engine.make_tip(source, staged.steps)
+    elif tool is source:
+      # Named itself: it goes back to what it is parked in, where it stands there.
+      if tool.parent is not None:
+        engine.origins[tool.id] = tool.parent.id
+      if tool.location is not None:
+        engine.origin_locations[tool.id] = tool.location
     else:
       engine.origins[tool.id] = source.id
     held = tool_in(shaft)
@@ -222,7 +228,12 @@ def begin_tool_drop(engine: Engine, request: spb.BeginToolDropRequest) -> spb.Be
       kept = destination.kind != K.RESOURCE_KIND_TRASH and (
         destination.kind != K.RESOURCE_KIND_TIP_SPOT or _tracks_tips(destination)
       )
-      if kept:
+      to_origin = request.items[index].WhichOneof("destination") == "origin"
+      # A tool taken by name goes back where it stood, beside whatever else is parked there.
+      parked_at = engine.origin_locations.get(tool.id) if to_origin else None
+      if kept and parked_at is not None and destination.kind != K.RESOURCE_KIND_TIP_SPOT:
+        engine.move(tool, destination, None, parked_at, staged.steps)
+      elif kept:
         held = tool_in(destination)
         if held is not None and held is not tool:
           engine.remove(held, staged.steps)

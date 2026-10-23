@@ -225,6 +225,8 @@ class Engine:
     self.revisions: Dict[bytes, int] = {}
     # Where each tool was taken from onto a shaft, to put it back.
     self.origins: Dict[bytes, bytes] = {}
+    # Where in its origin a tool taken by name stood, to put it back there.
+    self.origin_locations: Dict[bytes, Coordinate] = {}
     self._names: Dict[bytes, Dict[str, Node]] = {}
     self._journal: List[Step] = []
     self._touched: Dict[bytes, Node] = {}

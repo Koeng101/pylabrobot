@@ -398,7 +398,8 @@ message Placement {
 }
 
 message ToolPickupItem {
-  // A tip spot, or a holder a tool is parked in.
+  // A tip spot, a holder a tool is parked in, or a tool itself where it is parked: dropped back
+  // to its origin, it goes back where it stood.
   ResourceRef source = 1;
   ResourceRef shaft = 2;
 }

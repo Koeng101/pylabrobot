@@ -27,7 +27,7 @@ from pylabrobot.resources.hamilton.trough_carriers import Trough_CAR_4R200_A00
 from pylabrobot.resources.hamilton.troughs import hamilton_1_trough_200mL_Vb
 from pylabrobot.resources.n_channel_pipettes import TipMountingShaft
 from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.store import library
+from pylabrobot.resources.store import build, library
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.definitions import definition_from_resource
 from pylabrobot.resources.store.errors import StoreError
@@ -489,6 +489,56 @@ class ToolTests(StoreTestCase):
     await self.succeed(drop.operation)
     with self.assertRaises(StoreError):
       await self.node(pb.ResourceRef(id=tip.id))
+
+  async def test_a_tool_named_itself_goes_back_where_it_stood(self):
+    tool = build.resource(
+      "{name}",
+      Coordinate(36, 8, 32),
+      kind=pb.RESOURCE_KIND_HEAD_TOOL,
+      head_tool=pb.HeadToolSpec(fitting_depth=8.0),
+    )
+    front, back = pb.ResourceDefinition(), pb.ResourceDefinition()
+    front.CopyFrom(tool)
+    front.attributes.name = "tools_front"
+    front.attributes.location.CopyFrom(build.vec3(Coordinate(-6.25, 8.0, 1.0)))
+    back.CopyFrom(tool)
+    back.attributes.name = "tools_back"
+    back.attributes.location.CopyFrom(build.vec3(Coordinate(29.75, 34.5, 1.0)))
+    holder = build.resource("tools", Coordinate(23.5, 42.5, 18), children=[front, back])
+    await self.commands.create_resources(
+      spb.CreateResourcesRequest(
+        resources=[
+          spb.CreateResource(
+            definition=holder,
+            assign=pb.AssignChild(parent=ref(ROOT, ""), location=build.vec3(Coordinate(300, 0, 0))),
+          )
+        ]
+      )
+    )
+    picked = await self.commands.begin_tool_pickup(
+      spb.BeginToolPickupRequest(
+        frame=ref(ROOT, ""),
+        items=[spb.ToolPickupItem(source=ref("tools_back"), shaft=ref("shaft_0"))],
+        on_tracking_problem=pb.ON_TRACKING_PROBLEM_REJECT,
+      )
+    )
+    self.assertEqual(picked.items[0].tool.attributes.name, "tools_back")
+    await self.succeed(picked.operation)
+    on_shaft = await self.tool_on("shaft_0")
+    assert on_shaft is not None
+    self.assertEqual(on_shaft.attributes.name, "tools_back")
+    dropped = await self.commands.begin_tool_drop(
+      spb.BeginToolDropRequest(
+        frame=ref(ROOT, ""), items=[spb.ToolDropItem(shaft=ref("shaft_0"), origin=True)]
+      )
+    )
+    await self.succeed(dropped.operation)
+    parked = [n.attributes.name for n in await self.children(ref("tools"))]
+    self.assertEqual(parked, ["tools_front", "tools_back"])
+    self.assertEqual(
+      to_coordinate((await self.node(ref("tools_back"))).attributes.location),
+      Coordinate(29.75, 34.5, 1.0),
+    )
 
   async def test_context_shafts_say_what_they_carry(self):
     first = await self.pick_up(["A1"], [0])
