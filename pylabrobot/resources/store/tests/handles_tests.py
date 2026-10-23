@@ -4,8 +4,15 @@ deck, and each change is made in the store, where every handle sees it."""
 from __future__ import annotations
 
 import unittest
+from typing import List
 
-from pylabrobot.events import handle_reference, resource_reference
+from pylabrobot.events import (
+  EventBus,
+  PLREvent,
+  handle_reference,
+  resource_reference,
+  use_event_bus,
+)
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.carrier import Carrier, PlateCarrier
 from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck, track_for_x_coordinate
@@ -129,6 +136,38 @@ class EventTests(HandleTestCase):
         await handle_reference(handle), resource_reference(self.plr.get_resource(name)), name
       )
     self.assertIsNone(await handle_reference(None))
+
+  async def test_moves_emit_what_plr_s_classes_emit(self):
+    def recorded(bus: EventBus) -> List[PLREvent]:
+      events: List[PLREvent] = []
+      bus.subscribe(events.append)
+      return events
+
+    plr_events = recorded(plr_bus := EventBus())
+    plr_carrier = self.plr.get_resource("plate_carrier")
+    assert isinstance(plr_carrier, PlateCarrier)
+    plr_plate = self.plr.get_resource("plate")
+    with use_event_bus(plr_bus):
+      plr_plate.unassign()
+      plr_carrier[3].assign_child_resource(plr_plate)
+      plr_plate.unassign()
+      plr_carrier[4].assign_child_resource(plr_plate)
+
+    # A handle moves a resource in one assignment, and emits both events of the move.
+    events = recorded(bus := EventBus())
+    carrier = await self.deck.get_resource("plate_carrier")
+    assert isinstance(carrier, h.Carrier)
+    plate = await self.store.get("plate", root=self.deck)
+    with use_event_bus(bus):
+      await plate.unassign()
+      await carrier[3].assign_child_resource(plate)
+      await carrier[4].assign_child_resource(plate)
+
+    self.assertEqual([(e.name, e.data) for e in events], [(e.name, e.data) for e in plr_events])
+    self.assertEqual(
+      [e.name for e in events],
+      ["resource.unassigned", "resource.assigned"] * 2,
+    )
 
 
 class DeckTests(HandleTestCase):

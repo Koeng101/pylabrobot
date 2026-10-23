@@ -7,6 +7,9 @@ the store, and every handle to that resource sees it.
 What a resource is built with stays as it was built: a plate's wells, a tip rack's spots and a
 carrier's sites. A handle to one knows them, so `plate["A1"]` and `carrier[0]` ask nothing.
 
+A handle that moves a resource emits the events PLR's `Resource` emits for the same move,
+`resource.unassigned` and `resource.assigned`, while an event bus listens.
+
 Handles are made by a `ResourceStore` (`create`, `get`, `roots`), never directly.
 """
 
@@ -28,6 +31,7 @@ from typing import (
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Struct
 
+from pylabrobot.events import coordinate_reference, emit_event, is_event_bus_active
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store.errors import StoreError
@@ -268,9 +272,13 @@ class Resource:
       assignment.track = track
     if index is not None:
       assignment.index = index
-    await self.store.commands.assign_resources(
+    before = await _read_for_events(self.store, [child.ref, self.ref])
+    response = await self.store.commands.assign_resources(
       spb.AssignResourcesRequest(lock_tokens=self.store.lock_tokens, assignments=[assignment])
     )
+    if before is not None:
+      _emit_unassigned(before, child.id)
+      _emit_assigned(before, response.nodes[0], self.id)
 
   async def unassign_child_resource(self, child: Resource) -> None:
     """Take `child` out of it; `child` becomes a root with no location.
@@ -285,9 +293,12 @@ class Resource:
 
   async def unassign(self) -> None:
     """Take it out of its parent; it becomes a root with no location."""
+    before = await _read_for_events(self.store, [self.ref])
     await self.store.commands.unassign_resources(
       spb.UnassignResourcesRequest(lock_tokens=self.store.lock_tokens, resources=[self.ref])
     )
+    if before is not None:
+      _emit_unassigned(before, self.id)
 
   async def _update(self, *updates: spb.ResourceUpdate) -> None:
     await self.store.commands.update_resources(
@@ -783,6 +794,83 @@ STRUCTURED_KINDS = frozenset(
   for kind, handle_type in HANDLE_TYPES.items()
   if issubclass(handle_type, (ItemizedResource, Carrier))
 )
+
+
+# -- events --------------------------------------------------------------------------------------
+# `resource.unassigned` when a resource leaves a parent, and `resource.assigned` when it enters
+# one, with the payloads PLR's `Resource` gives them. Read only while an event bus listens.
+
+
+async def _read_for_events(
+  store: ResourceStore, refs: Sequence[pb.ResourceRef]
+) -> Optional[Dict[bytes, pb.ResourceNode]]:
+  """The resources, and their ancestors, as they are before a move; None when nothing listens."""
+  if not is_event_bus_active():
+    return None
+  response = await store.commands.get_resources(
+    spb.GetResourcesRequest(resources=refs, depth=0, ancestors=True)
+  )
+  return {node.id: node for node in response.nodes}
+
+
+def _reference(
+  node: pb.ResourceNode, by_id: Mapping[bytes, pb.ResourceNode], parent_id: bytes
+) -> Dict[str, Any]:
+  """`resource_reference` of a resource, with `parent_id` and its ancestors as its ancestry."""
+  attributes = node.attributes
+  reference: Dict[str, Any] = {
+    "name": attributes.name,
+    "type": attributes.type_name or HANDLE_TYPES[attributes.kind].__name__,
+  }
+  if attributes.model:
+    reference["model"] = attributes.model
+  rotation = attributes.rotation
+  reference["rotation"] = {"x": rotation.x, "y": rotation.y, "z": rotation.z}
+  ancestors: List[Dict[str, Any]] = []
+  while parent_id:
+    parent = by_id[parent_id]
+    ancestor: Dict[str, Any] = {
+      "name": parent.attributes.name,
+      "type": parent.attributes.type_name or "Resource",
+    }
+    if parent.attributes.model:
+      ancestor["model"] = parent.attributes.model
+    ancestors.append(ancestor)
+    parent_id = parent.parent_id
+  if ancestors:
+    reference["ancestors"] = ancestors
+  return reference
+
+
+def _location(node: pb.ResourceNode) -> Optional[Dict[str, Any]]:
+  if not node.attributes.HasField("location"):
+    return None
+  return dict(coordinate_reference(to_coordinate(node.attributes.location)) or {})
+
+
+def _emit_unassigned(before: Mapping[bytes, pb.ResourceNode], resource_id: bytes) -> None:
+  node = before[resource_id]
+  if not node.parent_id:
+    return
+  parent = before[node.parent_id]
+  emit_event(
+    "resource.unassigned",
+    resource=_reference(node, before, b""),
+    previous_parent=_reference(parent, before, parent.parent_id),
+    previous_location=_location(node),
+  )
+
+
+def _emit_assigned(
+  before: Mapping[bytes, pb.ResourceNode], node: pb.ResourceNode, parent_id: bytes
+) -> None:
+  parent = before[parent_id]
+  emit_event(
+    "resource.assigned",
+    resource=_reference(node, before, parent_id),
+    parent=_reference(parent, before, parent.parent_id),
+    location=_location(node),
+  )
 
 
 def _expand(identifiers: Union[str, Sequence[Union[str, int]]]) -> List[Union[str, int]]:
