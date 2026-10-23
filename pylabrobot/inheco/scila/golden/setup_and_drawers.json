@@ -1,0 +1,279 @@
+{
+  "transport": {
+    "client_ip": "169.254.1.2",
+    "machine_ip": "169.254.1.117"
+  },
+  "initial_resources": [
+    {
+      "name": "scila",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "scila_drawer_1",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_2",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_3",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_4",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        {
+          "call": "setup"
+        },
+        {
+          "command": "Reset",
+          "parameters": {
+            "deviceId": "MyController",
+            "eventReceiverURI": "http://169.254.1.2:8081/",
+            "simulationMode": false
+          }
+        },
+        {
+          "command": "Initialize",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_status()",
+      "result": "standBy",
+      "sent": [
+        {
+          "command": "GetStatus",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "drawers[2].open()",
+      "result": null,
+      "sent": [
+        {
+          "command": "PrepareForInput",
+          "parameters": {
+            "position": 2
+          }
+        },
+        {
+          "command": "OpenDoor",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_drawer_statuses()",
+      "result": {
+        "1": "Closed",
+        "2": "Opened",
+        "3": "Closed",
+        "4": "Closed"
+      },
+      "sent": [
+        {
+          "command": "GetDoorStatus",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "drawers[2].assign_child_resource(plate) by hand",
+      "result": null,
+      "sent": [],
+      "resources": [
+        {
+          "name": "scila",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "scila_drawer_1",
+          "parent": "scila",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "scila_drawer_2",
+          "parent": "scila",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "culture_plate",
+          "parent": "scila_drawer_2",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "scila_drawer_3",
+          "parent": "scila",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "scila_drawer_4",
+          "parent": "scila",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "drawers[2].close()",
+      "result": null,
+      "sent": [
+        {
+          "command": "PrepareForOutput",
+          "parameters": {
+            "position": 2
+          }
+        },
+        {
+          "command": "CloseDoor",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_drawer_status(2)",
+      "result": "Closed",
+      "sent": [
+        {
+          "command": "GetDoorStatus",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_drawer_status(5)",
+      "result": {
+        "error": "ValueError",
+        "message": "Invalid drawer ID: 5. Must be 1, 2, 3, or 4."
+      },
+      "sent": []
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        {
+          "call": "close"
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "scila",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "scila_drawer_1",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_2",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "culture_plate",
+      "parent": "scila_drawer_2",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_3",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_4",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}
