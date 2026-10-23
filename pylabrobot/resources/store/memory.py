@@ -300,8 +300,15 @@ class MemoryStore(ResourceStoreService, ResourcePrimitivesService):
           for child in node.children:
             visit(child, depth - 1)
 
-      for ref in request.resources:
-        visit(engine.resolve(ref), request.depth)
+      asked = [engine.resolve(ref) for ref in request.resources]
+      for node in asked:
+        visit(node, request.depth)
+      if request.ancestors:
+        for node in asked:
+          parent = node.parent
+          while parent is not None:
+            visit(parent, 0)
+            parent = parent.parent
       return spb.GetResourcesResponse(nodes=nodes, revision=self.engine.revision)
 
     return await self._call(work)

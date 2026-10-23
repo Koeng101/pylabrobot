@@ -237,14 +237,16 @@ class UpdateResourcesResponse(_message.Message):
     def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ...) -> None: ...
 
 class GetResourcesRequest(_message.Message):
-    __slots__ = ("resources", "depth", "view")
+    __slots__ = ("resources", "depth", "view", "ancestors")
     RESOURCES_FIELD_NUMBER: _ClassVar[int]
     DEPTH_FIELD_NUMBER: _ClassVar[int]
     VIEW_FIELD_NUMBER: _ClassVar[int]
+    ANCESTORS_FIELD_NUMBER: _ClassVar[int]
     resources: _containers.RepeatedCompositeFieldContainer[_types_pb2.ResourceRef]
     depth: int
     view: _types_pb2.View
-    def __init__(self, resources: _Optional[_Iterable[_Union[_types_pb2.ResourceRef, _Mapping]]] = ..., depth: _Optional[int] = ..., view: _Optional[_Union[_types_pb2.View, str]] = ...) -> None: ...
+    ancestors: bool
+    def __init__(self, resources: _Optional[_Iterable[_Union[_types_pb2.ResourceRef, _Mapping]]] = ..., depth: _Optional[int] = ..., view: _Optional[_Union[_types_pb2.View, str]] = ..., ancestors: _Optional[bool] = ...) -> None: ...
 
 class GetResourcesResponse(_message.Message):
     __slots__ = ("nodes", "revision")

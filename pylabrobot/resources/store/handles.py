@@ -457,6 +457,11 @@ class ItemizedResource(Resource):
     """Every item, column-major: A1, B1, ..., A2, ..."""
     return list(self._items)
 
+  @property
+  def identifiers(self) -> List[str]:
+    """Every item's identifier, column-major."""
+    return list(self._by_identifier)
+
   def get_item(self, identifier: Union[str, int, Tuple[int, int]]) -> Resource:
     """An item by identifier ("A1"), index (column-major, from 0), or (row, column).
 

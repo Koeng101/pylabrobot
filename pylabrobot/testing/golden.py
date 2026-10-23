@@ -24,7 +24,10 @@ from typing import Any, Dict, List, Optional
 
 from pylabrobot.resources.resource import Resource
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.definitions import definition_from_resource
+from pylabrobot.resources.container import Container
+from pylabrobot.resources.end_effector import MechanicalGripper
+from pylabrobot.resources.store.definitions import kind_of
+from pylabrobot.resources.tip import Tip
 from pylabrobot.resources.store.handles import Resource as Handle
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -99,16 +102,50 @@ def _entry(
 
 def snapshot_resources(root: Resource) -> List[Dict[str, Any]]:
   """Every resource from `root` down, in pre-order: its name, parent, kind, location, rotation,
-  volume and jaw width. A tip spot's tip, a holder's plate and a shaft's tip are children."""
+  volume and jaw width. A tip spot's tip, a holder's plate and a shaft's tip are children.
+
+  Read straight off the tree, as `definition_from_resource` would convert it.
+  """
   entries: List[Dict[str, Any]] = []
 
-  def visit(definition: pb.ResourceDefinition, parent: str) -> None:
-    state = definition.initial_state if definition.HasField("initial_state") else None
-    entries.append(_entry(definition.attributes.name, parent, definition.attributes, state))
-    for child in definition.children:
-      visit(child, definition.attributes.name)
+  def visit(resource: Resource, parent: str) -> None:
+    entry: Dict[str, Any] = {
+      "name": resource.name,
+      "parent": parent,
+      "kind": pb.ResourceKind.Name(kind_of(resource)),
+    }
+    if resource.location is not None:
+      location = resource.location
+      entry["location"] = [float(location.x), float(location.y), float(location.z)]
+    rotation = resource.rotation
+    if (rotation.x, rotation.y, rotation.z) != (0, 0, 0):
+      entry["rotation"] = [float(rotation.x), float(rotation.y), float(rotation.z)]
+    if isinstance(resource, (Container, Tip)):
+      tracker = resource.tracker
+      entry["volume"] = float(tracker.volume)
+      if tracker.pending_volume != tracker.volume:
+        entry["pending_volume"] = float(tracker.pending_volume)
+    if isinstance(resource, MechanicalGripper):
+      entry["jaw_width"] = float(resource.jaw_width)
+    entries.append(entry)
+    for child in resource.children:
+      visit(child, resource.name)
 
-  visit(definition_from_resource(root), "")
+  visit(root, "")
+  return entries
+
+
+def snapshot_definition(definition: pb.ResourceDefinition) -> List[Dict[str, Any]]:
+  """What `snapshot_resources` gives for the resources a definition describes."""
+  entries: List[Dict[str, Any]] = []
+
+  def visit(each: pb.ResourceDefinition, parent: str) -> None:
+    state = each.initial_state if each.HasField("initial_state") else None
+    entries.append(_entry(each.attributes.name, parent, each.attributes, state))
+    for child in each.children:
+      visit(child, each.attributes.name)
+
+  visit(definition, "")
   return entries
 
 

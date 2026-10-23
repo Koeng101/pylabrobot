@@ -185,10 +185,13 @@ message GetResourcesRequest {
   // How far below each to include: 0 the resource alone, -1 everything.
   int32 depth = 2;
   View view = 3;
+  // Also each resource's ancestors, its parent up to its root, after all of the above.
+  bool ancestors = 4;
 }
 
 message GetResourcesResponse {
-  // Pre-order per requested resource; a node reached twice appears once.
+  // Pre-order per requested resource, then the ancestors asked for; a node reached twice appears
+  // once.
   repeated ResourceNode nodes = 1;
   uint64 revision = 2;
 }

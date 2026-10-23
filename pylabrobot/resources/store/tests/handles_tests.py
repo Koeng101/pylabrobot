@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import unittest
 
+from pylabrobot.events import handle_reference, resource_reference
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.carrier import Carrier, PlateCarrier
 from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck, track_for_x_coordinate
@@ -118,6 +119,16 @@ class ReadingTests(HandleTestCase):
     await tips.set_tip_state([i % 2 == 0 for i in range(96)])
     self.assertTrue(await tips.get_tip_spot(0).has_tip())
     self.assertFalse(await tips.get_tip_spot(1).has_tip())
+
+
+class EventTests(HandleTestCase):
+  async def test_a_handle_is_referred_to_as_plr_s_classes_are(self):
+    for name in ("plate_well_B3", "tips", "shaft_1"):
+      handle = await self.store.get(name, root=self.deck)
+      self.assertEqual(
+        await handle_reference(handle), resource_reference(self.plr.get_resource(name)), name
+      )
+    self.assertIsNone(await handle_reference(None))
 
 
 class DeckTests(HandleTestCase):

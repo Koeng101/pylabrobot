@@ -11,6 +11,7 @@ from unittest import mock
 from pylabrobot.resources import Coordinate, TipSpot, Well
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.definitions import definition_from_resource
+from pylabrobot.resources.store.tests.scenes import build_all
 from pylabrobot.resources.store.tests.store_tests import build_deck
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.testing import golden
@@ -40,6 +41,17 @@ class SnapshotTests(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(entry["volume"], 50)
     self.assertFalse(any(e["parent"] == "tips_tipspot_A1" for e in theirs))
     await store.close()
+
+
+class FastSnapshotTests(unittest.TestCase):
+  def test_the_tree_read_directly_is_what_its_definition_says(self):
+    for scene in build_all():
+      with self.subTest(scene=scene.name):
+        root = scene.root
+        self.assertEqual(
+          golden.to_json(golden.snapshot_resources(root)),
+          golden.to_json(golden.snapshot_definition(definition_from_resource(root))),
+        )
 
 
 class FileTests(unittest.TestCase):
