@@ -256,7 +256,8 @@ message Geometry {
   // The highest point of it and everything under it, along the root's axes; a deck's own top
   // does not count.
   double highest_point = 7;
-  // Set when the query could not be answered.
+  // Set when a location asked for could not be answered, a resource with no location say; its
+  // size and rotations are answered all the same.
   optional Issue issue = 8;
 }
 

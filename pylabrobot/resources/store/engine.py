@@ -1082,32 +1082,42 @@ class Engine:
     return view
 
   def geometry(self, query: spb.GeometryQuery, placements: g.Placements) -> spb.Geometry:
-    """Everything about where a resource is, for one query; a refusal as its issue."""
+    """Everything about where a resource is, for one query; a refusal as its issue.
+
+    Its size and rotations are answered even where it has no location, a root nobody placed;
+    only a location asked for is then refused.
+    """
     try:
       node = self.resolve(query.resource)
       frame = self.resolve(query.frame) if query.HasField("frame") else None
-      anchors = list(query.anchors) or [pb.Anchor(x=pb.ANCHOR_X_LEFT)]
-      locations = [
+    except StoreError as refused:
+      return spb.Geometry(issue=_issue(refused, -1))
+    size, absolute = g.size(node), g.absolute_size(node)
+    rotation = g.rotation_wrt(node, frame) if frame is not None else g.absolute_rotation(node)
+    geometry = spb.Geometry(
+      resource_id=node.id,
+      rotation_in_frame=to_rotation_message(rotation),
+      absolute_rotation=to_rotation_message(g.absolute_rotation(node)),
+      absolute_size=pb.Vec3(x=absolute.x, y=absolute.y, z=absolute.z),
+      size=pb.Vec3(x=size.x, y=size.y, z=size.z),
+    )
+    # Only a root nobody placed has no location; what it holds is located from its origin.
+    placed = node.location is not None or frame is not None
+    anchors = list(query.anchors) or ([pb.Anchor(x=pb.ANCHOR_X_LEFT)] if placed else [])
+    try:
+      geometry.locations.extend(
         to_vec3(
           g.location_wrt(node, frame, a.x, a.y, a.z, placements)
           if frame is not None
           else g.absolute_location(node, a.x, a.y, a.z, placements)
         )
         for a in anchors
-      ]
-      rotation = g.rotation_wrt(node, frame) if frame is not None else g.absolute_rotation(node)
-      size, absolute = g.size(node), g.absolute_size(node)
-      return spb.Geometry(
-        resource_id=node.id,
-        locations=locations,
-        rotation_in_frame=to_rotation_message(rotation),
-        absolute_rotation=to_rotation_message(g.absolute_rotation(node)),
-        absolute_size=pb.Vec3(x=absolute.x, y=absolute.y, z=absolute.z),
-        size=pb.Vec3(x=size.x, y=size.y, z=size.z),
-        highest_point=g.highest_point(node, placements),
       )
+      geometry.highest_point = g.highest_point(node, placements)
     except StoreError as refused:
-      return spb.Geometry(issue=_issue(refused, -1))
+      del geometry.locations[:]
+      geometry.issue.CopyFrom(_issue(refused, -1))
+    return geometry
 
   def placement(self, node: Node, frame: Node, placements: g.Placements) -> spb.Placement:
     """A container, spot or trash as a command reads it, in `frame`."""

@@ -143,7 +143,7 @@ class Resource:
       spb.ResolveGeometryRequest(queries=[query])
     )
     geometry = response.results[0]
-    if geometry.HasField("issue"):
+    if geometry.HasField("issue") and (anchors or not geometry.resource_id):
       raise StoreError(geometry.issue.problem, geometry.issue.message, self.name)
     return geometry
 
@@ -180,8 +180,12 @@ class Resource:
     return to_coordinate(geometry.locations[0])
 
   async def get_highest_known_point(self) -> float:
-    """The highest point of it and everything in it, along its root's axes."""
-    return (await self._geometry()).highest_point
+    """The highest point of it and everything in it, along its root's axes.
+
+    Raises:
+      StoreError: It is in a tree nobody placed, so it has no location.
+    """
+    return (await self._geometry(anchors=[anchor()])).highest_point
 
   async def get_metadata(self) -> Dict[str, Any]:
     return json_format.MessageToDict((await self.attributes()).metadata)

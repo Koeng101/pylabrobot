@@ -178,6 +178,18 @@ class ChangingTests(HandleTestCase):
     await self.deck.assign_child_resource(plate, location=Coordinate(600, 100, 0))
     self.assertEqual(await plate.get_location(), Coordinate(600, 100, 0))
 
+  async def test_a_root_with_no_location_still_has_a_size(self):
+    plate = await self.store.create("cor_96_wellplate_360uL_Fb", name="loose")
+    self.assertEqual(await plate.get_size(), Coordinate(127.76, 85.48, 14.2))
+    self.assertEqual((await plate.get_absolute_rotation()).z, 0)
+    with self.assertRaises(StoreError) as caught:
+      await plate.get_absolute_location()
+    self.assertEqual(caught.exception.problem, pb.PROBLEM_NO_LOCATION)
+    assert isinstance(plate, h.Plate)
+    self.assertEqual(
+      await plate.get_well("A1").get_location_wrt(plate), Coordinate(10.87, 70.77, 3.03)
+    )
+
   async def test_turning_and_metadata(self):
     plate = await self.store.get("plate", root=self.deck)
     await plate.unassign()
