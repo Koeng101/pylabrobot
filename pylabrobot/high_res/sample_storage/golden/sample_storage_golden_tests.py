@@ -1,9 +1,10 @@
 """Golden records of what the HighRes sample stores do today: the commands sent, the events
 emitted and the resources left, step by step."""
 
+import math
 import random
 import unittest
-from typing import Callable, Optional, TypeVar
+from typing import Any, Awaitable, Callable, Optional, TypeVar
 
 from pylabrobot.high_res.sample_storage import (
   AmbiStore,
@@ -12,26 +13,61 @@ from pylabrobot.high_res.sample_storage import (
   TundraStore,
   high_res_stacker,
 )
+from pylabrobot.high_res.sample_storage.driver import tree_events
 from pylabrobot.high_res.sample_storage.golden.harness import Recorder, SimulatedSocket
-from pylabrobot.resources import Coordinate, Lid, Plate, PlateCarrier, PlateHolder, Well
-from pylabrobot.testing.golden import snapshot_resources
+from pylabrobot.high_res.sample_storage.stackers import plate_holder
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing.golden import snapshot_store
 
 T = TypeVar("T")
 
 
-def make_plate(name: str, size_z: float = 14, lid: bool = False) -> Plate:
-  well = Well(name=f"{name}_A1", size_x=8, size_y=8, size_z=10)
-  plate = Plate(
-    name=name,
-    size_x=127.76,
-    size_y=85.48,
-    size_z=size_z,
-    ordered_items={"A1": well.at(Coordinate(10, 10, 2))},
-  )
-  if lid:
-    plate.assign_child_resource(
-      Lid(name=f"{name}_lid", size_x=127.76, size_y=85.48, size_z=5, nesting_z_height=2)
+async def make_plate(
+  device: HighResSampleStorage, name: str, size_z: float = 14, lid: bool = False
+) -> handles.Plate:
+  """A one-well plate, standing alone in the device's resource store."""
+  children = [
+    build.resource(
+      f"{name}_A1",
+      Coordinate(8, 8, 10),
+      kind=pb.RESOURCE_KIND_WELL,
+      location=Coordinate(10, 10, 2),
+      category="well",
+      type_name="Well",
+      identifier="A1",
+      container=pb.ContainerSpec(
+        max_volume=math.pi * 4 * 4 * 10,
+        cross_section_type=pb.CROSS_SECTION_TYPE_CIRCLE,
+      ),
+      state=pb.ResourceState(volume=pb.VolumeState()),
     )
+  ]
+  if lid:
+    children.append(
+      build.resource(
+        f"{name}_lid",
+        Coordinate(127.76, 85.48, 5),
+        kind=pb.RESOURCE_KIND_LID,
+        location=Coordinate(0, 0, size_z - 2),
+        category="lid",
+        type_name="Lid",
+        lid=pb.LidSpec(nesting_z_height=2),
+      )
+    )
+  definition = build.resource(
+    name,
+    Coordinate(127.76, 85.48, size_z),
+    kind=pb.RESOURCE_KIND_PLATE,
+    category="plate",
+    type_name="Plate",
+    itemized=pb.ItemizedSpec(num_items_x=1, num_items_y=1),
+    plate=pb.PlateSpec(plate_type="skirted"),
+    children=children,
+  )
+  plate = await device.store.create(definition, name=name)
+  assert isinstance(plate, handles.Plate)
   return plate
 
 
@@ -41,47 +77,67 @@ def seeded(seed: int, choose: Callable[[], T]) -> T:
   return choose()
 
 
-def put_on_tray(
-  store: HighResSampleStorage, socket: SimulatedSocket, tray_index: int, plate: Plate
+async def by_hand(child: handles.Resource, parent: handles.Resource) -> None:
+  """An operator puts `child` in `parent`: the store has it there, and it is reported."""
+  await parent.assign_child_resource(child)
+  await tree_events.emit_assigned(child)
+
+
+async def put_on_tray(
+  device: HighResSampleStorage, socket: SimulatedSocket, tray_index: int, plate: handles.Plate
 ) -> None:
   """An operator puts `plate` on a transfer nest: the model and the nest sensor both have it."""
-  store.nests[tray_index].assign_child_resource(plate)
+  await by_hand(plate, device.nests[tray_index])
   socket.nest_sensors[tray_index + 1] = "PLATE_AVAILABLE"
 
 
-def site(store: HighResSampleStorage, name: str) -> PlateHolder:
-  holder = store.get_resource(name)
-  assert isinstance(holder, PlateHolder)
+async def site(device: HighResSampleStorage, name: str) -> handles.PlateHolder:
+  assert device.body is not None
+  holder = await device.body.get_resource(name)
+  assert isinstance(holder, handles.PlateHolder)
   return holder
 
 
-def plate_named(store: HighResSampleStorage, name: str) -> Plate:
-  plate = store.get_resource(name)
-  assert isinstance(plate, Plate)
+async def plate_named(device: HighResSampleStorage, name: str) -> handles.Plate:
+  assert device.body is not None
+  plate = await device.body.get_resource(name)
+  assert isinstance(plate, handles.Plate)
   return plate
 
 
-def restore_summary(restored: HighResSampleStorage, serialized: dict) -> dict:
+async def restore_summary(restored: Awaitable[HighResSampleStorage], serialized: dict) -> dict:
   """What a store restored from `serialized` holds, and whether it serializes the same."""
+  device = await restored
+  assert device.body is not None
   return {
-    "resources": snapshot_resources(restored),
-    "serializes_the_same": restored.serialize() == serialized,
+    "resources": await snapshot_store(device.store, device.body),
+    "serializes_the_same": await device.serialize() == serialized,
   }
 
 
+async def store_plate_in(
+  device: HighResSampleStorage, plate: handles.Plate, name: str, tray_index: int
+) -> Any:
+  return await device.store_plate(plate, await site(device, name), tray_index)
+
+
+async def take_in_plate_to(device: HighResSampleStorage, tray_index: int, name: str) -> Any:
+  return await device.take_in_plate(tray_index, site=await site(device, name))
+
+
 class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
-  def recorder(self, store: HighResSampleStorage, socket: Optional[SimulatedSocket] = None):
-    return Recorder(store, socket if socket is not None else SimulatedSocket())
+  def recorder(self, device: HighResSampleStorage, socket: Optional[SimulatedSocket] = None):
+    return Recorder(device, socket if socket is not None else SimulatedSocket())
 
   async def test_discovery_and_site_selection(self):
     store = SteriStore(host="10.253.253.253", name="store")
     r = self.recorder(store)
     short, medium, lidded = (
-      make_plate("short", 14),
-      make_plate("medium", 18),
-      make_plate("lidded", 14, lid=True),
+      await make_plate(store, "short", 14),
+      await make_plate(store, "medium", 18),
+      await make_plate(store, "lidded", 14, lid=True),
     )
-    tall, too_tall = make_plate("tall", 25), make_plate("too_tall", 35)
+    tall, too_tall = await make_plate(store, "tall", 25), await make_plate(store, "too_tall", 35)
 
     await r.step("setup()", lambda: store.setup())
     await r.step(
@@ -119,16 +175,16 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
     await r.step("racks", lambda: store.racks)
     await r.step("serialize()", lambda: store.serialize())
     await r.step("setup() again", lambda: store.setup())
-    r.check(self, "discovery_and_site_selection")
+    await r.check(self, "discovery_and_site_selection")
 
   async def test_store_and_fetch(self):
     store = SteriStore(host="10.253.253.253", name="store")
     socket = SimulatedSocket()
     r = self.recorder(store, socket)
     plate_a, plate_b, plate_c = (
-      make_plate("plate_a"),
-      make_plate("plate_b", 18),
-      make_plate("plate_c", 14, lid=True),
+      await make_plate(store, "plate_a"),
+      await make_plate(store, "plate_b", 18),
+      await make_plate(store, "plate_c", 14, lid=True),
     )
 
     await r.step("setup()", lambda: store.setup())
@@ -142,7 +198,7 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
     await r.step("operator puts plate_c on tray 0", lambda: put_on_tray(store, socket, 0, plate_c))
     await r.step(
       "store_plate(plate_c, store_stacker_1_slot_2, 0)",
-      lambda: store.store_plate(plate_c, site(store, "store_stacker_1_slot_2"), 0),
+      lambda: store_plate_in(store, plate_c, "store_stacker_1_slot_2", 0),
     )
     await r.step("get_num_free_sites()", lambda: store.get_num_free_sites())
     await r.step(
@@ -164,7 +220,7 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
     )
     await r.step(
       "take_in_plate(1, site=store_stacker_5_slot_2)",
-      lambda: store.take_in_plate(1, site=site(store, "store_stacker_5_slot_2")),
+      lambda: take_in_plate_to(store, 1, "store_stacker_5_slot_2"),
     )
     await r.step(
       "take_in_plate(0, site='smallest')", lambda: store.take_in_plate(0, site="smallest")
@@ -174,16 +230,16 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
       "SteriStore.deserialize(serialize())",
       lambda: restore_summary(SteriStore.deserialize(serialized), serialized),
     )
-    r.check(self, "store_and_fetch")
+    await r.check(self, "store_and_fetch")
 
   async def test_refusals(self):
     store = TundraStore(host="10.253.253.253", name="store")
     socket = SimulatedSocket()
     r = self.recorder(store, socket)
     plate_a, plate_b, too_tall = (
-      make_plate("plate_a"),
-      make_plate("plate_b"),
-      make_plate("too_tall", 35),
+      await make_plate(store, "plate_a"),
+      await make_plate(store, "plate_b"),
+      await make_plate(store, "too_tall", 35),
     )
 
     await r.step("setup()", lambda: store.setup())
@@ -209,25 +265,23 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
       "fetch_plate_to_loading_tray(plate_a, 0) finding no plate",
       lambda: store.fetch_plate_to_loading_tray(plate_a, 0),
     )
-    await r.step(
-      "operator puts plate_b on tray 0", lambda: store.nests[0].assign_child_resource(plate_b)
-    )
+    await r.step("operator puts plate_b on tray 0", lambda: by_hand(plate_b, store.nests[0]))
     await r.step(
       "store_plate(plate_b, store_stacker_2_slot_1, 0) with nest 1 sensing no plate",
-      lambda: store.store_plate(plate_b, site(store, "store_stacker_2_slot_1"), 0),
+      lambda: store_plate_in(store, plate_b, "store_stacker_2_slot_1", 0),
     )
     socket.nest_sensors[1] = "PLATE_AVAILABLE"
     await r.step(
       "store_plate(plate_b, store_stacker_5_slot_1, 0) to an occupied slot",
-      lambda: store.store_plate(plate_b, site(store, "store_stacker_5_slot_1"), 0),
+      lambda: store_plate_in(store, plate_b, "store_stacker_5_slot_1", 0),
     )
     await r.step(
       "store_plate(plate_b, store_stacker_2_slot_1, 1) from the wrong tray",
-      lambda: store.store_plate(plate_b, site(store, "store_stacker_2_slot_1"), 1),
+      lambda: store_plate_in(store, plate_b, "store_stacker_2_slot_1", 1),
     )
     await r.step(
       "take_in_plate(0, site=store_stacker_5_slot_1) to an occupied slot",
-      lambda: store.take_in_plate(0, site=site(store, "store_stacker_5_slot_1")),
+      lambda: take_in_plate_to(store, 0, "store_stacker_5_slot_1"),
     )
     await r.step(
       "transfer_plate_between_nests(0, 0)", lambda: store.transfer_plate_between_nests(0, 0)
@@ -246,13 +300,13 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
     await r.step(
       "take_in_plate(1) with a plate too tall for any slot", lambda: store.take_in_plate(1)
     )
-    r.check(self, "refusals")
+    await r.check(self, "refusals")
 
   async def test_unresolved_transfers(self):
     store = SteriStore(host="10.253.253.253", name="store")
     socket = SimulatedSocket()
     r = self.recorder(store, socket)
-    plate_a, plate_b = make_plate("plate_a"), make_plate("plate_b")
+    plate_a, plate_b = await make_plate(store, "plate_a"), await make_plate(store, "plate_b")
 
     await r.step("setup()", lambda: store.setup())
     await r.step("operator puts plate_a on tray 0", lambda: put_on_tray(store, socket, 0, plate_a))
@@ -293,7 +347,7 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
     socket.script("place 5 1 1", ["Error 1: 44: Place failed"], completion="ERROR!")
     await r.step(
       "store_plate(plate_a, store_stacker_5_slot_1, 0) failing",
-      lambda: store.store_plate(plate_a, site(store, "store_stacker_5_slot_1"), 0),
+      lambda: store_plate_in(store, plate_a, "store_stacker_5_slot_1", 0),
     )
     await r.step(
       "resolve_unresolved_transfer('destination') with nest 1 sensing a plate",
@@ -343,7 +397,7 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
       lambda: store.resolve_unresolved_transfer("destination"),
     )
     await r.step("serialize()", lambda: store.serialize())
-    r.check(self, "unresolved_transfers")
+    await r.check(self, "unresolved_transfers")
 
   async def test_environment(self):
     store = SteriStore(host="10.253.253.253", name="store")
@@ -362,34 +416,43 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
     await r.step("start_temperature_control()", lambda: environment.start_temperature_control())
     await r.step("stop_co2_control()", lambda: environment.stop_co2_control())
     await r.step("request_tank_pressures()", lambda: environment.request_tank_pressures())
-    r.check(self, "environment")
+    await r.check(self, "environment")
 
   async def test_explicit_racks_and_restore(self):
-    out_of_order = PlateCarrier(name="out_of_order", size_x=130, size_y=90, size_z=100)
-    for spot in (7, 2):
-      out_of_order.assign_child_resource(
-        PlateHolder(name=f"spot_{spot}", size_x=127.76, size_y=85.48, size_z=20, pedestal_size_z=0),
-        location=Coordinate(0, 0, spot * 20),
-        spot=spot,
-      )
+    out_of_order = build.resource(
+      "out_of_order",
+      Coordinate(130, 90, 100),
+      kind=pb.RESOURCE_KIND_CARRIER,
+      category="plate_carrier",
+      type_name="PlateCarrier",
+      children=[
+        plate_holder(
+          f"spot_{spot}", Coordinate(127.76, 85.48, 20), location=Coordinate(0, 0, spot * 20)
+        )
+        for spot in (7, 2)
+      ],
+    )
     stacker = high_res_stacker("stacker", zero_offset=0, slot_height=22.867, slot_count=2)
-    store = AmbiStore(host="10.253.253.253", name="store", racks={7: out_of_order, 1: stacker})
+    store = AmbiStore(
+      host="10.253.253.253",
+      name="store",
+      racks={7: out_of_order, 1: stacker},
+      rack_spots={7: [7, 2]},
+    )
     socket = SimulatedSocket()
     r = self.recorder(store, socket)
-    plate = make_plate("plate")
+    plate = await make_plate(store, "plate")
 
     await r.step("setup()", lambda: store.setup())
     await r.step("operator puts plate on tray 0", lambda: put_on_tray(store, socket, 0, plate))
-    await r.step(
-      "store_plate(plate, spot_7, 0)", lambda: store.store_plate(plate, site(store, "spot_7"), 0)
-    )
+    await r.step("store_plate(plate, spot_7, 0)", lambda: store_plate_in(store, plate, "spot_7", 0))
     await r.step(
       "find_smallest_site_for_plate(plate)", lambda: store.find_smallest_site_for_plate(plate)
     )
     serialized = await r.step("serialize()", lambda: store.serialize())
-    r.check(self, "explicit_racks")
+    await r.check(self, "explicit_racks")
 
-    restored = AmbiStore.deserialize(serialized)
+    restored = await AmbiStore.deserialize(serialized)
     socket = SimulatedSocket()
     r = self.recorder(restored, socket)
     await r.step("setup() of AmbiStore.deserialize(serialize())", lambda: restored.setup())
@@ -397,14 +460,15 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
       "fetch_plate_to_loading_tray('plate', 1)",
       lambda: restored.fetch_plate_to_loading_tray("plate", 1),
     )
-    await r.step(
-      "store_plate(plate, stacker_slot_2, 1)",
-      lambda: restored.store_plate(
-        plate_named(restored, "plate"), site(restored, "stacker_slot_2"), 1
-      ),
-    )
+
+    async def store_restored_plate() -> None:
+      await restored.store_plate(
+        await plate_named(restored, "plate"), await site(restored, "stacker_slot_2"), 1
+      )
+
+    await r.step("store_plate(plate, stacker_slot_2, 1)", store_restored_plate)
     await r.step("serialize()", lambda: restored.serialize())
-    r.check(self, "explicit_racks_restored")
+    await r.check(self, "explicit_racks_restored")
 
 
 if __name__ == "__main__":

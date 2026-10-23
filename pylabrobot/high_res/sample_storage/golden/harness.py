@@ -8,7 +8,7 @@ timeout after the acknowledgement) to drive a failure path.
 `Recorder` runs each step of a scenario and records, per step, every command written to the
 store (plus `<setup>`/`<stop>` for the transport opening and closing), the events emitted on the
 PLR event bus, what the call returned or raised, the plate transfer left unresolved, and the
-resources under the store when the step changed them.
+resources under the store's body in its resource store when the step changed them.
 """
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ from typing import Any, Callable, Dict, List, Optional
 from pylabrobot.events import EventBus, PLREvent, use_event_bus
 from pylabrobot.high_res.sample_storage.driver import HighResSampleStorage
 from pylabrobot.high_res.sample_storage.tests.driver_tests import CAPTURES, FakeSocket
-from pylabrobot.resources import Resource
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources.store import handles
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN_DIRECTORY = pathlib.Path(__file__).parent
 
@@ -119,7 +119,7 @@ def describe(value: Any) -> Any:
   """A call's return value or raised error, made JSON-able. Resources are named."""
   if isinstance(value, BaseException):
     return {"error": type(value).__name__, "message": str(value)}
-  if isinstance(value, Resource):
+  if isinstance(value, handles.Resource):
     return value.name
   if dataclasses.is_dataclass(value) and not isinstance(value, type):
     return describe(dataclasses.asdict(value))
@@ -166,7 +166,7 @@ class Recorder:
   async def step(self, call: str, action: Callable[[], Any]) -> Any:
     """Run `action` (sync or async) as the step `call`; record it, and return what it returned
     or raised."""
-    before = snapshot_resources(self.store)
+    before = await self._snapshot()
     self.socket.events.clear()
     events: List[PLREvent] = []
     bus = EventBus()
@@ -186,13 +186,19 @@ class Recorder:
       "result": describe(outcome),
       "unresolved_transfer": self._unresolved(),
     }
-    after = snapshot_resources(self.store)
+    after = await self._snapshot()
     if after != before:
       entry["resources"] = after
     self.steps.append(entry)
     return outcome
 
-  def check(self, test: unittest.TestCase, scenario: str) -> None:
+  async def _snapshot(self) -> List[Dict[str, Any]]:
+    """The resources under the store's body; none before setup creates it."""
+    if self.store.body is None:
+      return []
+    return await snapshot_store(self.store.store, self.store.body)
+
+  async def check(self, test: unittest.TestCase, scenario: str) -> None:
     """Compare the record of the steps so far with the scenario's golden file."""
-    record = {"steps": self.steps, "resources": snapshot_resources(self.store)}
+    record = {"steps": self.steps, "resources": await self._snapshot()}
     check_golden(test, GOLDEN_DIRECTORY / f"{scenario}.json", record)
