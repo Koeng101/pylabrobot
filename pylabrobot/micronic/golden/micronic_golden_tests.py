@@ -22,11 +22,13 @@ from unittest import mock
 from pylabrobot.micronic import MicronicError, MicronicRD235
 from pylabrobot.micronic.code_reader import driver as driver_module
 from pylabrobot.micronic.code_reader.driver import DecodeResult, RackScanResult
-from pylabrobot.resources import Tube, TubeRack
+from pylabrobot.resources import Coordinate
 from pylabrobot.resources.barcode import Barcode
-from pylabrobot.resources.resource_holder import ResourceHolder
-from pylabrobot.resources.utils import create_ordered_items_2d
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources.store import build
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.handles import TubeRack
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -34,32 +36,45 @@ GOLDEN = pathlib.Path(__file__).parent
 TUBES: Dict[str, str] = {"A1": "1000000001", "A2": "1000000002", "B1": "1000000013"}
 
 
-def tube_rack(name: str, num_items_x: int = 12, num_items_y: int = 8) -> TubeRack:
+async def tube_rack(
+  store: ResourceStore, name: str, num_items_x: int = 12, num_items_y: int = 8
+) -> TubeRack:
   """A rack of `num_items_y` x `num_items_x` holders with tubes in A1, A2 and B1."""
-  rack = TubeRack(
-    name=name,
-    size_x=127.76,
-    size_y=85.48,
-    size_z=45.2,
-    ordered_items=create_ordered_items_2d(
-      ResourceHolder,
+  holder = build.resource(
+    f"{name}_resourceholder_{{identifier}}",
+    Coordinate(9, 9, 43),
+    kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
+    category="resource_holder",
+    holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero()), capacity=1),
+  )
+  definition = build.resource(
+    name,
+    Coordinate(127.76, 85.48, 45.2),
+    kind=pb.RESOURCE_KIND_TUBE_RACK,
+    category="tube_rack",
+    itemized=pb.ItemizedSpec(
       num_items_x=num_items_x,
       num_items_y=num_items_y,
-      dx=10.38,
-      dy=7.24,
-      dz=2,
-      item_dx=9,
-      item_dy=9,
-      size_x=9,
-      size_y=9,
-      size_z=43,
-      name_prefix=name,
+      grid=pb.ItemGrid(
+        item=holder,
+        offset=build.vec3(Coordinate(10.38, 7.24, 2)),
+        item_dx=9,
+        item_dy=9,
+      ),
     ),
   )
+  rack = await store.create(definition, name=name)
+  assert isinstance(rack, TubeRack)
   for position in TUBES:
-    rack[position] = Tube(
-      name=f"{name}_tube_{position}", size_x=8.5, size_y=8.5, size_z=44.5, max_volume=1400
+    tube = build.resource(
+      f"{name}_tube_{position}",
+      Coordinate(8.5, 8.5, 44.5),
+      kind=pb.RESOURCE_KIND_TUBE,
+      category="tube",
+      container=pb.ContainerSpec(max_volume=1400),
+      state=pb.ResourceState(volume=pb.VolumeState(tracking_enabled=True)),
     )
+    await store.create(tube, name=tube.attributes.name, parent=rack.get_item(position))
   return rack
 
 
@@ -133,11 +148,12 @@ def scan_json(result: RackScanResult) -> Dict[str, Any]:
 class Recorder:
   """Records what the reader was sent, step by step, and the rack's tree."""
 
-  def __init__(self, image_dir: str, rack: TubeRack) -> None:
+  def __init__(self, image_dir: str, store: ResourceStore, rack: TubeRack) -> None:
     self.sent: List[str] = []
     self.steps: List[Dict[str, Any]] = []
     self.transport: Dict[str, Any] = {}
     self.image_dir = image_dir
+    self.store = store
     self.rack = rack
     self.decoded: Dict[str, DecodeResult] = {
       position: DecodeResult(tube_id=tube_id, method="fake") for position, tube_id in TUBES.items()
@@ -189,11 +205,11 @@ class Recorder:
     entry["last_image_path"] = None if last is None else self.placeholder(last)
     self.steps.append(entry)
 
-  def finish(self) -> Dict[str, Any]:
+  async def finish(self) -> Dict[str, Any]:
     return {
       "transport": self.transport,
       "steps": self.steps,
-      "resources": snapshot_resources(self.rack),
+      "resources": await snapshot_store(self.store, self.rack),
     }
 
 
@@ -201,8 +217,9 @@ class MicronicGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_scanning_a_rack(self):
     """Set up, read the rack ID, scan the whole rack twice and stop."""
     with tempfile.TemporaryDirectory() as image_dir:
-      rack = tube_rack("rack")
-      rig = Recorder(image_dir, rack)
+      store = ResourceStore.in_memory()
+      rack = await tube_rack(store, "rack")
+      rig = Recorder(image_dir, store, rack)
       reader = rig.reader
 
       await rig.step("setup()", reader.setup)
@@ -211,14 +228,15 @@ class MicronicGoldenTests(unittest.IsolatedAsyncioTestCase):
       rig.serial.reply = b"?\r"
       await rig.step("scan_rack(rack)  # no rack ID", lambda: reader.scan_rack(rack))
       await rig.step("stop()", reader.stop)
-      check_golden(self, GOLDEN / "scanning_a_rack.json", rig.finish())
+      check_golden(self, GOLDEN / "scanning_a_rack.json", await rig.finish())
 
   async def test_refused_racks_and_failed_reads(self):
     """A rack that is not 8x12 is refused before anything is sent; a failed decode is raised."""
     with tempfile.TemporaryDirectory() as image_dir:
-      rack = tube_rack("rack")
-      small = tube_rack("small_rack", num_items_x=6, num_items_y=4)
-      rig = Recorder(image_dir, rack)
+      store = ResourceStore.in_memory()
+      rack = await tube_rack(store, "rack")
+      small = await tube_rack(store, "small_rack", num_items_x=6, num_items_y=4)
+      rig = Recorder(image_dir, store, rack)
       reader = rig.reader
 
       await rig.step("setup()", reader.setup)
@@ -229,7 +247,7 @@ class MicronicGoldenTests(unittest.IsolatedAsyncioTestCase):
       rig.serial.reply = b""
       await rig.step("scan_rack_id()  # no reply", reader.scan_rack_id)
       await rig.step("stop()", reader.stop)
-      check_golden(self, GOLDEN / "refused_racks_and_failed_reads.json", rig.finish())
+      check_golden(self, GOLDEN / "refused_racks_and_failed_reads.json", await rig.finish())
 
 
 if __name__ == "__main__":

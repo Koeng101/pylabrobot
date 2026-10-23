@@ -12,7 +12,7 @@
   "steps": [
     {
       "call": "bioshake.assign_child_resource(pcr_plate)",
-      "error": "ValueError: PlateHolder can only store plates that are skirted",
+      "error": "ValueError: plate holder 'bioshake' takes only skirted plates",
       "sent": [],
       "resources": [
         {

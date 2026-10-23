@@ -30,8 +30,8 @@ from pylabrobot.qinstruments.bioshake import (
   ColdPlate,
   Heatplate,
 )
-from pylabrobot.resources import Eppendorf_96_wellplate_250ul_Vb, cor_96_wellplate_360uL_Fb
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources.store import handles
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -94,7 +94,7 @@ class Recorder:
     self.serial: FakeSerial
     self.real_sleep = asyncio.sleep
 
-  def build(self, factory: Callable[[str, str], BioShake]) -> BioShake:
+  def build(self, factory: Callable[..., BioShake]) -> BioShake:
     """Build a BioShake from `factory` on the fake transport."""
 
     def make_serial(**settings: Any) -> FakeSerial:
@@ -135,15 +135,25 @@ class Recorder:
       entry["waits"] = self.waits
     if resources:
       assert self.device is not None
-      entry["resources"] = snapshot_resources(self.device)
+      entry["resources"] = await self.snapshot()
     self.steps.append(entry)
 
-  def finish(self) -> Dict[str, Any]:
+  async def snapshot(self) -> List[Dict[str, Any]]:
     assert self.device is not None
+    return await snapshot_store(self.device.store, await self.device.create_body())
+
+  async def plate(self, model: str, name: str) -> handles.Plate:
+    """A plate in the BioShake's store, in nothing."""
+    assert self.device is not None
+    plate = await self.device.store.create(model, name=name)
+    assert isinstance(plate, handles.Plate)
+    return plate
+
+  async def finish(self) -> Dict[str, Any]:
     return {
       "transport": self.transport,
       "steps": self.steps,
-      "resources": snapshot_resources(self.device),
+      "resources": await self.snapshot(),
     }
 
 
@@ -154,22 +164,25 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
     for factory in (BioShake3000, BioShake3000Elm, BioShake3000ElmDWP, BioShakeQ1):
       rig = Recorder()
       device = rig.build(factory)
+      body = await device.create_body()
+      attributes = await body.attributes()
+      size, holder = attributes.size, attributes.holder
       record[factory.__name__] = {
-        "model": device.model,
-        "category": device.category,
-        "size": [device.get_size_x(), device.get_size_y(), device.get_size_z()],
+        "model": attributes.model,
+        "category": attributes.category,
+        "size": [size.x, size.y, size.z],
         "supports_shaking": device.supports_shaking,
         "supports_locking": device.supports_locking,
         "supports_temperature_control": device.supports_temperature_control,
         "supports_active_cooling": device.supports_active_cooling,
-        "pedestal_size_z": device.pedestal_size_z,
+        "pedestal_size_z": holder.pedestal_size_z,
         "child_location": [
-          device.child_location.x,
-          device.child_location.y,
-          device.child_location.z,
+          holder.child_location.x,
+          holder.child_location.y,
+          holder.child_location.z,
         ],
         "transport": rig.transport,
-        "resources": snapshot_resources(device),
+        "resources": await rig.snapshot(),
       }
     for missing in (
       BioShakeD30Elm,
@@ -192,9 +205,9 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
     """A skirted plate is placed at the child location; a non-skirted one is refused."""
     rig = Recorder()
     bioshake = rig.build(BioShake3000Elm)
-    plate = cor_96_wellplate_360uL_Fb("plate")
-    other = cor_96_wellplate_360uL_Fb("other_plate")
-    pcr = Eppendorf_96_wellplate_250ul_Vb("pcr_plate")
+    plate = await rig.plate("cor_96_wellplate_360uL_Fb", "plate")
+    other = await rig.plate("cor_96_wellplate_360uL_Fb", "other_plate")
+    pcr = await rig.plate("Eppendorf_96_wellplate_250ul_Vb", "pcr_plate")
 
     await rig.step(
       "bioshake.assign_child_resource(pcr_plate)",
@@ -217,17 +230,16 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
       resources=True,
     )
 
-    def hold_other() -> None:
-      bioshake.resource = other
-
-    await rig.step("bioshake.resource = other_plate", hold_other, resources=True)
-    check_golden(self, GOLDEN / "plates_on_the_bioshake.json", rig.finish())
+    await rig.step(
+      "bioshake.resource = other_plate", lambda: bioshake.set_resource(other), resources=True
+    )
+    check_golden(self, GOLDEN / "plates_on_the_bioshake.json", await rig.finish())
 
   async def test_shaking_with_a_locked_plate(self):
     """Setup homes the shaker; a plate is locked, shaken and released."""
     rig = Recorder()
     bioshake = rig.build(BioShake3000Elm)
-    bioshake.assign_child_resource(cor_96_wellplate_360uL_Fb("plate"))
+    await bioshake.assign_child_resource(await rig.plate("cor_96_wellplate_360uL_Fb", "plate"))
 
     await rig.step("setup()", lambda: bioshake.setup())
     await rig.step("lock_plate()", lambda: bioshake.lock_plate())
@@ -242,7 +254,7 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
     await rig.step("unlock_plate()", lambda: bioshake.unlock_plate())
     await rig.step("home()", lambda: bioshake.home())
     await rig.step("stop()", lambda: bioshake.stop())
-    check_golden(self, GOLDEN / "shaking_with_a_locked_plate.json", rig.finish())
+    check_golden(self, GOLDEN / "shaking_with_a_locked_plate.json", await rig.finish())
 
   async def test_refused_shaking(self):
     """Out-of-range and malformed speeds, and a firmware error."""
@@ -269,7 +281,7 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
     await rig.step(
       "start_shaking(speed=1000)  # unsupported", lambda: bioshake.start_shaking(speed=1000)
     )
-    check_golden(self, GOLDEN / "refused_shaking.json", rig.finish())
+    check_golden(self, GOLDEN / "refused_shaking.json", await rig.finish())
 
   async def test_temperature(self):
     """Q1 setup, heating, reading and switching off; out-of-range and sub-tenth targets."""
@@ -283,7 +295,7 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
     await rig.step("set_temperature(120)", lambda: bioshake.set_temperature(120))
     await rig.step("request_current_temperature()", lambda: bioshake.request_current_temperature())
     await rig.step("deactivate()", lambda: bioshake.deactivate())
-    check_golden(self, GOLDEN / "temperature.json", rig.finish())
+    check_golden(self, GOLDEN / "temperature.json", await rig.finish())
 
 
 if __name__ == "__main__":

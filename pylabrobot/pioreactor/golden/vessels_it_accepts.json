@@ -68,7 +68,7 @@
     },
     {
       "call": "pioreactor.assign_child_resource(tube, Coordinate(0, 0, 0))",
-      "error": "ValueError: Pioreactor already has a vessel assigned.",
+      "error": "ValueError: 'pioreactor' already holds 'vessel'",
       "resources": [
         {
           "name": "pioreactor",

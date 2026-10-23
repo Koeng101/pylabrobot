@@ -1,13 +1,15 @@
 from typing import Optional
 
-from pylabrobot.resources import Coordinate, ResourceHolder
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store.client import ResourceStore
 
 from .control_box import InhecoTECControlBox
-from .temperature_controller import InhecoTemperatureController
+from .holder import InhecoHolder
 
 
-class InhecoCPAC(ResourceHolder, InhecoTemperatureController):
-  """Inheco CPAC: a temperature-controlled plate holder addressed by index on a control box."""
+class InhecoCPAC(InhecoHolder):
+  """Inheco CPAC: a temperature-controlled plate holder addressed by index on a control box. It
+  holds any plate, one at a time."""
 
   def __init__(
     self,
@@ -20,9 +22,12 @@ class InhecoCPAC(ResourceHolder, InhecoTemperatureController):
     child_location: Coordinate,
     category: str = "temperature_controller",
     model: Optional[str] = None,
+    store: Optional[ResourceStore] = None,
   ):
-    ResourceHolder.__init__(
+    InhecoHolder.__init__(
       self,
+      index=index,
+      control_box=control_box,
       name=name,
       size_x=size_x,
       size_y=size_y,
@@ -30,11 +35,16 @@ class InhecoCPAC(ResourceHolder, InhecoTemperatureController):
       child_location=child_location,
       category=category,
       model=model,
+      store=store,
     )
-    InhecoTemperatureController.__init__(self, index=index, interface=control_box)
 
 
-def inheco_cpac_ultraflat(name: str, control_box: InhecoTECControlBox, index: int) -> InhecoCPAC:
+def inheco_cpac_ultraflat(
+  name: str,
+  control_box: InhecoTECControlBox,
+  index: int,
+  store: Optional[ResourceStore] = None,
+) -> InhecoCPAC:
   """Inheco CPAC Ultraflat
   7000166, 7000190, 7000165
 
@@ -58,4 +68,5 @@ def inheco_cpac_ultraflat(name: str, control_box: InhecoTECControlBox, index: in
     size_z=129,  # from spec
     child_location=Coordinate(x=8, y=11, z=77),  # x from spec, y and z measured
     model=inheco_cpac_ultraflat.__name__,
+    store=store,
   )

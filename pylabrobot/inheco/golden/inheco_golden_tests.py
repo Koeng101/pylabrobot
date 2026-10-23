@@ -27,12 +27,9 @@ from pylabrobot.inheco import (
 )
 from pylabrobot.inheco import control_box as control_box_module
 from pylabrobot.inheco import thermoshake as thermoshake_module
-from pylabrobot.resources import (
-  Eppendorf_96_wellplate_250ul_Vb,
-  Resource,
-  cor_96_wellplate_360uL_Fb,
-)
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.inheco.holder import InhecoHolder
+from pylabrobot.resources.store import handles
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -87,7 +84,7 @@ class Recorder:
     self.box = InhecoTECControlBox()
     self.hid = FakeHID(self)
     self.box.io = self.hid  # type: ignore[assignment]
-    self.root: Optional[Resource] = None
+    self.device: Optional[InhecoHolder] = None
     self.real_sleep = asyncio.sleep
     self.now = 0.0
 
@@ -124,25 +121,37 @@ class Recorder:
     if self.waits:
       entry["waits"] = self.waits
     if resources:
-      assert self.root is not None
-      entry["resources"] = snapshot_resources(self.root)
+      entry["resources"] = await self.snapshot()
     self.steps.append(entry)
 
-  def finish(self) -> Dict[str, Any]:
-    assert self.root is not None
-    return {"steps": self.steps, "resources": snapshot_resources(self.root)}
+  async def snapshot(self) -> List[Dict[str, Any]]:
+    assert self.device is not None
+    return await snapshot_store(self.device.store, await self.device.create_body())
+
+  async def plate(self, model: str, name: str) -> handles.Plate:
+    """A plate in the device's store, in nothing."""
+    assert self.device is not None
+    plate = await self.device.store.create(model, name=name)
+    assert isinstance(plate, handles.Plate)
+    return plate
+
+  async def finish(self) -> Dict[str, Any]:
+    return {"steps": self.steps, "resources": await self.snapshot()}
 
 
-def describe(device: Union[InhecoThermoShake, InhecoCPAC]) -> Dict[str, Any]:
+async def describe(device: Union[InhecoThermoShake, InhecoCPAC]) -> Dict[str, Any]:
   """A holder's model, size, child location, index and tree."""
+  body = await device.create_body()
+  attributes = await body.attributes()
+  size, child_location = attributes.size, attributes.holder.child_location
   return {
-    "model": device.model,
-    "category": device.category,
-    "size": [device.get_size_x(), device.get_size_y(), device.get_size_z()],
-    "child_location": [device.child_location.x, device.child_location.y, device.child_location.z],
+    "model": attributes.model,
+    "category": attributes.category,
+    "size": [size.x, size.y, size.z],
+    "child_location": [child_location.x, child_location.y, child_location.z],
     "index": device.index,
     "supports_active_cooling": device.supports_active_cooling,
-    "resources": snapshot_resources(device),
+    "resources": await snapshot_store(device.store, body),
   }
 
 
@@ -151,8 +160,12 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
     """Each factory's holder, the factories without a child location, and refused indices."""
     box = InhecoTECControlBox()
     record: Dict[str, Any] = {
-      "inheco_thermoshake": describe(inheco_thermoshake("thermoshake", control_box=box, index=1)),
-      "inheco_cpac_ultraflat": describe(inheco_cpac_ultraflat("cpac", control_box=box, index=6)),
+      "inheco_thermoshake": await describe(
+        inheco_thermoshake("thermoshake", control_box=box, index=1)
+      ),
+      "inheco_cpac_ultraflat": await describe(
+        inheco_cpac_ultraflat("cpac", control_box=box, index=6)
+      ),
     }
     for factory in (inheco_thermoshake_ac, inheco_thermoshake_rm):
       try:
@@ -172,9 +185,9 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
     """The ThermoShake holds any plate at its child location, one at a time."""
     rig = Recorder()
     thermoshake = inheco_thermoshake("thermoshake", control_box=rig.box, index=1)
-    rig.root = thermoshake
-    plate = cor_96_wellplate_360uL_Fb("plate")
-    pcr = Eppendorf_96_wellplate_250ul_Vb("pcr_plate")
+    rig.device = thermoshake
+    plate = await rig.plate("cor_96_wellplate_360uL_Fb", "plate")
+    pcr = await rig.plate("Eppendorf_96_wellplate_250ul_Vb", "pcr_plate")
 
     await rig.step(
       "thermoshake.assign_child_resource(pcr_plate)",
@@ -196,14 +209,14 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
       lambda: thermoshake.assign_child_resource(plate),
       resources=True,
     )
-    check_golden(self, GOLDEN / "plates_on_the_thermoshake.json", rig.finish())
+    check_golden(self, GOLDEN / "plates_on_the_thermoshake.json", await rig.finish())
 
   async def test_thermoshake_heating_and_shaking(self):
     """Heat a plate, shake it in each way, read the temperature and stop."""
     rig = Recorder()
     thermoshake = inheco_thermoshake("thermoshake", control_box=rig.box, index=2)
-    rig.root = thermoshake
-    thermoshake.assign_child_resource(cor_96_wellplate_360uL_Fb("plate"))
+    rig.device = thermoshake
+    await thermoshake.assign_child_resource(await rig.plate("cor_96_wellplate_360uL_Fb", "plate"))
 
     await rig.step("box.setup()", lambda: rig.box.setup())
     await rig.step("set_temperature(37)", lambda: thermoshake.set_temperature(37))
@@ -226,14 +239,14 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
     await rig.step("stop_shaking()  # device error", lambda: thermoshake.stop_shaking())
     rig.hid.error_status = "0"
     await rig.step("box.stop()", lambda: rig.box.stop())
-    check_golden(self, GOLDEN / "thermoshake_heating_and_shaking.json", rig.finish())
+    check_golden(self, GOLDEN / "thermoshake_heating_and_shaking.json", await rig.finish())
 
   async def test_cpac_cooling_a_plate(self):
     """A plate on the CPAC, cooled, read and released."""
     rig = Recorder()
     cpac = inheco_cpac_ultraflat("cpac", control_box=rig.box, index=1)
-    rig.root = cpac
-    plate = Eppendorf_96_wellplate_250ul_Vb("pcr_plate")
+    rig.device = cpac
+    plate = await rig.plate("Eppendorf_96_wellplate_250ul_Vb", "pcr_plate")
 
     await rig.step("box.setup()", lambda: rig.box.setup())
     await rig.step(
@@ -251,7 +264,7 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
       resources=True,
     )
     await rig.step("box.stop()", lambda: rig.box.stop())
-    check_golden(self, GOLDEN / "cpac_cooling_a_plate.json", rig.finish())
+    check_golden(self, GOLDEN / "cpac_cooling_a_plate.json", await rig.finish())
 
 
 if __name__ == "__main__":
