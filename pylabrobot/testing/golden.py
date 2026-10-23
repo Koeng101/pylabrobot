@@ -22,15 +22,15 @@ import pathlib
 import unittest
 from typing import Any, Dict, List, Optional
 
-from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.container import Container
 from pylabrobot.resources.end_effector import MechanicalGripper
+from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.definitions import kind_of
-from pylabrobot.resources.tip import Tip
 from pylabrobot.resources.store.handles import Resource as Handle
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.resources.tip import Tip
 
 UPDATE_VARIABLE = "PLR_UPDATE_GOLDEN"
 # Decimals numbers in a record are kept to: a millionth of a mm or a uL.

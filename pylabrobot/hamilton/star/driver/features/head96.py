@@ -26,11 +26,11 @@ from pylabrobot.hamilton.liquid_class_resolver import (
   from_class,
 )
 from pylabrobot.hamilton.liquid_classes import HamiltonLiquidClass
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.errors import STARFirmwareError
 from pylabrobot.hamilton.star.driver.features.head import Head, HeadConfiguration
 from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.liquid_classes.mapping import get_star_liquid_class
-from pylabrobot.hamilton.star.driver import model
 from pylabrobot.lib.liquid_handling.head_alignment import (
   GridLayout,
   SpotTip,

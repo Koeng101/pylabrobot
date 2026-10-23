@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Optional
 
+from pylabrobot.hamilton.prep.deck import PREP_DECK_SIZE, PrepDeckParts, prep_deck, read_prep_deck
 from pylabrobot.hamilton.prep.driver.features.calibration import Calibration
 from pylabrobot.hamilton.prep.driver.features.core_grippers import CoreGrippers
 from pylabrobot.hamilton.prep.driver.features.head8 import Head8
@@ -13,8 +14,8 @@ from pylabrobot.hamilton.prep.driver.features.method import MethodLifecycle
 from pylabrobot.hamilton.prep.driver.features.pipettes import Pipettes
 from pylabrobot.hamilton.prep.driver.features.x_arm import XArm
 from pylabrobot.hamilton.prep.driver.master import PrepDriver
+from pylabrobot.hamilton.prep.driver.model import get_nodes, ref
 from pylabrobot.hamilton.prep.driver.simulator import PrepSimulationDriver
-from pylabrobot.hamilton.prep.deck import PREP_DECK_SIZE, PrepDeckParts, prep_deck, read_prep_deck
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore
@@ -22,7 +23,6 @@ from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.tree import to_coordinate
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
-from pylabrobot.hamilton.prep.driver.model import get_nodes, ref
 
 logger = logging.getLogger(__name__)
 

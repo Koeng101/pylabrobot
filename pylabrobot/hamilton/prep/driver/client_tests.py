@@ -9,9 +9,9 @@ import pytest
 from pylabrobot.hamilton.prep import PrepDriver, PrepSimulationDriver
 from pylabrobot.hamilton.prep.driver import prep_commands as PrepCmd
 from pylabrobot.hamilton.prep.driver.configuration import read_configuration, to_jsonable
+from pylabrobot.hamilton.prep.driver.test_helpers import make_plain_deck, make_prep_deck
 from pylabrobot.hamilton.transport.tcp.packets import Address
 from pylabrobot.hamilton.transport.tcp.protocol import Hoi2Action
-from pylabrobot.hamilton.prep.driver.test_helpers import make_plain_deck, make_prep_deck
 
 
 def _index_of(sent: list, command_type) -> "int | None":

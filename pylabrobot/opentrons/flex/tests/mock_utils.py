@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 
 from pylabrobot.io.http import HTTP
 from pylabrobot.opentrons import Flex, OpentronsAPI
+from pylabrobot.opentrons.decks import create_flex_deck, get_slot_holder
 from pylabrobot.opentrons.flex.flex_wire import OFFLINE_API_VERSION
 from pylabrobot.opentrons.types import (
   CommandInfo,
@@ -14,7 +15,6 @@ from pylabrobot.opentrons.types import (
   RobotInfo,
   RunInfo,
 )
-from pylabrobot.opentrons.decks import create_flex_deck, get_slot_holder
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore

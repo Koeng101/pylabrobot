@@ -8,13 +8,13 @@ the store refuses as a tracking problem is raised here as the exception PLR rais
 from typing import Dict, List, NoReturn, Optional, Sequence, Type
 
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.hamilton.tip_creators import TipPickupMethod
 from pylabrobot.resources.errors import (
   HasTipError,
   NoTipError,
   TooLittleLiquidError,
   TooLittleVolumeError,
 )
+from pylabrobot.resources.hamilton.tip_creators import TipPickupMethod
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.errors import StoreError

@@ -6,15 +6,15 @@ from unittest.mock import AsyncMock, call, patch
 
 from pylabrobot.io.http import HTTP
 from pylabrobot.opentrons import Flex, OpentronsAPI
-from pylabrobot.opentrons.errors import OpentronsError
-from pylabrobot.opentrons.types import CommandInfo, DeckFixture, InstrumentInfo, RobotInfo, RunInfo
 from pylabrobot.opentrons.decks import (
   assign_child_at_slot,
   get_resource_at_slot,
   get_slot,
   get_trash_area,
 )
+from pylabrobot.opentrons.errors import OpentronsError
 from pylabrobot.opentrons.flex.tests.mock_utils import make_deck
+from pylabrobot.opentrons.types import CommandInfo, DeckFixture, InstrumentInfo, RobotInfo, RunInfo
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import build
 

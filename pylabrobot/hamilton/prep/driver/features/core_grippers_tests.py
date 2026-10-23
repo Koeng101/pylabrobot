@@ -26,16 +26,16 @@ from pylabrobot.hamilton.prep.driver.test_helpers import (
 )
 from pylabrobot.hamilton.transport.tcp.hoi_error import HoiError
 from pylabrobot.resources import Coordinate, Resource
-from pylabrobot.resources.resource_holder import ResourceHolder
-from pylabrobot.resources.resource_stack import ResourceStack
-from pylabrobot.resources.trash import Trash
 from pylabrobot.resources.alpaqua.magnetic_racks import alpaqua_96_plateadapter_magnum_flx
 from pylabrobot.resources.azenta import azenta_96_wellplate_200uL_Vb_4titudeframestar
-from pylabrobot.resources.store.definitions import definition_from_resource
-from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.resource_holder import ResourceHolder
+from pylabrobot.resources.resource_stack import ResourceStack
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.definitions import definition_from_resource
+from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.resources.trash import Trash
 
 
 def _capture_send(prep: PrepDriver) -> list[Any]:

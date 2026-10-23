@@ -23,9 +23,9 @@ from typing import (
 )
 
 from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_date
-from pylabrobot.hamilton.star.driver.errors import NoElementError, STARFirmwareError
 from pylabrobot.hamilton.star import resource_model
 from pylabrobot.hamilton.star.driver import model
+from pylabrobot.hamilton.star.driver.errors import NoElementError, STARFirmwareError
 from pylabrobot.hamilton.star.resource_model import ELBOW_DRIVE_ANGLE, WRIST_DRIVE_ANGLE
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.rotation import Rotation

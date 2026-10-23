@@ -1,9 +1,8 @@
 """Fine-pipetting command arguments, response handling, and resource bookkeeping."""
 
 import unittest
-from unittest.mock import AsyncMock, call, patch
-
 from typing import Tuple
+from unittest.mock import AsyncMock, call, patch
 
 from pylabrobot.io.http import HTTP
 from pylabrobot.opentrons.decks import get_trash_area

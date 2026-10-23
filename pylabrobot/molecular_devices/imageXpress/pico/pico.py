@@ -24,6 +24,7 @@ from pylabrobot.io.sila.grpc import (
   unlock_server_params,
   varint_as_signed,
 )
+from pylabrobot.molecular_devices._plate import read_plate
 from pylabrobot.molecular_devices.imageXpress.pico.models import (
   Exposure,
   FocalPosition,
@@ -32,7 +33,6 @@ from pylabrobot.molecular_devices.imageXpress.pico.models import (
   ImagingResult,
   Objective,
 )
-from pylabrobot.molecular_devices._plate import read_plate
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.utils import row_index_to_label

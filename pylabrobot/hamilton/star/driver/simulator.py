@@ -21,6 +21,8 @@ from pylabrobot.hamilton.protocol.text.framing import (
   assemble_channel_command,
   parse_firmware_version_date,
 )
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.configuration import DeviceConfiguration
 from pylabrobot.hamilton.star.driver.errors import check_fw_string_error
 from pylabrobot.hamilton.star.driver.features.autoload import (
@@ -55,8 +57,6 @@ from pylabrobot.hamilton.star.driver.features.x_arm import XArm
 from pylabrobot.hamilton.star.driver.master import STARDriver
 from pylabrobot.io.io import IOBase
 from pylabrobot.io.validation_utils import LOG_LEVEL_IO
-from pylabrobot.hamilton.star import resource_model
-from pylabrobot.hamilton.star.driver import model
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.hamilton.tip_creators import TipDropMethod, TipPickupMethod
 from pylabrobot.resources.store import handles

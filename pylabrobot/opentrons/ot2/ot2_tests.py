@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, create_autospec, patch
 from pylabrobot.io.http import HTTP
 from pylabrobot.opentrons import OT2, OpentronsError, OT2_8ChannelPipette, OT2SingleChannelPipette
 from pylabrobot.opentrons.api import OpentronsAPI
+from pylabrobot.opentrons.decks import create_ot2_deck, get_slot_holder
 from pylabrobot.opentrons.labware import LabwareRegistry
+from pylabrobot.opentrons.model import TipFacts, read
 from pylabrobot.opentrons.run import OpentronsRun
 from pylabrobot.opentrons.types import (
   LabwareIdentity,
@@ -13,8 +15,6 @@ from pylabrobot.opentrons.types import (
   RobotInfo,
   RunInfo,
 )
-from pylabrobot.opentrons.decks import create_ot2_deck, get_slot_holder
-from pylabrobot.opentrons.model import TipFacts, read
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import library
 from pylabrobot.resources.store.client import ResourceStore

@@ -25,6 +25,7 @@ from pylabrobot.hamilton.prep.driver.features.pipettes import (
 )
 from pylabrobot.hamilton.prep.driver.features.pipettes import logger as pipettes_logger
 from pylabrobot.hamilton.prep.driver.master import _ResolvedPrepCommand
+from pylabrobot.hamilton.prep.driver.model import ContainerFacts, ToolFacts, read_containers
 from pylabrobot.hamilton.prep.driver.simulator import (
   FIRMWARE_TREE_V1_2_2,
   RECORDING_PREP,
@@ -35,6 +36,12 @@ from pylabrobot.hamilton.prep.driver.simulator import (
   SIMULATED_Z_DRIVE_OFFSETS,
   _DeviceRefuses,
   _SimulatedIO,
+)
+from pylabrobot.hamilton.prep.driver.test_helpers import (
+  make_plain_deck,
+  make_prep_deck,
+  parts_of,
+  place,
 )
 from pylabrobot.hamilton.star.driver.features.pipettes import Pipettes as STARPipettes
 from pylabrobot.hamilton.star.liquid_classes.mapping import (
@@ -58,13 +65,6 @@ from pylabrobot.resources.petri_dish import PetriDish
 from pylabrobot.resources.store import build, handles, library
 from pylabrobot.resources.store.definitions import definition_from_resource
 from pylabrobot.resources.store.v1 import types_pb2 as pb
-from pylabrobot.hamilton.prep.driver.model import ContainerFacts, ToolFacts, read_containers
-from pylabrobot.hamilton.prep.driver.test_helpers import (
-  make_plain_deck,
-  make_prep_deck,
-  parts_of,
-  place,
-)
 
 
 async def _rack(deck: handles.Deck, model: str, name: str, spot: int) -> handles.TipRack:

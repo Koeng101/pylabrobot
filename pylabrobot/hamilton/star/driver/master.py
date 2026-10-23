@@ -18,6 +18,8 @@ from pylabrobot.hamilton.protocol.text.framing import (
   parse_fw_string,
 )
 from pylabrobot.hamilton.protocol.text.router import ReplyRouter
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.configuration import (
   DeviceConfiguration,
   read_configuration,
@@ -34,10 +36,8 @@ from pylabrobot.hamilton.star.driver.features.head384 import Head384
 from pylabrobot.hamilton.star.driver.features.iswap import iSWAP, iSWAPConfiguration
 from pylabrobot.hamilton.star.driver.features.pipettes import Pipettes
 from pylabrobot.hamilton.star.driver.features.x_arm import XArm, XArmConfiguration
-from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.driver.lock import _FirmwareLock
-from pylabrobot.hamilton.star import resource_model
 from pylabrobot.hamilton.star.resource_model import (
   ELBOW_DRIVE_COLUMN_ABOVE_REPORTED_Z,
   FRAME_BY_NUM_TRACKS,

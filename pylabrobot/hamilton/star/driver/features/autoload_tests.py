@@ -2,6 +2,7 @@ import unittest
 from typing import Any, List, Optional, Set, Tuple
 from unittest.mock import AsyncMock, patch
 
+from pylabrobot.hamilton.star.conftest import make_deck
 from pylabrobot.hamilton.star.device import (
   RECORDING_STAR,
   RECORDING_STAR_HEAD384,
@@ -10,7 +11,6 @@ from pylabrobot.hamilton.star.device import (
 )
 from pylabrobot.hamilton.star.driver.features.autoload import Autoload, AutoloadConfiguration
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
-from pylabrobot.hamilton.star.conftest import make_deck
 
 # Where the simulated wheel reads, in mm, when a test wants it standing below its safe Z.
 LOWERED = "pylabrobot.hamilton.star.driver.simulator.SIMULATED_AUTOLOAD_Z_POSITION"

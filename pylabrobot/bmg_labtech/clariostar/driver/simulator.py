@@ -23,8 +23,8 @@ from .features.absorbance import (
 from .features.drawer import Drawer
 from .features.measurement import (
   MeasurementSettings,
-  ShakeSettings,
   PlateFacts,
+  ShakeSettings,
   WellFacts,
   _get_measured_identifiers,
   _get_readings_by_well,

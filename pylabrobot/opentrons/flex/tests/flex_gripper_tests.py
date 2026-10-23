@@ -12,10 +12,10 @@ import unittest
 from typing import Optional, Tuple
 from unittest.mock import AsyncMock, patch
 
+from pylabrobot.opentrons.decks import get_resource_at_slot, get_slot
 from pylabrobot.opentrons.flex.errors import OpentronsError
 from pylabrobot.opentrons.flex.flex import Flex
 from pylabrobot.opentrons.flex.flex_gripper import FlexGripper
-from pylabrobot.opentrons.decks import get_resource_at_slot, get_slot
 from pylabrobot.opentrons.flex.tests.mock_utils import make_api, make_deck, make_flex, place
 from pylabrobot.opentrons.types import CommandInfo
 from pylabrobot.resources.coordinate import Coordinate

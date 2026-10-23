@@ -4,7 +4,6 @@ from pylabrobot.resources.plate import Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import CrossSectionType, Well, WellBottomType
 
-
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _agilent_96_wellplate_150uL_Vb_height_volume_data = {
   0.0: 0.0,

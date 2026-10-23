@@ -13,9 +13,9 @@ from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, TypeVar
 
 from connectrpc.code import Code
-from google.protobuf.timestamp_pb2 import Timestamp
 from connectrpc.errors import ConnectError
 from connectrpc.request import RequestContext
+from google.protobuf.timestamp_pb2 import Timestamp
 from protobuf.wkt import Any as AnyMessage
 
 from pylabrobot.resources.store import commands

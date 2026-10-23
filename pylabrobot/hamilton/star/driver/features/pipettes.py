@@ -41,14 +41,14 @@ from pylabrobot.hamilton.liquid_class_resolver import (
 )
 from pylabrobot.hamilton.liquid_classes import HamiltonLiquidClass
 from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_date
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.errors import (
   HamiltonNoTipError,
   NoTeachInSignalError,
   STARFirmwareError,
   channels_that_faulted,
 )
-from pylabrobot.hamilton.star import resource_model
-from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.driver.lock import CHANNEL_MODULE_LETTERS, _FirmwareLock
 from pylabrobot.lib.liquid_handling.channel_positioning import ChannelFootprint, channel_offsets

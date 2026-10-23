@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import geometry as g
-from pylabrobot.resources.store.engine import Engine, Item, Step, tool_in, Transfer
+from pylabrobot.resources.store.engine import Engine, Item, Step, Transfer, tool_in
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.tree import Node, to_coordinate, to_rotation_message, to_vec3
 from pylabrobot.resources.store.v1 import primitives_pb2 as ppb

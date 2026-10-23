@@ -41,8 +41,8 @@ from .measurement import (
   Measurement,
   MeasurementConfiguration,
   MeasurementSettings,
-  ShakeSettings,
   PlateFacts,
+  ShakeSettings,
   WellFacts,
   _get_measured_identifiers,
 )

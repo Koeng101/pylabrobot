@@ -16,8 +16,8 @@ from pylabrobot.hamilton.prep.driver.simulator import (
   RECORDING_PREP_HEAD8,
   RECORDING_PREP_HEATER_SHAKER,
 )
-from pylabrobot.hamilton.transport.tcp.hoi_error import HoiError
 from pylabrobot.hamilton.prep.driver.test_helpers import make_prep_deck, parts_of
+from pylabrobot.hamilton.transport.tcp.hoi_error import HoiError
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore

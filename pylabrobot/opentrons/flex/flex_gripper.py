@@ -18,12 +18,12 @@ the robot's own for official load names, or the uploaded custom definition
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from pylabrobot.opentrons.decks import DeckSlots, slot_in
 from pylabrobot.opentrons.flex.errors import OpentronsError
 from pylabrobot.opentrons.flex.flex_wire import (
   _require_robot_commands,
   slot_wire_location,
 )
-from pylabrobot.opentrons.decks import DeckSlots, slot_in
 from pylabrobot.opentrons.model import read
 from pylabrobot.opentrons.operations import OperationLock, instrument_operation
 from pylabrobot.resources.store import handles

@@ -14,10 +14,10 @@ import uuid
 from typing import Any, Optional, Tuple, cast
 from unittest.mock import AsyncMock, patch
 
+from pylabrobot.opentrons.decks import assign_child_at_slot, get_slot
 from pylabrobot.opentrons.flex.errors import OpentronsCommandError, OpentronsError
 from pylabrobot.opentrons.flex.flex import Flex
 from pylabrobot.opentrons.flex.flex_head import FlexHead8
-from pylabrobot.opentrons.decks import assign_child_at_slot, get_slot
 from pylabrobot.opentrons.flex.tests.mock_utils import make_api, make_deck, make_flex, place
 from pylabrobot.opentrons.labware import (
   build_container_definition,

@@ -23,7 +23,6 @@ from .standard import (
   OperatorActionResult,
 )
 
-
 # Kinds that hold one resource at a time, as PLR's `ResourceHolder` does.
 _HOLDER_KINDS = frozenset(
   {

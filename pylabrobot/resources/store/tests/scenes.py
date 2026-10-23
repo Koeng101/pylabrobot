@@ -11,7 +11,6 @@ import warnings
 from dataclasses import dataclass
 from typing import Callable, Dict, List
 
-
 from pylabrobot.hamilton.star.resource_model.heads import head96
 from pylabrobot.hamilton.star.resource_model.iswap import iswap_gripper, iswap_link_1
 from pylabrobot.resources import (

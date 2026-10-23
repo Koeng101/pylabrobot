@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from pylabrobot.io.serial import Serial
+from pylabrobot.molecular_devices._plate import read_plate
 from pylabrobot.molecular_devices.spectramax.errors import ERROR_CODES, SpectraMaxError
 from pylabrobot.molecular_devices.spectramax.results import AbsorbanceResult
-from pylabrobot.molecular_devices._plate import read_plate
 from pylabrobot.resources.store import handles
 
 logger = logging.getLogger(__name__)

@@ -61,7 +61,7 @@ from .features.lights import Lights
 from .features.pipettes import HEAD8_CLEARANCE_Y, Pipettes, PipettesConfiguration
 from .features.x_arm import XArm
 from .master import PrepDriver, _ResolvedPrepCommand
-from .model import ArmModel, read_arm, get_nodes, ref, tool_length
+from .model import ArmModel, get_nodes, read_arm, ref, tool_length
 from .prep_commands import (
   HEATER_OBJECT_PATH,
   HEATER_SHAKER_CPU_OBJECT_PATH,

@@ -16,17 +16,17 @@ from pylabrobot.events import (
 )
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.carrier import Carrier, PlateCarrier
-from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck, track_for_x_coordinate
 from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
+from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck, track_for_x_coordinate
 from pylabrobot.resources.plate import Plate as PLRPlate
-from pylabrobot.resources.tip_rack import TipSpot
-from pylabrobot.resources.well import Well as PLRWell
 from pylabrobot.resources.store import build
 from pylabrobot.resources.store import handles as h
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.tests.store_tests import ROOT, StoreTestCase, build_deck
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.resources.tip_rack import TipSpot
+from pylabrobot.resources.well import Well as PLRWell
 
 
 class HandleTestCase(StoreTestCase):

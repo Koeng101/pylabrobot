@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from pylabrobot.lib.liquid_handling.channel_positioning import (
+  ChannelFootprint,
   _centers_to_offsets,
   _distribute_channels,
   _get_compartments,
@@ -9,7 +10,6 @@ from pylabrobot.lib.liquid_handling.channel_positioning import (
   _position_channels_wide,
   _resolve_channel_spacings,
   _space_needed,
-  ChannelFootprint,
   compute_channel_offsets,
   footprint_of,
   nonconsecutive_channel_offsets,

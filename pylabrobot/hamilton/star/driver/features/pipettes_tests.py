@@ -21,8 +21,8 @@ from pylabrobot.lib.liquid_handling.pipette_batch_scheduling import (
 )
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import handles, library
-from pylabrobot.resources.store.definitions import definition_from_resource
 from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.definitions import definition_from_resource
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
@@ -4459,7 +4459,6 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
   async def test_a_following_post_mix_beside_a_container_without_a_model(self):
     from pylabrobot.lib.liquid_handling.mix import Mix
     from pylabrobot.resources import PetriDish
-
     from pylabrobot.resources.store.definitions import definition_from_resource
 
     area = math.pi * 15.0**2

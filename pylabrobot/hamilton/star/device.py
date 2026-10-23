@@ -4,6 +4,8 @@ import logging
 import os
 from typing import Optional
 
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.features.autoload import Autoload
 from pylabrobot.hamilton.star.driver.features.core_grippers import CoreGrippers
 from pylabrobot.hamilton.star.driver.features.cover import FrontCover
@@ -15,8 +17,6 @@ from pylabrobot.hamilton.star.driver.features.x_arm import XArm
 from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.driver.master import STARDriver
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
-from pylabrobot.hamilton.star.driver import model
-from pylabrobot.hamilton.star import resource_model
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.client import ResourceStore
