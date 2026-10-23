@@ -1,0 +1,165 @@
+{
+  "steps": [
+    {
+      "call": "pioreactor.vessel",
+      "error": "ValueError: Pioreactor 'pioreactor' has no vessel assigned.",
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        }
+      ]
+    },
+    {
+      "call": "pioreactor.assign_child_resource(block, Coordinate(0, 0, 0))",
+      "error": "TypeError: Pioreactor can only hold a Container as a child.",
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        }
+      ]
+    },
+    {
+      "call": "pioreactor.assign_child_resource(vessel, Coordinate(52.12, 30.95, 76))",
+      "result": null,
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "vessel",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_CONTAINER",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "pioreactor.vessel",
+      "result": "vessel",
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "vessel",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_CONTAINER",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "pioreactor.assign_child_resource(tube, Coordinate(0, 0, 0))",
+      "error": "ValueError: Pioreactor already has a vessel assigned.",
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "vessel",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_CONTAINER",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "pioreactor.unassign_child_resource(vessel)",
+      "result": null,
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        }
+      ]
+    },
+    {
+      "call": "pioreactor.assign_child_resource(tube, Coordinate(52.12, 30.95, 76))",
+      "result": null,
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "tube",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_TUBE",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "pioreactor.vessel",
+      "result": "tube",
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "tube",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_TUBE",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "pioreactor",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "tube",
+      "parent": "pioreactor",
+      "kind": "RESOURCE_KIND_TUBE",
+      "location": [
+        52.12,
+        30.95,
+        76.0
+      ],
+      "volume": 0.0
+    }
+  ]
+}

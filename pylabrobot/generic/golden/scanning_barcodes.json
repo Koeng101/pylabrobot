@@ -1,0 +1,85 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        "setup"
+      ]
+    },
+    {
+      "call": "reset_input_buffer()",
+      "result": null,
+      "sent": [
+        "reset_input_buffer"
+      ]
+    },
+    {
+      "call": "scan_barcode(read_time=1, symbology='Code 128 (Subset B and C)', position_on_resource='right')",
+      "result": {
+        "data": "AB1",
+        "symbology": "Code 128 (Subset B and C)",
+        "position_on_resource": "right"
+      },
+      "sent": [
+        "write 16540d",
+        "temporary_timeout",
+        "read 1",
+        "temporary_timeout",
+        "read 1",
+        "temporary_timeout",
+        "read 1",
+        "temporary_timeout",
+        "read 1",
+        "write 16550d"
+      ]
+    },
+    {
+      "call": "read_line()  # the leftover newline",
+      "result": "",
+      "sent": [
+        "read 1"
+      ]
+    },
+    {
+      "call": "scan_barcode()  # nothing arrives",
+      "result": null,
+      "sent": [
+        "write 16540d",
+        "read 1",
+        "write 16550d"
+      ]
+    },
+    {
+      "call": "scan_barcode(read_time=-1)",
+      "error": "ValueError: read_time must be non-negative.",
+      "sent": []
+    },
+    {
+      "call": "read_line(timeout=2)",
+      "result": "X\ufffd",
+      "sent": [
+        "temporary_timeout",
+        "read 1",
+        "temporary_timeout",
+        "read 1",
+        "temporary_timeout",
+        "read 1"
+      ]
+    },
+    {
+      "call": "write(b'\\x16T\\r')",
+      "result": null,
+      "sent": [
+        "write 16540d"
+      ]
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        "stop"
+      ]
+    }
+  ]
+}

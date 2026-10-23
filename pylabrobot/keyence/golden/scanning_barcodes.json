@@ -1,0 +1,113 @@
+{
+  "transport": {
+    "human_readable_device_name": "Keyence Barcode Scanner",
+    "port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "bytesize": 7,
+    "parity": "E",
+    "stopbits": 1,
+    "write_timeout": 1,
+    "timeout": 1,
+    "rtscts": false
+  },
+  "steps": [
+    {
+      "call": "setup()",
+      "error": "KeyenceBarcodeScannerError: Failed to initialize Keyence barcode scanner: Timeout waiting for motor to turn on.",
+      "sent": [
+        "setup",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r"
+      ],
+      "waits": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "scan_barcode()",
+      "result": {
+        "data": "T",
+        "symbology": "unknown",
+        "position_on_resource": "front"
+      },
+      "sent": [
+        "write LON\r"
+      ]
+    },
+    {
+      "call": "scan_barcode(read_time=2)",
+      "result": {
+        "data": "O",
+        "symbology": "unknown",
+        "position_on_resource": "front"
+      },
+      "sent": [
+        "write LON\r"
+      ]
+    },
+    {
+      "call": "scan_barcode()  # reader off",
+      "result": {
+        "data": "R",
+        "symbology": "unknown",
+        "position_on_resource": "front"
+      },
+      "sent": [
+        "write LON\r"
+      ]
+    },
+    {
+      "call": "scan_barcode()  # reader error",
+      "result": {
+        "data": "O",
+        "symbology": "unknown",
+        "position_on_resource": "front"
+      },
+      "sent": [
+        "write LON\r"
+      ]
+    },
+    {
+      "call": "scan_barcode()  # no read",
+      "result": {
+        "data": "N",
+        "symbology": "unknown",
+        "position_on_resource": "front"
+      },
+      "sent": [
+        "write LON\r"
+      ]
+    },
+    {
+      "call": "send_command('SSET')",
+      "result": "M",
+      "sent": [
+        "write SSET\r"
+      ]
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        "stop"
+      ]
+    }
+  ]
+}

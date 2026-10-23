@@ -1,0 +1,110 @@
+{
+  "steps": [
+    {
+      "call": "vessel.tracker.add_liquid(15000)",
+      "result": null,
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "pioreactor_vessel",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_CONTAINER",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 15000.0
+        }
+      ]
+    },
+    {
+      "call": "vessel.tracker.remove_liquid(1000)",
+      "result": null,
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "pioreactor_vessel",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_CONTAINER",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 14000.0
+        }
+      ]
+    },
+    {
+      "call": "vessel.tracker.add_liquid(10000)",
+      "error": "TooLittleVolumeError: Not enough space in container: 10000uL > 6000uL.",
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "pioreactor_vessel",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_CONTAINER",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 14000.0
+        }
+      ]
+    },
+    {
+      "call": "vessel.tracker.get_used_volume()",
+      "result": 14000,
+      "resources": [
+        {
+          "name": "pioreactor",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "pioreactor_vessel",
+          "parent": "pioreactor",
+          "kind": "RESOURCE_KIND_CONTAINER",
+          "location": [
+            52.12,
+            30.95,
+            76.0
+          ],
+          "volume": 14000.0
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "pioreactor",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "pioreactor_vessel",
+      "parent": "pioreactor",
+      "kind": "RESOURCE_KIND_CONTAINER",
+      "location": [
+        52.12,
+        30.95,
+        76.0
+      ],
+      "volume": 14000.0
+    }
+  ]
+}
