@@ -19,6 +19,7 @@ from typing import (
   TYPE_CHECKING,
   Any,
   Dict,
+  Iterable,
   List,
   Mapping,
   Optional,
@@ -374,10 +375,14 @@ class Resource:
     )
 
   async def delete(self) -> None:
-    """Remove it and everything under it from the store."""
+    """Remove it and everything under it from the store; leaving a parent, it emits
+    `resource.unassigned`."""
+    before = await _read_for_events(self.store, [self.ref])
     await self.store.commands.delete_resources(
       spb.DeleteResourcesRequest(lock_tokens=self.store.lock_tokens, resources=[self.ref])
     )
+    if before is not None:
+      _emit_unassigned(before, self.id)
 
 
 # -- containers ----------------------------------------------------------------------------------
@@ -582,7 +587,11 @@ class TipRack(ItemizedResource):
     return [self.get_tip_spot(identifier) for identifier in _expand(identifiers)]
 
   async def set_tip_state(self, present: Union[bool, Sequence[bool]]) -> None:
-    """Say which spots hold a fresh tip, column-major; one value sets them all."""
+    """Say which spots hold a fresh tip, column-major; one value sets them all.
+
+    Each tip made emits `resource.assigned`, then each tip taken away `resource.unassigned`, as
+    `TipSpot.assign_tip` and `unassign_tip` do.
+    """
     states = [present] * self.num_items if isinstance(present, bool) else list(present)
     if len(states) != self.num_items:
       raise ValueError(f"'{self.name}' has {self.num_items} spots, not {len(states)}")
@@ -593,7 +602,23 @@ class TipRack(ItemizedResource):
         updates.append(
           spb.ResourceUpdate(tip_presence=pb.SetTipPresence(spots=spots, present=state))
         )
+    refs = [spot.ref for spot in self.items]
+    before = await _read_for_events(self.store, refs, depth=1)
     await self._update(*updates)
+    if before is None:
+      return
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=refs, depth=1)
+    )
+    held, holds = _tools_by_holder(before.values()), _tools_by_holder(response.nodes)
+    for state in (True, False):
+      for spot, each in zip(self.items, states):
+        if each is not state:
+          continue
+        if state and spot.id not in held and spot.id in holds:
+          _emit_assigned(before, holds[spot.id], spot.id)
+        elif not state and spot.id in held:
+          _emit_unassigned(before, held[spot.id].id)
 
   async def fill(self) -> None:
     await self.set_tip_state(True)
@@ -802,13 +827,14 @@ STRUCTURED_KINDS = frozenset(
 
 
 async def _read_for_events(
-  store: ResourceStore, refs: Sequence[pb.ResourceRef]
+  store: ResourceStore, refs: Sequence[pb.ResourceRef], depth: int = 0
 ) -> Optional[Dict[bytes, pb.ResourceNode]]:
-  """The resources, and their ancestors, as they are before a move; None when nothing listens."""
+  """The resources, `depth` levels below them, and their ancestors, as they are before a move;
+  None when nothing listens."""
   if not is_event_bus_active():
     return None
   response = await store.commands.get_resources(
-    spb.GetResourcesRequest(resources=refs, depth=0, ancestors=True)
+    spb.GetResourcesRequest(resources=refs, depth=depth, ancestors=True)
   )
   return {node.id: node for node in response.nodes}
 
@@ -871,6 +897,15 @@ def _emit_assigned(
     parent=_reference(parent, before, parent.parent_id),
     location=_location(node),
   )
+
+
+def _tools_by_holder(nodes: Iterable[pb.ResourceNode]) -> Dict[bytes, pb.ResourceNode]:
+  """Each tip or tool among `nodes`, by the id of what holds it."""
+  return {
+    node.parent_id: node
+    for node in nodes
+    if node.attributes.kind in (K.RESOURCE_KIND_TIP, K.RESOURCE_KIND_HEAD_TOOL)
+  }
 
 
 def _expand(identifiers: Union[str, Sequence[Union[str, int]]]) -> List[Union[str, int]]:

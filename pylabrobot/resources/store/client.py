@@ -205,7 +205,8 @@ class ResourceStore:
     Args:
       source: A model's name - one of PLR's labware, or one the store keeps - or a definition.
       name: What to call it; names in a model follow it.
-      parent: What to put it in; unset leaves it a root with no location.
+      parent: What to put it in, emitting `resource.assigned`; unset leaves it a root with no
+        location.
       location: Where in `parent`; see `Resource.assign_child_resource`.
       track: A Hamilton deck's track, from 1.
     """
@@ -224,9 +225,12 @@ class ResourceStore:
         request.assign.track = track
     elif location is not None or track is not None:
       raise ValueError("a location needs a parent")
+    before = await handles._read_for_events(self, [parent.ref]) if parent is not None else None
     response = await self.commands.create_resources(
       spb.CreateResourcesRequest(lock_tokens=self.lock_tokens, resources=[request])
     )
+    if before is not None and parent is not None:
+      handles._emit_assigned(before, response.nodes[0], parent.id)
     return (await self.make_handles(response.nodes[:1], response.nodes[1:]))[0]
 
   @contextlib.asynccontextmanager

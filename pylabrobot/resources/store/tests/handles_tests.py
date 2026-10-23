@@ -3,8 +3,9 @@ deck, and each change is made in the store, where every handle sees it."""
 
 from __future__ import annotations
 
+import inspect
 import unittest
-from typing import List
+from typing import Any, Callable, Dict, List, Tuple
 
 from pylabrobot.events import (
   EventBus,
@@ -18,6 +19,7 @@ from pylabrobot.resources.carrier import Carrier, PlateCarrier
 from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck, track_for_x_coordinate
 from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
 from pylabrobot.resources.plate import Plate as PLRPlate
+from pylabrobot.resources.tip_rack import TipSpot
 from pylabrobot.resources.well import Well as PLRWell
 from pylabrobot.resources.store import build
 from pylabrobot.resources.store import handles as h
@@ -168,6 +170,43 @@ class EventTests(HandleTestCase):
       [e.name for e in events],
       ["resource.unassigned", "resource.assigned"] * 2,
     )
+
+  async def events_of(self, run: Callable[[], Any]) -> List[Tuple[str, Dict[str, Any]]]:
+    """The events `run` emits, by name and data; awaited when it returns an awaitable."""
+    events: List[PLREvent] = []
+    bus = EventBus()
+    bus.subscribe(events.append)
+    with use_event_bus(bus):
+      result = run()
+      if inspect.isawaitable(result):
+        await result
+    return [(event.name, event.data) for event in events]
+
+  async def test_taking_and_making_tips_emits_what_plr_s_classes_do(self):
+    tips = await self.store.get("tips", root=self.deck)
+    assert isinstance(tips, h.TipRack)
+    spot = self.plr.get_resource("tips_tipspot_A1")
+    assert isinstance(spot, TipSpot)
+    ours = await self.events_of(lambda: tips.set_tip_state([i != 0 for i in range(tips.num_items)]))
+    self.assertEqual(ours, await self.events_of(spot.unassign_tip))
+    ours = await self.events_of(tips.fill)
+    self.assertEqual(ours, await self.events_of(lambda: spot.assign_tip(spot.make_tip())))
+    ours = await self.events_of(tips.empty)
+    self.assertEqual(len(ours), tips.num_items)
+    self.assertEqual({name for name, _ in ours}, {"resource.unassigned"})
+
+  async def test_creating_and_deleting_in_a_parent_emits_assignments(self):
+    carrier = await self.store.get("plate_carrier", root=self.deck)
+    assert isinstance(carrier, h.Carrier)
+    events = await self.events_of(
+      lambda: self.store.create("cor_96_wellplate_360uL_Fb", name="new_plate", parent=carrier[4])
+    )
+    self.assertEqual([name for name, _ in events], ["resource.assigned"])
+    self.assertEqual(events[0][1]["parent"]["name"], "plate_carrier-4")
+    plate = await self.store.get("new_plate", root=self.deck)
+    events = await self.events_of(plate.delete)
+    self.assertEqual([name for name, _ in events], ["resource.unassigned"])
+    self.assertEqual(events[0][1]["previous_parent"]["name"], "plate_carrier-4")
 
 
 class DeckTests(HandleTestCase):
