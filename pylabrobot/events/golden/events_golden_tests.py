@@ -16,48 +16,78 @@ from pylabrobot.events import (
   emit_event,
   event_operation,
   evented_operation,
-  resource_reference,
+  handle_reference,
   use_event_bus,
 )
-from pylabrobot.resources import Coordinate, Plate, PlateCarrier, Resource, TipRack
-from pylabrobot.resources.corning import cor_96_wellplate_360uL_Fb
-from pylabrobot.resources.hamilton import (
-  STARLetDeck,
-  hamilton_96_tiprack_300uL,
-  hamilton_plate_carrier_L5_ac,
-  hamilton_tip_carrier_L5,
-)
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.hamilton import STARLetDeck
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.definitions import definition_from_resource
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
 
+async def build_bench(store: ResourceStore) -> Dict[str, handles.Resource]:
+  """A STARlet deck with a plate carrier holding a plate and a tip carrier holding a tip rack."""
+  with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    plr_deck = STARLetDeck(
+      name="deck",
+      with_trash96=False,
+      with_teaching_needle_rack=False,
+      core_grippers=None,
+    )
+  deck = await store.create(definition_from_resource(plr_deck), name="deck")
+  plate_carrier = await store.create(
+    "hamilton_plate_carrier_L5_ac", name="plate_carrier", parent=deck, track=1
+  )
+  assert isinstance(plate_carrier, handles.Carrier)
+  plate = await store.create("cor_96_wellplate_360uL_Fb", name="plate", parent=plate_carrier[0])
+  tip_carrier = await store.create(
+    "hamilton_tip_carrier_L5", name="tip_carrier", parent=deck, track=8
+  )
+  assert isinstance(tip_carrier, handles.Carrier)
+  tips = await store.create("hamilton_96_tiprack_300uL", name="tips", parent=tip_carrier[0])
+  return {"deck": deck, "plate_carrier": plate_carrier, "plate": plate, "tips": tips}
+
+
+async def move_to(resource: handles.Resource, location: Coordinate) -> None:
+  """Put a resource somewhere else in its parent, as setting `location` does."""
+  await resource.store.commands.record_device_positions(
+    spb.RecordDevicePositionsRequest(
+      positions=[
+        spb.DevicePosition(
+          resource=resource.ref,
+          location=pb.PartialVec3(x=location.x, y=location.y, z=location.z),
+        )
+      ]
+    )
+  )
+
+
 class Bench:
-  """A STARlet deck with a plate carrier holding a plate and a tip carrier holding a tip rack,
-  with an event bus whose events are recorded step by step."""
+  """A STARlet deck with a plate carrier holding a plate and a tip carrier holding a tip rack, in a
+  resource store, with an event bus whose events are recorded step by step."""
 
   def __init__(self) -> None:
-    with warnings.catch_warnings():
-      warnings.simplefilter("ignore")
-      self.deck: Resource = STARLetDeck(
-        name="deck",
-        with_trash96=False,
-        with_teaching_needle_rack=False,
-        core_grippers=None,
-      )
-      self.plate_carrier: PlateCarrier = hamilton_plate_carrier_L5_ac(name="plate_carrier")
-      self.plate: Plate = cor_96_wellplate_360uL_Fb(name="plate")
-      self.plate_carrier[0] = self.plate
-      self.deck.assign_child_resource(self.plate_carrier, track=1)
-      tip_carrier = hamilton_tip_carrier_L5(name="tip_carrier")
-      self.tips: TipRack = hamilton_96_tiprack_300uL(name="tips")
-      tip_carrier[0] = self.tips
-      self.deck.assign_child_resource(tip_carrier, track=8)
+    self.store = ResourceStore.in_memory()
     self.bus = EventBus()
     self.events: List[PLREvent] = []
     self.bus.subscribe(self.events.append)
     self.operations: Dict[str, str] = {}
     self.steps: List[Dict[str, Any]] = []
+
+  async def build(self) -> None:
+    built = await build_bench(self.store)
+    self.deck = built["deck"]
+    plate_carrier, plate, tips = built["plate_carrier"], built["plate"], built["tips"]
+    assert isinstance(plate_carrier, handles.Carrier)
+    assert isinstance(plate, handles.Plate) and isinstance(tips, handles.TipRack)
+    self.plate_carrier, self.plate, self.tips = plate_carrier, plate, tips
 
   def _event(self, event: PLREvent) -> Dict[str, Any]:
     """An event as recorded: its timestamp left out, and each operation id, a random uuid,
@@ -85,106 +115,99 @@ class Bench:
     entry["sent"] = [self._event(event) for event in self.events[before:]]
     self.steps.append(entry)
 
-  def record(self) -> Dict[str, Any]:
-    return {"steps": self.steps, "resources": snapshot_resources(self.deck)}
+  async def record(self) -> Dict[str, Any]:
+    return {"steps": self.steps, "resources": await snapshot_store(self.store, self.deck)}
 
 
 class EventsGoldenTests(unittest.IsolatedAsyncioTestCase):
+  async def asyncSetUp(self) -> None:
+    self.bench = Bench()
+    await self.bench.build()
+
+  async def asyncTearDown(self) -> None:
+    await self.bench.store.close()
+
   async def test_tree_changes(self) -> None:
-    bench = Bench()
-    other = cor_96_wellplate_360uL_Fb(name="other_plate")
+    bench = self.bench
+    other = await bench.store.create("cor_96_wellplate_360uL_Fb", name="other_plate")
 
-    def assign_other_plate() -> None:
-      bench.plate_carrier[2] = other
-
-    await bench.step("plate_carrier[2] = other_plate", assign_other_plate)
+    await bench.step(
+      "plate_carrier[2] = other_plate",
+      lambda: bench.plate_carrier[2].assign_child_resource(other),
+    )
     await bench.step("other_plate.unassign()", other.unassign)
 
-    def move_plate() -> None:
-      bench.plate.unassign()
-      bench.plate_carrier[1] = bench.plate
+    async def move_plate() -> None:
+      await bench.plate.unassign()
+      await bench.plate_carrier[1].assign_child_resource(bench.plate)
 
     await bench.step("plate.unassign(); plate_carrier[1] = plate", move_plate)
     await bench.step("plate.rotate(z=90)", lambda: bench.plate.rotate(z=90))
-
-    def nudge_plate() -> None:
-      bench.plate.location = Coordinate(1, 2, 3)
-
-    await bench.step("plate.location = Coordinate(1, 2, 3)", nudge_plate)
+    await bench.step(
+      "plate.location = Coordinate(1, 2, 3)", lambda: move_to(bench.plate, Coordinate(1, 2, 3))
+    )
     well = bench.plate.get_well("A1")
-    await bench.step("resource_reference(plate['A1'])", lambda: resource_reference(well))
-    check_golden(self, GOLDEN / "tree_changes.json", bench.record())
+    await bench.step("resource_reference(plate['A1'])", lambda: handle_reference(well))
+    check_golden(self, GOLDEN / "tree_changes.json", await bench.record())
 
   async def test_state_changes(self) -> None:
-    bench = Bench()
+    bench = self.bench
     well = bench.plate.get_well("A1")
-    await bench.step("plate['A1'].tracker.set_volume(100)", lambda: well.tracker.set_volume(100))
-    spot = bench.tips.get_item("A1")
-
-    def take_tip() -> None:
-      spot.unassign_tip()
-
-    await bench.step("tips['A1'].unassign_tip()", take_tip)
-
-    def put_tip_back() -> None:
-      spot.assign_tip(spot.make_tip())
-
-    await bench.step("tips['A1'].assign_tip(tips['A1'].make_tip())", put_tip_back)
+    await bench.step("plate['A1'].tracker.set_volume(100)", lambda: well.set_volume(100))
+    all_but_a1 = [index != 0 for index in range(bench.tips.num_items)]
+    await bench.step("tips['A1'].unassign_tip()", lambda: bench.tips.set_tip_state(all_but_a1))
+    await bench.step("tips['A1'].assign_tip(tips['A1'].make_tip())", bench.tips.fill)
     await bench.step(
       "plate.set_well_volumes([50] * 96)", lambda: bench.plate.set_well_volumes([50] * 96)
     )
-
-    def take_every_tip() -> None:
-      for item in bench.tips.get_all_items():
-        if item.tip is not None:
-          item.unassign_tip()
-
-    await bench.step("unassign_tip() on every spot holding one", take_every_tip)
-    check_golden(self, GOLDEN / "state_changes.json", bench.record())
+    await bench.step("unassign_tip() on every spot holding one", bench.tips.empty)
+    check_golden(self, GOLDEN / "state_changes.json", await bench.record())
 
   async def test_operations(self) -> None:
-    bench = Bench()
-    other = cor_96_wellplate_360uL_Fb(name="other_plate")
+    bench = self.bench
+    other = await bench.store.create("cor_96_wellplate_360uL_Fb", name="other_plate")
 
-    def move_in_operation() -> None:
-      with event_operation("carrier.load", plate=resource_reference(other), site=2):
-        bench.plate_carrier[2] = other
+    async def move_in_operation() -> None:
+      with event_operation("carrier.load", plate=await handle_reference(other), site=2):
+        await bench.plate_carrier[2].assign_child_resource(other)
         emit_event("carrier.loaded", site=2)
 
     await bench.step("event_operation('carrier.load') around an assignment", move_in_operation)
 
-    def completed_with_final_state() -> None:
+    async def completed_with_final_state() -> None:
+      volume: Dict[str, float] = {}
       with event_operation(
         "plate.fill",
-        completed_data_factory=lambda: {"volume": well.tracker.get_used_volume()},
-        well=resource_reference(well),
+        completed_data_factory=lambda: volume,
+        well=await handle_reference(well),
       ):
-        well.tracker.set_volume(20)
+        await well.set_volume(20)
+        volume["volume"] = await well.get_volume()
 
     well = bench.plate.get_well("B2")
     await bench.step(
       "event_operation('plate.fill', completed_data_factory=...)", completed_with_final_state
     )
 
-    def failing_operation() -> None:
-      with event_operation("carrier.unload", plate=resource_reference(other)):
-        other.unassign()
+    async def failing_operation() -> None:
+      with event_operation("carrier.unload", plate=await handle_reference(other)):
+        await other.unassign()
         raise RuntimeError("gripper lost the plate")
 
     await bench.step("event_operation('carrier.unload') that raises", failing_operation)
 
-    @evented_operation(
-      "plate.rotate", lambda plate, z: {"plate": resource_reference(plate), "z": z}
-    )
-    async def rotate(plate: Plate, z: float) -> str:
-      plate.rotate(z=z)
+    plate_reference = await handle_reference(bench.plate)
+
+    @evented_operation("plate.rotate", lambda plate, z: {"plate": plate_reference, "z": z})
+    async def rotate(plate: handles.Plate, z: float) -> str:
+      await plate.rotate(z=z)
       emit_event("plate.rotated", z=z)
       return plate.name
 
     await bench.step(
       "evented_operation('plate.rotate')(plate, z=180)", lambda: rotate(bench.plate, z=180)
     )
-    check_golden(self, GOLDEN / "operations.json", bench.record())
+    check_golden(self, GOLDEN / "operations.json", await bench.record())
 
 
 if __name__ == "__main__":

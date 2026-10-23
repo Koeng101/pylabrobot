@@ -1,4 +1,4 @@
-"""A STARlet drawn from the model files it ships with, rather than as boxes.
+"""A STARlet deck drawn from the model files it ships with, rather than as boxes.
 
 Run it:
 
@@ -6,15 +6,17 @@ Run it:
 
 No path is declared and no models root is passed: a resource names its model, a `.glb` under
 the package is named after it, and the viewer draws it in the resource's own frame, in metres,
-Z up. What is drawn from a file and what stays a box is printed on startup. The iSWAP turns and
-its jaws work until stopped with Ctrl-C.
+Z up. What is drawn from a file and what stays a box is printed on startup. It stays up until
+stopped with Ctrl-C.
 """
 
 import asyncio
 import logging
 from typing import Any, Dict, List, Set, Tuple
 
-from .demo import build_facility, star_of, turn_the_arm, work_the_jaws
+from pylabrobot.resources.store.client import ResourceStore
+
+from .demo import build_facility
 from .server import Viewer3D
 
 
@@ -55,20 +57,13 @@ def report(models: List[Dict[str, Any]]) -> None:
 
 async def main() -> None:
   logging.disable(logging.WARNING)
-  facility = build_facility(bare=True)
-  star = star_of(facility)
-  await star.setup()
+  root = await build_facility(ResourceStore.in_memory(), bare=True)
 
-  viewer = Viewer3D(facility, name="model_demo.py")
+  viewer = Viewer3D(root, name="model_demo.py")
   await viewer.start()
   # The scene as the first client will be handed it, its meshes resolved.
   report(viewer._scene_message()["models"])
-  if star.iswap is None:
-    print("  this STARlet has no iSWAP, so nothing moves")
-    return
-  # The arm turns and the jaws work at the same time, as they do on the device: one drive does not
-  # wait on the other.
-  await asyncio.gather(turn_the_arm(star), work_the_jaws(star))
+  await asyncio.Event().wait()
 
 
 if __name__ == "__main__":

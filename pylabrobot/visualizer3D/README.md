@@ -21,18 +21,21 @@ A simulated run is over in milliseconds, and a script that ends stops its viewer
 `await viewer.wait_for_browser()` before the run, as `demo.py` does: it returns once a page says it
 is drawing, so the page shows the run from the start.
 
-`demo.py` sets the STAR deck's height to the top of the X-arm riding above it (334.7 mm of
-channel travel plus the arm's own 140 mm). The deck's own `size_z` of 900 mm is the working
-envelope from the instrument's configuration file, not the deck's extent: drawn as is, it
-protrudes 75.5 mm through the roof of the device carrying it around 665 mm of empty space. The
-viewer applies this itself rather than editing the resource library.
+`demo.py` builds its facility in an in-memory resource store: a STARlet deck from its model on a
+bench, with carriers, tip racks and plates on it. It gives the deck the height of the X-arm riding
+above it (334.7 mm of channel travel plus the arm's own 140 mm). The deck's own `size_z` of 900 mm
+is the working envelope from the instrument's configuration file, not the deck's extent: drawn as
+is, it protrudes 75.5 mm through the roof of the device carrying it around 665 mm of empty space.
+The demo changes its copy of the model rather than the resource library. A device's moving parts
+are drawn once its driver records where they are in the store; the demo drives none.
 
 ## What it demonstrates
 
-**Any resource is the world.** `Viewer3D(root)` takes a `Resource`. The demo's world is a plain
-`Resource` holding a simulated `STARDevice` at one coordinate and a bench at another. The bench has
-no deck, no driver and no device of any kind; it holds a plate and a tip rack, and renders exactly
-like everything else. Nothing in the client switches on a resource type: geometry comes from the
+**Any resource is the world.** `Viewer3D(root)` takes a handle to a resource in a resource store,
+and follows the store: it reads the tree once, then applies every change the store reports after
+that, from whoever made it. The demo's world is a facility (`facility()`, a definition) holding a
+deck at one coordinate and a bench at another. The bench has no deck, no driver and no device of
+any kind, and renders exactly like everything else. Nothing in the client switches on a resource type: geometry comes from the
 model's own `cross_section_type` and sizes, colour from its `category`, structure from the parent
 array, and the inspector prints whatever fields arrived.
 
@@ -59,9 +62,10 @@ particular thing, and inside a nested structure a string matching a resource in 
 to it. The rule deliberately stops at the top level, or a deck called "deck" loses its category.
 
 **One channel, not two.** Everything the viewer draws arrives as tracking state: a well's volume and
-the position of anything that travels. A moving part reaches the picture
-because `Resource.location` publishes when it is set, so an X-arm read off the device is on the
-same path as a well being filled.
+the position of anything that travels. A moving part reaches the picture because a driver records
+its position in the store, so an X-arm read off the device is on the same path as a well being
+filled. All the changes of one store request arrive together, so a 96-channel pick-up is one
+message.
 
 A polling reader sat beside that for a while, asking a device where its arm was five times a second
 and labelling each number `measured`, `derived` or `unavailable`. It was a second communication
@@ -75,8 +79,8 @@ interface is worth doing again once state itself can carry that distinction.
   loses its device within a second of drawing, so a browser that renders in software (`boot.js`'s
   probe) draws with WebGL2; WebGPU is exercised only on a machine with a GPU. Frame rates seen in
   software mean nothing; draw calls are the figure that transfers.
-- Liquid is driven from tracker state only: the demo moves the volume trackers directly, and a
-  real command moves the same trackers. Tips are not drawn from tracker state at all: a tip is
+- Liquid is drawn from the volumes the store holds: the demo sets them directly, and a real
+  command stages and resolves the same volumes. Tips are not drawn from tracker state at all: a tip is
   drawn when it stands in the tree as a resource.
 - Picking is `InstancedMesh` raycasting, which is fine at this size. GPU picking is the production
   answer.
@@ -178,8 +182,10 @@ reference in the coordinate tool alongside X and Y.
 
 ```
 scene.py      flatten any resource tree into models and instances; measure the split
-server.py     static files and a websocket, same two servers as today
-demo.py       a facility with a STAR and a bench in it
+server.py     static files and a websocket, same two servers as today; follows the store
+grids.py      a Hamilton deck's tracks, or a declared grid, as marks to draw
+facility.py   the facility a site's automation stands in, as a definition
+demo.py       a facility with a STARlet deck and a bench in it, in a resource store
 static/       index.html, main.css, and the client modules below; vendored three.js and gif.js
               (no CDN, so it runs air-gapped)
 ```
@@ -305,14 +311,15 @@ drawn as a box.
 
 ### The model
 
-`scene.py` derives a model from `Resource.serialize()` by removing `INSTANCE_FIELDS` (`name`,
-`location`, `rotation`, `parent_name`, `children`); inside nested values every `name` and
-`parent_name` key is dropped and a string equal to any resource name in the tree becomes
-`"<resource>"`. `methods`, `grid`, `bands` and the `DECLARED_FIELDS` read straight off the resource
-(`reference_point`, `window`, `mesh`, `reference_glb`, `appearance`) are added, and dicts that
-compare equal within one `type` are interned to one model. The declared fields belong in the
-resource's own serialization upstream; passing them through keeps the viewer free of any device's
-constants meanwhile. `_register_meshes` then works on a
+`scene.py` derives a model from a resource's serialization - what `Resource.serialize()` gives,
+built from what the store holds of it (`pylabrobot.visualizer.nodes`) - by removing
+`INSTANCE_FIELDS` (`name`, `location`, `rotation`, `parent_name`, `children`); inside nested values
+every `name` and `parent_name` key is dropped and a string equal to any resource name in the tree
+becomes `"<resource>"`. `methods` (the resource's handle class), `grid`, `bands` and the
+`DECLARED_FIELDS` read from the resource's metadata (`reference_point`, `window`, `mesh`,
+`reference_glb`, `appearance`; `position_grid` and `access_bands` for the grid and bands) are
+added, and dicts that compare equal within one `type` are interned to one model. Declaring them in
+metadata keeps the viewer free of any device's constants. `_register_meshes` then works on a
 copy: `reference_glb` is popped and never reaches the page; a resource with neither `mesh` nor
 `reference_glb` gets a `mesh` when a `<model>.glb` exists anywhere under the package (a `tip`
 whose `model` ends in `_filter` falls back to the unfiltered file), so a resource ships its
