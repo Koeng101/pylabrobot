@@ -890,8 +890,12 @@ class RunTests(unittest.IsolatedAsyncioTestCase):
       # A site holds one plate: the one there is taken off before another goes in.
       await (await self.store.get("destination_4", root=root)).unassign()
       await carrier[4].assign_child_resource(found["source_1"])
+      moved_to = await found["source_1"].get_absolute_location()
       await browser.settle(
-        "window.plrViewer.worldOf('source_1') && window.plrViewer.worldOf('source_1')[0] > 0", 30
+        "((at) => !!at && Math.abs(at[0] - "
+        f"{moved_to.x}) < 0.25 && Math.abs(at[1] - {moved_to.y}) < 0.25)"
+        "(window.plrViewer.worldOf('source_1'))",
+        30,
       )
       # The arm's position and the last volume travelled before that move, and are read once
       # they are on the page: nothing else is still in flight.
