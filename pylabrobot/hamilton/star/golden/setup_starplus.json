@@ -1,0 +1,3216 @@
+{
+  "steps": [
+    {
+      "call": "STARPlus(simulation=True)",
+      "sent": [],
+      "resources": [
+        {
+          "name": "STARplus",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "STARplus_deck",
+          "parent": "STARplus",
+          "kind": "RESOURCE_KIND_DECK",
+          "location": [
+            116.215,
+            97.8,
+            80.5
+          ]
+        },
+        {
+          "name": "STARplus_deck_trash_core96",
+          "parent": "STARplus_deck",
+          "kind": "RESOURCE_KIND_TRASH",
+          "location": [
+            -58.2,
+            106.0,
+            216.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_waste_block",
+          "parent": "STARplus_deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            1810.0,
+            115.0,
+            100.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack",
+          "parent": "STARplus_deck_waste_block",
+          "kind": "RESOURCE_KIND_TIP_RACK",
+          "location": [
+            6.75,
+            346.5,
+            0.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_0",
+          "parent": "STARplus_deck_teaching_tip_rack",
+          "kind": "RESOURCE_KIND_TIP_SPOT",
+          "location": [
+            0.0,
+            63.0,
+            75.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_0#0",
+          "parent": "STARplus_deck_teaching_tip_rack_tip_spot_0",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            0.4,
+            0.4,
+            -51.9
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_1",
+          "parent": "STARplus_deck_teaching_tip_rack",
+          "kind": "RESOURCE_KIND_TIP_SPOT",
+          "location": [
+            0.0,
+            54.0,
+            75.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_1#0",
+          "parent": "STARplus_deck_teaching_tip_rack_tip_spot_1",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            0.4,
+            0.4,
+            -51.9
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_2",
+          "parent": "STARplus_deck_teaching_tip_rack",
+          "kind": "RESOURCE_KIND_TIP_SPOT",
+          "location": [
+            0.0,
+            45.0,
+            75.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_2#0",
+          "parent": "STARplus_deck_teaching_tip_rack_tip_spot_2",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            0.4,
+            0.4,
+            -51.9
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_3",
+          "parent": "STARplus_deck_teaching_tip_rack",
+          "kind": "RESOURCE_KIND_TIP_SPOT",
+          "location": [
+            0.0,
+            36.0,
+            75.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_3#0",
+          "parent": "STARplus_deck_teaching_tip_rack_tip_spot_3",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            0.4,
+            0.4,
+            -51.9
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_4",
+          "parent": "STARplus_deck_teaching_tip_rack",
+          "kind": "RESOURCE_KIND_TIP_SPOT",
+          "location": [
+            0.0,
+            27.0,
+            75.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_4#0",
+          "parent": "STARplus_deck_teaching_tip_rack_tip_spot_4",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            0.4,
+            0.4,
+            -51.9
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_5",
+          "parent": "STARplus_deck_teaching_tip_rack",
+          "kind": "RESOURCE_KIND_TIP_SPOT",
+          "location": [
+            0.0,
+            18.0,
+            75.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_5#0",
+          "parent": "STARplus_deck_teaching_tip_rack_tip_spot_5",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            0.4,
+            0.4,
+            -51.9
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_6",
+          "parent": "STARplus_deck_teaching_tip_rack",
+          "kind": "RESOURCE_KIND_TIP_SPOT",
+          "location": [
+            0.0,
+            9.0,
+            75.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_6#0",
+          "parent": "STARplus_deck_teaching_tip_rack_tip_spot_6",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            0.4,
+            0.4,
+            -51.9
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_7",
+          "parent": "STARplus_deck_teaching_tip_rack",
+          "kind": "RESOURCE_KIND_TIP_SPOT",
+          "location": [
+            0.0,
+            0.0,
+            75.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_teaching_tip_rack_tip_spot_7#0",
+          "parent": "STARplus_deck_teaching_tip_rack_tip_spot_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            0.4,
+            0.4,
+            -51.9
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_deck_core_grippers",
+          "parent": "STARplus_deck_waste_block",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -1032.0,
+            -29.5,
+            100.5
+          ]
+        },
+        {
+          "name": "STARplus_deck_core_grippers_front",
+          "parent": "STARplus_deck_core_grippers",
+          "kind": "RESOURCE_KIND_HEAD_TOOL",
+          "location": [
+            1.5,
+            17.25,
+            2.5
+          ]
+        },
+        {
+          "name": "STARplus_deck_core_grippers_back",
+          "parent": "STARplus_deck_core_grippers",
+          "kind": "RESOURCE_KIND_HEAD_TOOL",
+          "location": [
+            37.5,
+            43.75,
+            2.5
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            180.0
+          ]
+        },
+        {
+          "name": "STARplus_deck_trash",
+          "parent": "STARplus_deck",
+          "kind": "RESOURCE_KIND_TRASH",
+          "location": [
+            1835.0,
+            190.6,
+            137.1
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "STARplus_left_extension_housing",
+          "parent": "STARplus",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -265.0,
+            6.8,
+            48.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "setup()",
+      "sent": [
+        "C0RM",
+        "C0QM",
+        "C0RU",
+        "C0UA",
+        "C0RI",
+        "C0RF",
+        "H0RF",
+        "H0QU",
+        "H0QG",
+        "C0RArakf",
+        "H0RArayv",
+        "H0RArayr",
+        "H0RArazv",
+        "H0RArazr",
+        "H0RArapy",
+        "H0RArapz",
+        "H0RArasv",
+        "H0RArasr",
+        "R0RF",
+        "C0RArakg",
+        "P1VY",
+        "P2VY",
+        "P3VY",
+        "P4VY",
+        "P5VY",
+        "P6VY",
+        "P7VY",
+        "P8VY",
+        "P1RF",
+        "P1VW",
+        "P1VY",
+        "P2RF",
+        "P2VW",
+        "P2VY",
+        "P3RF",
+        "P3VW",
+        "P3VY",
+        "P4RF",
+        "P4VW",
+        "P4VY",
+        "P5RF",
+        "P5VW",
+        "P5VY",
+        "P6RF",
+        "P6VW",
+        "P6VY",
+        "P7RF",
+        "P7VW",
+        "P7VY",
+        "P8RF",
+        "P8VW",
+        "P8VY",
+        "C0VI",
+        "C0RT",
+        "C0DIxp18350&yp4050 3783 3516 3249 2982 2715 2448 2181tp2450tz1220te3600tm1 1 1 1 1 1 1 1tt04ti0",
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        "P1RD",
+        "P2RD",
+        "P3RD",
+        "P4RD",
+        "P5RD",
+        "P6RD",
+        "P7RD",
+        "P8RD",
+        "C0ZA",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        "C0RT",
+        "P1AAyv5399",
+        "P1AAyr3",
+        "P1AAzv11652",
+        "P1AAzr075",
+        "P2AAyv5399",
+        "P2AAyr3",
+        "P2AAzv11652",
+        "P2AAzr075",
+        "P3AAyv5399",
+        "P3AAyr3",
+        "P3AAzv11652",
+        "P3AAzr075",
+        "P4AAyv5399",
+        "P4AAyr3",
+        "P4AAzv11652",
+        "P4AAzr075",
+        "P5AAyv5399",
+        "P5AAyr3",
+        "P5AAzv11652",
+        "P5AAzr075",
+        "P6AAyv5399",
+        "P6AAyr3",
+        "P6AAzv11652",
+        "P6AAzr075",
+        "P7AAyv5399",
+        "P7AAyr3",
+        "P7AAzv11652",
+        "P7AAzr075",
+        "P8AAyv5399",
+        "P8AAyr3",
+        "P8AAzv11652",
+        "P8AAzr075",
+        "C0FI",
+        "C0PGth2840",
+        "R0RY",
+        "R0RZ",
+        "R0RW",
+        "R0RT",
+        "R0RG",
+        "C0EIxs00465xd1yh1788za2164ze2450",
+        "H0RD",
+        "C0EV",
+        "H0RZ",
+        "C0RY",
+        "C0RZ",
+        "H0RY",
+        "H0RZ",
+        "R0RY",
+        "R0RZ",
+        "R0RW",
+        "R0RT",
+        "R0RG"
+      ],
+      "result": null,
+      "resources": [
+        {
+          "name": "STARplus_left_x_arm",
+          "parent": "STARplus_deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            139.9,
+            -39.5,
+            334.7
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_0",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            440.01,
+            8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_0_tip_mounting_shaft",
+          "parent": "STARplus_pipette_channel_0",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.99,
+            0.99,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_1",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            413.31,
+            8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_1_tip_mounting_shaft",
+          "parent": "STARplus_pipette_channel_1",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.99,
+            0.99,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_2",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            386.61,
+            8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_2_tip_mounting_shaft",
+          "parent": "STARplus_pipette_channel_2",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.99,
+            0.99,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_3",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            359.91,
+            8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_3_tip_mounting_shaft",
+          "parent": "STARplus_pipette_channel_3",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.99,
+            0.99,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_4",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            333.21,
+            8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_4_tip_mounting_shaft",
+          "parent": "STARplus_pipette_channel_4",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.99,
+            0.99,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_5",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            306.51,
+            8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_5_tip_mounting_shaft",
+          "parent": "STARplus_pipette_channel_5",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.99,
+            0.99,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_6",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            279.81,
+            8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_6_tip_mounting_shaft",
+          "parent": "STARplus_pipette_channel_6",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.99,
+            0.99,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_7",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            253.11,
+            8.0
+          ]
+        },
+        {
+          "name": "STARplus_pipette_channel_7_tip_mounting_shaft",
+          "parent": "STARplus_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.99,
+            0.99,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            -175.7,
+            502.45,
+            9.3
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A1",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            27.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B1",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            27.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C1",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            27.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D1",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            27.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E1",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            27.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F1",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            27.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G1",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            27.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H1",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            27.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A2",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            36.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B2",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            36.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C2",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            36.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D2",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            36.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E2",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            36.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F2",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            36.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G2",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            36.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H2",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            36.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A3",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            45.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B3",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            45.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C3",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            45.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D3",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            45.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E3",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            45.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F3",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            45.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G3",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            45.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H3",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            45.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A4",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            54.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B4",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            54.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C4",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            54.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D4",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            54.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E4",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            54.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F4",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            54.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G4",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            54.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H4",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            54.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A5",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            63.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B5",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            63.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C5",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            63.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D5",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            63.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E5",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            63.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F5",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            63.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G5",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            63.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H5",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            63.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A6",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            72.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B6",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            72.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C6",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            72.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D6",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            72.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E6",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            72.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F6",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            72.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G6",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            72.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H6",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            72.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A7",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            81.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B7",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            81.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C7",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            81.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D7",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            81.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E7",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            81.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F7",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            81.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G7",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            81.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H7",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            81.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A8",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            90.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B8",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            90.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C8",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            90.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D8",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            90.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E8",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            90.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F8",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            90.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G8",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            90.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H8",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            90.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A9",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            99.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B9",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            99.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C9",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            99.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D9",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            99.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E9",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            99.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F9",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            99.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G9",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            99.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H9",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            99.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A10",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            108.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B10",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            108.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C10",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            108.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D10",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            108.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E10",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            108.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F10",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            108.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G10",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            108.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H10",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            108.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A11",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            117.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B11",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            117.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C11",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            117.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D11",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            117.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E11",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            117.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F11",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            117.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G11",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            117.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H11",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            117.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_A12",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            126.0,
+            88.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_B12",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            126.0,
+            79.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_C12",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            126.0,
+            70.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_D12",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            126.0,
+            61.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_E12",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            126.0,
+            52.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_F12",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            126.0,
+            43.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_G12",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            126.0,
+            34.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_head96_tipmountingshaft_H12",
+          "parent": "STARplus_head96",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            126.0,
+            25.0,
+            -8.0
+          ]
+        },
+        {
+          "name": "STARplus_iswap_head",
+          "parent": "STARplus_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            174.95,
+            651.64,
+            -13.618
+          ]
+        },
+        {
+          "name": "STARplus_iswap_link_1",
+          "parent": "STARplus_iswap_head",
+          "kind": "RESOURCE_KIND_LINK_BODY",
+          "location": [
+            2.8527,
+            2.2055,
+            -15.3
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            1.34477
+          ]
+        },
+        {
+          "name": "STARplus_iswap_link_1_body",
+          "parent": "STARplus_iswap_link_1",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "STARplus_iswap_gripper",
+          "parent": "STARplus_iswap_link_1",
+          "kind": "RESOURCE_KIND_MECHANICAL_GRIPPER",
+          "location": [
+            105.5,
+            25.75,
+            -20.3
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "jaw_width": 72.618
+        },
+        {
+          "name": "STARplus_iswap_gripper_body",
+          "parent": "STARplus_iswap_gripper",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "STARplus_iswap_gripper_finger_left",
+          "parent": "STARplus_iswap_gripper",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            19.5,
+            81.309,
+            4.0
+          ]
+        },
+        {
+          "name": "STARplus_iswap_gripper_finger_left_pad",
+          "parent": "STARplus_iswap_gripper_finger_left",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            109.0,
+            1.5,
+            -17.0
+          ]
+        },
+        {
+          "name": "STARplus_iswap_gripper_finger_right",
+          "parent": "STARplus_iswap_gripper",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            19.5,
+            1.691,
+            4.0
+          ]
+        },
+        {
+          "name": "STARplus_iswap_gripper_finger_right_pad",
+          "parent": "STARplus_iswap_gripper_finger_right",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            109.0,
+            1.5,
+            -17.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "stop()",
+      "sent": [
+        "C0ZA",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        "C0RT",
+        "H0RArazv",
+        "H0RArazr",
+        "H0ZAza67200zv17000zr080000zw15",
+        "H0RZ",
+        "H0RZ",
+        "R0ZAza+26660zv11000zr060zw6",
+        "R0RZ",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        "H0RZ",
+        "R0RZ",
+        "C0QP",
+        "C0PGth2840",
+        "R0RY",
+        "R0RZ",
+        "R0RW",
+        "R0RT",
+        "R0RG"
+      ],
+      "result": null
+    }
+  ],
+  "resources": [
+    {
+      "name": "STARplus",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "STARplus_deck",
+      "parent": "STARplus",
+      "kind": "RESOURCE_KIND_DECK",
+      "location": [
+        116.215,
+        97.8,
+        80.5
+      ]
+    },
+    {
+      "name": "STARplus_deck_trash_core96",
+      "parent": "STARplus_deck",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        -58.2,
+        106.0,
+        216.4
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_waste_block",
+      "parent": "STARplus_deck",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        1810.0,
+        115.0,
+        100.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack",
+      "parent": "STARplus_deck_waste_block",
+      "kind": "RESOURCE_KIND_TIP_RACK",
+      "location": [
+        6.75,
+        346.5,
+        0.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_0",
+      "parent": "STARplus_deck_teaching_tip_rack",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        0.0,
+        63.0,
+        75.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_0#0",
+      "parent": "STARplus_deck_teaching_tip_rack_tip_spot_0",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        0.4,
+        0.4,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_1",
+      "parent": "STARplus_deck_teaching_tip_rack",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        0.0,
+        54.0,
+        75.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_1#0",
+      "parent": "STARplus_deck_teaching_tip_rack_tip_spot_1",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        0.4,
+        0.4,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_2",
+      "parent": "STARplus_deck_teaching_tip_rack",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        0.0,
+        45.0,
+        75.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_2#0",
+      "parent": "STARplus_deck_teaching_tip_rack_tip_spot_2",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        0.4,
+        0.4,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_3",
+      "parent": "STARplus_deck_teaching_tip_rack",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        0.0,
+        36.0,
+        75.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_3#0",
+      "parent": "STARplus_deck_teaching_tip_rack_tip_spot_3",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        0.4,
+        0.4,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_4",
+      "parent": "STARplus_deck_teaching_tip_rack",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        0.0,
+        27.0,
+        75.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_4#0",
+      "parent": "STARplus_deck_teaching_tip_rack_tip_spot_4",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        0.4,
+        0.4,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_5",
+      "parent": "STARplus_deck_teaching_tip_rack",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        0.0,
+        18.0,
+        75.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_5#0",
+      "parent": "STARplus_deck_teaching_tip_rack_tip_spot_5",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        0.4,
+        0.4,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_6",
+      "parent": "STARplus_deck_teaching_tip_rack",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        0.0,
+        9.0,
+        75.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_6#0",
+      "parent": "STARplus_deck_teaching_tip_rack_tip_spot_6",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        0.4,
+        0.4,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_7",
+      "parent": "STARplus_deck_teaching_tip_rack",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        0.0,
+        0.0,
+        75.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_teaching_tip_rack_tip_spot_7#0",
+      "parent": "STARplus_deck_teaching_tip_rack_tip_spot_7",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        0.4,
+        0.4,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_deck_core_grippers",
+      "parent": "STARplus_deck_waste_block",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        -1032.0,
+        -29.5,
+        100.5
+      ]
+    },
+    {
+      "name": "STARplus_deck_core_grippers_front",
+      "parent": "STARplus_deck_core_grippers",
+      "kind": "RESOURCE_KIND_HEAD_TOOL",
+      "location": [
+        1.5,
+        17.25,
+        2.5
+      ]
+    },
+    {
+      "name": "STARplus_deck_core_grippers_back",
+      "parent": "STARplus_deck_core_grippers",
+      "kind": "RESOURCE_KIND_HEAD_TOOL",
+      "location": [
+        37.5,
+        43.75,
+        2.5
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        180.0
+      ]
+    },
+    {
+      "name": "STARplus_deck_trash",
+      "parent": "STARplus_deck",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        1835.0,
+        190.6,
+        137.1
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "STARplus_left_x_arm",
+      "parent": "STARplus_deck",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        139.9,
+        -39.5,
+        334.7
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_0",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        218.51,
+        440.01,
+        8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_0_tip_mounting_shaft",
+      "parent": "STARplus_pipette_channel_0",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.99,
+        0.99,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_1",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        218.51,
+        413.31,
+        8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_1_tip_mounting_shaft",
+      "parent": "STARplus_pipette_channel_1",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.99,
+        0.99,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_2",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        218.51,
+        386.61,
+        8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_2_tip_mounting_shaft",
+      "parent": "STARplus_pipette_channel_2",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.99,
+        0.99,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_3",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        218.51,
+        359.91,
+        8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_3_tip_mounting_shaft",
+      "parent": "STARplus_pipette_channel_3",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.99,
+        0.99,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_4",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        218.51,
+        333.21,
+        8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_4_tip_mounting_shaft",
+      "parent": "STARplus_pipette_channel_4",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.99,
+        0.99,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_5",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        218.51,
+        306.51,
+        8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_5_tip_mounting_shaft",
+      "parent": "STARplus_pipette_channel_5",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.99,
+        0.99,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_6",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        218.51,
+        279.81,
+        8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_6_tip_mounting_shaft",
+      "parent": "STARplus_pipette_channel_6",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.99,
+        0.99,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_7",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        218.51,
+        253.11,
+        8.0
+      ]
+    },
+    {
+      "name": "STARplus_pipette_channel_7_tip_mounting_shaft",
+      "parent": "STARplus_pipette_channel_7",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.99,
+        0.99,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        -175.7,
+        502.45,
+        9.3
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A1",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        27.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B1",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        27.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C1",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        27.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D1",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        27.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E1",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        27.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F1",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        27.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G1",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        27.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H1",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        27.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A2",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        36.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B2",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        36.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C2",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        36.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D2",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        36.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E2",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        36.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F2",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        36.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G2",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        36.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H2",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        36.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A3",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        45.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B3",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        45.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C3",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        45.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D3",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        45.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E3",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        45.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F3",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        45.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G3",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        45.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H3",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        45.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A4",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        54.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B4",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        54.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C4",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        54.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D4",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        54.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E4",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        54.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F4",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        54.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G4",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        54.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H4",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        54.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A5",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        63.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B5",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        63.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C5",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        63.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D5",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        63.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E5",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        63.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F5",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        63.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G5",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        63.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H5",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        63.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A6",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        72.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B6",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        72.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C6",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        72.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D6",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        72.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E6",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        72.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F6",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        72.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G6",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        72.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H6",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        72.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A7",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        81.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B7",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        81.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C7",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        81.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D7",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        81.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E7",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        81.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F7",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        81.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G7",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        81.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H7",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        81.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A8",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        90.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B8",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        90.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C8",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        90.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D8",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        90.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E8",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        90.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F8",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        90.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G8",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        90.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H8",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        90.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A9",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        99.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B9",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        99.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C9",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        99.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D9",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        99.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E9",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        99.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F9",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        99.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G9",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        99.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H9",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        99.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A10",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        108.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B10",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        108.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C10",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        108.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D10",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        108.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E10",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        108.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F10",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        108.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G10",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        108.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H10",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        108.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A11",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        117.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B11",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        117.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C11",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        117.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D11",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        117.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E11",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        117.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F11",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        117.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G11",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        117.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H11",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        117.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_A12",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        126.0,
+        88.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_B12",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        126.0,
+        79.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_C12",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        126.0,
+        70.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_D12",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        126.0,
+        61.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_E12",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        126.0,
+        52.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_F12",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        126.0,
+        43.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_G12",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        126.0,
+        34.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_head96_tipmountingshaft_H12",
+      "parent": "STARplus_head96",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        126.0,
+        25.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "STARplus_iswap_head",
+      "parent": "STARplus_left_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        174.95,
+        651.64,
+        -13.618
+      ]
+    },
+    {
+      "name": "STARplus_iswap_link_1",
+      "parent": "STARplus_iswap_head",
+      "kind": "RESOURCE_KIND_LINK_BODY",
+      "location": [
+        2.8527,
+        2.2055,
+        -15.3
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        1.34477
+      ]
+    },
+    {
+      "name": "STARplus_iswap_link_1_body",
+      "parent": "STARplus_iswap_link_1",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "STARplus_iswap_gripper",
+      "parent": "STARplus_iswap_link_1",
+      "kind": "RESOURCE_KIND_MECHANICAL_GRIPPER",
+      "location": [
+        105.5,
+        25.75,
+        -20.3
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        270.0
+      ],
+      "jaw_width": 72.618
+    },
+    {
+      "name": "STARplus_iswap_gripper_body",
+      "parent": "STARplus_iswap_gripper",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "STARplus_iswap_gripper_finger_left",
+      "parent": "STARplus_iswap_gripper",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        19.5,
+        81.309,
+        4.0
+      ]
+    },
+    {
+      "name": "STARplus_iswap_gripper_finger_left_pad",
+      "parent": "STARplus_iswap_gripper_finger_left",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        109.0,
+        1.5,
+        -17.0
+      ]
+    },
+    {
+      "name": "STARplus_iswap_gripper_finger_right",
+      "parent": "STARplus_iswap_gripper",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        19.5,
+        1.691,
+        4.0
+      ]
+    },
+    {
+      "name": "STARplus_iswap_gripper_finger_right_pad",
+      "parent": "STARplus_iswap_gripper_finger_right",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        109.0,
+        1.5,
+        -17.0
+      ]
+    },
+    {
+      "name": "STARplus_left_extension_housing",
+      "parent": "STARplus",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        -265.0,
+        6.8,
+        48.0
+      ]
+    }
+  ]
+}
