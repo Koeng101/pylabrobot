@@ -93,6 +93,9 @@ class Recorder:
     self.device: Optional[BioShake] = None
     self.serial: FakeSerial
     self.real_sleep = asyncio.sleep
+    # The task a step runs in: the BioShake's own waits are made there, while the store's work
+    # runs in tasks of its own.
+    self.step_task: Optional["asyncio.Task[Any]"] = None
 
   def build(self, factory: Callable[..., BioShake]) -> BioShake:
     """Build a BioShake from `factory` on the fake transport."""
@@ -109,7 +112,8 @@ class Recorder:
     return self.device
 
   async def _sleep(self, delay: float, result: Any = None) -> Any:
-    self.waits.append(delay)
+    if asyncio.current_task() is self.step_task:
+      self.waits.append(delay)
     await self.real_sleep(0)
     return result
 
@@ -121,6 +125,7 @@ class Recorder:
   ) -> None:
     """Run one step, recording what was sent, waited, returned or raised."""
     self.sent, self.waits = [], []
+    self.step_task = asyncio.current_task()
     entry: Dict[str, Any] = {"call": call}
     try:
       with mock.patch.object(bioshake_module.asyncio, "sleep", self._sleep):

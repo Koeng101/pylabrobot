@@ -1,29 +1,26 @@
-"""A facility with a STARlet deck on a bench, in a resource store.
+"""A facility with a simulated STARlet on a bench, in a resource store.
 
 Run it:
 
     python -m pylabrobot.visualizer3D.demo
 
-The run fills a plate, then moves liquid from it to another plate through the store, a column at a
-time. `model_demo` shares the facility built here. Moving parts of a device are drawn once its
-driver records where they are in the store.
+The run sets the STARlet up, fills a plate, then moves liquid from it to another plate through the
+store, a column at a time. `model_demo` shares the facility built here. Moving parts of the device
+are drawn where its driver records them in the store.
 """
 
 import asyncio
 import logging
 from typing import Dict, List, Tuple
 
+from pylabrobot.hamilton.star import STARDevice, STARlet
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.store import build, handles, library
+from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from .facility import facility
 from .server import Viewer3D
 
-# The deck's own `size_z` (900 mm) is the working envelope, not its extent. The top of the X-arm
-# riding above it is the honest height: channel travel plus the arm's own height.
-DECK_HEIGHT = 334.7 + 140.0
 # How high the bench the deck stands on is.
 BENCH_HEIGHT = 880.0
 
@@ -66,27 +63,31 @@ LAYOUT: List[Tuple[str, str, int, List[Tuple[str, str]]]] = [
 ]
 
 
-def deck_definition() -> pb.ResourceDefinition:
-  """The STARlet deck's model, drawn as tall as what rides above it rather than as its envelope."""
-  definition = pb.ResourceDefinition()
-  definition.CopyFrom(library.get_model("STARLetDeck").definition)
-  definition.attributes.size.z = DECK_HEIGHT
-  return definition
+async def build_facility(
+  store: ResourceStore, *, bare: bool = False
+) -> Tuple[handles.Resource, STARDevice]:
+  """A facility with a simulated STARlet standing on a bench, with labware on its deck.
 
-
-async def build_facility(store: ResourceStore, *, bare: bool = False) -> handles.Resource:
-  """A facility with a STARlet deck standing on a bench, with labware on the deck.
+  The STARlet is not set up: `setup()` builds its channels, heads and arm in the store.
 
   Args:
     store: The store to build it in.
-    bare: the deck alone at the origin, with nothing else to look at.
+    bare: the STARlet alone at the origin, with nothing else to look at.
+
+  Returns:
+    The facility, and the STARlet in it.
   """
+  star = STARlet(simulation=True, store=store)
+  await star.create_resources()
+  body, deck = star.body, star.deck
+  assert body is not None and deck is not None
   if bare:
     root = await store.create(facility("facility", 2000, 1200, 1000), name="facility")
-    await store.create(deck_definition(), name="deck", parent=root, location=Coordinate.zero())
-    return root
+    await root.assign_child_resource(body, location=Coordinate.zero())
+    return root, star
 
   root = await store.create(facility("facility", 2600, 1400, 1000), name="facility")
+  await root.assign_child_resource(body, location=Coordinate(0, 0, BENCH_HEIGHT))
   # A bench: no deck, no driver, the same cartesian space.
   await store.create(
     build.resource("bench", Coordinate(900, 600, BENCH_HEIGHT), category="bench"),
@@ -94,15 +95,12 @@ async def build_facility(store: ResourceStore, *, bare: bool = False) -> handles
     parent=root,
     location=Coordinate(0, 0, 0),
   )
-  deck = await store.create(
-    deck_definition(), name="deck", parent=root, location=Coordinate(0, 0, BENCH_HEIGHT)
-  )
   for model, name, track, sites in LAYOUT:
     carrier = await store.create(model, name=name, parent=deck, track=track)
     assert isinstance(carrier, handles.Carrier)
     for site, (labware, labware_name) in enumerate(sites):
       await store.create(labware, name=labware_name, parent=carrier[site])
-  return root
+  return root, star
 
 
 async def plates(root: handles.Resource, *names: str) -> Dict[str, handles.Plate]:
@@ -143,7 +141,8 @@ async def run(root: handles.Resource) -> None:
 async def main() -> None:
   logging.disable(logging.WARNING)
   store = ResourceStore.in_memory()
-  root = await build_facility(store)
+  root, star = await build_facility(store)
+  await star.setup()
 
   viewer = Viewer3D(root, name="demo.py")
   await viewer.start()

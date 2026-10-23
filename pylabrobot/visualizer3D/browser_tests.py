@@ -822,17 +822,19 @@ class BrowserTests(unittest.IsolatedAsyncioTestCase):
 
 @unittest.skipUnless(CHROME, "no headless browser to drive")
 class RunTests(unittest.IsolatedAsyncioTestCase):
-  """A run on the demo facility leaves the page where the tree is."""
+  """A run on the simulated STAR in the demo facility leaves the page where the store is."""
 
   async def asyncSetUp(self):
     self.store = ResourceStore.in_memory()
-    self.root = await build_facility(self.store)
+    self.root, self.star = await build_facility(self.store)
+    await self.star.setup()
     fs_port, ws_port = free_ports(2)
     self.viewer = Viewer3D(self.root, open_browser=False, fs_port=fs_port, ws_port=ws_port)
     await self.viewer.start()
 
   async def asyncTearDown(self):
     await self.viewer.stop()
+    await self.star.stop()
     await self.store.close()
 
   async def rack(self) -> handles.TipRack:
@@ -865,28 +867,39 @@ class RunTests(unittest.IsolatedAsyncioTestCase):
       await destination.set_well_volumes(
         [50.0 if i in identifiers else 0.0 for i in destination.identifiers]
       )
-      # A pick-up onto a shaft and an aspirate, with the channel panel open through both: the
+      star = self.star
+      x_range = star.x_arm.configuration.x_range
+      assert x_range is not None
+      low, high = x_range
+      await star.x_arm.move_to_x_position(round(low + (high - low) * 0.6, 1))
+      # A simulated pick-up and an aspirate, with the channel panel open through both: the
       # mounted tip is a new name, so this costs a scene, and what it then holds is drawn.
       await browser.evaluate(
         "document.querySelector('.mt-panel-single') ||"
         " document.querySelector('.dt-btn[title=\"Single-channel pipettes\"]').click(); true"
       )
-      shaft, tip = await shaft_with_a_tip(
-        root, (await self.rack()).get_tip_spot("A1"), Coordinate(1500, 700, 1300)
-      )
-      aspirate = await stage_transfer(
-        root, spb.TRANSFER_DIRECTION_ASPIRATE, source.get_well("A1"), shaft, 50.0
-      )
-      await resolve(root, aspirate, True)
-      await move_to(shaft, Coordinate(1200, 650, 1250))
+      pipettes = star.pipettes
+      assert pipettes is not None
+      await pipettes.pick_up_tips([(await self.rack()).get_tip_spot("A1")])
+      mounted = await pipettes.get_mounted_tip(0)
+      assert mounted is not None
+      tip = mounted.attributes.name
+      await pipettes.aspirate([source.get_well("A1")], [50.0])
       carrier = await self.store.get("destination_carrier", root=root)
       assert isinstance(carrier, handles.Carrier)
+      # A site holds one plate: the one there is taken off before another goes in.
+      await (await self.store.get("destination_4", root=root)).unassign()
       await carrier[4].assign_child_resource(found["source_1"])
       await browser.settle(
         "window.plrViewer.worldOf('source_1') && window.plrViewer.worldOf('source_1')[0] > 0", 30
       )
+      # The arm's position and the last volume travelled before that move, and are read once
+      # they are on the page: nothing else is still in flight.
+      arm = star.x_arm.resource
+      assert arm is not None
+      arm_x = (await arm.get_absolute_location()).x
       await browser.settle(
-        "Math.abs(window.plrViewer.worldOf('shaft')[0] - 1200) < 0.25",
+        f"Math.abs(window.plrViewer.worldOf({arm.name!r})[0] - {arm_x}) < 0.25",
         30,
       )
       await browser.settle(
@@ -918,6 +931,12 @@ class RunTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(shown["volume"], await plate.get_well(well).get_volume())
 
       await browser.settle(f"window.plrViewer.stateOf({tip!r})?.volume === 50", 10)
+      # The liquid is the one translucent fill in the panel's drawing of a tip.
+      tip_fill = (
+        "((name) => !!document.querySelector(`.mt-panel-single g[data-index="
+        "'${window.plrViewer.resources().indexOf(name)}'] [fill^='rgba(']`))"
+      )
+      await browser.settle(f"{tip_fill}({tip!r})", 10)
       await browser.evaluate("window.plrViewer.view('iso')")
       await browser.frames()
       self.assertGreater(await browser.drawn_fraction("#viewport"), 0.02, "the iso view")

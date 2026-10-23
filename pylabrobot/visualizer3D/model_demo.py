@@ -1,4 +1,4 @@
-"""A STARlet deck drawn from the model files it ships with, rather than as boxes.
+"""A STARlet drawn from the model files it ships with, rather than as boxes.
 
 Run it:
 
@@ -57,7 +57,8 @@ def report(models: List[Dict[str, Any]]) -> None:
 
 async def main() -> None:
   logging.disable(logging.WARNING)
-  root = await build_facility(ResourceStore.in_memory(), bare=True)
+  root, star = await build_facility(ResourceStore.in_memory(), bare=True)
+  await star.setup()
 
   viewer = Viewer3D(root, name="model_demo.py")
   await viewer.start()
