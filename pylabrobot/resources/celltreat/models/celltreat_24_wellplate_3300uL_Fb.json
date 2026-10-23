@@ -1,0 +1,60 @@
+{
+  "name": "celltreat_24_wellplate_3300uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "celltreat_24_wellplate_3300uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 128.02,
+        "y": 85.74,
+        "z": 20.2
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 16.6,
+                "y": 16.6,
+                "z": 17.2
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 3300.0,
+                "materialZThickness": 2.3,
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 8.16,
+            "y": 6.21,
+            "z": 0.7
+          },
+          "itemDx": 19.2,
+          "itemDy": 19.2
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "CellTreat cat. no.: 229123, 229124\nhttps://www.celltreat.com/wp-content/uploads/24-Well-Plate.pdf"
+}

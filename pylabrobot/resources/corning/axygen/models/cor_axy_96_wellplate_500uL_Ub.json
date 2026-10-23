@@ -1,0 +1,60 @@
+{
+  "name": "cor_axy_96_wellplate_500uL_Ub",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "cor_axy_96_wellplate_500uL_Ub",
+      "category": "plate",
+      "size": {
+        "x": 127.0,
+        "y": 85.51,
+        "z": 14.82
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 8.0,
+                "y": 8.0,
+                "z": 12.25
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 615.7521601035994,
+                "materialZThickness": 1.18,
+                "bottomType": "WELL_BOTTOM_TYPE_U",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.6,
+            "y": 7.0,
+            "z": 1.2
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Axygen 96w Shallow Well Plate 500uL U Bottom\n- Product number: P-96-450V-C-S\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2c/US/en/Genomics-&-Molecular-Biology/Automation-Consumables/Deep-Well-Plate/Axygen%C2%AE-Deep-Well-and-Assay-Plates/p/P-96-450V-C-S\n- Spec sheet info: https://www.corning.com/catalog/cls/documents/selection-guides/CLS-A-PSG-001.pdf\n- working volume: 450uL\n- brand: Axygen\n- material: Polypropylene\n- sterile: yes"
+}

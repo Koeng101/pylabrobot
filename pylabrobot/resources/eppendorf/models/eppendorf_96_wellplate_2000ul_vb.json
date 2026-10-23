@@ -1,0 +1,60 @@
+{
+  "name": "eppendorf_96_wellplate_2000ul_vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "eppendorf_96_wellplate_2000ul_vb",
+      "category": "plate",
+      "size": {
+        "x": 127.8,
+        "y": 85.5,
+        "z": 44.1
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 8.2,
+                "y": 8.2,
+                "z": 41.2
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 2770.288,
+                "materialZThickness": 1.3,
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.3,
+            "y": 7.1,
+            "z": 0.2
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Eppendorf Deepwell Plate 96/2000 \u00b5L\n\nhttps://archive.vn/wSbxT"
+}

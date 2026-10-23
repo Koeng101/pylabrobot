@@ -1,0 +1,67 @@
+{
+  "name": "celltreat_96_wellplate_350uL_Ub",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "celltreat_96_wellplate_350uL_Ub",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.11,
+        "z": 14.3
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 6.35,
+                "y": 6.35,
+                "z": 10.04
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 300.0,
+                "materialZThickness": 1.55,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 8.49,
+                    "volume": 268.871656
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_U",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 11.05,
+            "y": 7.75,
+            "z": 1.92
+          },
+          "itemDx": 8.99,
+          "itemDy": 8.99
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "CellTreat cat. no.: 229591\n\nSame as 229590 (229590 is sold with lids)\n\n- Material: Polystyrene\n- Tissue culture treated: No"
+}

@@ -204,6 +204,23 @@ message ContainerSpec {
 message ItemizedSpec {
   int32 num_items_x = 1;
   int32 num_items_y = 2;
+  // A uniform grid, given once: a definition with it lists only the children that are not items,
+  // a lid say, and the store makes the items, ahead of those, when the resource is created. A
+  // stored resource never has it; its items are its children.
+  optional ItemGrid grid = 3;
+}
+
+// Items alike but for where they are: the item in column `i` and row `j` (row 0 is "A", at the
+// back) is at `offset + (i * item_dx, (num_items_y - 1 - j) * item_dy, 0)`, as
+// `create_ordered_items_2d` lays them out. Its identifier is the row's letters and the column's
+// number, "A1", and `{identifier}` in any name in the item becomes it.
+message ItemGrid {
+  // Without a location or an identifier.
+  ResourceDefinition item = 1;
+  // Where the item in the left column and front row is.
+  Vec3 offset = 2;
+  double item_dx = 3;
+  double item_dy = 4;
 }
 
 message PlateSpec {

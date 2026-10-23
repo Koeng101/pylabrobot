@@ -1,0 +1,66 @@
+{
+  "name": "agenbio_4_troughplate_75mL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "agenbio_4_troughplate_75mL_Vb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 43.8
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 4,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 26.0,
+                "y": 72.0,
+                "z": 42.55
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 75000.0,
+                "materialZThickness": 1.0,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 41.55,
+                    "volume": 78080.76
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.8,
+            "y": 6.8,
+            "z": 0.9
+          },
+          "itemDx": 27.1
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "AGenBio Catalog No. RES-75-4MW\n- Material: Polypropylene\n- Max. volume: 75 mL"
+}

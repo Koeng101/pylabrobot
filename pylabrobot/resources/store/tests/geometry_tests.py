@@ -41,12 +41,8 @@ from pylabrobot.resources.plate_adapter import PlateAdapter
 from pylabrobot.resources.store import geometry as g
 from pylabrobot.resources.store.definitions import definition_from_resource, kind_of
 from pylabrobot.resources.store.errors import StoreError
-from pylabrobot.resources.store.tests.scenes import (
-  SCENES,
-  Scene,
-  build_all,
-  labware_factories,
-)
+from pylabrobot.resources.store.library import labware_factories
+from pylabrobot.resources.store.tests.scenes import SCENES, Scene, build_all
 from pylabrobot.resources.store.tree import Node, build_tree, to_definition
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.tip_rack import resting_location

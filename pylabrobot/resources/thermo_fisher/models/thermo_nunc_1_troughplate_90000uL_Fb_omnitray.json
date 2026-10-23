@@ -1,0 +1,58 @@
+{
+  "name": "thermo_nunc_1_troughplate_90000uL_Fb_omnitray",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "thermo_nunc_1_troughplate_90000uL_Fb_omnitray",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.47,
+        "z": 14.5
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 1,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 123.7,
+                "y": 81.3,
+                "z": 11.7
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 117664.67699999998,
+                "materialZThickness": 2.5,
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 2.03,
+            "y": 2.085,
+            "z": 0.3
+          }
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "https://assets.fishersci.com/TFS-Assets/LSG/manuals/D03023.pdf\n\n- Brand: Thermo Scientific / Nunc\n- Part no.: 165218, 140156, 242811, 264728"
+}

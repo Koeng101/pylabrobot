@@ -1,0 +1,59 @@
+{
+  "name": "greiner_96_wellplate_200uL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "greiner_96_wellplate_200uL_Vb",
+      "category": "plate",
+      "size": {
+        "x": 125.64,
+        "y": 85.98,
+        "z": 23.4
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 5.56,
+                "y": 5.56,
+                "z": 20.65
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 200.0,
+                "materialZThickness": 0.43,
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.75,
+            "y": 8.5
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "semi-skirted"
+      }
+    }
+  },
+  "description": "Greiner cat. no.: 652260.\nSAPPHIRE MICROPLATE, 96 WELL, PP, FOR PCR, NATURAL, HALF SKIRT\nSpec: https://shop.gbo.com/en/usa/files/30114476/652260.pdf"
+}

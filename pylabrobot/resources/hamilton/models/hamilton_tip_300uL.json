@@ -1,0 +1,37 @@
+{
+  "name": "hamilton_tip_300uL",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "typeName": "HamiltonTip",
+      "model": "hamilton_tip_300uL",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 59.9
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "maximalVolume": 400.0,
+        "nominalVolume": 300.0,
+        "collarHeight": 8.0,
+        "hamilton": {
+          "tipSize": "STANDARD_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton 300 uL tip without filter (`tt00` in venus)\n\nVariants:\n  - Hamilton cat. no.: 235937 - black/conductive, framed EmbeddedTipRack, sterile\n  - Hamilton cat. no.: 235965 - transparent, nested StandingTipRack, non-sterile\n  - Hamilton cat. no.: 235931 - steel (single tip)"
+}

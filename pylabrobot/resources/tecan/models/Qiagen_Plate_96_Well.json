@@ -1,0 +1,56 @@
+{
+  "name": "Qiagen_Plate_96_Well",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "TecanPlate",
+      "model": "Qiagen_Plate_96_Well",
+      "category": "tecan_plate",
+      "size": {
+        "x": 151.7,
+        "y": 132.0,
+        "z": 26.6
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 8.9,
+                "y": 8.9,
+                "z": 26.6
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 1654.8229347041363,
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 22.25,
+            "y": 30.05
+          },
+          "itemDx": 8.9,
+          "itemDy": 8.9
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "name": "DiTi_3Pos",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TecanTipCarrier",
+      "model": "DiTi_3Pos",
+      "category": "tecan_tip_carrier",
+      "size": {
+        "x": 149.0,
+        "y": 374.0,
+        "z": 4.5
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 13.3,
+            "y": 70.0,
+            "z": 4.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 13.3,
+            "y": 170.0,
+            "z": 4.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 13.3,
+            "y": 270.0,
+            "z": 4.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Tecan part no. 10613022"
+}

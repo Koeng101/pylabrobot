@@ -1,0 +1,83 @@
+{
+  "name": "Wash_Station",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TecanWashStation",
+      "model": "Wash_Station",
+      "category": "tecan_wash_station",
+      "size": {
+        "x": 25.0,
+        "y": 390.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "ResourceHolder_0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 12.0,
+            "y": 73.0
+          },
+          "location": {
+            "x": 12.2,
+            "y": 106.7
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 12.0,
+            "y": 100.0
+          },
+          "location": {
+            "x": 11.0,
+            "y": 180.7
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 12.0,
+            "y": 73.0
+          },
+          "location": {
+            "x": 12.2,
+            "y": 281.7
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Tecan part no. 10613001"
+}

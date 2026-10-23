@@ -27,10 +27,12 @@ from pylabrobot.resources.hamilton.trough_carriers import Trough_CAR_4R200_A00
 from pylabrobot.resources.hamilton.troughs import hamilton_1_trough_200mL_Vb
 from pylabrobot.resources.n_channel_pipettes import TipMountingShaft
 from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store import library
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.definitions import definition_from_resource
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.tests.scenes import stacking_plate
+from pylabrobot.resources.store.tree import to_coordinate
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.store.v1.store_connect import ResourceStoreServiceClient
@@ -261,10 +263,10 @@ class TreeTests(StoreTestCase):
     self.assertEqual(refused.exception.problem, pb.PROBLEM_NAME_CONFLICT)
 
   async def test_models_name_their_children_after_the_instance(self):
-    definition = definition_from_resource(cor_96_wellplate_360uL_Fb(name="{name}"))
-    await self.commands.put_model(
-      spb.PutModelRequest(model=pb.ResourceModel(name="cor_96", definition=definition))
-    )
+    model = library.get_model("cor_96_wellplate_360uL_Fb")
+    self.assertTrue(model.definition.attributes.itemized.HasField("grid"))
+    model.name = "cor_96"
+    await self.commands.put_model(spb.PutModelRequest(model=model))
     models = await self.commands.list_models(spb.ListModelsRequest())
     self.assertEqual([m.name for m in models.models], ["cor_96"])
     await self.commands.create_resources(
@@ -280,6 +282,26 @@ class TreeTests(StoreTestCase):
     )
     well = await self.node(ref("fresh_well_H12"))
     self.assertEqual(well.attributes.identifier, "H12")
+    built = cor_96_wellplate_360uL_Fb(name="built").get_well("H12").location
+    assert built is not None
+    self.assertEqual(to_coordinate(well.attributes.location), built)
+    fresh = await self.node(ref("fresh"))
+    self.assertEqual(len(fresh.child_ids), 96)
+    self.assertFalse(fresh.attributes.itemized.HasField("grid"))
+
+  async def test_a_grid_and_listed_items_together_are_refused(self):
+    definition = pb.ResourceDefinition()
+    definition.CopyFrom(library.get_model("cor_96_wellplate_360uL_Fb").definition)
+    item = definition.children.add()
+    item.CopyFrom(definition.attributes.itemized.grid.item)
+    item.attributes.identifier = "A1"
+    with self.assertRaises(StoreError) as caught:
+      await self.commands.create_resources(
+        spb.CreateResourcesRequest(
+          resources=[spb.CreateResource(definition=definition, name="both")]
+        )
+      )
+    self.assertEqual(caught.exception.problem, pb.PROBLEM_WRONG_KIND)
 
   async def test_delete_takes_everything_under_it(self):
     await self.commands.delete_resources(spb.DeleteResourcesRequest(resources=[ref("plate")]))

@@ -1,0 +1,49 @@
+{
+  "name": "opentrons_6_tuberack_nest_50ml_conical",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "typeName": "TubeRack",
+      "model": "Opentrons 6 Tube Rack with NEST 50 mL Conical",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 120.35
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 3,
+        "numItemsY": 2,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "typeName": "ResourceHolder",
+              "category": "resource_holder",
+              "size": {
+                "x": 19.764,
+                "y": 19.764,
+                "z": 113.05
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 25.618,
+            "y": 15.358,
+            "z": 7.3
+          },
+          "itemDx": 35.0,
+          "itemDy": 35.0
+        }
+      }
+    }
+  }
+}

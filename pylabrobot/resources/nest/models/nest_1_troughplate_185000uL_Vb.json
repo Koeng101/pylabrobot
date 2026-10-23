@@ -1,0 +1,65 @@
+{
+  "name": "nest_1_troughplate_185000uL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "nest_1_troughplate_185000uL_Vb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 31.4
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 1,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 108.0,
+                "y": 72.0,
+                "z": 26.85
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 208785.6,
+                "materialZThickness": 0.9999999999999973,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 25.85,
+                    "volume": 201009.6
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.88,
+            "y": 6.74,
+            "z": 3.55
+          }
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "NEST single-trough reagent reservoir plate, 185 mL, V-bottom (ANSI/SLAS footprint).\n\ncat. no.: 360104\n\n384 tiny holes feed one shared container."
+}

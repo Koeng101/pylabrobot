@@ -1,0 +1,56 @@
+{
+  "name": "CaCo2_Plate_24_Well",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "TecanPlate",
+      "model": "CaCo2_Plate_24_Well",
+      "category": "tecan_plate",
+      "size": {
+        "x": 125.2,
+        "y": 89.2,
+        "z": 6.5
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 19.3,
+                "y": 19.3,
+                "z": 6.5
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 1901.5942522454511,
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 4.75,
+            "y": 5.95
+          },
+          "itemDx": 19.3,
+          "itemDy": 19.3
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "opentrons_96_deep_well_temp_mod_adapter",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "typeName": "PlateHolder",
+      "model": "Opentrons 96 Deep Well Temperature Module Adapter",
+      "category": "plate_holder",
+      "size": {
+        "x": 127.75,
+        "y": 85.5,
+        "z": 21.4
+      },
+      "rotation": {},
+      "holder": {
+        "childLocation": {
+          "x": 0.125,
+          "y": 0.25,
+          "z": 5.1
+        },
+        "pedestalSizeZ": 0.0,
+        "capacity": 1
+      }
+    }
+  }
+}

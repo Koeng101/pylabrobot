@@ -1,0 +1,113 @@
+{
+  "name": "bioer_96_wellplate_2200uL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "bioer_96_wellplate_2200uL_Vb",
+      "category": "plate",
+      "size": {
+        "x": 127.1,
+        "y": 85.0,
+        "z": 44.2
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 8.25,
+                "y": 8.25,
+                "z": 42.4
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 2200.0,
+                "materialZThickness": 0.8,
+                "heightVolumeData": [
+                  {
+                    "height": 2.065
+                  },
+                  {
+                    "height": 5.804,
+                    "volume": 146.0
+                  },
+                  {
+                    "height": 9.352,
+                    "volume": 299.0
+                  },
+                  {
+                    "height": 12.712,
+                    "volume": 459.0
+                  },
+                  {
+                    "height": 15.989,
+                    "volume": 631.0
+                  },
+                  {
+                    "height": 18.669,
+                    "volume": 784.0
+                  },
+                  {
+                    "height": 21.451,
+                    "volume": 954.0
+                  },
+                  {
+                    "height": 30.379,
+                    "volume": 1538.0
+                  },
+                  {
+                    "height": 33.994,
+                    "volume": 1764.0
+                  },
+                  {
+                    "height": 36.004,
+                    "volume": 1882.0
+                  },
+                  {
+                    "height": 38.001,
+                    "volume": 1993.0
+                  },
+                  {
+                    "height": 40.019,
+                    "volume": 2099.0
+                  },
+                  {
+                    "height": 42.061,
+                    "volume": 2200.0
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.5,
+            "y": 7.5,
+            "z": 6.0
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "BioER Cat. No. BSH06M1T-A (KingFisher-compatible)\nSpec: https://bioer.com.cn/uploadfiles/2024/05/20240513165756879.pdf"
+}

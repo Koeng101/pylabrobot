@@ -1,0 +1,124 @@
+{
+  "name": "hamilton_96_tiprack_300uL_filter",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP_RACK",
+      "typeName": "EmbeddedTipRack",
+      "model": "hamilton_96_tiprack_standard",
+      "category": "tip_rack",
+      "size": {
+        "x": 122.4,
+        "y": 82.6,
+        "z": 20.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_tipspot_{identifier}",
+              "kind": "RESOURCE_KIND_TIP_SPOT",
+              "typeName": "TipSpot",
+              "category": "tip_spot",
+              "size": {
+                "x": 7.2,
+                "y": 7.2
+              },
+              "rotation": {},
+              "tipSpot": {
+                "prototypeTip": {
+                  "name": "{name}_tipspot_{identifier}",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "typeName": "HamiltonTip",
+                  "model": "hamilton_tip_300uL_filter",
+                  "category": "tip",
+                  "size": {
+                    "x": 8.2,
+                    "y": 8.2,
+                    "z": 59.9
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 8.0
+                  },
+                  "tip": {
+                    "diameter": 8.2,
+                    "hasFilter": true,
+                    "maximalVolume": 360.0,
+                    "nominalVolume": 300.0,
+                    "collarHeight": 8.0,
+                    "hamilton": {
+                      "tipSize": "STANDARD_VOLUME",
+                      "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                    }
+                  }
+                }
+              }
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "{name}_tipspot_{identifier}#0",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "typeName": "HamiltonTip",
+                  "model": "hamilton_tip_300uL_filter",
+                  "category": "tip",
+                  "size": {
+                    "x": 8.2,
+                    "y": 8.2,
+                    "z": 59.9
+                  },
+                  "location": {
+                    "x": -0.5,
+                    "y": -0.5,
+                    "z": -51.9
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 8.0
+                  },
+                  "tip": {
+                    "diameter": 8.2,
+                    "hasFilter": true,
+                    "maximalVolume": 360.0,
+                    "nominalVolume": 300.0,
+                    "collarHeight": 8.0,
+                    "hamilton": {
+                      "tipSize": "STANDARD_VOLUME",
+                      "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                    }
+                  }
+                },
+                "initialState": {
+                  "volume": {
+                    "trackingEnabled": true
+                  }
+                }
+              }
+            ],
+            "initialState": {
+              "tipTrackingEnabled": true,
+              "tipsMade": 1
+            }
+          },
+          "offset": {
+            "x": 8.1,
+            "y": 6.2,
+            "z": 7.5
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "tipRack": {
+        "style": "TIP_RACK_STYLE_EMBEDDED",
+        "frameHeight": 10.0,
+        "sinkingDepth": 6.0
+      }
+    }
+  },
+  "description": "Hamilton cat. no.: 235830 (clear, non-sterile), 235903 (non-sterile), 235938 (sterile)\nHamilton name: 'STF'\nTip Rack with 96x 300ul Standard Volume Tip with filter"
+}

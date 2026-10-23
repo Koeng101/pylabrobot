@@ -1,0 +1,90 @@
+{
+  "name": "LI___MP_3Pos",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TecanPlateCarrier",
+      "model": "LI___MP_3Pos",
+      "category": "tecan_plate_carrier",
+      "size": {
+        "x": 149.0,
+        "y": 316.0,
+        "z": 62.5
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 5.5,
+            "y": 13.5,
+            "z": 62.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 5.5,
+            "y": 109.5,
+            "z": 62.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 5.5,
+            "y": 205.5,
+            "z": 62.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Tecan part no. 10650010"
+}

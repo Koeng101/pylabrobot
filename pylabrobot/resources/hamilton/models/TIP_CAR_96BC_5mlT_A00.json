@@ -1,0 +1,109 @@
+{
+  "name": "TIP_CAR_96BC_5mlT_A00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TipCarrier",
+      "model": "TIP_CAR_96BC_5mlT_A00",
+      "category": "tip_carrier",
+      "size": {
+        "x": 135.0,
+        "y": 497.0,
+        "z": 130.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 122.4,
+            "y": 82.6
+          },
+          "location": {
+            "x": 6.3,
+            "y": 78.2,
+            "z": 114.8
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 122.4,
+            "y": 82.6
+          },
+          "location": {
+            "x": 6.3,
+            "y": 163.1,
+            "z": 114.8
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 122.4,
+            "y": 82.6
+          },
+          "location": {
+            "x": 6.3,
+            "y": 248.1,
+            "z": 114.8
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 122.4,
+            "y": 82.6
+          },
+          "location": {
+            "x": 6.3,
+            "y": 333.1,
+            "z": 114.8
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Carrier for 4 5ml tip racks landscape"
+}

@@ -1,0 +1,36 @@
+{
+  "name": "hamilton_teaching_needle_300uL",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "typeName": "HamiltonTip",
+      "model": "hamilton_teaching_needle_300uL",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 59.9
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0,
+        "isConductive": true
+      },
+      "tip": {
+        "diameter": 8.2,
+        "collarHeight": 8.0,
+        "hamilton": {
+          "tipSize": "STANDARD_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton teaching needle, 300 uL size class - closed-tip probe, cannot pipette.\n\nFor labware teaching, not liquid handling. Geometry matches hamilton_tip_300uL; the\nworking volume is zeroed so any attempt to aspirate raises.\n\nHamilton cat. no.: 182176 (set of 8: 182136)"
+}

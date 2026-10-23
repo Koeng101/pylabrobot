@@ -345,12 +345,26 @@ class ContainerSpec(_message.Message):
     def __init__(self, max_volume: _Optional[float] = ..., material_z_thickness: _Optional[float] = ..., height_volume_data: _Optional[_Iterable[_Union[HeightVolumePoint, _Mapping]]] = ..., no_go_zones: _Optional[_Iterable[_Union[Box, _Mapping]]] = ..., bottom_type: _Optional[_Union[WellBottomType, str]] = ..., cross_section_type: _Optional[_Union[CrossSectionType, str]] = ..., through_base_to_container_base: _Optional[float] = ...) -> None: ...
 
 class ItemizedSpec(_message.Message):
-    __slots__ = ("num_items_x", "num_items_y")
+    __slots__ = ("num_items_x", "num_items_y", "grid")
     NUM_ITEMS_X_FIELD_NUMBER: _ClassVar[int]
     NUM_ITEMS_Y_FIELD_NUMBER: _ClassVar[int]
+    GRID_FIELD_NUMBER: _ClassVar[int]
     num_items_x: int
     num_items_y: int
-    def __init__(self, num_items_x: _Optional[int] = ..., num_items_y: _Optional[int] = ...) -> None: ...
+    grid: ItemGrid
+    def __init__(self, num_items_x: _Optional[int] = ..., num_items_y: _Optional[int] = ..., grid: _Optional[_Union[ItemGrid, _Mapping]] = ...) -> None: ...
+
+class ItemGrid(_message.Message):
+    __slots__ = ("item", "offset", "item_dx", "item_dy")
+    ITEM_FIELD_NUMBER: _ClassVar[int]
+    OFFSET_FIELD_NUMBER: _ClassVar[int]
+    ITEM_DX_FIELD_NUMBER: _ClassVar[int]
+    ITEM_DY_FIELD_NUMBER: _ClassVar[int]
+    item: ResourceDefinition
+    offset: Vec3
+    item_dx: float
+    item_dy: float
+    def __init__(self, item: _Optional[_Union[ResourceDefinition, _Mapping]] = ..., offset: _Optional[_Union[Vec3, _Mapping]] = ..., item_dx: _Optional[float] = ..., item_dy: _Optional[float] = ...) -> None: ...
 
 class PlateSpec(_message.Message):
     __slots__ = ("plate_type", "stacking_z_height")

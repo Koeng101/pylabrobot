@@ -1,0 +1,109 @@
+{
+  "name": "tipone_96_tiprack_200ul",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP_RACK",
+      "typeName": "StandingTipRack",
+      "model": "TipOne 96 Tip Rack 200 \u00b5L",
+      "category": "tip_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 63.9
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_TIP_SPOT",
+              "typeName": "TipSpot",
+              "category": "tip_spot",
+              "size": {
+                "x": 4.525,
+                "y": 4.525
+              },
+              "rotation": {},
+              "tipSpot": {
+                "prototypeTip": {
+                  "name": "{name}_{identifier}",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "typeName": "Tip",
+                  "model": "tipone_96_tiprack_200ul",
+                  "category": "tip",
+                  "size": {
+                    "x": 6.4,
+                    "y": 6.4,
+                    "z": 50.93
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 6.1
+                  },
+                  "tip": {
+                    "diameter": 6.4,
+                    "maximalVolume": 200.0,
+                    "nominalVolume": 200.0
+                  }
+                }
+              }
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "{name}_{identifier}#0",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "typeName": "Tip",
+                  "model": "tipone_96_tiprack_200ul",
+                  "category": "tip",
+                  "size": {
+                    "x": 6.4,
+                    "y": 6.4,
+                    "z": 50.93
+                  },
+                  "location": {
+                    "x": -0.9375,
+                    "y": -0.9375,
+                    "z": -50.93
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 6.1
+                  },
+                  "tip": {
+                    "diameter": 6.4,
+                    "maximalVolume": 200.0,
+                    "nominalVolume": 200.0
+                  }
+                },
+                "initialState": {
+                  "volume": {
+                    "trackingEnabled": true
+                  }
+                }
+              }
+            ],
+            "initialState": {
+              "tipTrackingEnabled": true,
+              "tipsMade": 1
+            }
+          },
+          "offset": {
+            "x": 11.4275,
+            "y": 6.9875,
+            "z": 53.36
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "tipRack": {
+        "style": "TIP_RACK_STYLE_STANDING"
+      }
+    }
+  }
+}

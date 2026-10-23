@@ -1,0 +1,22 @@
+{
+  "name": "celltreat_96_wellplate_350uL_Ub_lid",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_LID",
+      "typeName": "Lid",
+      "model": "celltreat_96_wellplate_350uL_Ub_lid",
+      "category": "lid",
+      "size": {
+        "x": 127.762,
+        "y": 85.471,
+        "z": 10.71
+      },
+      "rotation": {},
+      "lid": {
+        "nestingZHeight": 8.3
+      }
+    }
+  },
+  "description": "CellTreat cat. no.: 229591\n- Material: Polystyrene\n- Tissue culture treated: No"
+}

@@ -7,14 +7,10 @@ gripper, and frames turned by quarters, by odd angles, and about x and y.
 
 from __future__ import annotations
 
-import importlib
-import inspect
-import pkgutil
 import warnings
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List
 
-import pylabrobot.resources as resources
 
 from pylabrobot.hamilton.star.resource_model.heads import head96
 from pylabrobot.hamilton.star.resource_model.iswap import iswap_gripper, iswap_link_1
@@ -233,38 +229,3 @@ def build_all() -> List[Scene]:
   with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     return [build() for build in SCENES.values()]
-
-
-def labware_factories() -> List[Tuple[str, Callable[..., Resource]]]:
-  """Every labware factory in `pylabrobot.resources` that builds from a name alone, by its
-  qualified name, in order. Deprecated aliases and definitions that refuse to build are left out.
-  """
-  found: Dict[str, Callable[..., Resource]] = {}
-  with warnings.catch_warnings():
-    warnings.simplefilter("error", DeprecationWarning)
-    for info in pkgutil.walk_packages(
-      resources.__path__, "pylabrobot.resources.", onerror=lambda name: None
-    ):
-      if info.name.endswith("_tests") or ".store" in info.name:
-        continue
-      try:
-        module = importlib.import_module(info.name)
-      except (ImportError, NotImplementedError, DeprecationWarning):
-        continue
-      for name, function in inspect.getmembers(module, inspect.isfunction):
-        if function.__module__ != module.__name__ or name.startswith("_"):
-          continue
-        parameters = inspect.signature(function).parameters
-        if "name" not in parameters or any(
-          parameter.default is inspect.Parameter.empty
-          for key, parameter in parameters.items()
-          if key != "name"
-        ):
-          continue
-        try:
-          built = function(name="labware")
-        except Exception:
-          continue
-        if isinstance(built, Resource):
-          found[f"{module.__name__}.{name}"] = function
-  return sorted(found.items())

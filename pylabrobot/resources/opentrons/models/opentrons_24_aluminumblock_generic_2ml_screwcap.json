@@ -1,0 +1,49 @@
+{
+  "name": "opentrons_24_aluminumblock_generic_2ml_screwcap",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "typeName": "TubeRack",
+      "model": "Opentrons 24 Well Aluminum Block with Generic 2 mL Screwcap",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.5,
+        "z": 42.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "typeName": "ResourceHolder",
+              "category": "resource_holder",
+              "size": {
+                "x": 6.01,
+                "y": 6.01,
+                "z": 42.0
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 17.745,
+            "y": 13.875,
+            "z": 6.7
+          },
+          "itemDx": 17.25,
+          "itemDy": 17.25
+        }
+      }
+    }
+  }
+}

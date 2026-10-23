@@ -1,0 +1,56 @@
+{
+  "name": "DeepWell_Greiner_1536_Well",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "TecanPlate",
+      "model": "DeepWell_Greiner_1536_Well",
+      "category": "tecan_plate",
+      "size": {
+        "x": 127.8,
+        "y": 85.5,
+        "z": 8.6
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 48,
+        "numItemsY": 32,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 2.3,
+                "y": 2.3,
+                "z": 8.6
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 35.7309040456035,
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.85,
+            "y": 6.75
+          },
+          "itemDx": 2.3,
+          "itemDy": 2.3
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  }
+}

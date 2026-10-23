@@ -1,0 +1,49 @@
+{
+  "name": "opentrons_24_aluminumblock_nest_2ml_snapcap",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "typeName": "TubeRack",
+      "model": "Opentrons 24 Well Aluminum Block with NEST 2 mL Snapcap",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.5,
+        "z": 43.6
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "typeName": "ResourceHolder",
+              "category": "resource_holder",
+              "size": {
+                "x": 7.198,
+                "y": 7.198,
+                "z": 39.28
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 17.151,
+            "y": 13.271,
+            "z": 4.32
+          },
+          "itemDx": 17.25,
+          "itemDy": 17.25
+        }
+      }
+    }
+  }
+}

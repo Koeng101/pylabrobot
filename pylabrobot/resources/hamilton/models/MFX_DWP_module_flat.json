@@ -1,0 +1,28 @@
+{
+  "name": "MFX_DWP_module_flat",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "typeName": "PlateHolder",
+      "model": "MFX_DWP_module_flat",
+      "category": "plate_holder",
+      "size": {
+        "x": 135.0,
+        "y": 92.1,
+        "z": 66.4
+      },
+      "rotation": {},
+      "holder": {
+        "childLocation": {
+          "x": 3.62,
+          "y": 3.31,
+          "z": 66.4
+        },
+        "pedestalSizeZ": 0.0,
+        "capacity": 1
+      }
+    }
+  },
+  "description": "Hamilton cat. no.: 6601988-01\nHamilton name: 'MFX_DWP_module_flat'\nModule to position a Deep Well Plate. Flat, metal base; no metal clamps.\nGrey plastic corner clips secure plate. Plates rest on corners,\nrather than pedestal, so pedestal_size_z=0,"
+}

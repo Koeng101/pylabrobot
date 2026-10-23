@@ -1,0 +1,43 @@
+{
+  "name": "hamilton_prep_ftr_pedestal",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TipCarrier",
+      "model": "hamilton_prep_ftr_pedestal",
+      "category": "tip_carrier",
+      "size": {
+        "x": 133.11,
+        "y": 89.96,
+        "z": 53.37
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 122.4,
+            "y": 82.6
+          },
+          "location": {
+            "x": 1.5,
+            "y": 1.0,
+            "z": 53.37
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Hamilton cat. no.: 6600553-01\nPedestal for elevating fixed tip racks (FTR) on the MicroLab Prep.\nBody: 133.11 x 89.96 x 53.37 mm. FTR rack seats on top of the pedestal."
+}

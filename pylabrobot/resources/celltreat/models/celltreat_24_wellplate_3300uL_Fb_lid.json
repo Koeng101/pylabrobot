@@ -1,0 +1,21 @@
+{
+  "name": "celltreat_24_wellplate_3300uL_Fb_lid",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_LID",
+      "typeName": "Lid",
+      "model": "celltreat_24_wellplate_3300uL_Fb_lid",
+      "category": "lid",
+      "size": {
+        "x": 127.61,
+        "y": 85.24,
+        "z": 9.94
+      },
+      "rotation": {},
+      "lid": {
+        "nestingZHeight": 8.94
+      }
+    }
+  }
+}

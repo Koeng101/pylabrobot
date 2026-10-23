@@ -1,0 +1,615 @@
+{
+  "name": "DiTi_Nest_2_W_MCA384_200",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TecanTipCarrier",
+      "model": "DiTi_Nest_2_W_MCA384_200",
+      "category": "tecan_tip_carrier",
+      "size": {
+        "x": 159.0,
+        "y": 374.0,
+        "z": 6.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-4",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-5",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-6",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-7",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-8",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-9",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-10",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 168.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-11",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 48.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-12",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 48.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-13",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 62.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-14",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 62.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-15",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 76.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-16",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 76.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-17",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 90.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-18",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 90.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-19",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 104.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-20",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 104.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-21",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 118.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-22",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 118.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-23",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 132.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-24",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 132.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-25",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 146.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-26",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 146.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Tecan part no. 30020043 or 30020044"
+}

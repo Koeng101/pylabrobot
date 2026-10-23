@@ -1,0 +1,49 @@
+{
+  "name": "opentrons_15_tuberack_falcon_15ml_conical",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "typeName": "TubeRack",
+      "model": "Opentrons 15 Tube Rack with Falcon 15 mL Conical",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 124.35
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 5,
+        "numItemsY": 3,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "typeName": "ResourceHolder",
+              "category": "resource_holder",
+              "size": {
+                "x": 10.536,
+                "y": 10.536,
+                "z": 117.5
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 8.612,
+            "y": 12.472,
+            "z": 6.85
+          },
+          "itemDx": 25.0,
+          "itemDy": 25.0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "name": "PLT_CAR_L5AC_P_A00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "PlateCarrier",
+      "model": "PLT_CAR_L5AC_P_A00",
+      "category": "plate_carrier",
+      "size": {
+        "x": 135.0,
+        "y": 497.0,
+        "z": 130.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 126.8,
+            "y": 85.8
+          },
+          "location": {
+            "x": 4.0,
+            "y": 8.5,
+            "z": 86.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": -4.74,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 126.8,
+            "y": 85.8
+          },
+          "location": {
+            "x": 4.0,
+            "y": 104.5,
+            "z": 86.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": -4.74,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 126.8,
+            "y": 85.8
+          },
+          "location": {
+            "x": 4.0,
+            "y": 200.5,
+            "z": 86.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": -4.74,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 126.8,
+            "y": 85.8
+          },
+          "location": {
+            "x": 4.0,
+            "y": 296.5,
+            "z": 86.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": -4.74,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-4",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 126.8,
+            "y": 85.8
+          },
+          "location": {
+            "x": 4.0,
+            "y": 392.5,
+            "z": 86.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": -4.74,
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Carrier with pin for 5 Hamilton 96 Deep Well Plates"
+}

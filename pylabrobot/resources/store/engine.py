@@ -22,6 +22,7 @@ from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import geometry as g
 from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.models import expand_grids
 from pylabrobot.resources.store.tree import (
   Node,
   build_tree,
@@ -499,7 +500,10 @@ class Engine:
   def put_model(self, model: pb.ResourceModel) -> pb.ResourceModel:
     if not model.name:
       raise StoreError(pb.PROBLEM_NOT_FOUND, "a model needs a name")
-    _check_definition(model.definition)
+    expanded = pb.ResourceDefinition()
+    expanded.CopyFrom(model.definition)
+    expand_grids(expanded)
+    _check_definition(expanded)
     self.models[model.name] = model
     return model
 
@@ -512,10 +516,12 @@ class Engine:
   # -- building the tree -------------------------------------------------------------------------
 
   def create(self, request: spb.CreateResource, tokens: Sequence[bytes]) -> Node:
-    """Create a resource from a model or a definition, and assign it where asked.
+    """Create a resource from a model or a definition, its grids' items made, and assign it where
+    asked.
 
     Raises:
-      StoreError: An unknown model, a name already taken, or an assignment refused.
+      StoreError: An unknown model, a grid refused, a name already taken, or an assignment
+        refused.
     """
     if request.WhichOneof("source") == "model":
       definition = pb.ResourceDefinition()
@@ -523,6 +529,7 @@ class Engine:
     else:
       definition = pb.ResourceDefinition()
       definition.CopyFrom(request.definition)
+    expand_grids(definition)
     _check_definition(definition)
     name = request.name or definition.attributes.name
     _rename(definition, name)

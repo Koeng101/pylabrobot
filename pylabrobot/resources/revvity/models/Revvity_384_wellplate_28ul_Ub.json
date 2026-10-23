@@ -1,0 +1,147 @@
+{
+  "name": "Revvity_384_wellplate_28ul_Ub",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "Revvity_384_wellplate_28ul_Ub",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 14.35
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 24,
+        "numItemsY": 16,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 3.3,
+                "y": 3.3,
+                "z": 5.3
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 28.2249,
+                "materialZThickness": 1.0,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 0.02,
+                    "volume": 3e-06
+                  },
+                  {
+                    "height": 0.06,
+                    "volume": 6.8e-05
+                  },
+                  {
+                    "height": 0.12,
+                    "volume": 0.000547
+                  },
+                  {
+                    "height": 0.2,
+                    "volume": 0.002534
+                  },
+                  {
+                    "height": 0.3,
+                    "volume": 0.008553
+                  },
+                  {
+                    "height": 0.42,
+                    "volume": 0.023469
+                  },
+                  {
+                    "height": 0.56,
+                    "volume": 0.055631
+                  },
+                  {
+                    "height": 0.72,
+                    "volume": 0.118236
+                  },
+                  {
+                    "height": 0.9,
+                    "volume": 0.230931
+                  },
+                  {
+                    "height": 1.1,
+                    "volume": 0.421631
+                  },
+                  {
+                    "height": 1.32,
+                    "volume": 0.728578
+                  },
+                  {
+                    "height": 1.55,
+                    "volume": 1.179639
+                  },
+                  {
+                    "height": 1.77,
+                    "volume": 1.756604
+                  },
+                  {
+                    "height": 1.98,
+                    "volume": 2.458949
+                  },
+                  {
+                    "height": 2.17,
+                    "volume": 3.236929
+                  },
+                  {
+                    "height": 2.36,
+                    "volume": 4.163801
+                  },
+                  {
+                    "height": 2.54,
+                    "volume": 5.191049
+                  },
+                  {
+                    "height": 2.71,
+                    "volume": 6.304663
+                  },
+                  {
+                    "height": 2.88,
+                    "volume": 7.567135
+                  },
+                  {
+                    "height": 3.07,
+                    "volume": 9.151695
+                  },
+                  {
+                    "height": 4.3,
+                    "volume": 19.671868
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_U",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 8.83,
+            "y": 5.69,
+            "z": 8.2
+          },
+          "itemDx": 4.5,
+          "itemDy": 4.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Revvity cat. no.: 6008280. nickname \"ProxiPlate-384 Plus\"\n- Material: Polystyrene\n- Colour: white\n- \"shallow-well\"\n- Sterilization compatibility: ?\n- Chemical resistance:?\n- Thermal resistance: ?\n- Surface treatment: non-treated\n- Sealing options: ?\n- Cleanliness: non-sterile\n- Automation compatibility: not specifically declared\n- Total volume = 28 ul"
+}

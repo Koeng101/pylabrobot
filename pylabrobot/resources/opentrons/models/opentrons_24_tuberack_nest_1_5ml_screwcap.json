@@ -1,0 +1,49 @@
+{
+  "name": "opentrons_24_tuberack_nest_1_5ml_screwcap",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "typeName": "TubeRack",
+      "model": "Opentrons 24 Tube Rack with NEST 1.5 mL Screwcap",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.5,
+        "z": 85.2
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "typeName": "ResourceHolder",
+              "category": "resource_holder",
+              "size": {
+                "x": 6.145,
+                "y": 6.145,
+                "z": 43.9
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 15.1375,
+            "y": 14.5175,
+            "z": 41.3
+          },
+          "itemDx": 19.89,
+          "itemDy": 19.28
+        }
+      }
+    }
+  }
+}

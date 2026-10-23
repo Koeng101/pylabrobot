@@ -1,0 +1,110 @@
+{
+  "name": "flex_96_tiprack_200ul",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP_RACK",
+      "typeName": "StandingTipRack",
+      "model": "Opentrons Flex 96 Tip Rack 200 \u00b5L",
+      "category": "tip_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.75,
+        "z": 99.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_TIP_SPOT",
+              "typeName": "TipSpot",
+              "category": "tip_spot",
+              "size": {
+                "x": 3.953,
+                "y": 3.953
+              },
+              "rotation": {},
+              "tipSpot": {
+                "prototypeTip": {
+                  "name": "{name}_{identifier}",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "typeName": "Tip",
+                  "model": "opentrons_flex_96_tiprack_200ul",
+                  "category": "tip",
+                  "size": {
+                    "x": 5.59,
+                    "y": 5.59,
+                    "z": 58.35
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 10.5
+                  },
+                  "tip": {
+                    "diameter": 5.59,
+                    "maximalVolume": 200.0,
+                    "nominalVolume": 200.0
+                  }
+                }
+              }
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "{name}_{identifier}#0",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "typeName": "Tip",
+                  "model": "opentrons_flex_96_tiprack_200ul",
+                  "category": "tip",
+                  "size": {
+                    "x": 5.59,
+                    "y": 5.59,
+                    "z": 58.35
+                  },
+                  "location": {
+                    "x": -0.8185,
+                    "y": -0.8185,
+                    "z": -58.35
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 10.5
+                  },
+                  "tip": {
+                    "diameter": 5.59,
+                    "maximalVolume": 200.0,
+                    "nominalVolume": 200.0
+                  }
+                },
+                "initialState": {
+                  "volume": {
+                    "trackingEnabled": true
+                  }
+                }
+              }
+            ],
+            "initialState": {
+              "tipTrackingEnabled": true,
+              "tipsMade": 1
+            }
+          },
+          "offset": {
+            "x": 12.4035,
+            "y": 9.4035,
+            "z": 1.5
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "tipRack": {
+        "style": "TIP_RACK_STYLE_STANDING"
+      }
+    }
+  },
+  "description": "Opentrons Flex 96 Tip Rack 200 \u00b5L."
+}
