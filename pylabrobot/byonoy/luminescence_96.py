@@ -2,8 +2,15 @@ import asyncio
 import logging
 import time
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
+from pylabrobot.byonoy.body import (
+  Holder,
+  Unit,
+  assign_unlocated,
+  body_definition,
+  holder_definition,
+)
 from pylabrobot.byonoy.driver import (
   LUM96_PRESET_S,
   ByonoyDevice,
@@ -13,21 +20,21 @@ from pylabrobot.byonoy.driver import (
 )
 from pylabrobot.byonoy.results import LuminescenceResult
 from pylabrobot.io.binary import Reader, Writer
-from pylabrobot.resources import Coordinate, PlateHolder, Resource, ResourceHolder
-from pylabrobot.resources.barcode import Barcode
-from pylabrobot.resources.plate import Plate
-from pylabrobot.resources.rotation import Rotation
-from pylabrobot.resources.well import Well
+from pylabrobot.resources import Coordinate, Rotation
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.utils.list import reshape_2d
 
 logger = logging.getLogger(__name__)
 
 
-class ByonoyLuminescence96(Resource, ByonoyDriver):
-  """The Byonoy Luminescence 96 Automate reader unit.
+class ByonoyLuminescence96(Unit, ByonoyDriver):
+  """The Byonoy Luminescence 96 Automate reader unit: its body in a resource store, and the driver
+  that runs it.
 
-  ``Resource`` comes first in the MRO so its ``name`` property (and its setter,
-  which the resource tree needs) wins over the driver's device-name property.
+  ``Unit`` comes first in the MRO so the body's ``name`` wins over the driver's device-name
+  property.
   """
 
   def __init__(
@@ -39,29 +46,47 @@ class ByonoyLuminescence96(Resource, ByonoyDriver):
     rotation: Optional[Rotation] = None,
     category: Optional[str] = None,
     model: Optional[str] = "Byonoy L96 Reader Unit",
-    barcode: Optional[Barcode] = None,
+    barcode: Optional[pb.Barcode] = None,
     preferred_pickup_location: Optional[Coordinate] = None,
+    store: Optional[ResourceStore] = None,
   ) -> None:
-    Resource.__init__(
-      self,
-      name=name,
-      size_x=size_x,
-      size_y=size_y,
-      size_z=size_z,
-      rotation=rotation,
-      category=category,
-      model=model,
-      barcode=barcode,
-      preferred_pickup_location=preferred_pickup_location,
-    )
+    """
+    Args:
+      name: the name of its body in the resource store.
+      store: the resource store its body is in; None makes one in memory.
+    """
+    Unit.__init__(self, name, store)
+    self.size = Coordinate(size_x, size_y, size_z)
+    self.rotation = rotation
+    self.category = category
+    self.model = model
+    self.barcode = barcode
+    self.preferred_pickup_location = preferred_pickup_location
     ByonoyDriver.__init__(
       self, pid=0x119B, device_type=ByonoyDevice.LUMINESCENCE_96, name="Byonoy L96"
     )
 
+  def definition(self) -> pb.ResourceDefinition:
+    """The reader unit's body."""
+    return body_definition(
+      self.name,
+      self.size,
+      self.rotation,
+      self.category,
+      self.model,
+      self.barcode,
+      self.preferred_pickup_location,
+    )
+
+  async def setup(self) -> None:
+    """Find or create the body in its store, and connect."""
+    await self.create_body()
+    await ByonoyDriver.setup(self)
+
   async def read_luminescence(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: handles.Plate,
+    wells: Sequence[handles.Resource],
     mode: Lum96IntegrationMode = "sensitive",
     integration_time: Optional[float] = None,
   ) -> List[LuminescenceResult]:
@@ -92,8 +117,8 @@ class ByonoyLuminescence96(Resource, ByonoyDriver):
 
     # Firmware always scans all 96 wells; this mask only filters which are
     # reported (others come back as 0.0). Single source of truth: the wells arg.
-    well_set = set(id(w) for w in wells)
-    mask_bools = [id(w) in well_set for w in plate.get_all_items()]
+    well_set = {w.id for w in wells}
+    mask_bools = [w.id in well_set for w in plate.items]
 
     well_mask = encode_well_bitmask(mask_bools, n=96)
     logger.info(
@@ -226,43 +251,25 @@ class ByonoyLuminescence96(Resource, ByonoyDriver):
     ]
 
 
-class _ByonoyLuminescenceReaderPlateHolder(PlateHolder):
+class _ByonoyLuminescenceReaderPlateHolder(Holder):
   """Plate holder with interlock: blocks drops while reader unit is on the base."""
 
-  def __init__(
-    self,
-    name: str,
-    child_location: Coordinate = Coordinate.zero(),
-    category: str = "plate_holder",
-    model: Optional[str] = None,
-  ):
-    super().__init__(
-      name=name,
-      size_x=127.76,
-      size_y=85.59,
-      size_z=0,
-      pedestal_size_z=0,
-      child_location=child_location,
-      category=category,
-      model=model,
-    )
-    self._byonoy_base: Optional[ByonoyLuminescenceBaseUnit] = None
+  def __init__(self, base: "ByonoyLuminescenceBaseUnit"):
+    super().__init__(base, base.name + "_plate_holder")
+    self._base = base
 
-  def check_can_drop_resource_here(self, resource: Resource, *, reassign: bool = True) -> None:
-    if self._byonoy_base is None:
-      raise RuntimeError(
-        "Plate holder not assigned to a ByonoyLuminescenceBaseUnit. This should not happen."
-      )
-    if self._byonoy_base.reader_unit_holder.resource is not None:
+  async def check_can_drop_resource_here(self, resource: handles.Resource) -> None:
+    if await self._base.reader_unit_holder.get_resource_held() is not None:
       raise RuntimeError(
         f"Cannot drop resource {resource.name} onto plate holder while reader unit is on "
         "the base. Please remove the reader unit from the base before dropping a resource."
       )
-    super().check_can_drop_resource_here(resource, reassign=reassign)
+    await super().check_can_drop_resource_here(resource)
 
 
-class ByonoyLuminescenceBaseUnit(Resource):
-  """Base unit for the Byonoy L96/L96A luminescence reader."""
+class ByonoyLuminescenceBaseUnit(Unit):
+  """Base unit for the Byonoy L96/L96A luminescence reader: its body in a resource store, a plate
+  holder and a reader unit holder."""
 
   def __init__(
     self,
@@ -275,52 +282,67 @@ class ByonoyLuminescenceBaseUnit(Resource):
     rotation: Optional[Rotation] = None,
     category: Optional[str] = None,
     model: Optional[str] = "Byonoy L96 Reader Unit",
-    barcode: Optional[Barcode] = None,
+    barcode: Optional[pb.Barcode] = None,
+    store: Optional[ResourceStore] = None,
   ):
-    super().__init__(
-      name=name,
-      size_x=size_x,
-      size_y=size_y,
-      size_z=size_z,
-      rotation=rotation,
-      category=category,
-      model=model,
-      barcode=barcode,
+    """
+    Args:
+      name: the name of its body in the resource store.
+      store: the resource store its body is in; None makes one in memory.
+    """
+    Unit.__init__(self, name, store)
+    self.size = Coordinate(size_x, size_y, size_z)
+    self.plate_holder_child_location = plate_holder_child_location
+    self.reader_unit_holder_child_location = reader_unit_holder_child_location
+    self.rotation = rotation
+    self.category = category
+    self.model = model
+    self.barcode = barcode
+    self.plate_holder = _ByonoyLuminescenceReaderPlateHolder(self)
+    self.reader_unit_holder = Holder(self, name + "_reader_unit_holder")
+
+  def definition(self) -> pb.ResourceDefinition:
+    """The base, its plate holder and its reader unit holder."""
+    plate_holder = holder_definition(
+      self.plate_holder.name,
+      Coordinate(127.76, 85.59, 0),
+      location=Coordinate.zero(),
+      child_location=self.plate_holder_child_location,
+      kind=pb.RESOURCE_KIND_PLATE_HOLDER,
+    )
+    reader_unit_holder = holder_definition(
+      self.reader_unit_holder.name,
+      Coordinate(self.size.x, self.size.y, 0),
+      location=Coordinate.zero(),
+      child_location=self.reader_unit_holder_child_location,
+    )
+    return body_definition(
+      self.name,
+      self.size,
+      self.rotation,
+      self.category,
+      self.model,
+      self.barcode,
+      None,
+      children=[plate_holder, reader_unit_holder],
     )
 
-    self.plate_holder = _ByonoyLuminescenceReaderPlateHolder(
-      name=self.name + "_plate_holder",
-      child_location=plate_holder_child_location,
-    )
-    self.assign_child_resource(self.plate_holder, location=Coordinate.zero())
-
-    self.reader_unit_holder = ResourceHolder(
-      name=self.name + "_reader_unit_holder",
-      size_x=size_x,
-      size_y=size_y,
-      size_z=0,
-      child_location=reader_unit_holder_child_location,
-    )
-    self.assign_child_resource(self.reader_unit_holder, location=Coordinate.zero())
-
-  def assign_child_resource(
-    self, resource: Resource, location: Optional[Coordinate], reassign: bool = True
-  ) -> None:
-    if isinstance(resource, _ByonoyLuminescenceReaderPlateHolder):
-      if self.plate_holder._byonoy_base is not None:
-        raise ValueError("ByonoyDriver can only have one plate holder assigned.")
-      self.plate_holder._byonoy_base = self
-    super().assign_child_resource(resource, location, reassign)
-
-  def check_can_drop_resource_here(self, resource: Resource, *, reassign: bool = True) -> None:
+  async def check_can_drop_resource_here(self, resource: handles.Resource) -> None:
     raise RuntimeError(
       "ByonoyDriver does not support assigning child resources directly. "
       "Use the plate_holder or reader_unit_holder to assign plates and the reader unit, "
       "respectively."
     )
 
-  def serialize(self) -> dict:
-    return {**Resource.serialize(self)}
+  async def assign_child_resource(
+    self, resource: handles.Resource, location: Optional[Coordinate]
+  ) -> None:
+    """Put `resource` on the base itself, at `location`, or with no location when None."""
+    body = await self.create_body()
+    if location is None:
+      await assign_unlocated(body, resource)
+    else:
+      await body.assign_child_resource(resource, location=location)
 
 
 # ---------------------------------------------------------------------------
@@ -328,7 +350,9 @@ class ByonoyLuminescenceBaseUnit(Resource):
 # ---------------------------------------------------------------------------
 
 
-def byonoy_l96_reader_unit(name: str) -> ByonoyLuminescence96:
+def byonoy_l96_reader_unit(
+  name: str, store: Optional[ResourceStore] = None
+) -> ByonoyLuminescence96:
   """Create a Byonoy L96 reader unit (non-automate, no preferred pickup)."""
   return ByonoyLuminescence96(
     name=name,
@@ -336,10 +360,13 @@ def byonoy_l96_reader_unit(name: str) -> ByonoyLuminescence96:
     size_y=97.5,
     size_z=35,
     preferred_pickup_location=None,
+    store=store,
   )
 
 
-def byonoy_l96_base_unit(name: str) -> ByonoyLuminescenceBaseUnit:
+def byonoy_l96_base_unit(
+  name: str, store: Optional[ResourceStore] = None
+) -> ByonoyLuminescenceBaseUnit:
   """Create a Byonoy L96 base unit."""
   return ByonoyLuminescenceBaseUnit(
     name=name,
@@ -348,21 +375,33 @@ def byonoy_l96_base_unit(name: str) -> ByonoyLuminescenceBaseUnit:
     size_z=9.4,
     plate_holder_child_location=Coordinate(x=6.25, y=6.1, z=2.64),
     reader_unit_holder_child_location=Coordinate(x=0, y=0, z=7.2),
+    store=store,
   )
 
 
-def byonoy_l96(
-  name: str, assign: bool = True
+async def _assemble(
+  base_unit: ByonoyLuminescenceBaseUnit, reader_unit: ByonoyLuminescence96, assign: bool
 ) -> Tuple[ByonoyLuminescenceBaseUnit, ByonoyLuminescence96]:
-  """Create a full Byonoy L96 setup (base + reader)."""
-  base_unit = byonoy_l96_base_unit(name=name + "_base")
-  reader_unit = byonoy_l96_reader_unit(name=name + "_reader")
+  """Put both units in their store, the reader unit on the base when `assign`."""
+  await base_unit.create_body()
+  reader_body = await reader_unit.create_body()
   if assign:
-    base_unit.reader_unit_holder.assign_child_resource(reader_unit)
+    await base_unit.reader_unit_holder.assign_child_resource(reader_body)
   return base_unit, reader_unit
 
 
-def byonoy_l96a_reader_unit(name: str) -> ByonoyLuminescence96:
+async def byonoy_l96(
+  name: str, assign: bool = True, store: Optional[ResourceStore] = None
+) -> Tuple[ByonoyLuminescenceBaseUnit, ByonoyLuminescence96]:
+  """Create a full Byonoy L96 setup (base + reader) in `store` (a new one in memory when None)."""
+  base_unit = byonoy_l96_base_unit(name=name + "_base", store=store)
+  reader_unit = byonoy_l96_reader_unit(name=name + "_reader", store=base_unit.store)
+  return await _assemble(base_unit, reader_unit, assign)
+
+
+def byonoy_l96a_reader_unit(
+  name: str, store: Optional[ResourceStore] = None
+) -> ByonoyLuminescence96:
   """Create a Byonoy L96A reader unit (automate, with preferred pickup)."""
   return ByonoyLuminescence96(
     name=name,
@@ -370,10 +409,13 @@ def byonoy_l96a_reader_unit(name: str) -> ByonoyLuminescence96:
     size_y=97.5,
     size_z=41.7,
     preferred_pickup_location=Coordinate(x=69, y=48.75, z=33.2),
+    store=store,
   )
 
 
-def byonoy_l96a_base_unit(name: str) -> ByonoyLuminescenceBaseUnit:
+def byonoy_l96a_base_unit(
+  name: str, store: Optional[ResourceStore] = None
+) -> ByonoyLuminescenceBaseUnit:
   """Create a Byonoy L96A base unit."""
   return ByonoyLuminescenceBaseUnit(
     name=name,
@@ -382,15 +424,14 @@ def byonoy_l96a_base_unit(name: str) -> ByonoyLuminescenceBaseUnit:
     size_z=10.7,
     plate_holder_child_location=Coordinate(x=5.1, y=4.75, z=8),
     reader_unit_holder_child_location=Coordinate(x=0, y=0, z=6.3),
+    store=store,
   )
 
 
-def byonoy_l96a(
-  name: str, assign: bool = True
+async def byonoy_l96a(
+  name: str, assign: bool = True, store: Optional[ResourceStore] = None
 ) -> Tuple[ByonoyLuminescenceBaseUnit, ByonoyLuminescence96]:
-  """Create a full Byonoy L96A setup (base + reader)."""
-  base_unit = byonoy_l96a_base_unit(name=name + "_base")
-  reader_unit = byonoy_l96a_reader_unit(name=name + "_reader")
-  if assign:
-    base_unit.reader_unit_holder.assign_child_resource(reader_unit)
-  return base_unit, reader_unit
+  """Create a full Byonoy L96A setup (base + reader) in `store` (a new one in memory when None)."""
+  base_unit = byonoy_l96a_base_unit(name=name + "_base", store=store)
+  reader_unit = byonoy_l96a_reader_unit(name=name + "_reader", store=base_unit.store)
+  return await _assemble(base_unit, reader_unit, assign)

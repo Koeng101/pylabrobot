@@ -22,11 +22,14 @@ from pylabrobot.byonoy import (
   byonoy_sbs_adapter,
 )
 from pylabrobot.byonoy.absorbance_96 import ByonoyAbsorbance96
+from pylabrobot.byonoy.body import assign_unlocated
 from pylabrobot.byonoy.driver import ByonoyDriver
 from pylabrobot.io.binary import Reader, Writer
 from pylabrobot.io.hid import HID
-from pylabrobot.resources import Resource, cor_96_wellplate_2mL_Vb, cor_96_wellplate_360uL_Fb
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -147,14 +150,19 @@ class Recorder:
   """Runs a scenario's steps and records each: the reports written, as hex, what the call
   returned or raised, and the resource tree under `root` when the step changed it."""
 
-  def __init__(self, root: Resource, driver: Optional[ByonoyDriver] = None) -> None:
+  def __init__(self, root: handles.Resource, driver: Optional[ByonoyDriver] = None) -> None:
     self.root = root
     self.io: Optional[FakeByonoyHID] = None
     if driver is not None:
       self.io = FakeByonoyHID(driver.io.human_readable_device_name)
       driver.io = self.io
     self.steps: List[Dict[str, Any]] = []
-    self._resources = snapshot_resources(root)
+    self._resources: List[Dict[str, Any]] = []
+
+  async def start(self) -> "Recorder":
+    """Take the tree before the first step."""
+    self._resources = await snapshot_store(self.root.store, self.root)
+    return self
 
   async def step(self, call: str, action: Callable[[], Union[Any, Awaitable[Any]]]) -> Any:
     """Run `action`; record it as `call`."""
@@ -171,41 +179,50 @@ class Recorder:
     else:
       entry["result"] = to_jsonable(returned)
     entry["sent"] = [] if self.io is None else [report.hex() for report in self.io.written]
-    resources = snapshot_resources(self.root)
+    resources = await snapshot_store(self.root.store, self.root)
     if resources != self._resources:
       entry["resources"] = resources
       self._resources = resources
     self.steps.append(entry)
     return returned
 
-  def check(self, test: unittest.TestCase, scenario: str) -> None:
+  async def check(self, test: unittest.TestCase, scenario: str) -> None:
     """Compare the record with the scenario's golden file."""
-    record = {"steps": self.steps, "resources": snapshot_resources(self.root)}
+    record = {"steps": self.steps, "resources": await snapshot_store(self.root.store, self.root)}
     check_golden(test, GOLDEN / f"{scenario}.json", record)
+
+
+async def plate(store: ResourceStore, name: str, model: str = "cor_96_wellplate_360uL_Fb"):
+  """A plate of `model` in `store`."""
+  created = await store.create(model, name)
+  assert isinstance(created, handles.Plate)
+  return created
 
 
 class Absorbance96GoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_illumination_unit_and_plate(self):
     """A plate goes on only without the illumination unit on the base, the unit goes on only over
     a plate that clears it, and nothing goes on the base itself."""
-    reader, illumination_unit = byonoy_a96a("reader")
-    recorder = Recorder(reader)
-    plate = cor_96_wellplate_360uL_Fb("plate")
-    loose = cor_96_wellplate_360uL_Fb("loose")
-    tall = cor_96_wellplate_2mL_Vb("tall")
+    reader, illumination_unit = await byonoy_a96a("reader")
+    assert reader.body is not None
+    recorder = await Recorder(reader.body).start()
+    store = reader.store
+    plate_ = await plate(store, "plate")
+    loose = await plate(store, "loose")
+    tall = await plate(store, "tall", "cor_96_wellplate_2mL_Vb")
     holder = reader.plate_holder
     unit_holder = reader.illumination_unit_holder
     await recorder.step(
       "plate_holder.check_can_drop_resource_here(plate)  # unit on",
-      lambda: holder.check_can_drop_resource_here(plate),
+      lambda: holder.check_can_drop_resource_here(plate_),
     )
     await recorder.step(
       "plate_holder.assign_child_resource(plate)  # unit on",
-      lambda: holder.assign_child_resource(plate),
+      lambda: holder.assign_child_resource(plate_),
     )
     await recorder.step(
       "plate_holder.unassign_child_resource(plate)",
-      lambda: holder.unassign_child_resource(plate),
+      lambda: holder.unassign_child_resource(plate_),
     )
     await recorder.step(
       "reader.assign_child_resource(loose)",
@@ -234,7 +251,7 @@ class Absorbance96GoldenTests(unittest.IsolatedAsyncioTestCase):
       "plate_holder.unassign_child_resource(tall)", lambda: holder.unassign_child_resource(tall)
     )
     await recorder.step(
-      "plate_holder.assign_child_resource(plate)", lambda: holder.assign_child_resource(plate)
+      "plate_holder.assign_child_resource(plate)", lambda: holder.assign_child_resource(plate_)
     )
     await recorder.step(
       "illumination_unit_holder.check_can_drop_resource_here(illumination_unit)",
@@ -244,67 +261,74 @@ class Absorbance96GoldenTests(unittest.IsolatedAsyncioTestCase):
       "illumination_unit_holder.assign_child_resource(illumination_unit)",
       lambda: unit_holder.assign_child_resource(illumination_unit),
     )
-    recorder.check(self, "absorbance_96_illumination_unit_and_plate")
+    await recorder.check(self, "absorbance_96_illumination_unit_and_plate")
 
   async def test_reads(self):
     """Setup, then absorbance of the whole plate and of column 1."""
-    reader, illumination_unit = byonoy_a96a("reader", assign=False)
-    plate = cor_96_wellplate_360uL_Fb("plate")
-    reader.plate_holder.assign_child_resource(plate)
-    reader.illumination_unit_holder.assign_child_resource(illumination_unit)
-    recorder = Recorder(reader, reader)
+    reader, illumination_unit = await byonoy_a96a("reader", assign=False)
+    plate_ = await plate(reader.store, "plate")
+    await reader.plate_holder.assign_child_resource(plate_)
+    await reader.illumination_unit_holder.assign_child_resource(illumination_unit)
+    assert reader.body is not None
+    recorder = await Recorder(reader.body, reader).start()
     await recorder.step("setup()", reader.setup)
     await recorder.step(
       "read_absorbance(plate, plate.get_all_items(), 600)",
-      lambda: reader.read_absorbance(plate, plate.get_all_items(), 600),
+      lambda: reader.read_absorbance(plate_, plate_.items, 600),
     )
     await recorder.step(
       "read_absorbance(plate, plate['A1:H1'], 450)",
-      lambda: reader.read_absorbance(plate, plate.get_items("A1:H1"), 450),
+      lambda: reader.read_absorbance(plate_, plate_["A1:H1"], 450),
     )
     await recorder.step(
       "read_absorbance(plate, plate.get_all_items(), 500)  # not available",
-      lambda: reader.read_absorbance(plate, plate.get_all_items(), 500),
+      lambda: reader.read_absorbance(plate_, plate_.items, 500),
     )
     await recorder.step("stop()", reader.stop)
-    recorder.check(self, "absorbance_96_reads")
+    await recorder.check(self, "absorbance_96_reads")
 
   async def test_parts(self):
     """The parking unit, the SBS adapter and a detection unit, as built."""
-    parts = Resource("parts", size_x=1000, size_y=1000, size_z=100)
-    recorder = Recorder(parts)
+    store = ResourceStore.in_memory()
+    parts = await store.create(build.resource("parts", Coordinate(1000, 1000, 100)), "parts")
+    recorder = await Recorder(parts).start()
 
-    def build() -> None:
-      parts.assign_child_resource(byonoy_a96a_parking_unit("parking_unit"), location=None)
-      parts.assign_child_resource(byonoy_sbs_adapter("sbs_adapter"), location=None)
-      parts.assign_child_resource(ByonoyAbsorbance96("detection_unit"), location=None)
+    async def build_parts() -> None:
+      await byonoy_a96a_parking_unit("parking_unit", store=store).create_body()
+      adapter = await store.create(byonoy_sbs_adapter("sbs_adapter"), "sbs_adapter")
+      await ByonoyAbsorbance96("detection_unit", store=store).create_body()
+      for name in ("parking_unit", "sbs_adapter", "detection_unit"):
+        part = adapter if name == "sbs_adapter" else await store.get(name)
+        await assign_unlocated(parts, part)
 
     await recorder.step(
-      "assign byonoy_a96a_parking_unit, byonoy_sbs_adapter, ByonoyAbsorbance96", build
+      "assign byonoy_a96a_parking_unit, byonoy_sbs_adapter, ByonoyAbsorbance96", build_parts
     )
-    recorder.check(self, "absorbance_96_parts")
+    await recorder.check(self, "absorbance_96_parts")
 
 
 class Luminescence96GoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_reader_unit_and_plate(self):
     """A plate goes on only without the reader unit on the base, and nothing goes on the base
     itself."""
-    base, reader = byonoy_l96a("lum")
-    recorder = Recorder(base)
-    plate = cor_96_wellplate_360uL_Fb("plate")
-    loose = cor_96_wellplate_360uL_Fb("loose")
+    base, reader = await byonoy_l96a("lum")
+    assert base.body is not None and reader.body is not None
+    reader_body = reader.body
+    recorder = await Recorder(base.body).start()
+    plate_ = await plate(base.store, "plate")
+    loose = await plate(base.store, "loose")
     holder = base.plate_holder
     await recorder.step(
       "plate_holder.check_can_drop_resource_here(plate)  # reader unit on",
-      lambda: holder.check_can_drop_resource_here(plate),
+      lambda: holder.check_can_drop_resource_here(plate_),
     )
     await recorder.step(
       "plate_holder.assign_child_resource(plate)  # reader unit on",
-      lambda: holder.assign_child_resource(plate),
+      lambda: holder.assign_child_resource(plate_),
     )
     await recorder.step(
       "plate_holder.unassign_child_resource(plate)",
-      lambda: holder.unassign_child_resource(plate),
+      lambda: holder.unassign_child_resource(plate_),
     )
     await recorder.step(
       "base.assign_child_resource(loose)",
@@ -312,29 +336,30 @@ class Luminescence96GoldenTests(unittest.IsolatedAsyncioTestCase):
     )
     await recorder.step(
       "reader_unit_holder.unassign_child_resource(reader)",
-      lambda: base.reader_unit_holder.unassign_child_resource(reader),
+      lambda: base.reader_unit_holder.unassign_child_resource(reader_body),
     )
     await recorder.step(
       "plate_holder.check_can_drop_resource_here(plate)",
-      lambda: holder.check_can_drop_resource_here(plate),
+      lambda: holder.check_can_drop_resource_here(plate_),
     )
     await recorder.step(
-      "plate_holder.assign_child_resource(plate)", lambda: holder.assign_child_resource(plate)
+      "plate_holder.assign_child_resource(plate)", lambda: holder.assign_child_resource(plate_)
     )
     await recorder.step(
       "reader_unit_holder.assign_child_resource(reader)",
-      lambda: base.reader_unit_holder.assign_child_resource(reader),
+      lambda: base.reader_unit_holder.assign_child_resource(reader_body),
     )
-    recorder.check(self, "luminescence_96_reader_unit_and_plate")
+    await recorder.check(self, "luminescence_96_reader_unit_and_plate")
 
   async def test_commands_and_reads(self):
     """Setup, every request and LED command, and luminescence of the whole plate and of column 1;
     the well mask is in the 0x0340 report."""
-    base, reader = byonoy_l96a("lum", assign=False)
-    plate = cor_96_wellplate_360uL_Fb("plate")
-    base.plate_holder.assign_child_resource(plate)
-    base.reader_unit_holder.assign_child_resource(reader)
-    recorder = Recorder(base, reader)
+    base, reader = await byonoy_l96a("lum", assign=False)
+    plate_ = await plate(base.store, "plate")
+    await base.plate_holder.assign_child_resource(plate_)
+    assert base.body is not None and reader.body is not None
+    await base.reader_unit_holder.assign_child_resource(reader.body)
+    recorder = await Recorder(base.body, reader).start()
     await recorder.step("setup()", reader.setup)
     await recorder.step("request_status()", reader.request_status)
     await recorder.step("request_environment()", reader.request_environment)
@@ -356,28 +381,29 @@ class Luminescence96GoldenTests(unittest.IsolatedAsyncioTestCase):
     await recorder.step("cancel()  # nothing in flight", reader.cancel)
     await recorder.step(
       "read_luminescence(plate, plate.get_all_items())",
-      lambda: reader.read_luminescence(plate, plate.get_all_items()),
+      lambda: reader.read_luminescence(plate_, plate_.items),
     )
     await recorder.step(
       "read_luminescence(plate, plate['A1:H1'], integration_time=0.5)",
-      lambda: reader.read_luminescence(plate, plate.get_items("A1:H1"), integration_time=0.5),
+      lambda: reader.read_luminescence(plate_, plate_["A1:H1"], integration_time=0.5),
     )
     await recorder.step(
       "read_luminescence(plate, plate['A1', 'H12'], mode='rapid')",
-      lambda: reader.read_luminescence(plate, plate.get_items(["A1", "H12"]), mode="rapid"),
+      lambda: reader.read_luminescence(plate_, plate_.get_items(["A1", "H12"]), mode="rapid"),
     )
     await recorder.step(
       "read_luminescence(plate, plate.get_all_items(), mode='custom')  # no integration time",
-      lambda: reader.read_luminescence(plate, plate.get_all_items(), mode="custom"),
+      lambda: reader.read_luminescence(plate_, plate_.items, mode="custom"),
     )
     await recorder.step("stop()", reader.stop)
-    recorder.check(self, "luminescence_96_commands_and_reads")
+    await recorder.check(self, "luminescence_96_commands_and_reads")
 
   async def test_l96_parts(self):
     """The L96 (not automate) base and reader unit, as built and assigned."""
-    base, _ = byonoy_l96("l96")
-    recorder = Recorder(base)
-    recorder.check(self, "luminescence_96_l96_parts")
+    base, _ = await byonoy_l96("l96")
+    assert base.body is not None
+    recorder = await Recorder(base.body).start()
+    await recorder.check(self, "luminescence_96_l96_parts")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,10 @@
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from pylabrobot.resources import Coordinate, PlateHolder
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 if TYPE_CHECKING:
   from ..master import CLARIOstarDriver
@@ -15,7 +18,7 @@ class Drawer:
   """The drawer (DRAWER command family, 0x03).
 
   Reached as `driver.drawer`. With `plate_holder`, `location_in` and `location_out` set, every move
-  and every `sense_drawer_open` updates the plate holder to where the drawer is.
+  and every `sense_drawer_open` records the plate holder in the resource store where the drawer is.
 
   Attributes:
     drawer_open: whether the drawer was out when last sensed; None until it is first sensed.
@@ -32,22 +35,34 @@ class Drawer:
       driver: the driver to send commands through.
     """
     self._driver = driver
-    self.plate_holder: Optional[PlateHolder] = None
+    self.plate_holder: Optional[handles.Resource] = None
     self.location_in: Optional[Coordinate] = None
     self.location_out: Optional[Coordinate] = None
     self.drawer_open: Optional[bool] = None
 
-  def _update_location(self, drawer_open: bool) -> None:
-    """Move the plate holder to where the drawer is; does nothing until all three are set."""
-    if self.plate_holder is None or self.location_in is None or self.location_out is None:
+  async def _update_location(self, drawer_open: bool) -> None:
+    """Record the plate holder where the drawer is; does nothing until all three are set."""
+    holder = self.plate_holder
+    if holder is None or self.location_in is None or self.location_out is None:
       return
-    self.plate_holder.location = self.location_out if drawer_open else self.location_in
+    location = self.location_out if drawer_open else self.location_in
+    await holder.store.commands.record_device_positions(
+      spb.RecordDevicePositionsRequest(
+        lock_tokens=holder.store.lock_tokens,
+        positions=[
+          spb.DevicePosition(
+            resource=holder.ref,
+            location=pb.PartialVec3(x=location.x, y=location.y, z=location.z),
+          )
+        ],
+      )
+    )
 
   async def sense_drawer_open(self) -> bool:
     """Sense whether the drawer is out, and update the plate holder to match."""
     drawer_open = (await self._driver.request_status()).drawer_open
     self.drawer_open = drawer_open
-    self._update_location(drawer_open)
+    await self._update_location(drawer_open)
     return drawer_open
 
   async def sense_plate_present(self) -> bool:

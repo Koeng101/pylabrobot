@@ -34,7 +34,7 @@ from pylabrobot.lib.optics.holders import (
   F,
   FilterSlide,
 )
-from pylabrobot.resources import Plate, Well
+from pylabrobot.resources.store import handles
 
 from ..errors import FrameError
 from .measurement import (
@@ -42,6 +42,8 @@ from .measurement import (
   MeasurementConfiguration,
   MeasurementSettings,
   ShakeSettings,
+  PlateFacts,
+  WellFacts,
   _get_measured_identifiers,
 )
 
@@ -351,7 +353,7 @@ class Fluorescence(Measurement):
     self._check_default_focal_height_percent(value)
     self._default_focal_height_percent_of_well_depth = value
 
-  def _get_default_focal_height(self, wells: Sequence[Well]) -> float:
+  def _get_default_focal_height(self, wells: Sequence[WellFacts]) -> float:
     """The focal height `default_focal_height_percent_of_well_depth` up `wells`, mm."""
     return self._compute_default_focal_height(
       wells, self._default_focal_height_percent_of_well_depth, self.configuration.focal_height_range
@@ -737,8 +739,8 @@ class Fluorescence(Measurement):
 
   def _compute_run_parameters(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: PlateFacts,
+    wells: List[WellFacts],
     measurement: MeasurementSettings,
     shake: Optional[ShakeSettings],
     *,
@@ -1125,8 +1127,8 @@ class Fluorescence(Measurement):
 
   def _compute_z_profile_parameters(
     self,
-    plate: Plate,
-    well: Well,
+    plate: PlateFacts,
+    well: WellFacts,
     fluorescence_channel: FluorescenceChannel,
     maximum_focal_height: float,
     gain_target_percent: Optional[float],
@@ -1138,7 +1140,7 @@ class Fluorescence(Measurement):
     `_Z_PROFILE_OPTICS_HEADER` and a RUN fluorescence channel's bytes without its gain and
     closing `00` (`_encode_optics`).
     """
-    index = next(i for i, item in enumerate(plate.get_all_items()) if item is well)
+    index = next(i for i, item in enumerate(plate.wells) if item.id == well.id)
     rows = plate.num_items_y
     target = 0 if gain_target_percent is None else round(gain_target_percent * 100)
     optics = self._encode_optics(
@@ -1160,7 +1162,7 @@ class Fluorescence(Measurement):
 
   @staticmethod
   def _decode_z_profile_result(
-    reply: bytes, plate: Plate, *, start_timestamp: datetime, end_timestamp: datetime
+    reply: bytes, plate: PlateFacts, *, start_timestamp: datetime, end_timestamp: datetime
   ) -> CLARIOstarZProfileResult:
     """The z-profile of a FOCUS_RESULT (`05 05`) reply.
 
@@ -1186,7 +1188,7 @@ class Fluorescence(Measurement):
       raise ValueError(
         f"FOCUS_RESULT reply names a well not on the plate, got column {column}, row {row}"
       )
-    well = plate.get_all_items()[(column - 1) * plate.num_items_y + row - 1]
+    well = plate.wells[(column - 1) * plate.num_items_y + row - 1]
     gain = int.from_bytes(reply[7:9], "big")
     peak_counts = int.from_bytes(reply[9:13], "big")
     percent = int.from_bytes(reply[13:15], "big")
@@ -1200,7 +1202,7 @@ class Fluorescence(Measurement):
     return CLARIOstarZProfileResult(
       peak_focal_height=int.from_bytes(reply[17:19], "big", signed=True) / 100,
       gain=gain or None,
-      well=plate.get_child_identifier(well),
+      well=well.identifier,
       peak_counts=peak_counts or None,
       peak_detector_percent=percent / 100 if percent else None,
       average_signal=int.from_bytes(reply[19:23], "big"),
@@ -1256,7 +1258,7 @@ class Fluorescence(Measurement):
     self,
     fluorescence_channel: FluorescenceChannel,
     *,
-    well: Well,
+    well: handles.Resource,
     gain_target_percent: Optional[float] = None,
     maximum_focal_height: float = 15.0,
     timeout: Optional[float] = None,
@@ -1292,14 +1294,14 @@ class Fluorescence(Measurement):
     self._check_z_profile_arguments(
       filled, maximum_focal_height, gain_target_percent, timeout=timeout
     )
-    plate, _ = self._get_plate_and_wells(MeasurementSettings(), None, [well])
+    plate, (target,) = await self._get_plate_and_wells(MeasurementSettings(), None, [well])
     parameters = self._compute_z_profile_parameters(
-      plate, well, filled, maximum_focal_height, gain_target_percent
+      plate, target, filled, maximum_focal_height, gain_target_percent
     )
     logger.info(
       "z-profile: %s on %s of %s, gain target %s %%",
       self._describe_fluorescence_channel(filled),
-      plate.get_child_identifier(well),
+      target.identifier,
       plate.name,
       gain_target_percent,
     )
@@ -1495,7 +1497,7 @@ class Fluorescence(Measurement):
     fluorescence_channels: FluorescenceChannel,
     *,
     gain: int,
-    wells: Optional[List[Well]] = ...,
+    wells: Optional[Sequence[handles.Resource]] = ...,
     focal_height: Optional[float] = ...,
     optic_position: Optional[OpticPosition] = ...,
     flying_mode: bool = ...,
@@ -1511,7 +1513,7 @@ class Fluorescence(Measurement):
     fluorescence_channels: Sequence[FluorescenceChannel],
     *,
     gain: Union[int, Sequence[int]],
-    wells: Optional[List[Well]] = ...,
+    wells: Optional[Sequence[handles.Resource]] = ...,
     focal_height: Optional[float] = ...,
     optic_position: Optional[OpticPosition] = ...,
     flying_mode: bool = ...,
@@ -1526,7 +1528,7 @@ class Fluorescence(Measurement):
     fluorescence_channels: Union[FluorescenceChannel, Sequence[FluorescenceChannel]],
     *,
     gain: Union[int, Sequence[int]],
-    wells: Optional[List[Well]] = None,
+    wells: Optional[Sequence[handles.Resource]] = None,
     focal_height: Optional[float] = None,
     optic_position: Optional[OpticPosition] = None,
     flying_mode: bool = False,
@@ -1589,15 +1591,15 @@ class Fluorescence(Measurement):
       flying_mode=flying_mode,
       enhanced_dynamic_range=enhanced_dynamic_range,
     )
-    plate, wells = self._get_plate_and_wells(measurement, shake_settings, wells)
+    plate, targets = await self._get_plate_and_wells(measurement, shake_settings, wells)
     if focal_height is None:
-      focal_height = self._get_default_focal_height(wells)
-    if measurement.well_scan == "matrix" and len(wells) > 1:
+      focal_height = self._get_default_focal_height(targets)
+    if measurement.well_scan == "matrix" and len(targets) > 1:
       # No fluorescence matrix of several wells is verified: its reply layout is unknown.
-      raise ValueError(f"a fluorescence matrix scan reads one well, got {len(wells)}")
+      raise ValueError(f"a fluorescence matrix scan reads one well, got {len(targets)}")
     parameters = self._compute_run_parameters(
       plate,
-      wells,
+      targets,
       measurement,
       shake_settings,
       focal_height=focal_height,
@@ -1618,7 +1620,7 @@ class Fluorescence(Measurement):
         self._describe_fluorescence_channel(fluorescence_channel, gain)
         for fluorescence_channel, gain in zip(filled, gains)
       ),
-      len(wells),
+      len(targets),
       plate.num_items,
       plate.name,
       measurement.well_scan,
@@ -1626,7 +1628,7 @@ class Fluorescence(Measurement):
     )
     start_timestamp = datetime.now()
     replies, end_timestamp = await self._run_measurement(parameters, timeout)
-    identifiers = _get_measured_identifiers(plate, wells)
+    identifiers = _get_measured_identifiers(plate, targets)
     counts, ceiling, temperature = self._decode_data_reply(
       replies[0], len(filled), len(identifiers)
     )
@@ -1742,7 +1744,7 @@ class Fluorescence(Measurement):
   # -- decoding and results ------------------------------------------------------------------------
 
   def _decode_spectrum_pages(
-    self, pages: List[bytes], plate: Plate, identifiers: List[str], wavelengths: int
+    self, pages: List[bytes], plate: PlateFacts, identifiers: List[str], wavelengths: int
   ) -> Tuple[Dict[str, List[int]], int, Optional[float]]:
     """Each well's counts by wavelength (in `identifiers`' order), the ceiling, the temperature.
 
@@ -1753,7 +1755,7 @@ class Fluorescence(Measurement):
     Raises:
       ValueError: if a page is not a page of this read, or a well's page is missing or repeated.
     """
-    items = plate.get_all_items()
+    items = plate.wells
     rows, columns = plate.num_items_y, plate.num_items_x
     spectra: Dict[str, List[int]] = {}
     for number, page in enumerate(pages, 1):
@@ -1769,7 +1771,7 @@ class Fluorescence(Measurement):
       row = int.from_bytes(page[25:27], "big")
       if not (1 <= column <= columns and 1 <= row <= rows):
         raise ValueError(f"fluorescence spectrum page {number} is of column {column}, row {row}")
-      identifier = plate.get_child_identifier(items[(column - 1) * rows + row - 1])
+      identifier = items[(column - 1) * rows + row - 1].identifier
       if identifier not in identifiers or identifier in spectra:
         raise ValueError(f"fluorescence spectrum page {number} is of {identifier}, not expected")
       spectra[identifier] = [
@@ -1820,7 +1822,7 @@ class Fluorescence(Measurement):
     emission_wavelength: Optional[float] = None,
     emission_bandwidth: Optional[float] = None,
     gain: int,
-    wells: Optional[List[Well]] = None,
+    wells: Optional[Sequence[handles.Resource]] = None,
     step_size: int = 1,
     focal_height: Optional[float] = None,
     measurement_settings: Optional[MeasurementSettings] = None,
@@ -1889,9 +1891,9 @@ class Fluorescence(Measurement):
       measurement,
       timeout=timeout,
     )
-    plate, wells = self._get_plate_and_wells(measurement, shake_settings, wells)
+    plate, targets = await self._get_plate_and_wells(measurement, shake_settings, wells)
     if focal_height is None:
-      focal_height = self._get_default_focal_height(wells)
+      focal_height = self._get_default_focal_height(targets)
     start = self._get_scanned_fluorescence_channel(fixed, scan, start_wavelength)
     end = self._get_scanned_fluorescence_channel(fixed, scan, end_wavelength)
     wavelengths = list(range(start_wavelength, end_wavelength + 1))
@@ -1901,7 +1903,7 @@ class Fluorescence(Measurement):
     selectors = (fixed_selector, scanned) if scan == "excitation" else (scanned, fixed_selector)
     parameters = self._compute_run_parameters(
       plate,
-      wells,
+      targets,
       measurement,
       shake_settings,
       focal_height=focal_height,
@@ -1916,7 +1918,7 @@ class Fluorescence(Measurement):
     timeout = self.default_read_timeout if timeout is None else timeout
     if measurement.well_scan != "point":
       self._warn_untested(f"a fluorescence spectrum with {measurement.well_scan} averaging")
-    identifiers = _get_measured_identifiers(plate, wells)
+    identifiers = _get_measured_identifiers(plate, targets)
     logger.info(
       "fluorescence spectrum: %s %d to %d nm, %s, %d of %d wells of %s, %s scan",
       scan,

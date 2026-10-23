@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Sequence, Tuple
 
 from pylabrobot.lib.absorbance.results import AbsorbanceResult, AbsorbanceSpectrumResult
-from pylabrobot.resources import Plate, Well
+from pylabrobot.resources.store import handles
 
 from ..errors import FrameError
 from .measurement import (
@@ -16,6 +16,8 @@ from .measurement import (
   MeasurementSettings,
   ShakeSettings,
   _get_measured_identifiers,
+  PlateFacts,
+  WellFacts,
   _get_readings_by_well,
 )
 
@@ -293,8 +295,8 @@ class Absorbance(Measurement):
 
   def _compute_run_parameters(
     self,
-    plate: Plate,
-    wells: Sequence[Well],
+    plate: PlateFacts,
+    wells: Sequence[WellFacts],
     wavelengths: Sequence[int],
     measurement: MeasurementSettings,
     shake: Optional[ShakeSettings],
@@ -310,15 +312,15 @@ class Absorbance(Measurement):
       + self._compute_run_end(measurement.flashes)
     )
 
-  def _get_run_parameters(
+  async def _get_run_parameters(
     self,
     wavelengths: Sequence[int],
     report: str,
     measurement: MeasurementSettings,
     shake: Optional[ShakeSettings],
-    wells: Optional[List[Well]],
+    wells: Optional[Sequence[handles.Resource]],
     timeout: Optional[float] = None,
-  ) -> Tuple[Plate, List[Well], bytes]:
+  ) -> Tuple[PlateFacts, List[WellFacts], bytes]:
     """The plate, the wells and the RUN parameters of a measurement, every argument checked.
 
     Raises:
@@ -328,14 +330,14 @@ class Absorbance(Measurement):
         (`_get_plate_and_wells`).
     """
     self._check_arguments(wavelengths, report, measurement, timeout)
-    plate, wells = self._get_plate_and_wells(measurement, shake, wells)
-    parameters = self._compute_run_parameters(plate, wells, wavelengths, measurement, shake)
-    return plate, wells, parameters
+    plate, targets = await self._get_plate_and_wells(measurement, shake, wells)
+    parameters = self._compute_run_parameters(plate, targets, wavelengths, measurement, shake)
+    return plate, targets, parameters
 
   async def measure(
     self,
     *,
-    wells: Optional[List[Well]] = None,
+    wells: Optional[Sequence[handles.Resource]] = None,
     wavelengths: Sequence[int],
     measurement_settings: Optional[MeasurementSettings] = None,
     shake_settings: Optional[ShakeSettings] = None,
@@ -366,14 +368,14 @@ class Absorbance(Measurement):
       TimeoutError: if the run takes longer than `timeout` seconds.
     """
     measurement = MeasurementSettings() if measurement_settings is None else measurement_settings
-    plate, wells, parameters = self._get_run_parameters(
+    plate, targets, parameters = await self._get_run_parameters(
       wavelengths, report, measurement, shake_settings, wells, timeout
     )
     timeout = self.default_read_timeout if timeout is None else timeout
     logger.info(
       "absorbance: %s nm, %d of %d wells of %s, %s scan, %s",
       ", ".join(str(wavelength) for wavelength in wavelengths),
-      len(wells),
+      len(targets),
       plate.num_items,
       plate.name,
       measurement.well_scan,
@@ -391,9 +393,9 @@ class Absorbance(Measurement):
     temperature = raw_temperature / 10 if raw_temperature else None
     results: List[AbsorbanceResult] = []
     for wavelength, values, calibration in zip(wavelengths, readings, calibrations):
-      data = _get_readings_by_well(plate, wells, values)
+      data = _get_readings_by_well(plate, targets, values)
       if report == "raw":
-        reference_counts = _get_readings_by_well(plate, wells, [float(v) for v in references])
+        reference_counts = _get_readings_by_well(plate, targets, [float(v) for v in references])
         results.append(
           CLARIOstarAbsorbanceResult(
             data=data,
@@ -464,8 +466,8 @@ class Absorbance(Measurement):
 
   def _compute_spectrum_run_parameters(
     self,
-    plate: Plate,
-    wells: Sequence[Well],
+    plate: PlateFacts,
+    wells: Sequence[WellFacts],
     start_wavelength: int,
     end_wavelength: int,
     step_size: int,
@@ -482,7 +484,7 @@ class Absorbance(Measurement):
       + self._compute_run_end(measurement.flashes)
     )
 
-  def _get_spectrum_run_parameters(
+  async def _get_spectrum_run_parameters(
     self,
     start_wavelength: int,
     end_wavelength: int,
@@ -490,9 +492,9 @@ class Absorbance(Measurement):
     report: str,
     measurement: MeasurementSettings,
     shake: Optional[ShakeSettings],
-    wells: Optional[List[Well]],
+    wells: Optional[Sequence[handles.Resource]],
     timeout: Optional[float] = None,
-  ) -> Tuple[Plate, List[Well], bytes]:
+  ) -> Tuple[PlateFacts, List[WellFacts], bytes]:
     """The plate, the wells and the RUN parameters of a spectrum, every argument checked.
 
     Raises:
@@ -503,16 +505,16 @@ class Absorbance(Measurement):
     self._check_spectrum_arguments(
       start_wavelength, end_wavelength, step_size, report, measurement, timeout
     )
-    plate, wells = self._get_plate_and_wells(measurement, shake, wells)
+    plate, targets = await self._get_plate_and_wells(measurement, shake, wells)
     parameters = self._compute_spectrum_run_parameters(
-      plate, wells, start_wavelength, end_wavelength, step_size, measurement, shake
+      plate, targets, start_wavelength, end_wavelength, step_size, measurement, shake
     )
-    return plate, wells, parameters
+    return plate, targets, parameters
 
   async def measure_spectrum(
     self,
     *,
-    wells: Optional[List[Well]] = None,
+    wells: Optional[Sequence[handles.Resource]] = None,
     start_wavelength: int,
     end_wavelength: int,
     step_size: int,
@@ -552,7 +554,7 @@ class Absorbance(Measurement):
       FrameError: if a data page arrives short on the second read too.
     """
     measurement = MeasurementSettings() if measurement_settings is None else measurement_settings
-    plate, wells, parameters = self._get_spectrum_run_parameters(
+    plate, targets, parameters = await self._get_spectrum_run_parameters(
       start_wavelength,
       end_wavelength,
       step_size,
@@ -564,7 +566,7 @@ class Absorbance(Measurement):
     )
     timeout = self.default_read_timeout if timeout is None else timeout
     wavelengths = _get_spectrum_wavelengths(start_wavelength, end_wavelength, step_size)
-    measured = len(_get_measured_identifiers(plate, wells))
+    measured = len(_get_measured_identifiers(plate, targets))
     logger.info(
       "absorbance spectrum: %d to %d nm in %d nm steps, %d of %d wells of %s, %s scan, %s",
       start_wavelength,
@@ -592,7 +594,7 @@ class Absorbance(Measurement):
     # monitoring.
     raw_temperature = int.from_bytes(pages[0][34:36], "big")
     temperature = raw_temperature / 10 if raw_temperature else None
-    identifiers = _get_measured_identifiers(plate, wells)
+    identifiers = _get_measured_identifiers(plate, targets)
     data: Dict[str, Dict[int, float]] = {identifier: {} for identifier in identifiers}
     for wavelength, wavelength_readings in zip(wavelengths, readings):  # row by row over the wells
       for identifier, value in zip(identifiers, wavelength_readings):
@@ -603,7 +605,7 @@ class Absorbance(Measurement):
         temperature=temperature,
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
-        references=_get_readings_by_well(plate, wells, [float(v) for v in references]),
+        references=_get_readings_by_well(plate, targets, [float(v) for v in references]),
         calibration=dict(zip(wavelengths, calibrations)),
         reference_calibration=reference_pair,
       )

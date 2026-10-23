@@ -51,9 +51,10 @@ from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
   FakeFTDI,
   load_session_replies,
 )
-from pylabrobot.lib.absorbance.results import get_grid
-from pylabrobot.resources import Coordinate, Plate, cor_96_wellplate_360uL_Fb
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.lib.absorbance.results import grid_of
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import handles
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -135,8 +136,25 @@ class Recorder:
     driver._RETRY_SETTLE = 0
     driver.default_poll_interval = 0
     driver.drawer.default_poll_interval = 0
+    self.store = self.reader.store
     self.steps: List[Dict[str, Any]] = []
-    self._resources = snapshot_resources(self.reader)
+    self._resources: List[Dict[str, Any]] = []
+
+  async def start(self) -> None:
+    """Put the reader in its store: its tree before the first step."""
+    await self.reader.create_body()
+    self._resources = await self.snapshot()
+
+  async def snapshot(self) -> List[Dict[str, Any]]:
+    """The reader's tree, read from its store."""
+    assert self.reader.body is not None
+    return await snapshot_store(self.store, self.reader.body)
+
+  async def plate(self, name: str) -> handles.Plate:
+    """A Corning 96-well 360 uL flat-bottom plate in the reader's store."""
+    plate = await self.store.create("cor_96_wellplate_360uL_Fb", name)
+    assert isinstance(plate, handles.Plate)
+    return plate
 
   async def step(
     self,
@@ -161,19 +179,19 @@ class Recorder:
       entry["result"] = to_jsonable(returned if result is None else result(returned))
     entry["sent"] = [frame.hex() for frame in self.io.written]
     entry["unanswered_replies"] = len(self.io.replies)
-    resources = snapshot_resources(self.reader)
+    resources = await self.snapshot()
     if resources != self._resources:
       entry["resources"] = resources
       self._resources = resources
     self.steps.append(entry)
     return returned
 
-  def check(self, test: unittest.TestCase, scenario: str) -> None:
+  async def check(self, test: unittest.TestCase, scenario: str) -> None:
     """Compare the record with the scenario's golden file."""
-    record = {"steps": self.steps, "resources": snapshot_resources(self.reader)}
+    record = {"steps": self.steps, "resources": await self.snapshot()}
     check_golden(test, GOLDEN / f"{scenario}.json", record)
 
-  async def setup_with_plate(self, plate: Plate) -> None:
+  async def setup_with_plate(self, plate: handles.Plate) -> None:
     """Set up, open the drawer, put `plate` in the plate holder and close the drawer."""
     reader = self.reader
     await self.step("setup()", reader.setup, SETUP_REPLIES)
@@ -190,9 +208,10 @@ class CLARIOstarGoldenTests(unittest.IsolatedAsyncioTestCase):
     """The plate goes on or comes off only while the drawer is sensed open; the drawer moves the
     plate holder once its locations are set; stop opens the drawer for a plate left in."""
     recorder = Recorder()
+    await recorder.start()
     reader = recorder.reader
-    plate = cor_96_wellplate_360uL_Fb("plate")
-    other = cor_96_wellplate_360uL_Fb("other")
+    plate = await recorder.plate("plate")
+    other = await recorder.plate("other")
     await recorder.step("setup()", reader.setup, SETUP_REPLIES)
     await recorder.step(
       "plate_holder.assign_child_resource(plate)  # drawer not sensed",
@@ -232,23 +251,25 @@ class CLARIOstarGoldenTests(unittest.IsolatedAsyncioTestCase):
     )
     await recorder.step("drawer.close()", reader.drawer.close, CLOSE_REPLIES)
     await recorder.step("stop()", reader.stop, STOP_REPLIES)
-    recorder.check(self, "drawer_and_plate")
+    await recorder.check(self, "drawer_and_plate")
 
   async def test_stop_with_a_plate_left_in(self):
     """Stop refuses with a plate in the reader and opens the drawer for it."""
     recorder = Recorder()
+    await recorder.start()
     reader = recorder.reader
     reader.drawer.location_in = LOCATION_IN
     reader.drawer.location_out = LOCATION_OUT
-    await recorder.setup_with_plate(cor_96_wellplate_360uL_Fb("plate"))
+    await recorder.setup_with_plate(await recorder.plate("plate"))
     await recorder.step("stop()", reader.stop, STOP_WITH_PLATE_REPLIES)
-    recorder.check(self, "stop_with_a_plate_left_in")
+    await recorder.check(self, "stop_with_a_plate_left_in")
 
   async def test_absorbance(self):
     """Absorbance of the whole plate and of column 1, a spectrum of column 1, and a grid."""
     recorder = Recorder()
+    await recorder.start()
     reader = recorder.reader
-    plate = cor_96_wellplate_360uL_Fb("plate")
+    plate = await recorder.plate("plate")
     await recorder.setup_with_plate(plate)
     absorbance = reader.absorbance
     assert absorbance is not None
@@ -258,18 +279,21 @@ class CLARIOstarGoldenTests(unittest.IsolatedAsyncioTestCase):
       run_replies(VERIFICATION_DATA_REPLY),
     )
     await recorder.step(
-      "get_grid(plate, results[0].data)", lambda: get_grid(plate, results[0].data)
+      "get_grid(plate, results[0].data)",
+      lambda: grid_of(
+        plate.name, plate.num_items_x, plate.num_items_y, plate.identifiers, results[0].data
+      ),
     )
     await recorder.step(
       "absorbance.measure(wells=plate['A1:H1'], wavelengths=[600])",
-      lambda: absorbance.measure(wells=plate.get_items("A1:H1"), wavelengths=[600]),
+      lambda: absorbance.measure(wells=plate["A1:H1"], wavelengths=[600]),
       run_replies(COLUMN_1_DATA_REPLY),
     )
     session = load_session_replies()
     await recorder.step(
       "absorbance.measure_spectrum(wells=plate['A1:H1'], 300, 700, 1)",
       lambda: absorbance.measure_spectrum(
-        wells=plate.get_items("A1:H1"), start_wavelength=300, end_wavelength=700, step_size=1
+        wells=plate["A1:H1"], start_wavelength=300, end_wavelength=700, step_size=1
       ),
       run_replies(bytes.fromhex(session["absorbance_spectrum_page"])),
     )
@@ -282,14 +306,15 @@ class CLARIOstarGoldenTests(unittest.IsolatedAsyncioTestCase):
       "absorbance.measure(wavelengths=[600])  # no plate",
       lambda: absorbance.measure(wavelengths=[600]),
     )
-    recorder.check(self, "absorbance")
+    await recorder.check(self, "absorbance")
 
   async def test_fluorescence(self):
     """Fluorescence of the whole plate and of column 1, at the default focal height from the
     wells, and a z-profile of A1."""
     recorder = Recorder()
+    await recorder.start()
     reader = recorder.reader
-    plate = cor_96_wellplate_360uL_Fb("plate")
+    plate = await recorder.plate("plate")
     await recorder.setup_with_plate(plate)
     fluorescence = reader.fluorescence
     assert fluorescence is not None
@@ -301,7 +326,7 @@ class CLARIOstarGoldenTests(unittest.IsolatedAsyncioTestCase):
     session = load_session_replies()
     await recorder.step(
       "fluorescence.measure(485/528, gain=1000, wells=plate['A1:H1'])",
-      lambda: fluorescence.measure(BASELINE, gain=1000, wells=plate.get_items("A1:H1")),
+      lambda: fluorescence.measure(BASELINE, gain=1000, wells=plate["A1:H1"]),
       run_replies(bytes.fromhex(session["fluorescence_column_1_reply"])),
     )
     z_profile = load_z_profile_ground_truth()["z_profile_without_target"]
@@ -310,14 +335,15 @@ class CLARIOstarGoldenTests(unittest.IsolatedAsyncioTestCase):
       lambda: fluorescence.measure_z_profile(BASELINE, well=plate.get_well("A1")),
       [bytes.fromhex(reply) for reply in z_profile["replies"]],
     )
-    recorder.check(self, "fluorescence")
+    await recorder.check(self, "fluorescence")
 
   async def test_luminescence(self):
     """Luminescence of the whole plate and of column 1, at the default focal height from the
     wells."""
     recorder = Recorder()
+    await recorder.start()
     reader = recorder.reader
-    plate = cor_96_wellplate_360uL_Fb("plate")
+    plate = await recorder.plate("plate")
     await recorder.setup_with_plate(plate)
     luminescence = reader.luminescence
     assert luminescence is not None
@@ -328,10 +354,10 @@ class CLARIOstarGoldenTests(unittest.IsolatedAsyncioTestCase):
     )
     await recorder.step(
       "luminescence.measure(wells=plate['A1:H1'])",
-      lambda: luminescence.measure(wells=plate.get_items("A1:H1")),
+      lambda: luminescence.measure(wells=plate["A1:H1"]),
       run_replies(luminescence_reply(8)),
     )
-    recorder.check(self, "luminescence")
+    await recorder.check(self, "luminescence")
 
 
 if __name__ == "__main__":
