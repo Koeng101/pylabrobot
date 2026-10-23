@@ -1,6 +1,6 @@
 """Standard mocks for the API dependency of Flex driver unit tests."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from unittest.mock import AsyncMock
 
 from pylabrobot.io.http import HTTP
@@ -14,7 +14,11 @@ from pylabrobot.opentrons.types import (
   RobotInfo,
   RunInfo,
 )
-from pylabrobot.resources.opentrons import FlexDeck
+from pylabrobot.opentrons.decks import create_flex_deck, get_slot_holder
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 _MODELS = {
   "p50_single_flex": "p50_single_v3.5",
@@ -72,7 +76,46 @@ def make_api(
   return api
 
 
-def make_flex(host: str = "robot.test", *, api: AsyncMock, deck: Optional[FlexDeck] = None) -> Flex:
+async def make_deck(name: str = "flex_deck") -> handles.Deck:
+  """A Flex deck in a fresh in-memory store."""
+  return await create_flex_deck(ResourceStore.in_memory(), name)
+
+
+async def place(
+  deck: handles.Deck, source: Union[str, pb.ResourceDefinition], name: str, slot: str
+) -> Any:
+  """Make labware from a model name or a definition in a slot of the deck."""
+  return await deck.store.create(source, name=name, parent=await get_slot_holder(deck, slot))
+
+
+def container(
+  name: str,
+  size_x: float = 127.76,
+  size_y: float = 85.48,
+  size_z: float = 31.4,
+  material_z_thickness: Optional[float] = 1,
+  max_volume: float = 10000,
+  kind: int = pb.RESOURCE_KIND_CONTAINER,
+  type_name: str = "Container",
+  bottom_type: int = pb.WELL_BOTTOM_TYPE_UNSPECIFIED,
+) -> pb.ResourceDefinition:
+  """A single-cavity container's definition, a trough by default, its volume tracked."""
+  spec = pb.ContainerSpec(max_volume=max_volume, bottom_type=bottom_type)  # type: ignore[arg-type]
+  if material_z_thickness is not None:
+    spec.material_z_thickness = material_z_thickness
+  return build.resource(
+    name,
+    Coordinate(size_x, size_y, size_z),
+    kind=kind,  # type: ignore[arg-type]
+    type_name=type_name,
+    container=spec,
+    state=pb.ResourceState(volume=pb.VolumeState(tracking_enabled=True)),
+  )
+
+
+def make_flex(
+  host: str = "robot.test", *, api: AsyncMock, deck: Optional[handles.Deck] = None
+) -> Flex:
   """Construct the real driver with mocked IO and API dependencies."""
   flex = Flex(host, io=AsyncMock(spec=HTTP), deck=deck)
   flex._api = api

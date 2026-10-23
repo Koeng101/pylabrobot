@@ -5352,7 +5352,7 @@
     },
     {
       "call": "right.aspirate(plate, 30, column=1) drawing more than column 2 holds",
-      "error": "TooLittleLiquidError: Not enough liquid in container: 30.0uL > 20uL.",
+      "error": "TooLittleLiquidError: Not enough liquid in container: 30.0uL > 20.0uL.",
       "sent": [],
       "mounted": {
         "right/8": {

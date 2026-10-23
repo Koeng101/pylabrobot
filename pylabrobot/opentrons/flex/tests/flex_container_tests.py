@@ -1,9 +1,9 @@
 """Tests for container (trough/reservoir) ops on the Flex heads, and for the
 robot-level commands that belong to the device rather than to a head.
 
-A bare PLR container has one volume tracker. Pipetting centers the nozzle
-array using PLR coordinates and sends an in-place plunger command. Tests cover
-coordinates, offsets, per-tip volume accounting and rollback on wire failure.
+A bare container holds one volume in the resource store. Pipetting centers the
+nozzle array using PLR coordinates and sends an in-place plunger command. Tests
+cover coordinates, offsets, per-tip volume accounting and rollback on wire failure.
 
 The robot-level tests pin the wire shape of the device's own commands: the
 snake_case params the robot/* family takes (unlike the rest of the API), the
@@ -12,7 +12,7 @@ params of the status, comment, wait and reload commands.
 """
 
 import unittest
-from typing import List, Tuple
+from typing import Any, List, Optional, Tuple, Union, cast
 from unittest.mock import AsyncMock, _Call, patch
 
 from pylabrobot.opentrons.flex.errors import OpentronsError
@@ -20,19 +20,20 @@ from pylabrobot.opentrons.flex.flex import Flex
 from pylabrobot.opentrons.flex.flex_head import FlexHead1, FlexHead8, FlexHead96
 from pylabrobot.opentrons.flex.flex_wire import OFFLINE_API_VERSION
 from pylabrobot.opentrons.flex.tests.liquid_test_utils import pipetting_location
-from pylabrobot.opentrons.flex.tests.mock_utils import make_api, make_flex
-from pylabrobot.resources import (
-  Container,
-  cor_96_wellplate_360uL_Fb,
-  set_tip_tracking,
-  set_volume_tracking,
+from pylabrobot.opentrons.flex.tests.mock_utils import (
+  container,
+  make_api,
+  make_deck,
+  make_flex,
+  place,
 )
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.corning import cor_axy_1_troughplate_rowVb
-from pylabrobot.resources.opentrons.flex_deck import FlexDeck
-from pylabrobot.resources.opentrons.flex_tip_racks import flex_96_tiprack_50ul
-from pylabrobot.resources.resource import Resource
 from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+
+COMMITTED = pb.VIEW_COMMITTED
 
 
 def _make_trough(
@@ -40,22 +41,41 @@ def _make_trough(
   size_x: float = 127.76,
   size_y: float = 85.48,
   max_volume: float = 195000.0,
-) -> Container:
-  """A single-cavity reservoir built directly with the PLR ``Container`` class,
-  mapped to a real Opentrons single-cavity load name.
+  turned: bool = False,
+  location: Optional[Coordinate] = None,
+) -> pb.ResourceDefinition:
+  """A single-cavity reservoir, a plain container, mapped to a real Opentrons
+  single-cavity load name; ``turned`` turns it a quarter turn about z.
 
   The default size is that reservoir's OUTER footprint, the convention a PLR
   container carries (its cavity is narrower, and PLR does not model it).
   """
-  trough = Container(
-    name=name,
-    size_x=size_x,
-    size_y=size_y,
-    size_z=31.4,
-    material_z_thickness=1.0,
-    max_volume=max_volume,
+  definition = container(name, size_x, size_y, 31.4, 1.0, max_volume)
+  if turned:
+    definition.attributes.rotation.z = 90
+  if location is not None:
+    definition.attributes.location.CopyFrom(build.vec3(location))
+  return definition
+
+
+async def _put(flex: Flex, source: Union[str, pb.ResourceDefinition], slot: str, name: str) -> Any:
+  """Make labware in a slot of the Flex's deck."""
+  return await place(flex.deck, source, name, slot)
+
+
+async def _take_tips(rack: handles.TipRack, identifiers: List[str]) -> None:
+  """Take tips from spots by hand."""
+  await rack.store.commands.update_resources(
+    spb.UpdateResourcesRequest(
+      updates=[
+        spb.ResourceUpdate(
+          tip_presence=pb.SetTipPresence(
+            spots=[rack.get_tip_spot(i).ref for i in identifiers], present=False
+          )
+        )
+      ]
+    )
   )
-  return trough
 
 
 async def _flex_head1(
@@ -65,7 +85,7 @@ async def _flex_head1(
   the api (for command inspection) and the head itself.
   """
   api = make_api(pipettes=[("p1000_single_flex", 1, 1.0, 1000.0, "right")])
-  flex = make_flex(deck=FlexDeck(), host="localhost", api=api)
+  flex = make_flex(deck=await make_deck(), host="localhost", api=api)
   test_case.addAsyncCleanup(flex.disconnect)
   await flex.setup()
   head = flex.right
@@ -80,7 +100,7 @@ async def _flex_head8(
   api (for command inspection) and the head itself.
   """
   api = make_api(pipettes=[("p50_multi_flex", 8, 1.0, 50.0, "left")])
-  flex = make_flex(deck=FlexDeck(), host="localhost", api=api)
+  flex = make_flex(deck=await make_deck(), host="localhost", api=api)
   test_case.addAsyncCleanup(flex.disconnect)
   await flex.setup()
   head = flex.left
@@ -95,7 +115,7 @@ async def _flex_head96(
   command inspection) and the head itself.
   """
   api = make_api(pipettes=[("p1000_96", 96, 1.0, 1000.0, "left")])
-  flex = make_flex(deck=FlexDeck(), host="localhost", api=api)
+  flex = make_flex(deck=await make_deck(), host="localhost", api=api)
   test_case.addAsyncCleanup(flex.disconnect)
   await flex.setup()
   head = flex.head96
@@ -109,25 +129,18 @@ class TestFlexHead1ContainerOps(unittest.IsolatedAsyncioTestCase):
   tracked against the container's single tracker.
   """
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head1(self)
 
   async def test_aspirate_positions_container_without_loading_labware(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(1000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(1000.0)
 
-    await self.head.pick_up_tips(rack.get_item("A1"))
+    await self.head.pick_up_tips(rack.get_tip_spot("A1"))
     await self.head.aspirate(trough, volume=50)
 
     load_cmds = [
@@ -146,22 +159,23 @@ class TestFlexHead1ContainerOps(unittest.IsolatedAsyncioTestCase):
     # A single nozzle goes to the cavity center: no x/y centering offset,
     # just the default bottom clearance.
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels),
+      await pipetting_location(self.api, trough, self.head.channels),
       {"origin": "bottom", "offset": {"x": 0, "y": 0, "z": 1.0}},
     )
 
-    self.assertAlmostEqual(trough.tracker.volume, 950.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 950.0)
 
   async def test_dispense_adds_volume_to_container_tracker(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
 
-    await self.head.pick_up_tips(rack.get_item("A1"))
-    for tip in self.head.get_mounted_tips():
+    await self.head.pick_up_tips(rack.get_tip_spot("A1"))
+    for tip in await self.head.get_mounted_tips():
       if tip is not None:
-        tip.tracker.set_volume(30)
+        await tip.set_volume(30)
     await self.head.dispense(trough, volume=30)
 
     dispense_cmds = [
@@ -169,39 +183,44 @@ class TestFlexHead1ContainerOps(unittest.IsolatedAsyncioTestCase):
     ]
     self.assertEqual(len(dispense_cmds), 1)
     self.assertNotIn("wellName", dispense_cmds[0].args[2])
-    self.assertAlmostEqual(trough.tracker.volume, 30.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 30.0)
 
   async def test_aspirate_container_without_tip_rejects_before_any_wire_command(self):
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(1000.0)
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(1000.0)
 
     commands_before = self.api.submit_command.await_count
     with self.assertRaises(OpentronsError):
       await self.head.aspirate(trough, volume=50)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(trough.tracker.volume, 1000.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 1000.0)
 
   async def test_dispense_container_without_tip_rejects_before_any_wire_command(self):
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(trough, "C2")
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
 
     commands_before = self.api.submit_command.await_count
     with self.assertRaises(OpentronsError):
       await self.head.dispense(trough, volume=30)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(trough.tracker.volume, 0.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 0.0)
 
   async def test_wire_failure_rolls_back_container_tracker(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(1000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(1000.0)
 
-    await self.head.pick_up_tips(rack.get_item("A1"))
+    await self.head.pick_up_tips(rack.get_tip_spot("A1"))
     with (
       patch.object(
         self.api,
@@ -217,32 +236,25 @@ class TestFlexHead1ContainerOps(unittest.IsolatedAsyncioTestCase):
 
     assert submit.await_args is not None
     self.assertEqual(submit.await_args.args[1], "aspirateInPlace")
-    self.assertAlmostEqual(trough.tracker.volume, 1000.0)
-    self.assertAlmostEqual(trough.tracker.get_used_volume(), 1000.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 1000.0)
+    self.assertAlmostEqual((await trough.get_volume()), 1000.0)
 
 
 class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
   """PLR centers the nozzle row; each mounted tip changes the shared tracker."""
-
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
 
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head8(self)
 
   async def test_reservoir_well_centers_array_for_aspirate_and_dispense(self):
     """A single-well reservoir centers all 8 tips, despite being a Well."""
-    rack = flex_96_tiprack_50ul(name="rack")
-    reservoir = cor_axy_1_troughplate_rowVb(name="reservoir")
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(reservoir, "D1")
-    cavity = reservoir.get_item("A1")
-    cavity.tracker.set_volume(100000)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    reservoir = cast(
+      handles.Plate,
+      await _put(self.flex, "cor_axy_1_troughplate_rowVb", "D1", "reservoir"),
+    )
+    cavity = reservoir.get_well("A1")
+    await cavity.set_volume(100000)
     await self.head.pick_up_tips(rack, column=0)
     for operation in (self.head.aspirate_container, self.head.dispense_container):
       with self.subTest(operation=operation.__name__):
@@ -253,17 +265,18 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
         ]
         self.assertEqual(moves[0].args[2]["coordinates"], {"x": 63.88, "y": 74.24, "z": 109.0})
         self.assertEqual(
-          pipetting_location(self.api, cavity, self.head.channels),
+          await pipetting_location(self.api, cavity, self.head.channels),
           {"origin": "bottom", "offset": {"x": 0, "y": 0, "z": 1.0}},
         )
-    self.assertAlmostEqual(cavity.tracker.volume, 100000)
+    self.assertAlmostEqual((await cavity.get_volume(COMMITTED)), 100000)
 
   async def test_aspirate_container_centers_nozzle_row(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     await self.head.aspirate_container(trough, volume=50)
@@ -277,7 +290,7 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(params["volume"], 50)
     # The primary nozzle is positioned so the row centers on the cavity.
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels),
+      await pipetting_location(self.api, trough, self.head.channels),
       {"origin": "bottom", "offset": {"x": 0, "y": 0, "z": 1.0}},
     )
 
@@ -289,39 +302,39 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
     )
 
     # All 8 channels hold a tip, so the single tracker loses 8 * 50.
-    self.assertAlmostEqual(trough.tracker.volume, 9600.0)
-    self.assertAlmostEqual(trough.tracker.get_used_volume(), 9600.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 9600.0)
+    self.assertAlmostEqual((await trough.get_volume()), 9600.0)
 
   async def test_aspirate_container_tracker_scales_with_mounted_tips(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(10000.0)
 
     # Leave only 3 tips in column 0 (rows A, D, H) before the pickup.
-    column_0_spots = rack.get_all_items()[0:8]
-    for i in (1, 2, 4, 5, 6):
-      column_0_spots[i].tracker.remove_tip(commit=True)
+    await _take_tips(rack, ["B1", "C1", "E1", "F1", "G1"])
 
     await self.head.pick_up_tips(rack, column=0)
-    self.assertEqual(sum(1 for t in self.head.get_mounted_tips() if t is not None), 3)
+    self.assertEqual(sum(1 for t in await self.head.get_mounted_tips() if t is not None), 3)
 
     await self.head.aspirate_container(trough, volume=50)
 
     # Exactly the 3 tip-holding channels draw 50 each: -150, not -400.
-    self.assertAlmostEqual(trough.tracker.volume, 9850.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 9850.0)
 
   async def test_dispense_container_adds_volume_per_mounted_tip(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
 
     await self.head.pick_up_tips(rack, column=0)
-    for tip in self.head.get_mounted_tips():
+    for tip in await self.head.get_mounted_tips():
       if tip is not None:
-        tip.tracker.set_volume(40)
+        await tip.set_volume(40)
     await self.head.dispense_container(trough, volume=40)
 
     dispense_cmds = [
@@ -331,17 +344,18 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
     params = dispense_cmds[0].args[2]
     self.assertNotIn("wellName", params)
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels),
+      await pipetting_location(self.api, trough, self.head.channels),
       {"origin": "bottom", "offset": {"x": 0, "y": 0, "z": 1.0}},
     )
-    self.assertAlmostEqual(trough.tracker.volume, 320.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 320.0)
 
   async def test_offset_and_liquid_height_merge_into_well_location(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     await self.head.aspirate_container(
@@ -351,29 +365,34 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
     [c for c in self.api.submit_command.await_args_list if c.args[1] == "aspirateInPlace"]
     # Caller offsets shift the centered row; liquid_height replaces clearance.
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels),
+      await pipetting_location(self.api, trough, self.head.channels),
       {"origin": "bottom", "offset": {"x": 2, "y": -1, "z": 3.5}},
     )
 
   async def test_aspirate_container_without_tip_rejects_before_any_wire_command(self):
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(10000.0)
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(10000.0)
 
     commands_before = self.api.submit_command.await_count
     with self.assertRaises(OpentronsError):
       await self.head.aspirate_container(trough, volume=50)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(trough.tracker.volume, 10000.0)
-    self.assertAlmostEqual(trough.tracker.get_used_volume(), 10000.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 10000.0)
+    self.assertAlmostEqual((await trough.get_volume()), 10000.0)
 
   async def test_aspirate_container_rejects_cavity_narrower_than_nozzle_row(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    narrow = _make_trough(name="narrow", size_y=40.0, max_volume=50000.0)
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(narrow, "C2")
-    narrow.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    narrow = cast(
+      handles.Container,
+      await _put(
+        self.flex, _make_trough(name="narrow", size_y=40.0, max_volume=50000.0), "C2", "narrow"
+      ),
+    )
+    await narrow.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
 
@@ -383,15 +402,16 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
       await self.head.aspirate_container(narrow, volume=50)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(narrow.tracker.volume, 10000.0)
-    self.assertAlmostEqual(narrow.tracker.get_used_volume(), 10000.0)
+    self.assertAlmostEqual((await narrow.get_volume(COMMITTED)), 10000.0)
+    self.assertAlmostEqual((await narrow.get_volume()), 10000.0)
 
   async def test_wire_failure_rolls_back_container_tracker(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     with (
@@ -411,25 +431,28 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(submit.await_args.args[1], "aspirateInPlace")
     # The staged 8 * 50 uL is rolled back in full: committed AND pending
     # volume are untouched.
-    self.assertAlmostEqual(trough.tracker.volume, 10000.0)
-    self.assertAlmostEqual(trough.tracker.get_used_volume(), 10000.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 10000.0)
+    self.assertAlmostEqual((await trough.get_volume()), 10000.0)
 
   async def test_dispense_container_without_tip_rejects_before_any_wire_command(self):
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(trough, "C2")
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
 
     commands_before = self.api.submit_command.await_count
     with self.assertRaises(OpentronsError):
       await self.head.dispense_container(trough, volume=40)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(trough.tracker.volume, 0.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 0.0)
 
   async def test_dispense_container_wire_failure_rolls_back_container_tracker(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
 
     await self.head.pick_up_tips(rack, column=0)
     with (
@@ -443,23 +466,22 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
       ) as submit,
       self.assertRaisesRegex(RuntimeError, "pipetting failed"),
     ):
-      for tip in self.head.get_mounted_tips():
+      for tip in await self.head.get_mounted_tips():
         if tip is not None:
-          tip.tracker.set_volume(40)
+          await tip.set_volume(40)
       await self.head.dispense_container(trough, volume=40)
 
     assert submit.await_args is not None
     self.assertEqual(submit.await_args.args[1], "dispenseInPlace")
     # The staged 8 * 40 uL is rolled back in full.
-    self.assertAlmostEqual(trough.tracker.volume, 0.0)
-    self.assertAlmostEqual(trough.tracker.get_used_volume(), 0.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 0.0)
+    self.assertAlmostEqual((await trough.get_volume()), 0.0)
 
   async def test_offset_that_keeps_row_inside_cavity_passes(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()  # 85.48 mm front-to-back; 63 mm row + 2*11.24 = 85.48 just fits
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    # 85.48 mm front-to-back; 63 mm row + 2*11.24 = 85.48 just fits
+    trough = cast(handles.Container, await _put(self.flex, _make_trough(), "C2", "trough"))
+    await trough.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     await self.head.aspirate_container(trough, volume=10, offset=Coordinate(y=11.24))
@@ -471,33 +493,37 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
     # A lateral-only offset keeps the default bottom clearance: its z is 0
     # because the caller said nothing about z, not to ask for the floor.
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels)["offset"],
+      (await pipetting_location(self.api, trough, self.head.channels))["offset"],
       {"x": 0, "y": 11.24, "z": 1.0},
     )
 
   async def test_zero_offset_keeps_the_default_bottom_clearance(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     await self.head.aspirate_container(trough, volume=10, offset=Coordinate.zero())
 
     [c for c in self.api.submit_command.await_args_list if c.args[1] == "aspirateInPlace"]
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels)["offset"],
+      (await pipetting_location(self.api, trough, self.head.channels))["offset"],
       {"x": 0, "y": 0, "z": 1.0},
       "a no-op offset must not move the tip to the cavity floor",
     )
 
   async def test_too_small_container_message_names_no_offset_when_none_was_passed(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    narrow = _make_trough(name="narrow", size_y=40.0, max_volume=50000.0)
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(narrow, "C2")
-    narrow.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    narrow = cast(
+      handles.Container,
+      await _put(
+        self.flex, _make_trough(name="narrow", size_y=40.0, max_volume=50000.0), "C2", "narrow"
+      ),
+    )
+    await narrow.set_volume(10000.0)
     await self.head.pick_up_tips(rack, column=0)
 
     with self.assertRaises(OpentronsError) as no_offset:
@@ -511,12 +537,17 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
   async def test_rotated_cavity_is_guarded_on_the_axis_the_robot_sees(self):
     # 40 x 70 mm rotated a quarter turn is a 70 x 40 mm cavity to the robot,
     # which is the footprint the uploaded definition carries.
-    rack = flex_96_tiprack_50ul(name="rack")
-    rotated = _make_trough(name="rotated", size_x=40.0, size_y=70.0, max_volume=50000.0)
-    rotated.rotation = Rotation(z=90)
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(rotated, "C2")
-    rotated.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    rotated = cast(
+      handles.Container,
+      await _put(
+        self.flex,
+        _make_trough(name="rotated", size_x=40.0, size_y=70.0, max_volume=50000.0, turned=True),
+        "C2",
+        "rotated",
+      ),
+    )
+    await rotated.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     commands_before = self.api.submit_command.await_count
@@ -524,17 +555,22 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
       await self.head.aspirate_container(rotated, volume=50)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(rotated.tracker.volume, 10000.0)
+    self.assertAlmostEqual((await rotated.get_volume(COMMITTED)), 10000.0)
 
   async def test_rotated_cavity_deep_enough_for_the_row_is_accepted(self):
     # The mirror case: 110 x 60 mm rotated presents 110 mm front-to-back, so
     # the 63 mm row fits and reading the pre-rotation 60 mm would refuse it.
-    rack = flex_96_tiprack_50ul(name="rack")
-    rotated = _make_trough(name="rotated", size_x=110.0, size_y=60.0, max_volume=50000.0)
-    rotated.rotation = Rotation(z=90)
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(rotated, "C2")
-    rotated.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    rotated = cast(
+      handles.Container,
+      await _put(
+        self.flex,
+        _make_trough(name="rotated", size_x=110.0, size_y=60.0, max_volume=50000.0, turned=True),
+        "C2",
+        "rotated",
+      ),
+    )
+    await rotated.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     await self.head.aspirate_container(rotated, volume=50)
@@ -547,14 +583,19 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
   async def test_rotated_parent_rotates_the_cavity_too(self):
     # The guard reads the COMPOSED rotation, so a plain container inside a
     # rotated carrier is guarded on the same axis the robot will see.
-    rack = flex_96_tiprack_50ul(name="rack")
-    carrier = Resource(name="carrier", size_x=70.0, size_y=40.0, size_z=25.0)
-    carrier.rotation = Rotation(z=90)
-    inner = _make_trough(name="inner", size_x=40.0, size_y=70.0, max_volume=50000.0)
-    carrier.assign_child_resource(inner, location=Coordinate.zero())
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(carrier, "C2")
-    inner.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    inner_definition = _make_trough(
+      name="inner", size_x=40.0, size_y=70.0, max_volume=50000.0, location=Coordinate.zero()
+    )
+    carrier_definition = build.resource(
+      "carrier",
+      Coordinate(70.0, 40.0, 25.0),
+      rotation=Rotation(z=90),
+      children=[inner_definition],
+    )
+    await _put(self.flex, carrier_definition, "C2", "carrier")
+    inner = cast(handles.Container, await self.flex.deck.get_resource("inner"))
+    await inner.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     commands_before = self.api.submit_command.await_count
@@ -567,11 +608,10 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self.api.submit_command.await_count, commands_before)
 
   async def test_offset_that_shifts_row_past_cavity_wall_rejects_pre_wire(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()  # 85.48 front-to-back; 63 mm row + 2*11.5 = 86 overhangs
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    # 85.48 front-to-back; 63 mm row + 2*11.5 = 86 overhangs
+    trough = cast(handles.Container, await _put(self.flex, _make_trough(), "C2", "trough"))
+    await trough.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack, column=0)
     commands_before = self.api.submit_command.await_count
@@ -579,31 +619,24 @@ class TestFlexHead8ContainerOps(unittest.IsolatedAsyncioTestCase):
       await self.head.aspirate_container(trough, volume=10, offset=Coordinate(y=-11.5))
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(trough.tracker.volume, 10000.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 10000.0)
 
 
 class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
   """PLR centers the 96-nozzle grid and tracks total container volume."""
-
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
 
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head96(self)
 
   async def test_reservoir_well_centers_array_for_aspirate_and_dispense(self):
     """A single-well reservoir centers all 96 tips, despite being a Well."""
-    rack = flex_96_tiprack_50ul(name="rack")
-    reservoir = cor_axy_1_troughplate_rowVb(name="reservoir")
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(reservoir, "D1")
-    cavity = reservoir.get_item("A1")
-    cavity.tracker.set_volume(100000)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    reservoir = cast(
+      handles.Plate,
+      await _put(self.flex, "cor_axy_1_troughplate_rowVb", "D1", "reservoir"),
+    )
+    cavity = reservoir.get_well("A1")
+    await cavity.set_volume(100000)
     await self.head.pick_up_tips(rack)
     for operation in (self.head.aspirate, self.head.dispense):
       with self.subTest(operation=operation.__name__):
@@ -614,17 +647,18 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
         ]
         self.assertEqual(moves[0].args[2]["coordinates"], {"x": 14.38, "y": 74.24, "z": 109.0})
         self.assertEqual(
-          pipetting_location(self.api, cavity, self.head.channels),
+          await pipetting_location(self.api, cavity, self.head.channels),
           {"origin": "bottom", "offset": {"x": 0, "y": 0, "z": 1.0}},
         )
-    self.assertAlmostEqual(cavity.tracker.volume, 100000)
+    self.assertAlmostEqual((await cavity.get_volume(COMMITTED)), 100000)
 
   async def test_aspirate_container_centers_grid_and_tracks_96_channels(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(100000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(100000.0)
 
     await self.head.pick_up_tips(rack)
     await self.head.aspirate(trough, volume=50)
@@ -637,23 +671,24 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
     self.assertNotIn("wellName", params)
     # The primary nozzle is positioned so the grid centers on the cavity.
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels),
+      await pipetting_location(self.api, trough, self.head.channels),
       {"origin": "bottom", "offset": {"x": 0, "y": 0, "z": 1.0}},
     )
 
-    self.assertAlmostEqual(trough.tracker.volume, 100000.0 - 96 * 50.0)
-    self.assertAlmostEqual(trough.tracker.get_used_volume(), 100000.0 - 96 * 50.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 100000.0 - 96 * 50.0)
+    self.assertAlmostEqual((await trough.get_volume()), 100000.0 - 96 * 50.0)
 
   async def test_dispense_container_centers_grid_and_adds_96x(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
 
     await self.head.pick_up_tips(rack)
-    for tip in self.head.get_mounted_tips():
+    for tip in await self.head.get_mounted_tips():
       if tip is not None:
-        tip.tracker.set_volume(20)
+        await tip.set_volume(20)
     await self.head.dispense(trough, volume=20)
 
     dispense_cmds = [
@@ -663,29 +698,34 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
     params = dispense_cmds[0].args[2]
     self.assertNotIn("wellName", params)
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels),
+      await pipetting_location(self.api, trough, self.head.channels),
       {"origin": "bottom", "offset": {"x": 0, "y": 0, "z": 1.0}},
     )
-    self.assertAlmostEqual(trough.tracker.volume, 96 * 20.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 96 * 20.0)
 
   async def test_aspirate_container_without_tip_rejects_before_any_wire_command(self):
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(100000.0)
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(100000.0)
 
     commands_before = self.api.submit_command.await_count
     with self.assertRaises(OpentronsError):
       await self.head.aspirate(trough, volume=50)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(trough.tracker.volume, 100000.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 100000.0)
 
   async def test_aspirate_container_rejects_cavity_smaller_than_grid(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    narrow = _make_trough(name="narrow", size_x=90.0, max_volume=50000.0)
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(narrow, "C2")
-    narrow.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    narrow = cast(
+      handles.Container,
+      await _put(
+        self.flex, _make_trough(name="narrow", size_x=90.0, max_volume=50000.0), "C2", "narrow"
+      ),
+    )
+    await narrow.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack)
 
@@ -695,14 +735,15 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
       await self.head.aspirate(narrow, volume=50)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(narrow.tracker.volume, 10000.0)
+    self.assertAlmostEqual((await narrow.get_volume(COMMITTED)), 10000.0)
 
   async def test_wire_failure_rolls_back_container_tracker(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(100000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
+    await trough.set_volume(100000.0)
 
     await self.head.pick_up_tips(rack)
     with (
@@ -722,15 +763,18 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(submit.await_args.args[1], "aspirateInPlace")
     # The staged 96 * 50 uL is rolled back in full: committed AND pending
     # volume are untouched.
-    self.assertAlmostEqual(trough.tracker.volume, 100000.0)
-    self.assertAlmostEqual(trough.tracker.get_used_volume(), 100000.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 100000.0)
+    self.assertAlmostEqual((await trough.get_volume()), 100000.0)
 
   async def test_aspirate_container_rejects_cavity_shallower_than_grid_y_span(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    shallow = _make_trough(name="shallow", size_y=50.0, max_volume=50000.0)
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(shallow, "C2")
-    shallow.tracker.set_volume(10000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    shallow = cast(
+      handles.Container,
+      await _put(
+        self.flex, _make_trough(name="shallow", size_y=50.0, max_volume=50000.0), "C2", "shallow"
+      ),
+    )
+    await shallow.set_volume(10000.0)
 
     await self.head.pick_up_tips(rack)
 
@@ -740,14 +784,13 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
       await self.head.aspirate(shallow, volume=50)
 
     self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(shallow.tracker.volume, 10000.0)
+    self.assertAlmostEqual((await shallow.get_volume(COMMITTED)), 10000.0)
 
   async def test_offset_that_keeps_grid_inside_cavity_passes(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()  # 127.76 x 85.48; grid 99 x 63 plus 2*14.38 / 2*11.24 just fits
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(100000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    # 127.76 x 85.48; grid 99 x 63 plus 2*14.38 / 2*11.24 just fits
+    trough = cast(handles.Container, await _put(self.flex, _make_trough(), "C2", "trough"))
+    await trough.set_volume(100000.0)
 
     await self.head.pick_up_tips(rack)
     await self.head.aspirate(trough, volume=10, offset=Coordinate(x=14.38, y=11.24))
@@ -757,19 +800,19 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
     ]
     self.assertEqual(len(aspirate_cmds), 1)
     self.assertEqual(
-      pipetting_location(self.api, trough, self.head.channels)["offset"],
+      (await pipetting_location(self.api, trough, self.head.channels))["offset"],
       {"x": 14.38, "y": 11.24, "z": 1.0},
     )
 
   async def test_rotated_cavity_is_guarded_on_the_axis_the_robot_sees(self):
     # 107 x 71 mm rotated a quarter turn is 71 mm left-to-right to the robot,
     # too narrow for the grid's 99 mm x span, though unrotated it fits.
-    rack = flex_96_tiprack_50ul(name="rack")
-    rotated = _make_trough(name="rotated")
-    rotated.rotation = Rotation(z=90)
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(rotated, "C2")
-    rotated.tracker.set_volume(100000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    rotated = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(name="rotated", turned=True), "C2", "rotated"),
+    )
+    await rotated.set_volume(100000.0)
 
     await self.head.pick_up_tips(rack)
     for op in (
@@ -780,14 +823,13 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
       with self.assertRaises(OpentronsError):
         await op()
       self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(rotated.tracker.volume, 100000.0)
+    self.assertAlmostEqual((await rotated.get_volume(COMMITTED)), 100000.0)
 
   async def test_offset_that_shifts_grid_past_cavity_wall_rejects_pre_wire(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    trough = _make_trough()  # 127.76 x 85.48: 99 + 2*14.5 and 63 + 2*11.5 both overhang
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(trough, "C2")
-    trough.tracker.set_volume(100000.0)
+    rack = cast(handles.TipRack, await _put(self.flex, "flex_96_tiprack_50ul", "C1", "rack"))
+    # 127.76 x 85.48: 99 + 2*14.5 and 63 + 2*11.5 both overhang
+    trough = cast(handles.Container, await _put(self.flex, _make_trough(), "C2", "trough"))
+    await trough.set_volume(100000.0)
 
     await self.head.pick_up_tips(rack)
     for offset in (Coordinate(x=14.5), Coordinate(y=11.5)):
@@ -795,7 +837,7 @@ class TestFlexHead96ContainerOps(unittest.IsolatedAsyncioTestCase):
       with self.assertRaises(OpentronsError):
         await self.head.aspirate(trough, volume=10, offset=offset)
       self.assertEqual(self.api.submit_command.await_count, commands_before)
-    self.assertAlmostEqual(trough.tracker.volume, 100000.0)
+    self.assertAlmostEqual((await trough.get_volume(COMMITTED)), 100000.0)
 
 
 class TestLiquidOpsRequireAMountedTip(unittest.IsolatedAsyncioTestCase):
@@ -805,20 +847,10 @@ class TestLiquidOpsRequireAMountedTip(unittest.IsolatedAsyncioTestCase):
   rejects a tipless op, but ``dispense`` moves to the well FIRST and checks
   after, so the collision happens before the rejection."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   @staticmethod
-  def _plate(flex: Flex):
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    flex.deck.assign_child_at_slot(plate, "C2")
-    for well in plate.get_all_items():
-      well.tracker.set_volume(100.0)
+  async def _plate(flex: Flex) -> handles.Plate:
+    plate = cast(handles.Plate, await _put(flex, "cor_96_wellplate_360uL_Fb", "C2", "plate"))
+    await plate.set_well_volumes(100.0)
     return plate
 
   async def _assert_refused_pre_wire(self, flex, api, op) -> None:
@@ -830,28 +862,28 @@ class TestLiquidOpsRequireAMountedTip(unittest.IsolatedAsyncioTestCase):
 
   async def test_head1_well_ops_refuse_without_a_tip(self):
     flex, api, head = await _flex_head1(self)
-    well = self._plate(flex).get_item("B3")
+    well = (await self._plate(flex)).get_well("B3")
     await self._assert_refused_pre_wire(flex, api, lambda: head.aspirate(well, volume=10))
     await self._assert_refused_pre_wire(flex, api, lambda: head.dispense(well, volume=10))
-    self.assertAlmostEqual(well.tracker.volume, 100.0)
+    self.assertAlmostEqual((await well.get_volume(COMMITTED)), 100.0)
 
   async def test_head8_column_ops_refuse_without_tips(self):
     flex, api, head = await _flex_head8(self)
-    plate = self._plate(flex)
+    plate = await self._plate(flex)
     await self._assert_refused_pre_wire(
       flex, api, lambda: head.aspirate(plate, column=0, volume=10)
     )
     await self._assert_refused_pre_wire(
       flex, api, lambda: head.dispense(plate, column=0, volume=10)
     )
-    self.assertAlmostEqual(plate.get_item("A1").tracker.volume, 100.0)
+    self.assertAlmostEqual((await plate.get_well("A1").get_volume(COMMITTED)), 100.0)
 
   async def test_head96_plate_ops_refuse_without_tips(self):
     flex, api, head = await _flex_head96(self)
-    plate = self._plate(flex)
+    plate = await self._plate(flex)
     await self._assert_refused_pre_wire(flex, api, lambda: head.aspirate(plate, volume=10))
     await self._assert_refused_pre_wire(flex, api, lambda: head.dispense(plate, volume=10))
-    self.assertAlmostEqual(plate.get_item("A1").tracker.volume, 100.0)
+    self.assertAlmostEqual((await plate.get_well("A1").get_volume(COMMITTED)), 100.0)
 
 
 async def _flex_device(
@@ -863,7 +895,7 @@ async def _flex_device(
   what ``/health`` reports, which is what the robot/* version gate reads.
   """
   api = make_api(pipettes=[("p1000_single_flex", 1, 1.0, 1000.0, "right")], api_version=api_version)
-  flex = make_flex(deck=FlexDeck(), host="localhost", api=api)
+  flex = make_flex(deck=await make_deck(), host="localhost", api=api)
   test_case.addAsyncCleanup(flex.disconnect)
   await flex.setup()
   return flex, api
@@ -1005,8 +1037,10 @@ class TestFlexRobotCommands(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(cmd.args[2], {"seconds": 2.5})
 
   async def test_reload_labware_names_the_id_the_labware_was_loaded_under(self):
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(trough, "C2")
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
 
     await self.flex.reload_labware(trough)
 
@@ -1015,8 +1049,10 @@ class TestFlexRobotCommands(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(reload_cmd.args[2], {"labwareId": "labware"})
 
   async def test_reload_labware_of_loaded_labware_does_not_load_it_again(self):
-    trough = _make_trough()
-    self.flex.deck.assign_child_at_slot(trough, "C2")
+    trough = cast(
+      handles.Container,
+      await _put(self.flex, _make_trough(), "C2", "trough"),
+    )
 
     await self.flex.reload_labware(trough)
     await self.flex.reload_labware(trough)

@@ -23,8 +23,10 @@ from pylabrobot.opentrons.flex.flex_wire import (
   _require_robot_commands,
   slot_wire_location,
 )
+from pylabrobot.opentrons.decks import DeckSlots, slot_in
+from pylabrobot.opentrons.model import read
 from pylabrobot.opentrons.operations import OperationLock, instrument_operation
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store import handles
 
 if TYPE_CHECKING:
   from pylabrobot.opentrons.flex.flex import Flex
@@ -75,7 +77,7 @@ class FlexGripper:
   @instrument_operation
   async def move_labware(
     self,
-    resource: Resource,
+    resource: handles.Resource,
     to_slot: str,
     grip_distance_from_top: Optional[float] = None,
   ) -> None:
@@ -83,7 +85,7 @@ class FlexGripper:
 
     Validates PLR-side first (resource on deck, destination a valid empty
     slot), then sends ONE atomic ``moveLabware`` command. On wire success the
-    deck is re-parented to match; on wire failure the deck is left untouched
+    resource is assigned to its new slot in the store; on wire failure it is left untouched
     and the error propagates. Standard slots ride ``slotName``; the column-4
     staging slots A4-D4 are addressable areas server-side and ride
     ``addressableAreaName``.
@@ -112,27 +114,29 @@ class FlexGripper:
     deck = self.flex.deck
     name = resource.name
 
-    from_slot = deck.get_slot(resource)
+    tree = await read(deck.store, [resource], ancestors=True)
+    from_slot = slot_in(deck, tree, tree.node(resource))
     if from_slot is None:
       raise OpentronsError(
         "Resource not on deck",
-        f"'{name}' is not on a deck slot. Use deck.assign_child_at_slot(resource, slot='C1').",
+        f"'{name}' is not on a deck slot. Use assign_child_at_slot(deck, resource, slot='C1').",
       )
 
     to_slot = to_slot.upper()
+    slots = await DeckSlots.read(deck)
     try:
-      occupant = deck.get_resource_at_slot(to_slot)
+      occupant = slots.occupant(to_slot)
     except ValueError as e:
       raise OpentronsError("Invalid destination slot", str(e)) from e
     if occupant is not None:
-      occupant_name = occupant.name
+      occupant_name = occupant.attributes.name
       raise OpentronsError(
         "Destination slot occupied",
         f"Slot {to_slot} is already occupied by '{occupant_name}'.",
       )
 
     labware_id = await self.flex._ensure_labware_loaded(
-      resource, allow_stub=True, grip_distance_from_top=grip_distance_from_top
+      resource, allow_stub=True, grip_distance_from_top=grip_distance_from_top, tree=tree
     )
     await self.flex._execute_command(
       "moveLabware",
@@ -144,8 +148,9 @@ class FlexGripper:
       timeout=_MOVE_LABWARE_TIMEOUT,
     )
 
-    deck.unassign_child_at_slot(from_slot)
-    deck.assign_child_at_slot(resource, to_slot)
+    # The gripper carries no model of its own: the move is recorded once the robot reports it.
+    holder = deck.store.handle_from_node(slots.holders[to_slot], ())
+    await holder.assign_child_resource(resource)
     self.flex._require_labware().record_location(resource, to_slot)
     logger.info("Gripper moved '%s' from %s to %s", name, from_slot, to_slot)
 

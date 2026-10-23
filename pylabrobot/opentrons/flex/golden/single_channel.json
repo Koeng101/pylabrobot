@@ -4860,7 +4860,7 @@
     },
     {
       "call": "left.aspirate(plate C1, 10) from an empty well is refused",
-      "error": "TooLittleLiquidError: Not enough liquid in container: 10.0uL > 0uL.",
+      "error": "TooLittleLiquidError: Not enough liquid in container: 10.0uL > 0.0uL.",
       "sent": [],
       "mounted": {
         "left/1": {

@@ -5,18 +5,18 @@ device makes reaches `_make_request`, which records it and answers as a robot se
 golden record is therefore the exact HTTP traffic, method, path and JSON body, in order.
 
 `Recorder` runs one public call per step and records what was sent, what the call returned or
-raised, the resources under the deck afterwards (when they changed), and the tips each pipette
-holds, which live on the pipette objects rather than in the resource tree.
+raised, the resources under the deck afterwards (when they changed), as the resource store holds
+them, and the tips each pipette holds, which hang from the pipette's shafts outside the deck.
 """
 
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 from pylabrobot.io.http import HTTP
-from pylabrobot.resources import Resource, Tip
-from pylabrobot.testing.golden import snapshot_changes, snapshot_resources
+from pylabrobot.resources.store import handles
+from pylabrobot.testing.golden import snapshot_changes, snapshot_store
 
 # Labware load names, and the OT-2's labware ids, are `uuid.uuid4().hex`. Each distinct one is
 # replaced by `<uuid-N>`, numbered in order of first appearance within a scenario.
@@ -178,6 +178,8 @@ class FakeRobotServer(HTTP):
 class Recorder:
   """Run a scenario's steps and build its golden record.
 
+  Made with `Recorder.start`, which takes the first snapshot.
+
   Args:
     server: The transport the device under test talks through.
     root: The resource tree to snapshot, the device's deck.
@@ -187,15 +189,26 @@ class Recorder:
   def __init__(
     self,
     server: FakeRobotServer,
-    root: Resource,
-    mounted: Callable[[], Dict[str, Any]],
+    root: handles.Resource,
+    mounted: Callable[[], Awaitable[Dict[str, Any]]],
   ) -> None:
     self.server = server
     self.root = root
     self.mounted = mounted
     self.steps: List[Dict[str, Any]] = []
     self._uuids: Dict[str, str] = {}
-    self._resources = snapshot_resources(root)
+    self._resources: List[Dict[str, Any]] = []
+
+  @classmethod
+  async def start(
+    cls,
+    server: FakeRobotServer,
+    root: handles.Resource,
+    mounted: Callable[[], Awaitable[Dict[str, Any]]],
+  ) -> "Recorder":
+    recorder = cls(server, root, mounted)
+    recorder._resources = await snapshot_store(root.store, root)
+    return recorder
 
   def _normalised(self, value: Any) -> Any:
     if isinstance(value, str):
@@ -212,9 +225,9 @@ class Recorder:
       self._uuids[found] = f"<uuid-{len(self._uuids) + 1}>"
     return self._uuids[found]
 
-  def _add_resources(self, entry: Dict[str, Any]) -> None:
+  async def _add_resources(self, entry: Dict[str, Any]) -> None:
     """Add what changed in the resources since the last step to `entry`."""
-    resources = snapshot_resources(self.root)
+    resources = await snapshot_store(self.root.store, self.root)
     entry.update(snapshot_changes(self._resources, resources))
     self._resources = resources
 
@@ -233,21 +246,28 @@ class Recorder:
     except Exception as error:  # noqa: BLE001 - a raised error is part of the record
       entry["error"] = f"{type(error).__name__}: {error}"
     entry["sent"] = self.server.take_sent()
-    self._add_resources(entry)
-    entry["mounted"] = self.mounted()
+    await self._add_resources(entry)
+    entry["mounted"] = await self.mounted()
     self.steps.append(self._normalised(entry))
     return result
 
-  def arrange(self, description: str, change: Callable[[], None]) -> None:
+  async def arrange(
+    self, description: str, change: Union[Awaitable[Any], Callable[[], Any]]
+  ) -> None:
     """Change the resources by hand, as an operator would, recorded as its own step."""
-    change()
+    pending = change() if callable(change) else change
+    if pending is not None:
+      await pending
     entry: Dict[str, Any] = {"arrange": description}
-    self._add_resources(entry)
+    await self._add_resources(entry)
     self.steps.append(self._normalised(entry))
 
-  def record(self) -> Dict[str, Any]:
+  async def record(self) -> Dict[str, Any]:
     """The scenario's golden record: its steps and the resources at the end."""
-    return {"steps": self.steps, "resources": self._normalised(snapshot_resources(self.root))}
+    return {
+      "steps": self.steps,
+      "resources": self._normalised(await snapshot_store(self.root.store, self.root)),
+    }
 
 
 def jsonable(value: Any) -> Any:
@@ -261,8 +281,8 @@ def jsonable(value: Any) -> Any:
   return repr(value)
 
 
-def tip_state(tip: Optional[Tip]) -> Optional[Dict[str, Any]]:
+async def tip_state(tip: Optional[handles.Tip]) -> Optional[Dict[str, Any]]:
   """A mounted tip: its name and the liquid volume it holds."""
   if tip is None:
     return None
-  return {"tip": tip.name, "volume": tip.tracker.get_used_volume()}
+  return {"tip": tip.name, "volume": await tip.get_volume()}
