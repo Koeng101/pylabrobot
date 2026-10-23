@@ -1,0 +1,61 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        "setup",
+        "set_baudrate 38400",
+        "set_line_property 8 2 0",
+        "set_flowctrl 0",
+        "set_rts True",
+        "set_dtr True",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "01027300010000000089ff",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102a00001000000005cff",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102700001000000008cff"
+      ]
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        "stop"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "el406_plate_holder",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    }
+  ]
+}

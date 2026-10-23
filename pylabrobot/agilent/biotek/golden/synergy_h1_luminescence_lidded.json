@@ -1,0 +1,1226 @@
+{
+  "steps": [
+    {
+      "call": "read_luminescence(plate_96_lid, A1:H2, 10.0, integration_time=1)",
+      "result": [
+        {
+          "temperature": 23.6,
+          "data": [
+            [
+              0.101,
+              0.102,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              0.201,
+              0.202,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              0.301,
+              0.302,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              0.401,
+              0.402,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              0.501,
+              0.502,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              0.601,
+              0.602,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              0.701,
+              0.702,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              0.801,
+              0.802,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ]
+        }
+      ],
+      "sent": [
+        "7a",
+        "3230303003",
+        "79",
+        "303831323031313238303734323830313433303131333330303835343831323737363135353003",
+        "74",
+        "33323432323003",
+        "44",
+        "3030383430313031303130383032303030313230303130303030313130303130303030303132333030303530303230303230302d3030313030302d3030333030303030303030303030303030303030303031333531303931",
+        "4f",
+        "68"
+      ]
+    },
+    {
+      "call": "read_luminescence(plate_96_lid, A1, 12.0)",
+      "error": "ValueError: SynergyH1: focal height must be within 4.5-10.68",
+      "sent": []
+    }
+  ],
+  "resources": [
+    {
+      "name": "synergy_h1_plate_holder",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    },
+    {
+      "name": "plate_96_lid",
+      "parent": "synergy_h1_plate_holder",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate_96_lid_well_A1",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B1",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C1",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D1",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E1",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F1",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G1",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H1",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A2",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B2",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C2",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D2",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E2",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F2",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G2",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H2",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A3",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B3",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C3",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D3",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E3",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F3",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G3",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H3",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A4",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B4",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C4",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D4",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E4",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F4",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G4",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H4",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A5",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B5",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C5",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D5",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E5",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F5",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G5",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H5",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A6",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B6",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C6",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D6",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E6",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F6",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G6",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H6",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A7",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B7",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C7",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D7",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E7",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F7",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G7",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H7",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A8",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B8",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C8",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D8",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E8",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F8",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G8",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H8",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A9",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B9",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C9",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D9",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E9",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F9",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G9",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H9",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A10",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B10",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C10",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D10",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E10",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F10",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G10",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H10",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A11",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B11",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C11",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D11",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E11",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F11",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G11",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H11",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_A12",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        70.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_B12",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        61.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_C12",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        52.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_D12",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        43.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_E12",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        34.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_F12",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        25.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_G12",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        16.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_well_H12",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        7.77,
+        3.03
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_96_lid_lid",
+      "parent": "plate_96_lid",
+      "kind": "RESOURCE_KIND_LID",
+      "location": [
+        0.0,
+        0.0,
+        6.6
+      ]
+    }
+  ]
+}

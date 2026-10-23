@@ -1,0 +1,941 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        {
+          "rpc": "/sila2.org.silastandard.core.lockcontroller.v1.LockController/UnlockServer",
+          "timeout": 30.0,
+          "request": "0a0c0a0a70796c6162726f626f74"
+        },
+        {
+          "rpc": "/sila2.org.silastandard.core.lockcontroller.v1.LockController/LockServer",
+          "timeout": 30.0,
+          "request": "0a0c0a0a70796c6162726f626f74120308901c"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/Get_InstalledObjectives",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/GetAvailableObjectivesForPosition",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a0e0a0c7b22496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a2a0a287b224964223a2022504c20464c554f5441522034782f302e3133222c2022496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/GetAvailableObjectivesForPosition",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a0e0a0c7b22496e646578223a20317d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a2b0a297b224964223a2022504c20464c554f544152203130782f302e3330222c2022496e646578223a20317d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_InstalledFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_CompatibleFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a1c0a1a7b224964223a202244415049222c2022496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_CompatibleFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a1c0a1a7b224964223a202246495443222c2022496e646578223a20317d"
+        }
+      ]
+    },
+    {
+      "call": "capture(row=3, column=5, mode=DAPI, objective=O_4X_PL_FL, exposure_time=15.0, focal_height=2.5, plate=plate_24)",
+      "result": {
+        "images": [
+          [
+            [
+              1
+            ]
+          ]
+        ],
+        "exposure_time": 15.0,
+        "focal_height": 2.5
+      },
+      "sent": [
+        {
+          "rpc": "/sila2.moldev.com.instruments.instrumentcontroller.v1.InstrumentController/Initialize",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 60.0,
+          "request": {
+            "labware": {
+              "LabwareType": 1,
+              "LabwareDimensions": {
+                "ncavities": 24,
+                "nrows": 4,
+                "columns": 6,
+                "labware_length": 128.02,
+                "labware_width": 85.74,
+                "labware_height": 20.2,
+                "dist2firstcol": 16.46,
+                "dist2firstrow": 14.51,
+                "row_distance": 19.2,
+                "well2well_dist_col": 19.2,
+                "bottom_elevation": 0.7,
+                "bottom_thickness": 2.3,
+                "bottom_clearance": 1.73,
+                "bottom_length": 16.6,
+                "bottom_width": 16.6,
+                "round_bottom": false,
+                "volume": 3300
+              },
+              "RefractionIndex": 1.0
+            },
+            "snap": {
+              "imagesChannelParameters": [
+                {
+                  "focusOffsetNm": 0,
+                  "imageSize": {
+                    "X": 2008,
+                    "Y": 2008
+                  },
+                  "exposureTimeUs": 15000,
+                  "illuminationConfig": {
+                    "filterCubeId": "DAPI",
+                    "excitationSourceId": "GUV3809",
+                    "lightChannel": 0
+                  },
+                  "imageDataFormat": {
+                    "ImageFormat": "Tiff",
+                    "BPPLayout": {
+                      "TotBPP": 16,
+                      "SigBPP": 12,
+                      "ShiftToMSB": true
+                    }
+                  },
+                  "objectiveId": "PL FLUOTAR 4x/0.13",
+                  "doAutoExposure": false,
+                  "autoFocusRange": "normal",
+                  "softwareAutofocusRange": "none",
+                  "hardwareAutofocusSearch": "plateBottom"
+                }
+              ],
+              "capturePosition": {
+                "cavityCoordinatesIndexXy": {
+                  "Item1": 5,
+                  "Item2": 3
+                },
+                "siteCoordinatesNmXy": {
+                  "Item1": 0,
+                  "Item2": 0
+                }
+              },
+              "skipAutofocus": true,
+              "localTimeReferencePosixMSec": 1700000000000,
+              "storageId": 0,
+              "focusSettings": {
+                "autofocusLocation": "fixedFocus",
+                "baseZPositionUm": 2500.0
+              }
+            }
+          }
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages_Intermediate",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 300.0,
+          "request": "0a09657865632d75756964"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages_Result",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 60.0,
+          "request": "0a09657865632d75756964"
+        }
+      ],
+      "resources": [
+        {
+          "name": "plate_24",
+          "parent": "",
+          "kind": "RESOURCE_KIND_PLATE"
+        },
+        {
+          "name": "plate_24_well_A1",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            8.16,
+            63.81,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_B1",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            8.16,
+            44.61,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_C1",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            8.16,
+            25.41,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_D1",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            8.16,
+            6.21,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_A2",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            27.36,
+            63.81,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_B2",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            27.36,
+            44.61,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_C2",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            27.36,
+            25.41,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_D2",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            27.36,
+            6.21,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_A3",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            46.56,
+            63.81,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_B3",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            46.56,
+            44.61,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_C3",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            46.56,
+            25.41,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_D3",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            46.56,
+            6.21,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_A4",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            65.76,
+            63.81,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_B4",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            65.76,
+            44.61,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_C4",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            65.76,
+            25.41,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_D4",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            65.76,
+            6.21,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_A5",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            84.96,
+            63.81,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_B5",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            84.96,
+            44.61,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_C5",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            84.96,
+            25.41,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_D5",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            84.96,
+            6.21,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_A6",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            104.16,
+            63.81,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_B6",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            104.16,
+            44.61,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_C6",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            104.16,
+            25.41,
+            0.7
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_24_well_D6",
+          "parent": "plate_24",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            104.16,
+            6.21,
+            0.7
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "capture(row=1, column=2, mode=DAPI, objective=O_4X_PL_FL, exposure_time=15.0, focal_height=2.5, plate=plate_6)",
+      "result": {
+        "images": [
+          [
+            [
+              2
+            ]
+          ]
+        ],
+        "exposure_time": 15.0,
+        "focal_height": 2.5
+      },
+      "sent": [
+        {
+          "rpc": "/sila2.moldev.com.instruments.instrumentcontroller.v1.InstrumentController/Initialize",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 60.0,
+          "request": {
+            "labware": {
+              "LabwareType": 1,
+              "LabwareDimensions": {
+                "ncavities": 6,
+                "nrows": 2,
+                "columns": 3,
+                "labware_length": 127.76,
+                "labware_width": 85.47,
+                "labware_height": 20.27,
+                "dist2firstcol": 24.76,
+                "dist2firstrow": 23.16,
+                "row_distance": 39.12,
+                "well2well_dist_col": 39.12,
+                "bottom_elevation": 2.54,
+                "bottom_thickness": 1.27,
+                "bottom_clearance": 1.73,
+                "bottom_length": 35.43,
+                "bottom_width": 35.43,
+                "round_bottom": false,
+                "volume": 16800
+              },
+              "RefractionIndex": 1.0
+            },
+            "snap": {
+              "imagesChannelParameters": [
+                {
+                  "focusOffsetNm": 0,
+                  "imageSize": {
+                    "X": 2008,
+                    "Y": 2008
+                  },
+                  "exposureTimeUs": 15000,
+                  "illuminationConfig": {
+                    "filterCubeId": "DAPI",
+                    "excitationSourceId": "GUV3809",
+                    "lightChannel": 0
+                  },
+                  "imageDataFormat": {
+                    "ImageFormat": "Tiff",
+                    "BPPLayout": {
+                      "TotBPP": 16,
+                      "SigBPP": 12,
+                      "ShiftToMSB": true
+                    }
+                  },
+                  "objectiveId": "PL FLUOTAR 4x/0.13",
+                  "doAutoExposure": false,
+                  "autoFocusRange": "normal",
+                  "softwareAutofocusRange": "none",
+                  "hardwareAutofocusSearch": "plateBottom"
+                }
+              ],
+              "capturePosition": {
+                "cavityCoordinatesIndexXy": {
+                  "Item1": 2,
+                  "Item2": 1
+                },
+                "siteCoordinatesNmXy": {
+                  "Item1": 0,
+                  "Item2": 0
+                }
+              },
+              "skipAutofocus": true,
+              "localTimeReferencePosixMSec": 1700000000000,
+              "storageId": 0,
+              "focusSettings": {
+                "autofocusLocation": "fixedFocus",
+                "baseZPositionUm": 2500.0
+              }
+            }
+          }
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages_Intermediate",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 300.0,
+          "request": "0a09657865632d75756964"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages_Result",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 60.0,
+          "request": "0a09657865632d75756964"
+        }
+      ],
+      "resources": [
+        {
+          "name": "plate_6",
+          "parent": "",
+          "kind": "RESOURCE_KIND_PLATE"
+        },
+        {
+          "name": "plate_6_well_A1",
+          "parent": "plate_6",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            7.045,
+            44.565,
+            2.54
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_6_well_B1",
+          "parent": "plate_6",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            7.045,
+            5.445,
+            2.54
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_6_well_A2",
+          "parent": "plate_6",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            46.165,
+            44.565,
+            2.54
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_6_well_B2",
+          "parent": "plate_6",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            46.165,
+            5.445,
+            2.54
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_6_well_A3",
+          "parent": "plate_6",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            85.285,
+            44.565,
+            2.54
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_6_well_B3",
+          "parent": "plate_6",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            85.285,
+            5.445,
+            2.54
+          ],
+          "volume": 0.0
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "plate_24",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE"
+    },
+    {
+      "name": "plate_24_well_A1",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        8.16,
+        63.81,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_B1",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        8.16,
+        44.61,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_C1",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        8.16,
+        25.41,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_D1",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        8.16,
+        6.21,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_A2",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        27.36,
+        63.81,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_B2",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        27.36,
+        44.61,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_C2",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        27.36,
+        25.41,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_D2",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        27.36,
+        6.21,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_A3",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.56,
+        63.81,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_B3",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.56,
+        44.61,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_C3",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.56,
+        25.41,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_D3",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.56,
+        6.21,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_A4",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        65.76,
+        63.81,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_B4",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        65.76,
+        44.61,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_C4",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        65.76,
+        25.41,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_D4",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        65.76,
+        6.21,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_A5",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        84.96,
+        63.81,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_B5",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        84.96,
+        44.61,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_C5",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        84.96,
+        25.41,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_D5",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        84.96,
+        6.21,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_A6",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        104.16,
+        63.81,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_B6",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        104.16,
+        44.61,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_C6",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        104.16,
+        25.41,
+        0.7
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_24_well_D6",
+      "parent": "plate_24",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        104.16,
+        6.21,
+        0.7
+      ],
+      "volume": 0.0
+    }
+  ]
+}
