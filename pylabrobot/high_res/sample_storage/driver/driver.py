@@ -1239,33 +1239,15 @@ class HighResSampleStorage:
       raise _drop_refusal(resource.name, holder.name)
 
   async def _move_plate(self, plate: handles.Plate, destination: handles.PlateHolder) -> None:
-    """Assign a plate to `destination`, as the device moved it, and report it."""
-    previous: Optional[pb.ResourceNode] = None
-    if is_event_bus_active():
-      previous = await plate.node()
+    """Assign a plate to `destination`, as the device moved it; the handle reports the move."""
     await destination.assign_child_resource(plate)
-    if previous is not None and previous.parent_id:
-      location = previous.attributes.location if previous.attributes.HasField("location") else None
-      await tree_events.emit_unassigned(
-        plate,
-        await self.store.get_by_id(previous.parent_id),
-        Coordinate(location.x, location.y, location.z) if location is not None else None,
-      )
-    await tree_events.emit_assigned(plate)
 
   async def _unassign_plate(self, plate: handles.Plate) -> None:
-    """Take a plate out of the store's resources, and report it."""
+    """Take a plate out of the store's resources; the handle reports it."""
     previous = await plate.node()
     if not previous.parent_id:
       return
     await plate.unassign()
-    if is_event_bus_active():
-      location = previous.attributes.location if previous.attributes.HasField("location") else None
-      await tree_events.emit_unassigned(
-        plate,
-        await self.store.get_by_id(previous.parent_id),
-        Coordinate(location.x, location.y, location.z) if location is not None else None,
-      )
 
   async def _execute_plate_transfer(
     self,

@@ -13,7 +13,6 @@ from pylabrobot.high_res.sample_storage import (
   TundraStore,
   high_res_stacker,
 )
-from pylabrobot.high_res.sample_storage.driver import tree_events
 from pylabrobot.high_res.sample_storage.golden.harness import Recorder, SimulatedSocket
 from pylabrobot.high_res.sample_storage.stackers import plate_holder
 from pylabrobot.resources import Coordinate
@@ -78,9 +77,8 @@ def seeded(seed: int, choose: Callable[[], T]) -> T:
 
 
 async def by_hand(child: handles.Resource, parent: handles.Resource) -> None:
-  """An operator puts `child` in `parent`: the store has it there, and it is reported."""
+  """An operator puts `child` in `parent`: the store has it there, and the handle reports it."""
   await parent.assign_child_resource(child)
-  await tree_events.emit_assigned(child)
 
 
 async def put_on_tray(

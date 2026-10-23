@@ -1,9 +1,9 @@
-"""The `resource.assigned` and `resource.unassigned` events of a sample store's resources.
+"""The `resource.assigned` events of the parts a sample store builds.
 
-A sample store reports each change it makes to its resources as PLR's resource tree does: a
-resource assigned to a parent, or taken out of one, with references as `handle_reference` gives
-them. Parts built together - a stacker and its slots, a plate and its wells - are reported as PLR
-builds them: each part assigned to its parent, innermost first, while that parent stands alone.
+Parts built together - a stacker and its slots - are reported as PLR's resource tree reports
+them: each part assigned to its parent, innermost first, while that parent stands alone, with
+references as `handle_reference` gives them. A plate moved later is reported by the handle that
+moves it.
 """
 
 from typing import Optional, Sequence
@@ -12,12 +12,10 @@ from pylabrobot.events import (
   ResourceReference,
   coordinate_reference,
   emit_event,
-  handle_reference,
   is_event_bus_active,
 )
 from pylabrobot.events.bus import ResourceAncestorReference
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
@@ -70,36 +68,3 @@ def emit_built(definition: pb.ResourceDefinition) -> None:
   for child in definition.children:
     emit_built(child)
     emit_attached(child, definition.attributes)
-
-
-async def emit_assigned(resource: handles.Resource) -> None:
-  """Report `resource` assigned where it is now."""
-  if not is_event_bus_active():
-    return
-  node = await resource.node()
-  parent = await resource.get_parent()
-  emit_event(
-    "resource.assigned",
-    resource=await handle_reference(resource),
-    parent=await handle_reference(parent),
-    location=coordinate_reference(_location(node.attributes)),
-  )
-
-
-async def emit_unassigned(
-  resource: handles.Resource,
-  previous_parent: handles.Resource,
-  previous_location: Optional[Coordinate],
-) -> None:
-  """Report `resource` taken out of `previous_parent`, where it was at `previous_location`."""
-  if not is_event_bus_active():
-    return
-  standing_alone = await handle_reference(resource)
-  assert standing_alone is not None
-  standing_alone.pop("ancestors", None)
-  emit_event(
-    "resource.unassigned",
-    resource=standing_alone,
-    previous_parent=await handle_reference(previous_parent),
-    previous_location=coordinate_reference(previous_location),
-  )
