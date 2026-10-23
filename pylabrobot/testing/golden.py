@@ -135,6 +135,22 @@ def snapshot_resources(root: Resource) -> List[Dict[str, Any]]:
   return entries
 
 
+def snapshot_changes(before: List[Dict[str, Any]], after: List[Dict[str, Any]]) -> Dict[str, Any]:
+  """What a step did to the resources, between two snapshots: under `resources`, every entry new
+  or different, in tree order; under `removed`, the names of those gone. Empty when nothing
+  changed. A step records this rather than the whole tree, which keeps golden files small."""
+  previous = {entry["name"]: entry for entry in before}
+  names = {entry["name"] for entry in after}
+  changed = [entry for entry in after if previous.get(entry["name"]) != entry]
+  removed = [entry["name"] for entry in before if entry["name"] not in names]
+  result: Dict[str, Any] = {}
+  if changed:
+    result["resources"] = changed
+  if removed:
+    result["removed"] = removed
+  return result
+
+
 def snapshot_definition(definition: pb.ResourceDefinition) -> List[Dict[str, Any]]:
   """What `snapshot_resources` gives for the resources a definition describes."""
   entries: List[Dict[str, Any]] = []

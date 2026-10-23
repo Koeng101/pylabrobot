@@ -21,7 +21,7 @@ from pylabrobot.hamilton.star.driver.errors import STARFirmwareError, check_fw_s
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.resource import Resource
-from pylabrobot.testing.golden import snapshot_resources
+from pylabrobot.testing.golden import snapshot_changes, snapshot_resources
 
 # What a hook given to `STARRecorder.fail` is handed: the command's own parameters.
 Hook = Callable[[Dict[str, Any]], None]
@@ -51,21 +51,6 @@ def described(error: BaseException) -> str:
   if isinstance(error, STARFirmwareError):
     return f"{type(error).__name__}: {error.raw_response}"
   return f"{type(error).__name__}: {error}"
-
-
-def changes(before: List[Dict[str, Any]], after: List[Dict[str, Any]]) -> Dict[str, Any]:
-  """What a step did to the resources: every entry new or different, in tree order, and the names
-  of those gone. Empty when nothing changed."""
-  previous = {entry["name"]: entry for entry in before}
-  names = {entry["name"] for entry in after}
-  changed = [entry for entry in after if previous.get(entry["name"]) != entry]
-  removed = [entry["name"] for entry in before if entry["name"] not in names]
-  result: Dict[str, Any] = {}
-  if changed:
-    result["resources"] = changed
-  if removed:
-    result["removed"] = removed
-  return result
 
 
 class STARRecorder:
@@ -206,7 +191,7 @@ class STARRecorder:
     Args:
       call: how it was built, as a scenario writes it.
     """
-    self.steps.append({"call": call, "sent": [], **changes([], self._snapshot)})
+    self.steps.append({"call": call, "sent": [], **snapshot_changes([], self._snapshot)})
 
   async def step(self, call: str, action: Awaitable[Any]) -> Any:
     """Run one step and record it.
@@ -229,7 +214,7 @@ class STARRecorder:
       entry["sent"] = self._sent
       entry["error"] = described(error)
     snapshot = snapshot_resources(self.device)
-    entry.update(changes(self._snapshot, snapshot))
+    entry.update(snapshot_changes(self._snapshot, snapshot))
     self._snapshot = snapshot
     self.steps.append(entry)
     return result

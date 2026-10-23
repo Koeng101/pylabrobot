@@ -15,8 +15,8 @@ from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from pylabrobot.io.http import HTTP
-from pylabrobot.resources import Container, Resource, Tip, TipSpot
-from pylabrobot.testing.golden import snapshot_resources
+from pylabrobot.resources import Resource, Tip
+from pylabrobot.testing.golden import snapshot_changes, snapshot_resources
 
 # Labware load names, and the OT-2's labware ids, are `uuid.uuid4().hex`. Each distinct one is
 # replaced by `<uuid-N>`, numbered in order of first appearance within a scenario.
@@ -175,34 +175,6 @@ class FakeRobotServer(HTTP):
     return 200, json.dumps(self._answer(method, path, body))
 
 
-def _fingerprint(root: Resource) -> List[Any]:
-  """Everything `snapshot_resources` reads, gathered cheaply.
-
-  A snapshot goes through the resource store's definitions and takes about a second for a
-  deck with a few labware on it, so it is only taken when this fingerprint changed. The
-  fingerprint covers at least what a snapshot records, so an unchanged fingerprint means an
-  unchanged snapshot.
-  """
-  entries: List[Any] = []
-  for resource in [root, *root.get_all_children()]:
-    parent = resource.parent.name if resource.parent is not None else ""
-    location = resource.location
-    rotation = resource.rotation
-    entry: List[Any] = [
-      resource.name,
-      parent,
-      None if location is None else (location.x, location.y, location.z),
-      (rotation.x, rotation.y, rotation.z),
-    ]
-    if isinstance(resource, Container):
-      entry += [resource.tracker.volume, resource.tracker.pending_volume]
-    if isinstance(resource, TipSpot) and resource.has_tip():
-      tip = resource.get_tip()
-      entry += [id(tip), tip.name, tip.tracker.volume, tip.tracker.pending_volume]
-    entries.append(entry)
-  return entries
-
-
 class Recorder:
   """Run a scenario's steps and build its golden record.
 
@@ -223,7 +195,6 @@ class Recorder:
     self.mounted = mounted
     self.steps: List[Dict[str, Any]] = []
     self._uuids: Dict[str, str] = {}
-    self._fingerprint = _fingerprint(root)
     self._resources = snapshot_resources(root)
 
   def _normalised(self, value: Any) -> Any:
@@ -242,15 +213,10 @@ class Recorder:
     return self._uuids[found]
 
   def _add_resources(self, entry: Dict[str, Any]) -> None:
-    """Add the resource snapshot to `entry` when the resources changed since the last one."""
-    fingerprint = _fingerprint(self.root)
-    if fingerprint == self._fingerprint:
-      return
-    self._fingerprint = fingerprint
+    """Add what changed in the resources since the last step to `entry`."""
     resources = snapshot_resources(self.root)
-    if resources != self._resources:
-      entry["resources"] = resources
-      self._resources = resources
+    entry.update(snapshot_changes(self._resources, resources))
+    self._resources = resources
 
   async def step(self, call: str, operation: Awaitable[Any]) -> Any:
     """Run one call, recording what it sent, returned or raised, and the state it left.

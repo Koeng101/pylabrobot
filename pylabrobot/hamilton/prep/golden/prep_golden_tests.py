@@ -49,7 +49,7 @@ from pylabrobot.resources.hamilton import (
 )
 from pylabrobot.resources.tip_tracking import does_tip_tracking, set_tip_tracking
 from pylabrobot.resources.volume_tracker import does_volume_tracking, set_volume_tracking
-from pylabrobot.testing.golden import check_golden, snapshot_resources
+from pylabrobot.testing.golden import check_golden, snapshot_changes, snapshot_resources
 
 GOLDEN = pathlib.Path(__file__).parent
 
@@ -160,8 +160,7 @@ class _Recording:
     entry["sent"] = self._sent
     entry["result"] = _jsonable(result)
     after = snapshot_resources(self.prep)
-    if after != self._resources:
-      entry["resources"] = after
+    entry.update(snapshot_changes(self._resources, after))
     self._resources = after
     self.steps.append(entry)
     return result
