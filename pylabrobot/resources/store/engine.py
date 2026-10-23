@@ -152,6 +152,59 @@ class Changes:
   deleted: List[bytes]
   operations: List[pb.Operation]
   roots: Set[bytes]
+  # For each updated node, what about it changed since the changes drained before.
+  aspects: Dict[bytes, List[spb.ChangeAspect]]
+
+
+_ALL_ASPECTS = (
+  spb.CHANGE_ASPECT_PLACEMENT,
+  spb.CHANGE_ASPECT_STATE,
+  spb.CHANGE_ASPECT_ATTRIBUTES,
+  spb.CHANGE_ASPECT_CHILDREN,
+)
+
+
+@dataclass(frozen=True)
+class _View:
+  """A node as a watcher last saw it, by aspect."""
+
+  placement: tuple
+  state: bytes
+  attributes: bytes
+  children: tuple
+
+  def changed_since(self, before: _View) -> List[spb.ChangeAspect]:
+    return [
+      aspect
+      for aspect, now, then in (
+        (spb.CHANGE_ASPECT_PLACEMENT, self.placement, before.placement),
+        (spb.CHANGE_ASPECT_STATE, self.state, before.state),
+        (spb.CHANGE_ASPECT_ATTRIBUTES, self.attributes, before.attributes),
+        (spb.CHANGE_ASPECT_CHILDREN, self.children, before.children),
+      )
+      if now != then
+    ]
+
+
+def _view(node: Node) -> _View:
+  attributes = pb.ResourceAttributes()
+  attributes.CopyFrom(node.attributes)
+  location = attributes.location.SerializeToString() if attributes.HasField("location") else None
+  rotation = attributes.rotation.SerializeToString(deterministic=True)
+  attributes.ClearField("location")
+  attributes.ClearField("rotation")
+  parent = node.parent
+  return _View(
+    placement=(
+      parent.id if parent is not None else b"",
+      parent.children.index(node) if parent is not None else 0,
+      location,
+      rotation,
+    ),
+    state=node.state.SerializeToString(deterministic=True),
+    attributes=attributes.SerializeToString(deterministic=True),
+    children=tuple(child.id for child in node.children),
+  )
 
 
 class Engine:
@@ -180,6 +233,8 @@ class Engine:
     self._touched_operations: Dict[bytes, _Operation] = {}
     self._touched_roots: Set[bytes] = set()
     self._pending_index: Optional[Dict[bytes, List[bytes]]] = None
+    # Each node as the changes drained last left it, to say what an update changed.
+    self._published: Dict[bytes, _View] = {}
 
   # -- requests ----------------------------------------------------------------------------------
 
@@ -212,7 +267,19 @@ class Engine:
       self.revisions[node.id] = self.revision
     for node_id in deleted:
       self.revisions.pop(node_id, None)
+    aspects: Dict[bytes, List[spb.ChangeAspect]] = {}
+    for node in updated:
+      view = _view(node)
+      before = self._published.get(node.id)
+      aspects[node.id] = view.changed_since(before) if before is not None else list(_ALL_ASPECTS)
+      self._published[node.id] = view
+    for node in created:
+      self._published[node.id] = _view(node)
+    for node_id in deleted:
+      self._published.pop(node_id, None)
+    updated = [node for node in updated if aspects[node.id]]
     changes = Changes(
+      aspects=aspects,
       updated=updated,
       created=created,
       deleted=deleted,

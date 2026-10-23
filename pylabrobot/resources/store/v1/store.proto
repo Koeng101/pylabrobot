@@ -614,6 +614,20 @@ message WatchRequest {
   uint64 after_revision = 2;
 }
 
+// What about a resource an update changed.
+enum ChangeAspect {
+  CHANGE_ASPECT_UNSPECIFIED = 0;
+  // Its parent, its position among the parent's children, its location or its rotation.
+  CHANGE_ASPECT_PLACEMENT = 1;
+  // Its volume, tracking, jaw width or tips made.
+  CHANGE_ASPECT_STATE = 2;
+  // Anything else about what it is: metadata, barcode, spec.
+  CHANGE_ASPECT_ATTRIBUTES = 3;
+  // Which resources hang from it, or their order.
+  CHANGE_ASPECT_CHILDREN = 4;
+}
+
+// Every event of one request has the same revision, so a watcher can apply them together.
 message ResourceEvent {
   uint64 revision = 1;
   google.protobuf.Timestamp at = 2;
@@ -624,6 +638,8 @@ message ResourceEvent {
     ResourceNode updated = 5;
     Operation operation = 6;
   }
+  // For `updated`: what changed since its last event.
+  repeated ChangeAspect changed = 7;
 }
 
 service ResourceStoreService {

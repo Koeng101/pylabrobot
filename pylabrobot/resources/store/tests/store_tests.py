@@ -803,6 +803,27 @@ class WatchTests(StoreTestCase):
     self.assertIn("updated", kinds)
     self.assertIn("operation", kinds)
     self.assertTrue(all(event.revision > start for event in seen))
+    tip = next(e for e in seen if e.updated.attributes.kind == pb.RESOURCE_KIND_TIP)
+    self.assertIn(spb.CHANGE_ASPECT_PLACEMENT, tip.changed)
+    spot = next(e for e in seen if e.updated.attributes.name == "tips_tipspot_A1")
+    self.assertEqual(list(spot.changed), [spb.CHANGE_ASPECT_CHILDREN])
+    self.assertEqual(len({event.revision for event in seen if event.HasField("updated")}), 1)
+
+  async def test_a_watcher_is_told_what_an_update_changed(self):
+    start = (await self.commands.get_store_info(spb.GetStoreInfoRequest())).revision
+    await self.commands.update_resources(
+      spb.UpdateResourcesRequest(
+        updates=[spb.ResourceUpdate(volume=pb.SetVolume(resource=ref("trough"), volume=500))]
+      )
+    )
+    events = []
+    async for event in self.commands.watch(
+      spb.WatchRequest(roots=[ref(ROOT, "")], after_revision=start)
+    ):
+      events.append(event)
+      break
+    self.assertEqual(events[0].updated.attributes.name, "trough")
+    self.assertEqual(list(events[0].changed), [spb.CHANGE_ASPECT_STATE])
 
 
 if __name__ == "__main__":

@@ -17,9 +17,22 @@ class TransferDirection(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     TRANSFER_DIRECTION_UNSPECIFIED: _ClassVar[TransferDirection]
     TRANSFER_DIRECTION_ASPIRATE: _ClassVar[TransferDirection]
     TRANSFER_DIRECTION_DISPENSE: _ClassVar[TransferDirection]
+
+class ChangeAspect(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    CHANGE_ASPECT_UNSPECIFIED: _ClassVar[ChangeAspect]
+    CHANGE_ASPECT_PLACEMENT: _ClassVar[ChangeAspect]
+    CHANGE_ASPECT_STATE: _ClassVar[ChangeAspect]
+    CHANGE_ASPECT_ATTRIBUTES: _ClassVar[ChangeAspect]
+    CHANGE_ASPECT_CHILDREN: _ClassVar[ChangeAspect]
 TRANSFER_DIRECTION_UNSPECIFIED: TransferDirection
 TRANSFER_DIRECTION_ASPIRATE: TransferDirection
 TRANSFER_DIRECTION_DISPENSE: TransferDirection
+CHANGE_ASPECT_UNSPECIFIED: ChangeAspect
+CHANGE_ASPECT_PLACEMENT: ChangeAspect
+CHANGE_ASPECT_STATE: ChangeAspect
+CHANGE_ASPECT_ATTRIBUTES: ChangeAspect
+CHANGE_ASPECT_CHILDREN: ChangeAspect
 
 class GetStoreInfoRequest(_message.Message):
     __slots__ = ()
@@ -788,17 +801,19 @@ class WatchRequest(_message.Message):
     def __init__(self, roots: _Optional[_Iterable[_Union[_types_pb2.ResourceRef, _Mapping]]] = ..., after_revision: _Optional[int] = ...) -> None: ...
 
 class ResourceEvent(_message.Message):
-    __slots__ = ("revision", "at", "created", "deleted", "updated", "operation")
+    __slots__ = ("revision", "at", "created", "deleted", "updated", "operation", "changed")
     REVISION_FIELD_NUMBER: _ClassVar[int]
     AT_FIELD_NUMBER: _ClassVar[int]
     CREATED_FIELD_NUMBER: _ClassVar[int]
     DELETED_FIELD_NUMBER: _ClassVar[int]
     UPDATED_FIELD_NUMBER: _ClassVar[int]
     OPERATION_FIELD_NUMBER: _ClassVar[int]
+    CHANGED_FIELD_NUMBER: _ClassVar[int]
     revision: int
     at: _timestamp_pb2.Timestamp
     created: _types_pb2.ResourceNode
     deleted: bytes
     updated: _types_pb2.ResourceNode
     operation: _types_pb2.Operation
-    def __init__(self, revision: _Optional[int] = ..., at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., created: _Optional[_Union[_types_pb2.ResourceNode, _Mapping]] = ..., deleted: _Optional[bytes] = ..., updated: _Optional[_Union[_types_pb2.ResourceNode, _Mapping]] = ..., operation: _Optional[_Union[_types_pb2.Operation, _Mapping]] = ...) -> None: ...
+    changed: _containers.RepeatedScalarFieldContainer[ChangeAspect]
+    def __init__(self, revision: _Optional[int] = ..., at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., created: _Optional[_Union[_types_pb2.ResourceNode, _Mapping]] = ..., deleted: _Optional[bytes] = ..., updated: _Optional[_Union[_types_pb2.ResourceNode, _Mapping]] = ..., operation: _Optional[_Union[_types_pb2.Operation, _Mapping]] = ..., changed: _Optional[_Iterable[_Union[ChangeAspect, str]]] = ...) -> None: ...

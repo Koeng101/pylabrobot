@@ -110,7 +110,12 @@ class MemoryStore(ResourceStoreService, ResourcePrimitivesService):
     for node in changes.updated:
       self._events.append(
         _Event(
-          spb.ResourceEvent(revision=revision, at=stamp, updated=self.engine.node_message(node)),
+          spb.ResourceEvent(
+            revision=revision,
+            at=stamp,
+            updated=self.engine.node_message(node),
+            changed=changes.aspects[node.id],
+          ),
           {node.root().id} | changes.roots,
         )
       )

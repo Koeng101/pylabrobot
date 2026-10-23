@@ -6,10 +6,12 @@ from __future__ import annotations
 import unittest
 
 from pylabrobot.resources import Coordinate
-from pylabrobot.resources.carrier import PlateCarrier
+from pylabrobot.resources.carrier import Carrier, PlateCarrier
+from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck, track_for_x_coordinate
 from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
 from pylabrobot.resources.plate import Plate as PLRPlate
 from pylabrobot.resources.well import Well as PLRWell
+from pylabrobot.resources.store import build
 from pylabrobot.resources.store import handles as h
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.errors import StoreError
@@ -118,6 +120,24 @@ class ReadingTests(HandleTestCase):
     self.assertFalse(await tips.get_tip_spot(1).has_tip())
 
 
+class DeckTests(HandleTestCase):
+  async def test_tracks_are_plr_s(self):
+    assert isinstance(self.deck, h.Deck)
+    plr = self.plr
+    assert isinstance(plr, HamiltonDeck)
+    for track in (1, 8, 30):
+      self.assertEqual(await self.deck.track_location(track), plr.track_to_location(track))
+    for x in (100.0, 122.4, 122.6, 700.0):
+      self.assertEqual(await self.deck.track_at(x), track_for_x_coordinate(x))
+    for name in ("plate_carrier", "tip_carrier", "trough_carrier"):
+      carrier = await self.deck.get_resource(name)
+      plr_carrier = plr.get_resource(name)
+      assert isinstance(plr_carrier, Carrier)
+      first, last = await self.deck.tracks_of(carrier)
+      self.assertEqual(last, plr.compute_right_track_of_carrier(plr_carrier), name)
+      self.assertEqual(first, track_for_x_coordinate(plr_carrier.get_location_wrt(plr).x), name)
+
+
 class ChangingTests(HandleTestCase):
   async def test_labware_is_made_from_plr_s_models(self):
     carrier = await self.deck.get_resource("plate_carrier")
@@ -173,6 +193,30 @@ class ChangingTests(HandleTestCase):
       self.assertEqual(caught.exception.problem, pb.PROBLEM_LOCKED)
     await theirs.set_metadata({"theirs": True})
     await other.close()
+
+  async def test_a_device_builds_its_parts_from_definitions(self):
+    body = build.resource(
+      "reader",
+      Coordinate(150, 100, 80),
+      category="plate_reader",
+      children=[
+        build.resource(
+          "reader_tray",
+          Coordinate(127.76, 85.48, 5),
+          kind=pb.RESOURCE_KIND_PLATE_HOLDER,
+          location=Coordinate(10, 7, 3),
+          holder=pb.HolderSpec(child_location=build.vec3(Coordinate(0, 0, 2))),
+        )
+      ],
+    )
+    reader = await self.store.create(
+      body, name="reader", parent=self.deck, location=Coordinate(700, 50, 0)
+    )
+    tray = await reader.get_resource("reader_tray")
+    self.assertIsInstance(tray, h.PlateHolder)
+    plate = await self.store.get("plate", root=self.deck)
+    await tray.assign_child_resource(plate)
+    self.assertEqual(await plate.get_location_wrt(self.deck), Coordinate(710, 57, 5))
 
   async def test_deleting_takes_everything_under_it(self):
     plate = await self.store.get("plate", root=self.deck)

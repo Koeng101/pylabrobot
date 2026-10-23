@@ -589,6 +589,10 @@ class Tip(Resource):
     state = await self.state(view)
     return state.volume.pending_volume if view != pb.VIEW_COMMITTED else state.volume.volume
 
+  async def set_volume(self, volume: float) -> None:
+    """Say what it holds: 0 once it has been emptied somewhere the model does not hold."""
+    await self._update(spb.ResourceUpdate(volume=pb.SetVolume(resource=self.ref, volume=volume)))
+
 
 class Lid(Resource):
   pass
@@ -629,7 +633,38 @@ class Carrier(Resource):
 
 
 class Deck(Resource):
-  pass
+  async def get_hamilton_tracks(self) -> pb.HamiltonDeckSpec:
+    """A Hamilton deck's tracks.
+
+    Raises:
+      StoreError: It is not a Hamilton deck.
+    """
+    spec = (await self.attributes()).deck
+    if not spec.HasField("hamilton"):
+      raise StoreError(pb.PROBLEM_WRONG_KIND, f"'{self.name}' has no tracks", self.name)
+    return spec.hamilton
+
+  async def track_location(self, track: int) -> Coordinate:
+    """Where a Hamilton deck's track starts, in the deck's frame; tracks count from 1."""
+    tracks = await self.get_hamilton_tracks()
+    origin = to_coordinate(tracks.track_origin)
+    return origin + Coordinate((track - 1) * tracks.track_pitch, 0, 0)
+
+  async def track_at(self, x: float) -> int:
+    """The Hamilton deck's track an x coordinate in the deck's frame falls on, from 1."""
+    tracks = await self.get_hamilton_tracks()
+    return int((x - tracks.track_origin.x) / tracks.track_pitch) + 1
+
+  async def tracks_of(self, resource: Resource) -> Tuple[int, int]:
+    """The first and last tracks of a Hamilton deck a resource on it covers: where its origin
+    is, and where the right of its box, turned as it stands, ends."""
+    tracks = await self.get_hamilton_tracks()
+    corners = [anchor(x, y, z) for x in "lr" for y in "fb" for z in "bt"]
+    geometry = await resource._geometry(frame=self, anchors=[anchor()] + corners)
+    left = geometry.locations[0].x
+    right = max(location.x for location in geometry.locations[1:])
+    pitch, origin = tracks.track_pitch, tracks.track_origin.x
+    return int((left - origin) / pitch) + 1, int((right - origin) / pitch)
 
 
 class PlateAdapter(Resource):
