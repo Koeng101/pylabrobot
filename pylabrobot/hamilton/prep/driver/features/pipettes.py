@@ -7054,7 +7054,7 @@ class Pipettes:
       )
     facts = await read_containers(self.store, self._require_deck(), list(containers))
     liquid, drawn, classes = get_volumes_and_classes(
-      cast(Any, facts),
+      [fact.name for fact in facts],
       use_channels,
       cast(Any, await self._require_mounted_tips(use_channels)),
       volumes,
@@ -7590,7 +7590,7 @@ class Pipettes:
       raise ValueError("TADM is not verified on the Prep yet; give limit curve 0")
     facts = await read_containers(self.store, self._require_deck(), list(containers))
     liquid, pushed, classes = get_volumes_and_classes(
-      cast(Any, facts),
+      [fact.name for fact in facts],
       use_channels,
       cast(Any, await self._require_mounted_tips(use_channels)),
       volumes,
