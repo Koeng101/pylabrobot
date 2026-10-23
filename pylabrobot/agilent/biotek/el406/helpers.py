@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from pylabrobot.resources import Plate
+from dataclasses import dataclass
+
+from pylabrobot.resources.store import handles
 
 # Threshold for distinguishing standard-height vs low-profile plates (in mm).
 # Standard microplates are ~14mm tall; PCR/flanged plates are typically <12mm.
@@ -49,14 +51,43 @@ _WIRE_BYTE_DEFAULTS: dict[int, dict[str, int]] = {
 }
 
 
-def plate_to_wire_byte(plate: Plate) -> int:
-  """Resolve a PLR Plate to the EL406 wire protocol byte.
+@dataclass(frozen=True)
+class PlateFormat:
+  """What the EL406 encodes of a plate: its wells and its height.
+
+  Attributes:
+    num_items_x: Columns.
+    num_items_y: Rows.
+    num_items: Wells.
+    size_z: The plate's height, in mm.
+  """
+
+  num_items_x: int
+  num_items_y: int
+  num_items: int
+  size_z: float
+
+
+async def read_plate_format(plate: handles.Plate) -> PlateFormat:
+  """Read a plate's format from its store, in one call: its wells are known to the handle, its
+  height is read from its attributes."""
+  attributes = await plate.attributes()
+  return PlateFormat(
+    num_items_x=plate.num_items_x,
+    num_items_y=plate.num_items_y,
+    num_items=plate.num_items,
+    size_z=attributes.size.z,
+  )
+
+
+def plate_to_wire_byte(plate: PlateFormat) -> int:
+  """Resolve a plate to the EL406 wire protocol byte.
 
   Determines the format from well count, and uses plate height (``size_z``)
   to distinguish standard vs low-profile variants for 384 and 1536 plates.
 
   Args:
-    plate: A PyLabRobot Plate resource.
+    plate: The plate's format.
 
   Returns:
     Integer byte value for the EL406 wire protocol.
@@ -68,23 +99,23 @@ def plate_to_wire_byte(plate: Plate) -> int:
   if wells == 96:
     return 4
   if wells == 384:
-    return 2 if plate.get_size_z() < _LOW_PROFILE_THRESHOLD_MM else 1
+    return 2 if plate.size_z < _LOW_PROFILE_THRESHOLD_MM else 1
   if wells == 1536:
-    return 14 if plate.get_size_z() < _LOW_PROFILE_THRESHOLD_MM else 0
+    return 14 if plate.size_z < _LOW_PROFILE_THRESHOLD_MM else 0
   raise ValueError(f"Unsupported plate well count: {wells}. EL406 supports 96, 384, or 1536.")
 
 
-def plate_defaults(plate: Plate) -> dict[str, int]:
+def plate_defaults(plate: PlateFormat) -> dict[str, int]:
   """Return the physical defaults dict for a plate."""
   return _WIRE_BYTE_DEFAULTS[plate_to_wire_byte(plate)]
 
 
-def plate_max_columns(plate: Plate) -> int:
+def plate_max_columns(plate: PlateFormat) -> int:
   """Return the number of columns for a plate."""
   return plate.num_items_x
 
 
-def plate_max_row_groups(plate: Plate) -> int:
+def plate_max_row_groups(plate: PlateFormat) -> int:
   """Return the number of row groups for a plate.
 
   96-well: 1 row group (no row selection).
@@ -94,11 +125,11 @@ def plate_max_row_groups(plate: Plate) -> int:
   return {12: 1, 24: 2, 48: 4}[plate.num_items_x]
 
 
-def plate_well_count(plate: Plate) -> int:
+def plate_well_count(plate: PlateFormat) -> int:
   """Return the well count for a plate (96, 384, or 1536)."""
   return plate.num_items
 
 
-def plate_default_z(plate: Plate) -> int:
+def plate_default_z(plate: PlateFormat) -> int:
   """Return the default dispenser Z height for a plate."""
   return plate_defaults(plate)["dispenser_height"]

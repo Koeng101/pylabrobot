@@ -1,0 +1,2468 @@
+{
+  "initial_resources": [
+    {
+      "name": "benchcel",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "benchcel_tray",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        -200.0,
+        50.0,
+        0.0
+      ]
+    },
+    {
+      "name": "benchcel_stacker_1",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    },
+    {
+      "name": "plate_1",
+      "parent": "benchcel_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate_1_well_A1",
+      "parent": "plate_1",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_1_well_A2",
+      "parent": "plate_1",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_2",
+      "parent": "benchcel_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        14.2
+      ]
+    },
+    {
+      "name": "plate_2_well_A1",
+      "parent": "plate_2",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_2_well_A2",
+      "parent": "plate_2",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_3",
+      "parent": "benchcel_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        28.4
+      ]
+    },
+    {
+      "name": "plate_3_well_A1",
+      "parent": "plate_3",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_3_well_A2",
+      "parent": "plate_3",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "benchcel_stacker_2",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    },
+    {
+      "name": "benchcel_stacker_3",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    },
+    {
+      "name": "plate_4",
+      "parent": "benchcel_stacker_3",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate_4_well_A1",
+      "parent": "plate_4",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_4_well_A2",
+      "parent": "plate_4",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "benchcel_stacker_4",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    }
+  ],
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        "connect"
+      ],
+      "events": []
+    },
+    {
+      "call": "request_stacker_sensor_status(stacks[0])",
+      "result": {
+        "stacker": 1,
+        "air_pressure": 45,
+        "plate_presence": 128,
+        "plate_present": true,
+        "notch_values": [
+          1,
+          0,
+          0,
+          1
+        ]
+      },
+      "sent": [
+        "7e010000"
+      ],
+      "events": []
+    },
+    {
+      "call": "request_arm_pose()",
+      "result": {
+        "location": [
+          -120.5,
+          0,
+          35.0
+        ],
+        "rotation_z": 90.0,
+        "gripper_position": -1.0
+      },
+      "sent": [
+        "870000"
+      ],
+      "events": []
+    },
+    {
+      "call": "move_to_stacker(stacks[0])",
+      "result": null,
+      "sent": [
+        "650a0001000000204100000000"
+      ],
+      "events": []
+    },
+    {
+      "call": "downstack(stacks[0])",
+      "result": {
+        "plate": "plate_3"
+      },
+      "sent": [
+        "6a010001",
+        "62040001000001",
+        "630400011e0001"
+      ],
+      "events": [
+        {
+          "name": "benchcel.downstack.started",
+          "operation": "benchcel.downstack",
+          "operation_id": "op-1",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_3",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_stacker_1",
+                    "type": "ResourceStack"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "operation": "benchcel.downstack",
+          "operation_id": "op-1",
+          "data": {
+            "resource": {
+              "name": "plate_3",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 0,
+              "y": 0,
+              "z": 28.4,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "operation": "benchcel.downstack",
+          "operation_id": "op-1",
+          "data": {
+            "resource": {
+              "name": "plate_3",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel_tray",
+                  "type": "PlateHolder"
+                },
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "parent": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "benchcel.downstack.completed",
+          "operation": "benchcel.downstack",
+          "operation_id": "op-1",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_3",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_stacker_1",
+                    "type": "ResourceStack"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "benchcel",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "benchcel_tray",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            -200.0,
+            50.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_3",
+          "parent": "benchcel_tray",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_3_well_A1",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_3_well_A2",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_1",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_1",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_1_well_A1",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_1_well_A2",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_2",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            14.2
+          ]
+        },
+        {
+          "name": "plate_2_well_A1",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_2_well_A2",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_2",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "benchcel_stacker_3",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_4",
+          "parent": "benchcel_stacker_3",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_4_well_A1",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_4_well_A2",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_4",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        }
+      ]
+    },
+    {
+      "call": "upstack(stacks[3])",
+      "result": null,
+      "sent": [
+        "6a010001",
+        "620400011e0001",
+        "63040001030001"
+      ],
+      "events": [
+        {
+          "name": "benchcel.upstack.started",
+          "operation": "benchcel.upstack",
+          "operation_id": "op-2",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_3",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_tray",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_stacker_4",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "operation": "benchcel.upstack",
+          "operation_id": "op-2",
+          "data": {
+            "resource": {
+              "name": "plate_3",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "operation": "benchcel.upstack",
+          "operation_id": "op-2",
+          "data": {
+            "resource": {
+              "name": "plate_3",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel_stacker_4",
+                  "type": "ResourceStack"
+                },
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "parent": {
+              "name": "benchcel_stacker_4",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "benchcel.upstack.completed",
+          "operation": "benchcel.upstack",
+          "operation_id": "op-2",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_3",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_tray",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_stacker_4",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "benchcel",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "benchcel_tray",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            -200.0,
+            50.0,
+            0.0
+          ]
+        },
+        {
+          "name": "benchcel_stacker_1",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_1",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_1_well_A1",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_1_well_A2",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_2",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            14.2
+          ]
+        },
+        {
+          "name": "plate_2_well_A1",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_2_well_A2",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_2",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "benchcel_stacker_3",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_4",
+          "parent": "benchcel_stacker_3",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_4_well_A1",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_4_well_A2",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_4",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_3",
+          "parent": "benchcel_stacker_4",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_3_well_A1",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_3_well_A2",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "downstack(stacks[2])",
+      "result": {
+        "plate": "plate_4"
+      },
+      "sent": [
+        "6a010001",
+        "62040001020001",
+        "630400011e0001"
+      ],
+      "events": [
+        {
+          "name": "benchcel.downstack.started",
+          "operation": "benchcel.downstack",
+          "operation_id": "op-3",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_4",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_stacker_3",
+                    "type": "ResourceStack"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_stacker_3",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "operation": "benchcel.downstack",
+          "operation_id": "op-3",
+          "data": {
+            "resource": {
+              "name": "plate_4",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "benchcel_stacker_3",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "operation": "benchcel.downstack",
+          "operation_id": "op-3",
+          "data": {
+            "resource": {
+              "name": "plate_4",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel_tray",
+                  "type": "PlateHolder"
+                },
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "parent": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "benchcel.downstack.completed",
+          "operation": "benchcel.downstack",
+          "operation_id": "op-3",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_4",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_stacker_3",
+                    "type": "ResourceStack"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_stacker_3",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "benchcel",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "benchcel_tray",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            -200.0,
+            50.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_4",
+          "parent": "benchcel_tray",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_4_well_A1",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_4_well_A2",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_1",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_1",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_1_well_A1",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_1_well_A2",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_2",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            14.2
+          ]
+        },
+        {
+          "name": "plate_2_well_A1",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_2_well_A2",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_2",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "benchcel_stacker_3",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "benchcel_stacker_4",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_3",
+          "parent": "benchcel_stacker_4",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_3_well_A1",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_3_well_A2",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "move_plate_between_stacks(stacks[0], stacks[1])",
+      "result": {
+        "plate": "plate_2"
+      },
+      "sent": [
+        "6a010001",
+        "62040001000001",
+        "63040001010001"
+      ],
+      "events": [
+        {
+          "name": "benchcel.move_plate_between_stacks.started",
+          "operation": "benchcel.move_plate_between_stacks",
+          "operation_id": "op-4",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_2",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_stacker_1",
+                    "type": "ResourceStack"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_stacker_2",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "operation": "benchcel.move_plate_between_stacks",
+          "operation_id": "op-4",
+          "data": {
+            "resource": {
+              "name": "plate_2",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 0,
+              "y": 0,
+              "z": 14.2,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "operation": "benchcel.move_plate_between_stacks",
+          "operation_id": "op-4",
+          "data": {
+            "resource": {
+              "name": "plate_2",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel_stacker_2",
+                  "type": "ResourceStack"
+                },
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "parent": {
+              "name": "benchcel_stacker_2",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "benchcel.move_plate_between_stacks.completed",
+          "operation": "benchcel.move_plate_between_stacks",
+          "operation_id": "op-4",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_2",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_stacker_1",
+                    "type": "ResourceStack"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_stacker_2",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "benchcel",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "benchcel_tray",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            -200.0,
+            50.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_4",
+          "parent": "benchcel_tray",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_4_well_A1",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_4_well_A2",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_1",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_1",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_1_well_A1",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_1_well_A2",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_2",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_2",
+          "parent": "benchcel_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_2_well_A1",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_2_well_A2",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_3",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "benchcel_stacker_4",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_3",
+          "parent": "benchcel_stacker_4",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_3_well_A1",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_3_well_A2",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "upstack(stacks[0])",
+      "result": null,
+      "sent": [
+        "6a010001",
+        "620400011e0001",
+        "63040001000001"
+      ],
+      "events": [
+        {
+          "name": "benchcel.upstack.started",
+          "operation": "benchcel.upstack",
+          "operation_id": "op-5",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_4",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_tray",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "operation": "benchcel.upstack",
+          "operation_id": "op-5",
+          "data": {
+            "resource": {
+              "name": "plate_4",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "operation": "benchcel.upstack",
+          "operation_id": "op-5",
+          "data": {
+            "resource": {
+              "name": "plate_4",
+              "type": "Plate",
+              "model": "assay_plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel_stacker_1",
+                  "type": "ResourceStack"
+                },
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "parent": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 14.2,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "benchcel.upstack.completed",
+          "operation": "benchcel.upstack",
+          "operation_id": "op-5",
+          "data": {
+            "device": {
+              "name": "benchcel",
+              "type": "BenchCel4R",
+              "model": "Agilent BenchCel 4R",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate_4",
+                "type": "Plate",
+                "model": "assay_plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "benchcel_tray",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "benchcel",
+                    "type": "BenchCel4R",
+                    "model": "Agilent BenchCel 4R"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "benchcel_tray",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            },
+            "destination": {
+              "name": "benchcel_stacker_1",
+              "type": "ResourceStack",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "benchcel",
+                  "type": "BenchCel4R",
+                  "model": "Agilent BenchCel 4R"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "benchcel",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "benchcel_tray",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            -200.0,
+            50.0,
+            0.0
+          ]
+        },
+        {
+          "name": "benchcel_stacker_1",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_1",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_1_well_A1",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_1_well_A2",
+          "parent": "plate_1",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_4",
+          "parent": "benchcel_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            14.2
+          ]
+        },
+        {
+          "name": "plate_4_well_A1",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_4_well_A2",
+          "parent": "plate_4",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_2",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_2",
+          "parent": "benchcel_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_2_well_A1",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_2_well_A2",
+          "parent": "plate_2",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "benchcel_stacker_3",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "benchcel_stacker_4",
+          "parent": "benchcel",
+          "kind": "RESOURCE_KIND_RESOURCE_STACK"
+        },
+        {
+          "name": "plate_3",
+          "parent": "benchcel_stacker_4",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_3_well_A1",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_3_well_A2",
+          "parent": "plate_3",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "open_stacker_clamps(stacks[1])",
+      "result": null,
+      "sent": [
+        "6702000101"
+      ],
+      "events": []
+    },
+    {
+      "call": "close_stacker_clamps(stacks[1])",
+      "result": null,
+      "sent": [
+        "6702000100"
+      ],
+      "events": []
+    },
+    {
+      "call": "move_to_teachpoint(0x1e)",
+      "result": null,
+      "sent": [
+        "650a00011e000020410000a041"
+      ],
+      "events": []
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        "disconnect"
+      ],
+      "events": []
+    }
+  ],
+  "resources": [
+    {
+      "name": "benchcel",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "benchcel_tray",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        -200.0,
+        50.0,
+        0.0
+      ]
+    },
+    {
+      "name": "benchcel_stacker_1",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    },
+    {
+      "name": "plate_1",
+      "parent": "benchcel_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate_1_well_A1",
+      "parent": "plate_1",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_1_well_A2",
+      "parent": "plate_1",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_4",
+      "parent": "benchcel_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        14.2
+      ]
+    },
+    {
+      "name": "plate_4_well_A1",
+      "parent": "plate_4",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_4_well_A2",
+      "parent": "plate_4",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "benchcel_stacker_2",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    },
+    {
+      "name": "plate_2",
+      "parent": "benchcel_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate_2_well_A1",
+      "parent": "plate_2",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_2_well_A2",
+      "parent": "plate_2",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "benchcel_stacker_3",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    },
+    {
+      "name": "benchcel_stacker_4",
+      "parent": "benchcel",
+      "kind": "RESOURCE_KIND_RESOURCE_STACK"
+    },
+    {
+      "name": "plate_3",
+      "parent": "benchcel_stacker_4",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate_3_well_A1",
+      "parent": "plate_3",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_3_well_A2",
+      "parent": "plate_3",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    }
+  ]
+}

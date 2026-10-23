@@ -23,7 +23,7 @@ from typing import Any, Iterable, Iterator, Literal, Optional
 
 from pylabrobot.io.serial import Serial
 from pylabrobot.resources.barcode import Barcode
-from pylabrobot.resources.tube_rack import TubeRack
+from pylabrobot.resources.store.handles import TubeRack
 
 from .errors import MicronicError
 from .scanner import Scanner
@@ -228,7 +228,8 @@ class MicronicRD235:
     """Scan the rack ID and all tube positions in an 8x12 rack.
 
     Args:
-      rack: Rack resource whose 96 positions correspond to the scanner layout.
+      rack: A tube rack in a resource store whose 96 positions correspond to the scanner layout;
+        only its grid size is read.
       timeout: Overall operation timeout in seconds.
 
     Returns:

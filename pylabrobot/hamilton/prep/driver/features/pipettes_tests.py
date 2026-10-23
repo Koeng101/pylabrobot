@@ -25,6 +25,7 @@ from pylabrobot.hamilton.prep.driver.features.pipettes import (
 )
 from pylabrobot.hamilton.prep.driver.features.pipettes import logger as pipettes_logger
 from pylabrobot.hamilton.prep.driver.master import _ResolvedPrepCommand
+from pylabrobot.hamilton.prep.driver.model import ContainerFacts, ToolFacts, read_containers
 from pylabrobot.hamilton.prep.driver.simulator import (
   FIRMWARE_TREE_V1_2_2,
   RECORDING_PREP,
@@ -35,6 +36,12 @@ from pylabrobot.hamilton.prep.driver.simulator import (
   SIMULATED_Z_DRIVE_OFFSETS,
   _DeviceRefuses,
   _SimulatedIO,
+)
+from pylabrobot.hamilton.prep.driver.test_helpers import (
+  make_plain_deck,
+  make_prep_deck,
+  parts_of,
+  place,
 )
 from pylabrobot.hamilton.star.driver.features.pipettes import Pipettes as STARPipettes
 from pylabrobot.hamilton.star.liquid_classes.mapping import (
@@ -47,31 +54,99 @@ from pylabrobot.hamilton.transport.tcp.wire_types import HcResultEntry
 from pylabrobot.legacy.liquid_handling.errors import ChannelizedError
 from pylabrobot.lib.liquid_handling.mix import Mix
 from pylabrobot.lib.liquid_handling.pipette_batch_scheduling import ChannelBatch
-from pylabrobot.resources import Container, Coordinate, PetriDish, Resource, Well
-from pylabrobot.resources.azenta.plates import azenta_96_wellplate_200uL_Vb_4titudeframestar
-from pylabrobot.resources.corning.axygen.plates import cor_axy_96_wellplate_500uL_Ub
-from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
+from pylabrobot.resources import Coordinate
 from pylabrobot.resources.errors import (
   HasTipError,
   NoTipError,
   TooLittleVolumeError,
 )
-from pylabrobot.resources.hamilton import (
-  HamiltonTip,
-  PrepDeck,
-  STARLetDeck,
-  hamilton_96_tiprack_10uL_NTR,
-  hamilton_96_tiprack_50uL_NTR,
-  hamilton_96_tiprack_300uL_NTR,
-  hamilton_96_tiprack_1000uL,
-  hamilton_tip_50uL,
-  hamilton_tip_300uL,
-)
-from pylabrobot.resources.hamilton.core_gripper_tools import hamilton_core_gripper_tool
-from pylabrobot.resources.lid import Lid
 from pylabrobot.resources.liquid import Liquid
-from pylabrobot.resources.tip_tracking import set_tip_tracking
-from pylabrobot.resources.volume_tracker import set_volume_tracking
+from pylabrobot.resources.petri_dish import PetriDish
+from pylabrobot.resources.store import build, handles, library
+from pylabrobot.resources.store.definitions import definition_from_resource
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+
+
+async def _rack(deck: handles.Deck, model: str, name: str, spot: int) -> handles.TipRack:
+  rack = await place(deck, model, name, spot)
+  assert isinstance(rack, handles.TipRack)
+  return rack
+
+
+async def _plate(deck: handles.Deck, model: str, name: str, spot: int) -> handles.Plate:
+  plate = await place(deck, model, name, spot)
+  assert isinstance(plate, handles.Plate)
+  return plate
+
+
+async def _facts(container: handles.Resource) -> ContainerFacts:
+  """A container's facts as a liquid command reads them, on the deck it stands on."""
+  root = await container.get_root()
+  (deck,) = await root.find_resources(kinds=[pb.RESOURCE_KIND_DECK])
+  return (await read_containers(container.store, deck.ref, [container]))[0]
+
+
+async def _add_lid(rack: handles.Resource) -> handles.Resource:
+  """A 10 mm lid nesting 2 mm on `rack`."""
+  definition = build.resource(
+    "lid",
+    Coordinate(127.0, 86.0, 10.0),
+    kind=pb.RESOURCE_KIND_LID,
+    lid=pb.LidSpec(nesting_z_height=2.0),
+  )
+  return await rack.store.create(definition, name="lid", parent=rack)
+
+
+async def _tip_volume(p: PrepSimulationDriver, channel: int) -> float:
+  """What the tip on `channel` holds, in uL."""
+  assert p.pipettes is not None
+  tip = await p.pipettes.get_mounted_tip(channel)
+  assert tip is not None
+  return tip.volume
+
+
+async def _dish(
+  deck: handles.Deck,
+  name: str,
+  height: float,
+  thickness: float,
+  location: Optional[Coordinate] = None,
+) -> handles.PetriDish:
+  """A 77 mm petri dish on spot 6: centred on its top, or at `location` in it."""
+  spot = (await parts_of(deck))[6]
+  if location is None:
+    size = await spot.get_size()
+    location = Coordinate((size.x - 77.0) / 2, (size.y - 77.0) / 2, size.z)
+  dish = PetriDish(name=name, diameter=77.0, height=height, material_z_thickness=thickness)
+  made = await deck.store.create(
+    definition_from_resource(dish), name=name, parent=spot, location=location
+  )
+  assert isinstance(made, handles.PetriDish)
+  return made
+
+
+def _wells(plate: handles.Plate, where: str) -> List[handles.Container]:
+  """The wells `where` names: "A1", "A1:B1", or several of those joined by commas."""
+  return [w for part in where.split(",") for w in plate.get_wells(part if ":" in part else [part])]
+
+
+async def _set_tip_volume(p: PrepSimulationDriver, channel: int, volume: float) -> None:
+  """Fill the tip on `channel` to `volume` uL."""
+  assert p.pipettes is not None
+  shaft = p.pipettes.shaft(channel)
+  assert isinstance(shaft, handles.TipMountingShaft)
+  tip = await shaft.get_tool()
+  assert isinstance(tip, handles.Tip)
+  await tip.set_volume(volume)
+
+
+async def _box(
+  parent: handles.Resource, name: str, size: Coordinate, location: Coordinate
+) -> handles.Resource:
+  """A plain block of `size` at `location` in `parent`."""
+  return await parent.store.create(
+    build.resource(name, size), name=name, parent=parent, location=location
+  )
 
 
 def _run(coro):
@@ -92,14 +167,14 @@ def _record(p: PrepSimulationDriver, only: Any = object, names: bool = False) ->
   return sent
 
 
-def _clld_setup(second_session: bool, found: Optional[float]):
+async def _clld_setup(second_session: bool, found: Optional[float]):
   """A simulated Prep whose capacitive seeks find liquid `found` mm above the modelled bottom.
 
   None finds nothing. Every command is recorded with the link it went on.
   """
-  deck = PrepDeck()
-  rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-  plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+  deck = await make_prep_deck()
+  rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+  plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
   p = PrepSimulationDriver(deck=deck)
   if second_session:
     p._second_io = _SimulatedIO(p)
@@ -158,7 +233,7 @@ def test_channels_attach_the_bounds_the_device_answers():
   """Each channel carries the Y bounds the simulated device reports for it."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=STARLetDeck())
+    p = PrepSimulationDriver(deck=await make_plain_deck())
     await p.setup()
     assert p.pipettes is not None and p.simulated_pipettes is not None
     reported = [c.y_range for c in p.simulated_pipettes.channels]
@@ -173,31 +248,27 @@ def test_tip_commands_refuse_a_rack_no_head_can_reach():
   """A rack under a lid is not picked up from, nor dropped into, and nothing is sent."""
 
   async def _t():
-    set_tip_tracking(True)
-    try:
-      deck = PrepDeck()
-      tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      spots = [tip_rack.get_item("A1"), tip_rack.get_item("B1")]
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    spots = [tip_rack.get_tip_spot("A1"), tip_rack.get_tip_spot("B1")]
 
-      tip_rack.lid = Lid("lid", size_x=127.0, size_y=86.0, size_z=10.0, nesting_z_height=2.0)
-      sent = _record(p)
-      with pytest.raises(ValueError, match="pick up tips from 'ntr': it is not available"):
-        await p.pipettes.pick_up_tips(spots, use_channels=[0, 1])
-      assert sent == []
-
-      tip_rack.lid.unassign()
+    lid = await _add_lid(tip_rack)
+    sent = _record(p)
+    with pytest.raises(ValueError, match="pick up tips from 'ntr': it is not available"):
       await p.pipettes.pick_up_tips(spots, use_channels=[0, 1])
-      tip_rack.lid = Lid("lid", size_x=127.0, size_y=86.0, size_z=10.0, nesting_z_height=2.0)
-      sent.clear()
-      with pytest.raises(ValueError, match="drop tips into 'ntr': it is not available"):
-        await p.pipettes.drop_tips(spots, use_channels=[0, 1])
-      assert sent == []
-      await p.stop()
-    finally:
-      set_tip_tracking(False)
+    assert sent == []
+
+    await lid.unassign()
+    await p.pipettes.pick_up_tips(spots, use_channels=[0, 1])
+    await tip_rack.assign_child_resource(lid)
+    sent.clear()
+    with pytest.raises(ValueError, match="drop tips into 'ntr': it is not available"):
+      await p.pipettes.drop_tips(spots, use_channels=[0, 1])
+    assert sent == []
+    await p.stop()
 
   _run(_t())
 
@@ -206,60 +277,53 @@ def test_channels_tip_and_volume_trackers_follow_pick_up_aspirate_dispense_and_d
   """Tips move between their spots and the channels' shafts; wells and tips track the volume moved."""
 
   async def _t():
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-    try:
-      deck = PrepDeck()
-      tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-      plate = deck[0] = cor_axy_96_wellplate_500uL_Ub("plate")
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      spots = [tip_rack.get_item("A1"), tip_rack.get_item("B1")]
-      use = [0, 1]
-      src = plate["A1:B1"]
-      dst = plate["A7:B7"]
-      vols = [20.0] * 2
-      for well in src:
-        well.tracker.set_volume(100.0)
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    spots = [tip_rack.get_tip_spot("A1"), tip_rack.get_tip_spot("B1")]
+    use = [0, 1]
+    src = plate.get_wells("A1:B1")
+    dst = plate.get_wells("A7:B7")
+    vols = [20.0] * 2
+    for well in src:
+      await well.set_volume(100.0)
 
-      await p.pipettes.pick_up_tips(spots, use_channels=use)
-      assert all(s.tip is None for s in spots)
-      for i in use:
-        tip = p.pipettes.get_mounted_tip(i)
-        assert tip is not None and tip.parent is p.pipettes.shaft(i)
-      await p.pipettes.aspirate(
-        src,
-        piston_volumes=vols,
-        use_channels=use,
-        liquid_heights=[1.0] * 2,
-      )
-      for well in src:
-        assert well.tracker.get_used_volume() == pytest.approx(80.0)
-      for ch in use:
-        tip = p.pipettes.get_mounted_tip(ch)
-        assert tip is not None
-        assert tip.tracker.get_used_volume() == pytest.approx(20.0)
+    await p.pipettes.pick_up_tips(spots, use_channels=use)
+    assert [await s.has_tip() for s in spots] == [False, False]
+    for i in use:
+      tip = await p.pipettes.get_mounted_tip(i)
+      shaft = p.pipettes.shaft(i)
+      assert tip is not None and isinstance(shaft, handles.TipMountingShaft)
+      held = await shaft.get_tool()
+      assert held is not None and held.id == tip.id
+    await p.pipettes.aspirate(
+      src,
+      piston_volumes=vols,
+      use_channels=use,
+      liquid_heights=[1.0] * 2,
+    )
+    for well in src:
+      assert await well.get_volume() == pytest.approx(80.0)
+    for ch in use:
+      assert await _tip_volume(p, ch) == pytest.approx(20.0)
 
-      await p.pipettes.dispense(
-        dst,
-        piston_volumes=vols,
-        use_channels=use,
-      )
-      for well in dst:
-        assert well.tracker.get_used_volume() == pytest.approx(20.0)
-      for ch in use:
-        tip = p.pipettes.get_mounted_tip(ch)
-        assert tip is not None
-        assert tip.tracker.get_used_volume() == pytest.approx(0.0)
+    await p.pipettes.dispense(
+      dst,
+      piston_volumes=vols,
+      use_channels=use,
+    )
+    for well in dst:
+      assert await well.get_volume() == pytest.approx(20.0)
+    for ch in use:
+      assert await _tip_volume(p, ch) == pytest.approx(0.0)
 
-      await p.pipettes.drop_tips(spots, use_channels=use)
-      assert all(s.tip is not None for s in spots)
-      assert all(p.pipettes.get_mounted_tip(i) is None for i in use)
-      await p.stop()
-    finally:
-      set_tip_tracking(False)
-      set_volume_tracking(False)
+    await p.pipettes.drop_tips(spots, use_channels=use)
+    assert [await s.has_tip() for s in spots] == [True, True]
+    assert [await p.pipettes.get_mounted_tip(i) for i in use] == [None, None]
+    await p.stop()
 
   _run(_t())
 
@@ -268,32 +332,28 @@ def _pick_up_refused_by(front_channel: bool):
   """Pick up with channels 0 and 1; one 0x0F08 entry answers, from the front's node or node 1."""
 
   async def _t():
-    set_tip_tracking(True)
-    try:
-      deck = PrepDeck()
-      tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      front = p.pipettes.channels[1].zdrive
-      assert front is not None
-      node = front.node if front_channel else 0x0001
-      answer = p._answer
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    front = p.pipettes.channels[1].zdrive
+    assert front is not None
+    node = front.node if front_channel else 0x0001
+    answer = p._answer
 
-      async def refuse_pick_up(request, path, method):
-        if isinstance(request, PrepCmd.PrepPickUpTips):
-          raise _DeviceRefuses(f"0x0001.0x{node:04X}.0x0100:0x01,0x0009,0x0F08")
-        return await answer(request, path, method)
+    async def refuse_pick_up(request, path, method):
+      if isinstance(request, PrepCmd.PrepPickUpTips):
+        raise _DeviceRefuses(f"0x0001.0x{node:04X}.0x0100:0x01,0x0009,0x0F08")
+      return await answer(request, path, method)
 
-      spots = [tip_rack.get_item("A1"), tip_rack.get_item("B1")]
-      with patch.object(p, "_answer", refuse_pick_up):
-        with pytest.raises(ChannelizedError) as raised:
-          await p.pipettes.pick_up_tips(spots, use_channels=[0, 1])
-      tips = [p.pipettes.get_mounted_tip(ch) for ch in (0, 1)]
-      await p.stop()
-      return raised.value, tips
-    finally:
-      set_tip_tracking(False)
+    spots = [tip_rack.get_tip_spot("A1"), tip_rack.get_tip_spot("B1")]
+    with patch.object(p, "_answer", refuse_pick_up):
+      with pytest.raises(ChannelizedError) as raised:
+        await p.pipettes.pick_up_tips(spots, use_channels=[0, 1])
+    tips = [await p.pipettes.get_mounted_tip(ch) for ch in (0, 1)]
+    await p.stop()
+    return raised.value, tips
 
   return asyncio.run(_t())
 
@@ -321,32 +381,26 @@ def test_aspirate_takes_a_missing_liquid_height_from_the_tracked_volume():
   """No height given: the tip goes to where the tracked volume stands; untracked, it refuses."""
 
   async def _t():
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-    try:
-      deck = PrepDeck()
-      tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-      plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      well = plate.get_item("A1")
-      well.tracker.set_volume(100.0)
-      await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
-      sent = _record(p)
-      await p.pipettes.aspirate([well], piston_volumes=[20.0], use_channels=[0])
-      entry = next(c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)).aspirate_parameters[0]
-      bottom = well.get_location_wrt(deck, "c", "c", "cavity_bottom").z
-      height = well.compute_height_from_volume(100.0)
-      assert entry.no_lld.z_fluid == pytest.approx(bottom + height, abs=0.01)
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    well = plate.get_well("A1")
+    await well.set_volume(100.0)
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
+    sent = _record(p)
+    await p.pipettes.aspirate([well], piston_volumes=[20.0], use_channels=[0])
+    entry = next(c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)).aspirate_parameters[0]
+    bottom = (await well.get_location_wrt(deck, "c", "c", "cavity_bottom")).z
+    height = await well.compute_height_from_volume(100.0)
+    assert entry.no_lld.z_fluid == pytest.approx(bottom + height, abs=0.01)
 
-      set_volume_tracking(False)
-      with pytest.raises(RuntimeError, match="nothing knows where its liquid is"):
-        await p.pipettes.aspirate([well], piston_volumes=[20.0], use_channels=[0])
-      await p.stop()
-    finally:
-      set_tip_tracking(False)
-      set_volume_tracking(False)
+    await well.set_volume_tracking(False)
+    with pytest.raises(RuntimeError, match="nothing knows where its liquid is"):
+      await p.pipettes.aspirate([well], piston_volumes=[20.0], use_channels=[0])
+    await p.stop()
 
   _run(_t())
 
@@ -355,12 +409,12 @@ def test_aspirate_immerses_the_tip_below_the_surface_given_or_found():
   """The aspirate height drops by the depth, under a height given and under a surface found."""
 
   async def _t():
-    p, rack, plate, sent = _clld_setup(second_session=False, found=4.0)
+    p, rack, plate, sent = await _clld_setup(second_session=False, found=4.0)
     await p.setup()
     assert p.pipettes is not None
-    well = plate.get_item("A1")
-    bottom = well.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z
-    await p.pipettes.pick_up_tips([rack.get_item("A1")], use_channels=[0])
+    well = plate.get_well("A1")
+    bottom = (await well.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z
+    await p.pipettes.pick_up_tips([rack.get_tip_spot("A1")], use_channels=[0])
     sent.clear()
     await p.pipettes.aspirate(
       [well], piston_volumes=[0.0], use_channels=[0], liquid_heights=[5.0], immersion_depths=[2.0]
@@ -387,14 +441,14 @@ def test_aspirate_takes_volumes_by_a_liquid_class_or_piston_volumes_as_given():
   """One of volumes and piston_volumes; a tip without a class is refused before anything moves."""
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
-    well = plate.get_item("A1")
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
+    well = plate.get_well("A1")
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
     for kwargs, match in (
       ({}, "not both and not neither"),
       ({"volumes": [5.0], "piston_volumes": [5.0]}, "not both and not neither"),
@@ -415,20 +469,22 @@ def test_aspirate_takes_volumes_by_a_liquid_class_or_piston_volumes_as_given():
   _run(_t())
 
 
-@pytest.mark.parametrize("rack", [hamilton_96_tiprack_300uL_NTR, hamilton_96_tiprack_1000uL])
+@pytest.mark.parametrize("rack", ["hamilton_96_tiprack_300uL_NTR", "hamilton_96_tiprack_1000uL"])
 def test_aspirate_and_dispense_take_the_tips_water_class(rack):
   """`volumes` without a class: the tip's water class, jet and blow_out False, as the STAR's."""
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[1] = rack(name="tips", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, rack, "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1"), tip_rack.get_item("B1")], [0, 1])
-    tip = p.pipettes.get_mounted_tip(0)
-    assert isinstance(tip, HamiltonTip)
+    await p.pipettes.pick_up_tips(
+      [tip_rack.get_tip_spot("A1"), tip_rack.get_tip_spot("B1")], [0, 1]
+    )
+    tip = await p.pipettes.get_mounted_tip(0)
+    assert tip is not None and tip.tip_size != ""
     water = get_star_liquid_class(
       tip.maximal_volume, False, True, tip.has_filter, Liquid.WATER, False, False
     )
@@ -436,7 +492,7 @@ def test_aspirate_and_dispense_take_the_tips_water_class(rack):
     volumes = [20.0, 100.0]
     sent = _record(p)
     await p.pipettes.aspirate(
-      plate["A1:B1"], volumes=volumes, use_channels=[0, 1], liquid_heights=[3.0, 3.0]
+      plate.get_wells("A1:B1"), volumes=volumes, use_channels=[0, 1], liquid_heights=[3.0, 3.0]
     )
     (command,) = [c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)]
     by_channel = {p.pipettes.channel_of(int(e.channel)): e for e in command.aspirate_parameters}
@@ -454,7 +510,7 @@ def test_aspirate_and_dispense_take_the_tips_water_class(rack):
       assert entry.aspirate.blowout_volume == pytest.approx(water.aspiration_blow_out_volume)
       assert entry.aspirate.prewet_volume == pytest.approx(water.aspiration_over_aspirate_volume)
     sent.clear()
-    await p.pipettes.dispense(plate["C1:D1"], volumes=volumes, use_channels=[0, 1])
+    await p.pipettes.dispense(plate.get_wells("C1:D1"), volumes=volumes, use_channels=[0, 1])
     (command,) = [c for c in sent if hasattr(c, "dispense_parameters")]
     by_channel = {p.pipettes.channel_of(int(e.channel)): e for e in command.dispense_parameters}
     for channel, volume in zip((0, 1), volumes):
@@ -501,16 +557,18 @@ def test_a_driver_given_its_own_table_looks_up_there_once_per_container():
     return fake if keys["tip_volume"] == 400.0 else None
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck, liquid_class_lookup=lookup)
     await p.setup()
     assert p.pipettes is not None
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1"), tip_rack.get_item("B1")], [0, 1])
+    await p.pipettes.pick_up_tips(
+      [tip_rack.get_tip_spot("A1"), tip_rack.get_tip_spot("B1")], [0, 1]
+    )
     sent = _record(p)
     await p.pipettes.aspirate(
-      plate["A1:B1"],
+      plate.get_wells("A1:B1"),
       volumes=[20.0, 40.0],
       use_channels=[0, 1],
       liquid_heights=[3.0, 3.0],
@@ -528,7 +586,7 @@ def test_a_driver_given_its_own_table_looks_up_there_once_per_container():
     assert entry.aspirate.prewet_volume == pytest.approx(2.5)
     assert entry.aspirate.blowout_volume == pytest.approx(1.5)
     calls.clear()
-    await p.pipettes.dispense(plate["C1:D1"], volumes=[20.0, 40.0], use_channels=[0, 1])
+    await p.pipettes.dispense(plate.get_wells("C1:D1"), volumes=[20.0, 40.0], use_channels=[0, 1])
     assert len(calls) == 2
     (command,) = [c for c in sent if hasattr(c, "dispense_parameters")]
     entry = next(
@@ -546,29 +604,25 @@ def test_the_trackers_book_the_liquid_not_the_corrected_piston_volume():
   """As the STAR: the class corrects what the piston moves; the wells and tips book the liquid."""
 
   async def _t():
-    set_volume_tracking(True)
-    try:
-      deck = PrepDeck()
-      tip_rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-      plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-      plate.get_item("A1").tracker.set_volume(200.0)
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], [0])
-      sent = _record(p)
-      await p.pipettes.aspirate([plate.get_item("A1")], volumes=[20.0], use_channels=[0])
-      (command,) = [c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)]
-      assert command.aspirate_parameters[0].common.liquid_volume > 20.5
-      tip = p.pipettes.get_mounted_tip(0)
-      assert tip is not None and tip.tracker.get_used_volume() == pytest.approx(20.0)
-      assert plate.get_item("A1").tracker.get_used_volume() == pytest.approx(180.0)
-      await p.pipettes.dispense([plate.get_item("B1")], volumes=[20.0], use_channels=[0])
-      assert tip.tracker.get_used_volume() == pytest.approx(0.0)
-      assert plate.get_item("B1").tracker.get_used_volume() == pytest.approx(20.0)
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    await plate.get_well("A1").set_volume(200.0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], [0])
+    sent = _record(p)
+    await p.pipettes.aspirate([plate.get_well("A1")], volumes=[20.0], use_channels=[0])
+    (command,) = [c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)]
+    assert command.aspirate_parameters[0].common.liquid_volume > 20.5
+    tip = await p.pipettes.get_mounted_tip(0)
+    assert tip is not None and tip.volume == pytest.approx(20.0)
+    assert await plate.get_well("A1").get_volume() == pytest.approx(180.0)
+    await p.pipettes.dispense([plate.get_well("B1")], volumes=[20.0], use_channels=[0])
+    assert await _tip_volume(p, 0) == pytest.approx(0.0)
+    assert await plate.get_well("B1").get_volume() == pytest.approx(20.0)
+    await p.stop()
 
   _run(_t())
 
@@ -581,25 +635,30 @@ def test_a_50_uL_tip_has_a_class_only_with_blow_out():
   )
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1"), tip_rack.get_item("B1")], [0, 1])
+    await p.pipettes.pick_up_tips(
+      [tip_rack.get_tip_spot("A1"), tip_rack.get_tip_spot("B1")], [0, 1]
+    )
     sent = _record(p)
     refusal = "no liquid class is known for channel 0's tip.*blow_out=True, which has one"
     with pytest.raises(ValueError, match=refusal):
       await p.pipettes.aspirate(
-        plate["A1:B1"], volumes=[10.0, 10.0], use_channels=[0, 1], liquid_heights=[3.0, 3.0]
+        plate.get_wells("A1:B1"),
+        volumes=[10.0, 10.0],
+        use_channels=[0, 1],
+        liquid_heights=[3.0, 3.0],
       )
     with pytest.raises(ValueError, match=refusal):
-      await p.pipettes.dispense(plate["A1:B1"], volumes=[10.0, 10.0], use_channels=[0, 1])
+      await p.pipettes.dispense(plate.get_wells("A1:B1"), volumes=[10.0, 10.0], use_channels=[0, 1])
     assert not [c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)]
     assert not [c for c in sent if hasattr(c, "dispense_parameters")]
     await p.pipettes.aspirate(
-      plate["A1:B1"],
+      plate.get_wells("A1:B1"),
       volumes=[50.0, 10.0],
       use_channels=[0, 1],
       liquid_heights=[3.0, 3.0],
@@ -610,7 +669,7 @@ def test_a_50_uL_tip_has_a_class_only_with_blow_out():
     assert by_channel[0].common.liquid_volume == pytest.approx(54.2)
     assert by_channel[0].aspirate.blowout_volume == pytest.approx(water.aspiration_blow_out_volume)
     await p.pipettes.dispense(
-      plate["C1:D1"], volumes=[50.0, 10.0], use_channels=[0, 1], blow_out=[True, True]
+      plate.get_wells("C1:D1"), volumes=[50.0, 10.0], use_channels=[0, 1], blow_out=[True, True]
     )
     (command,) = [c for c in sent if hasattr(c, "dispense_parameters")]
     by_channel = {p.pipettes.channel_of(int(e.channel)): e for e in command.dispense_parameters}
@@ -631,14 +690,14 @@ def test_aspirate_sends_an_explicit_zero_blow_out_and_refuses_a_zero_flow_rate()
   )
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
-    well = plate.get_item("A1")
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
+    well = plate.get_well("A1")
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
     assert water.aspiration_blow_out_volume > 0
     classes: Dict[str, Any] = {
       "hamilton_liquid_classes": [water],
@@ -662,27 +721,21 @@ def test_a_tip_holding_liquid_is_dropped_with_a_warning():
   """What a tip still holds is the caller's to decide: it is dropped, and the log says so."""
 
   async def _t():
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-    try:
-      deck = PrepDeck()
-      tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-      plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      well, spot = plate.get_item("A1"), tip_rack.get_item("A1")
-      well.tracker.set_volume(100.0)
-      await p.pipettes.pick_up_tips([spot], use_channels=[0])
-      await p.pipettes.aspirate([well], piston_volumes=[5.0], use_channels=[0])
-      with patch.object(pipettes_logger, "warning") as warning:
-        await p.pipettes.return_tips()
-      assert p.pipettes.get_mounted_tip(0) is None and spot.has_tip()
-      assert "with 5.0 uL in it" in warning.call_args.args[0] % warning.call_args.args[1:]
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
-      set_tip_tracking(False)
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    well, spot = plate.get_well("A1"), tip_rack.get_tip_spot("A1")
+    await well.set_volume(100.0)
+    await p.pipettes.pick_up_tips([spot], use_channels=[0])
+    await p.pipettes.aspirate([well], piston_volumes=[5.0], use_channels=[0])
+    with patch.object(pipettes_logger, "warning") as warning:
+      await p.pipettes.return_tips()
+    assert await p.pipettes.get_mounted_tip(0) is None and await spot.has_tip()
+    assert "with 5.0 uL in it" in warning.call_args.args[0] % warning.call_args.args[1:]
+    await p.stop()
 
   _run(_t())
 
@@ -691,16 +744,16 @@ def test_aspirate_refuses_a_clot_check_until_it_is_verified():
   """0.0 sends the capacitive block as before; any other height is refused before sending."""
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
-    well = plate.get_item("A1")
-    bottom = well.get_location_wrt(deck, "c", "c", "cavity_bottom")
-    top = well.get_location_wrt(deck, "c", "c", "t").z
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
+    well = plate.get_well("A1")
+    bottom = await well.get_location_wrt(deck, "c", "c", "cavity_bottom")
+    top = (await well.get_location_wrt(deck, "c", "c", "t")).z
     sent = _record(p)
     await p.pipettes._aspirate_in_one_move(
       [0],
@@ -744,14 +797,14 @@ def test_aspirate_refuses_tadm_until_it_is_verified():
   """Limit curve 0 sends the monitoring variant as before; a curve or a storage level is refused."""
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
-    well = plate.get_item("A1")
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
+    well = plate.get_well("A1")
     kwargs: Dict[str, Any] = {"piston_volumes": [5.0], "use_channels": [0], "liquid_heights": [5.0]}
     sent = _record(p)
     await p.pipettes.aspirate([well], limit_curve_indices=[0], **kwargs)
@@ -771,7 +824,7 @@ def test_tadm_reads_answer_each_channel():
   """Each channel reads its own Tadm object; the pipettor's TADM data is read by channel enum."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     pressures = [await ch.request_tadm_pressure() for ch in p.pipettes.channels]
@@ -792,13 +845,13 @@ def test_aspirate_searches_with_the_clld_sensitivity_it_is_given():
   """clld_sensitivity goes to the driver's capacitive search; the draw after it has no LLD."""
 
   async def _t():
-    p, rack, plate, sent = _clld_setup(second_session=False, found=4.0)
+    p, rack, plate, sent = await _clld_setup(second_session=False, found=4.0)
     await p.setup()
     assert p.pipettes is not None
-    await p.pipettes.pick_up_tips([rack.get_item("A1")], use_channels=[0])
+    await p.pipettes.pick_up_tips([rack.get_tip_spot("A1")], use_channels=[0])
     sent.clear()
     await p.pipettes.aspirate(
-      [plate.get_item("A1")],
+      [plate.get_well("A1")],
       piston_volumes=[0.0],
       use_channels=[0],
       lld_mode=Pipettes.LLDMode.CAPACITIVE,
@@ -817,12 +870,9 @@ def test_channels_sharing_a_container_spread_across_it():
   """Two channels into one dish go either side of its centre, at least their spacing apart."""
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-    dish = PetriDish(name="dish", diameter=77.0, height=30.0, material_z_thickness=2.0)
-    deck[6].assign_child_by_anchor(
-      dish, parent_anchor=("c", "c", "t"), child_anchor=("c", "c", "b")
-    )
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    dish = await _dish(deck, "dish", 30.0, 2.0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
@@ -832,7 +882,7 @@ def test_channels_sharing_a_container_spread_across_it():
       [dish] * 2, piston_volumes=[5.0] * 2, use_channels=[0, 1], liquid_heights=[5.0] * 2
     )
     rear, front = [e.aspirate.y_position for e in sent[-1].aspirate_parameters]
-    centre = dish.get_location_wrt(deck, "c", "c", "c").y
+    centre = (await dish.get_location_wrt(deck, "c", "c", "c")).y
     assert rear - centre == pytest.approx(centre - front, abs=0.01)
     assert rear - front >= 9.0
     await p.stop()
@@ -844,16 +894,16 @@ def test_aspirate_sends_a_mix_per_container_and_the_default_block_where_none():
   """A `Mix` becomes that channel's mix block; a container without one is sent the default."""
 
   async def _t():
-    deck = PrepDeck()
-    tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(tip_rack["A1:B1"], use_channels=[0, 1])
     sent = _record(p)
     await p.pipettes.aspirate(
-      plate["A1:B1"],
+      plate.get_wells("A1:B1"),
       piston_volumes=[10.0, 10.0],
       use_channels=[0, 1],
       liquid_heights=[2.0, 2.0],
@@ -868,7 +918,7 @@ def test_aspirate_sends_a_mix_per_container_and_the_default_block_where_none():
 
     with pytest.raises(ValueError, match="pre_mixes length"):
       await p.pipettes.aspirate(
-        plate["A1:B1"],
+        plate.get_wells("A1:B1"),
         piston_volumes=[10.0, 10.0],
         use_channels=[0, 1],
         liquid_heights=[2.0, 2.0],
@@ -876,7 +926,7 @@ def test_aspirate_sends_a_mix_per_container_and_the_default_block_where_none():
       )
     with pytest.raises(ValueError, match="mix_positions_from_liquid_surface length"):
       await p.pipettes.aspirate(
-        plate["A1:B1"],
+        plate.get_wells("A1:B1"),
         piston_volumes=[10.0, 10.0],
         use_channels=[0, 1],
         liquid_heights=[2.0, 2.0],
@@ -889,7 +939,7 @@ def test_aspirate_sends_a_mix_per_container_and_the_default_block_where_none():
 
 def test_default_minimum_traverse_height_is_plrs_then_the_devices_then_the_one_setup_is_given():
   async def _t():
-    p = PrepSimulationDriver(deck=STARLetDeck(), default_minimum_traverse_height=160.0)
+    p = PrepSimulationDriver(deck=await make_plain_deck(), default_minimum_traverse_height=160.0)
     assert p.pipettes is not None
     assert p.pipettes.default_minimum_traverse_height == 167.5
     await p.setup()
@@ -906,7 +956,7 @@ def test_move_to_location_keeps_each_location_with_its_channel():
   """Locations named out of channel order still go to the channels they were named for."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_location(
@@ -937,7 +987,7 @@ def test_move_to_location_sets_an_x_speed_scale_for_the_move_and_puts_it_back(
   default_x_speed; the descent takes z_speed in mm/s."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     if default_x_speed is not None:
@@ -964,7 +1014,7 @@ def test_move_to_location_sets_an_x_speed_scale_for_the_move_and_puts_it_back(
 )
 def test_move_to_location_refuses_an_x_speed_it_cannot_send(kwargs, refusal):
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     with pytest.raises(ValueError, match=refusal):
@@ -979,7 +1029,7 @@ def test_y_and_z_moves_send_every_channel_at_the_default_speed():
   default speed."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     before = await p.pipettes.request_locations()
@@ -1020,7 +1070,7 @@ def test_y_and_z_moves_send_the_speed_they_are_given():
   """A speed named on any of the four Y and Z moves is the velocity sent; one not above 0 is refused unsent."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     sent = _record(p)
@@ -1065,7 +1115,7 @@ def test_z_moves_hold_the_acceleration_for_the_move_and_put_it_back():
   """
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     drives = (await p.request_channel_drives()).zdrive_addrs
@@ -1119,7 +1169,7 @@ def test_probe_y_using_clld_searches_with_the_channels_own_y_axis():
   """The channel's Y axis is sent the end of the search in its drive frame; nothing detected is None."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     assert [(c.yaxis, c.ydrive) for c in p.pipettes.channels] == [
@@ -1149,7 +1199,7 @@ def test_probe_y_using_clld_refuses_searches_it_cannot_make():
   """Out of range, into a neighbour, backwards, or without speed: refused before anything is sent."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 300.0, 1: 200.0})
@@ -1177,7 +1227,7 @@ def test_probe_x_using_clld_steps_the_arm_with_detection_on_and_puts_everything_
   """The arm steps 0.1 mm at a time at the probe speed with detection on; speed restored after."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     channel = p.pipettes.channels[1]
@@ -1217,7 +1267,7 @@ def test_probe_x_using_clld_refuses_searches_it_cannot_make():
   """Unknown direction, no speed, backwards, or no such channel: refused before anything moves."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     here = (await p.pipettes.request_locations())[1].x
@@ -1240,12 +1290,12 @@ def test_probe_x_using_clld_refuses_searches_it_cannot_make():
   _run(_t())
 
 
-def _deck_with_block(x: float, y: float, size_x: float = 10.0, size_y: float = 10.0) -> PrepDeck:
+async def _deck_with_block(
+  x: float, y: float, size_x: float = 10.0, size_y: float = 10.0
+) -> handles.Deck:
   """A Prep deck with a 60 mm tall block at (x, y, 0)."""
-  deck = PrepDeck()
-  deck.assign_child_resource(
-    Resource("block", size_x=size_x, size_y=size_y, size_z=60.0), location=Coordinate(x, y, 0.0)
-  )
+  deck = await make_prep_deck()
+  await _box(deck, "block", Coordinate(size_x, size_y, 60.0), Coordinate(x, y, 0.0))
   return deck
 
 
@@ -1253,7 +1303,7 @@ def test_simulated_y_probe_stops_at_the_first_resource_in_the_way():
   """The Y probe stops where the lowered channel meets a resource, and returns its face."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=_deck_with_block(285.0, 290.0))
+    p = PrepSimulationDriver(deck=await _deck_with_block(285.0, 290.0))
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 340.0, 1: 320.0})
@@ -1287,7 +1337,7 @@ def test_simulated_y_probe_backward_uses_the_stop_disc_diameter_it_is_given():
   """Probing backward, the surface is half the stop disc beyond where the channel met it."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=_deck_with_block(285.0, 350.0))
+    p = PrepSimulationDriver(deck=await _deck_with_block(285.0, 350.0))
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 320.0, 1: 300.0})
@@ -1311,7 +1361,7 @@ def test_simulated_x_probe_stops_the_arm_at_the_first_resource_in_the_way():
   """The X probe looks the search up in the model and moves the arm once, to the resource's face."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=_deck_with_block(270.0, 295.0, size_x=14.0))
+    p = PrepSimulationDriver(deck=await _deck_with_block(270.0, 295.0, size_x=14.0))
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     await p.pipettes.move_to_y_positions({0: 340.0, 1: 300.0})
@@ -1338,7 +1388,7 @@ def test_simulated_z_probe_detects_the_top_of_a_resource_below(probe):
   """A Z probe over a resource detects its top; the channel is left 2 mm above it."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=_deck_with_block(285.0, 295.0))
+    p = PrepSimulationDriver(deck=await _deck_with_block(285.0, 295.0))
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 340.0, 1: 300.0})
@@ -1356,7 +1406,7 @@ def test_probe_z_using_clld_leaves_the_channel_where_it_detected():
   """With no post-detection distance the seek is the only move, and it ends at the surface."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=_deck_with_block(285.0, 295.0))
+    p = PrepSimulationDriver(deck=await _deck_with_block(285.0, 295.0))
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 340.0, 1: 300.0})
@@ -1380,7 +1430,7 @@ def test_probe_z_using_ztouch_seeks_with_the_channels_own_z_axis():
   """The channel's Z axis is sent start, floor and final height in its drive frame; nothing met is None."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     assert [(c.zaxis, c.zdrive) for c in p.pipettes.channels] == [
@@ -1413,14 +1463,14 @@ def test_probe_z_using_ztouch_seeks_the_tip_bottom_and_can_end_at_z_safety():
   """Heights are of the tip bottom, by the held tip's length or `tip_len`; all channels to Z safety after."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     await p.x_arm.move_to_x_position(100.0)
     await p.pipettes.move_to_y_positions({0: 300.0, 1: 100.0})
     shaft = p.pipettes.shaft(1)
     assert shaft is not None
-    shaft.mount_tip(hamilton_tip_300uL(name="tip"))
+    await shaft.store.create("hamilton_tip_300uL", name="tip", parent=shaft)
     assert await p.pipettes.request_held_tip_length() == pytest.approx(51.9)
     here = (await p.pipettes.request_locations())[1].z
     drive = await p.pipettes.channels[1]._request_z_drive_position()
@@ -1450,7 +1500,7 @@ def test_probes_take_move_channels_to_safe_pos_after_deprecated():
   """The old flag name still raises the channels to Z safety, with a DeprecationWarning."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     await p.x_arm.move_to_x_position(100.0)
@@ -1475,7 +1525,7 @@ def test_probe_z_using_ztouch_holds_the_push_force_for_the_seek_and_puts_it_back
   """push_force_pwm is set before the seek and restored after; below 40 the drive cannot lift, so it is refused."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     await p.x_arm.move_to_x_position(100.0)
@@ -1504,7 +1554,7 @@ def test_probe_z_using_ztouch_reads_an_untouched_search_as_nothing():
   """The firmware answers the end of an untouched search as a detection; that comes back as None."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     await p.x_arm.move_to_x_position(100.0)
@@ -1536,7 +1586,7 @@ def test_probe_z_using_ztouch_refuses_seeks_it_cannot_make():
   """No speed, the floor above the start, or outside the Z range: refused before anything is sent."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     sent = _record(p, names=True)
@@ -1560,7 +1610,7 @@ def test_probes_check_the_tip_before_anything_else():
   """Without allow_without_tip, a probe needs a tip and refuses before moving otherwise."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     sent = _record(p, names=True)
@@ -1590,7 +1640,7 @@ def test_probe_z_using_clld_seeks_where_the_channel_stands():
   """The seek is sent where the channel stands, every argument written out; a miss is raised back."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     before = (await p.pipettes.request_locations())[1]
@@ -1619,7 +1669,7 @@ def test_probe_z_using_clld_refuses_before_sending():
   """A floor above the start, a height out of reach or an unknown channel is refused."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     p.pipettes.configuration.channels[0].z_range = (18.0, 167.5)
@@ -1644,7 +1694,7 @@ def test_x_arm_move_sets_speed_and_acceleration_for_the_axis_move_and_puts_them_
   """The X axis move runs at the given (or default) speed and acceleration, restored afterwards."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.x_arm is not None and p.pipettes is not None
     await p.pipettes.move_to_safe_z()
@@ -1672,7 +1722,7 @@ def test_x_arm_move_raises_lowered_channels_up_to_the_height_it_is_given():
   """The arm travels at the traverse height; a height of 0 raises nothing."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.x_arm is not None and p.pipettes is not None
     traverse = p.pipettes.default_minimum_traverse_height
@@ -1698,7 +1748,7 @@ def test_x_arm_move_raises_a_channel_only_as_high_as_what_it_carries_allows():
   """A channel carrying something travels at its own ceiling, not at the traverse height."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.x_arm is not None and p.pipettes is not None
     traverse = p.pipettes.default_minimum_traverse_height
@@ -1717,7 +1767,7 @@ def test_x_arm_probe_home_flag_seeks_at_the_given_speed_and_returns_the_deck_fra
   """The seek runs at the probe speed with its arguments written out; speed restored after."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.x_arm is not None and p.pipettes is not None
     await p.pipettes.move_to_safe_z()
@@ -1747,7 +1797,7 @@ def test_probe_z_using_clld_defaults_lowest_z_to_the_bottom_of_the_channel_z_ran
   """With no floor given, the seek goes down to the bottom of the channel's Z range."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     p.pipettes.configuration.channels[1].z_range = (18.03, 167.5)
@@ -1768,7 +1818,7 @@ def test_a_floor_search_under_the_channel_reach_ends_at_its_lowest_z():
   """10 mm under the modelled bottom, but no lower than the channel's Z range."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     p.pipettes.configuration.channels[0].z_range = (18.0, 167.5)
@@ -1783,7 +1833,7 @@ def test_channel_order_comes_from_the_device():
   """Channels are ordered back to front by how far back they reach; the legacy order is the fallback."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     rear, front = int(PrepCmd.ChannelIndex.RearChannel), int(PrepCmd.ChannelIndex.FrontChannel)
@@ -1812,7 +1862,7 @@ def test_minimum_y_spacing_comes_from_the_channel_windows():
   """The offset between neighbouring channels' Y windows is the spacing kept between them."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     assert p.pipettes._min_spacing_between(0, 1) == 9.0
@@ -1829,7 +1879,7 @@ def test_spacing_refusals_say_what_is_wrong_and_what_would_fit():
   name a channel that was not asked to move - pointing to make_space where the move offers it."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 200.0, 1: 91.0})
@@ -1872,7 +1922,7 @@ def test_move_to_y_positions_make_space_moves_the_channel_not_named():
   """With make_space, a channel in the way is pushed just far enough, in the same single move."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     before = await p.pipettes.request_locations()
@@ -1897,7 +1947,7 @@ def test_a_channel_without_reported_bounds_keeps_the_default_y_window():
   async def _t():
     # A device without an 8-channel head, whose default windows setup would apply.
     p = PrepSimulationDriver(
-      deck=PrepDeck(),
+      deck=await make_prep_deck(),
       declared_configuration_json=RECORDING_PREP,
       firmware_tree_json=FIRMWARE_TREE_V1_2_2,
     )
@@ -1925,7 +1975,9 @@ def test_default_y_windows_are_not_applied_on_a_device_with_an_8_channel_head():
   from pylabrobot.hamilton.prep.driver.simulator import RECORDING_PREP_HEAD8
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck(), declared_configuration_json=RECORDING_PREP_HEAD8)
+    p = PrepSimulationDriver(
+      deck=await make_prep_deck(), declared_configuration_json=RECORDING_PREP_HEAD8
+    )
     assert p.simulated_pipettes is not None
     p.simulated_pipettes.channels[
       0
@@ -1943,7 +1995,7 @@ def test_move_to_xy_positions_raises_every_low_channel_then_travels_at_that_heig
   """A channel left out of the move still rides the gantry, so it is raised with the others."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_location(
@@ -1967,7 +2019,7 @@ def test_move_to_xy_positions_travels_without_raising_when_the_channels_are_high
   """Channels already at the height are not sent a Z move they do not need."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_location(
@@ -1986,7 +2038,7 @@ def test_move_to_xy_positions_refuses_what_a_channel_cannot_reach():
   """The reach is checked before anything moves, the traverse height included."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     c = p.pipettes.configuration.channels[0]
@@ -2006,7 +2058,7 @@ def test_move_to_location_rises_travels_then_descends():
   """Three commands, in that order: the descent cannot be blended into the lateral move."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_location(
@@ -2032,7 +2084,7 @@ def test_move_to_location_refuses_a_z_the_channel_cannot_reach_before_moving():
   """The target Z is checked with the rest, so nothing is raised for a move that cannot finish."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     p.pipettes.configuration.channels[0].z_range = (0.0, 170.0)
@@ -2053,15 +2105,15 @@ def test_one_channel_picks_up_a_spot_in_front_of_where_the_other_stands():
   """The channels share a gantry, so the one not picking up gives way rather than the call failing."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
 
     # Channel 1 stands where channel 0 has to go: in front of the spot it is sent to.
-    spot = rack.get_item("A1")
-    y = spot.get_location_wrt(deck, "c", "c", "t").y
+    spot = rack.get_tip_spot("A1")
+    y = (await spot.get_location_wrt(deck, "c", "c", "t")).y
     await p.pipettes.move_to_y_positions({0: y + 30.0, 1: y + 20.0})
 
     await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
@@ -2085,8 +2137,8 @@ def test_a_channel_that_carries_a_tip_is_refused_before_anything_moves(known_fro
   left on from another session."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
@@ -2112,13 +2164,13 @@ def test_a_channel_the_sensors_say_lost_its_tip_is_not_asked_to_drop_one():
   """A tip knocked off on the way is in the sleeve sensors, not in the model."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
-    assert p.pipettes.get_mounted_tip(0) is not None  # the model holds one
+    assert await p.pipettes.get_mounted_tip(0) is not None  # the model holds one
 
     async def senses_none(*args, **kwargs):
       return [False, False]
@@ -2142,8 +2194,8 @@ def test_spots_are_picked_up_in_as_many_moves_as_their_x_positions_take(spots, p
   column stay one move."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
@@ -2158,9 +2210,9 @@ def test_spots_are_picked_up_in_as_many_moves_as_their_x_positions_take(spots, p
     p.send_command = record  # type: ignore[method-assign]
     await p.pipettes.pick_up_tips(rack[spots], use_channels=[0, 1])
     assert sent == picked_xs
-    assert [tip is not None for tip in p.pipettes.get_mounted_tips()] == [True, True]
+    assert [tip is not None for tip in await p.pipettes.get_mounted_tips()] == [True, True]
     await p.pipettes.drop_tips(rack[spots], use_channels=[0, 1])
-    assert p.pipettes.get_mounted_tips() == [None, None]
+    assert await p.pipettes.get_mounted_tips() == [None, None]
     await p.stop()
 
   _run(_t())
@@ -2170,7 +2222,7 @@ def test_z_positions_are_read_for_every_channel_in_one_command():
   """The same GetPositions that answers X and Y, in the deck's frame, recorded on each channel."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     sent = _record(p, names=True)
@@ -2186,7 +2238,7 @@ def test_initializing_waits_longer_than_the_drivers_default():
   """A command that takes longer than any this device performs is one it will not answer."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     waited: list = []
     send = p.send_command
 
@@ -2208,20 +2260,20 @@ def test_the_first_group_is_reached_at_the_starting_height_and_the_rest_at_the_o
   """Two groups mean a raise between them, which is its own height, not the starting one."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
 
     given: list = []
-    one_move = p.pipettes._pick_up_tips_in_one_move
+    one_move = p.pipettes._pick_up_tips_at
 
     async def record(*args, **kwargs):
       given.append(args[3] if len(args) > 3 else kwargs.get("minimum_traverse_height_start"))
       return await one_move(*args, **kwargs)
 
-    p.pipettes._pick_up_tips_in_one_move = record  # type: ignore[method-assign]
+    p.pipettes._pick_up_tips_at = record  # type: ignore[method-assign]
     await p.pipettes.pick_up_tips(
       rack["A1", "A2"],
       use_channels=[0, 1],
@@ -2238,7 +2290,7 @@ def test_the_starting_height_is_a_floor_and_leaves_a_higher_channel_where_it_is(
   """Below it is brought up; above it travels where it stands. Sending it would drive a high one down."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_tool_bottom_to_z_positions({1: 40.0})
@@ -2282,7 +2334,7 @@ def test_an_x_probe_given_a_start_travels_there_first_and_keeps_the_height_it_wa
   own is given - then back down, so the search is X alone."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_location(
@@ -2334,7 +2386,7 @@ def test_a_y_probe_given_a_start_moves_there_first_and_makes_room_for_it(travers
   traverse height at or below where the channel stands makes the step Y alone."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 340.0, 1: 320.0})
@@ -2377,7 +2429,7 @@ def test_probing_four_edges_comes_at_each_from_outside_and_lifts_between_them():
   """Back and front in Y, right and left in X, each approached from its own side."""
 
   async def _t():
-    deck = PrepDeck()
+    deck = await make_prep_deck()
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
@@ -2422,7 +2474,7 @@ def test_probing_four_edges_corrects_for_what_is_doing_the_touching():
   """The diameters reach both probes, which halve whichever of them is on the channel."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     pipettes = p.pipettes
@@ -2456,7 +2508,7 @@ def test_probing_four_edges_refuses_a_bare_channel_before_it_moves():
   the probe runs."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     before = await p.pipettes.request_locations()
@@ -2468,7 +2520,7 @@ def test_probing_four_edges_refuses_a_bare_channel_before_it_moves():
 
     shaft = p.pipettes.shaft(0)
     assert shaft is not None
-    shaft.mount_tip(hamilton_tip_300uL(name="tip"))
+    await shaft.store.create("hamilton_tip_300uL", name="tip", parent=shaft)
     found = await p.pipettes.probe_edges_using_clld(
       0, Coordinate(150.0, 200.0, 60.0), n_replicates=1
     )
@@ -2483,8 +2535,8 @@ def test_tips_are_taken_where_their_collars_rest_not_where_their_bottoms_are():
   3.5, plus the rack's 55.0 to its top face, where the collars rest - probed at 58.22 to 58.42."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
@@ -2493,8 +2545,8 @@ def test_tips_are_taken_where_their_collars_rest_not_where_their_bottoms_are():
     await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
     (pick,) = [c for c in sent if isinstance(c, PrepCmd.PrepPickUpTips)]
     (at,) = pick.tip_positions
-    spot = rack.get_item("A1")
-    assert at.z_position == spot.get_location_wrt(deck).z == 58.5
+    spot = rack.get_tip_spot("A1")
+    assert at.z_position == (await spot.get_location_wrt(deck)).z == 58.5
     assert at.z_seek == 71.5  # a collar and 5 mm above, clear of the tips' tops
 
     await p.pipettes.drop_tips(rack["A1"], use_channels=[0])
@@ -2515,13 +2567,13 @@ def test_the_height_tips_are_taken_at_does_not_depend_on_how_long_they_are():
 
   async def _t():
     lengths, heights = set(), set()
-    for rack_fn in (
-      hamilton_96_tiprack_10uL_NTR,
-      hamilton_96_tiprack_50uL_NTR,
-      hamilton_96_tiprack_300uL_NTR,
+    for model in (
+      "hamilton_96_tiprack_10uL_NTR",
+      "hamilton_96_tiprack_50uL_NTR",
+      "hamilton_96_tiprack_300uL_NTR",
     ):
-      deck = PrepDeck()
-      rack = deck[1] = rack_fn(name="tips", with_tips=True)
+      deck = await make_prep_deck()
+      rack = await _rack(deck, model, "tips", 1)
       p = PrepSimulationDriver(deck=deck)
       await p.setup()
       assert p.pipettes is not None
@@ -2535,7 +2587,9 @@ def test_the_height_tips_are_taken_at_does_not_depend_on_how_long_they_are():
       p.send_command = record  # type: ignore[method-assign]
       await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
       (pick,) = [c for c in sent if isinstance(c, PrepCmd.PrepPickUpTips)]
-      lengths.add(rack.get_item("A1").make_tip().get_size_z())
+      tip = await p.pipettes.get_mounted_tip(0)
+      assert tip is not None
+      lengths.add(tip.size.z)
       heights.add(pick.tip_positions[0].z_position)
       await p.stop()
 
@@ -2549,11 +2603,11 @@ def test_the_teaching_needle_is_taken_where_the_device_takes_it():
   """Ground truth: 75.75 to pick up and to drop, the heights every run of the needle has used."""
 
   async def _t():
-    deck = PrepDeck()
+    deck = await make_prep_deck()
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
-    needle = deck.teaching_needle_spot
+    needle = (await parts_of(deck)).teaching_needle_spot
     assert needle is not None
     sent = _record(p)
 
@@ -2566,8 +2620,10 @@ def test_the_teaching_needle_is_taken_where_the_device_takes_it():
     assert (drop.tip_positions[0].z_position, drop.tip_positions[0].z_seek) == (75.75, 85.75)
 
     # And the needle stands where it stood: its body from the block's hole to 8 mm proud of its top.
-    body = needle.make_tip()
-    assert needle.get_location_wrt(deck).z - (body.get_size_z() - body.collar_height) == 23.85
+    held = await needle.get_tip()
+    assert held is not None
+    body = ToolFacts.from_attributes(await held.attributes())
+    assert (await needle.get_location_wrt(deck)).z - (body.size.z - body.collar_height) == 23.85
     await p.stop()
 
   _run(_t())
@@ -2577,7 +2633,7 @@ def test_a_neighbour_in_the_way_of_a_named_search_end_stands_aside():
   """It alone goes to Z safety and moves just clear; the probing channel stays where it was put."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 290.0, 1: 275.56})
@@ -2602,7 +2658,7 @@ def test_a_neighbour_already_clear_of_the_search_is_left_alone():
   """Room it already has is room enough: nothing is raised and nothing is moved."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 290.0, 1: 200.0})
@@ -2623,7 +2679,7 @@ def test_a_neighbour_that_cannot_stand_clear_refuses_the_search():
   """It would have to leave its own Y window to make the room, so the search is refused instead."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_to_y_positions({0: 290.0, 1: 281.0})
@@ -2651,7 +2707,7 @@ def test_a_channel_carrying_a_tip_travels_as_high_as_it_goes_not_to_the_traverse
   """
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     pipettes = p.pipettes
@@ -2679,7 +2735,8 @@ def test_a_channel_carrying_a_tip_travels_as_high_as_it_goes_not_to_the_traverse
 
     shaft = pipettes.shaft(0)
     assert shaft is not None
-    shaft.mount_tip(hamilton_tip_300uL(name="tip"))  # 51.9 mm below the stop disc
+    # 51.9 mm below the stop disc
+    await shaft.store.create("hamilton_tip_300uL", name="tip", parent=shaft)
     # A pick-up reads the windows again, and this test mounts behind the driver's back.
     await pipettes._record_channel_bounds()
     await pipettes.move_tool_bottom_to_z_positions({0: 90.0})
@@ -2703,7 +2760,7 @@ def test_the_stop_disc_move_takes_off_what_the_channel_carries():
   """The firmware positions the tool bottom, so a stop-disc target is sent an overhang lower."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     pipettes = p.pipettes
@@ -2723,7 +2780,8 @@ def test_the_stop_disc_move_takes_off_what_the_channel_carries():
 
     shaft = pipettes.shaft(0)
     assert shaft is not None
-    shaft.mount_tip(hamilton_tip_300uL(name="tip"))  # 51.9 mm below the stop disc
+    # 51.9 mm below the stop disc
+    await shaft.store.create("hamilton_tip_300uL", name="tip", parent=shaft)
     sent.clear()
     await pipettes.move_stop_disc_to_z_positions({0: 150.0})
     assert sent == [{2: 98.1, 1: 167.5}]  # 150 - 51.9
@@ -2744,14 +2802,14 @@ def test_setup_discards_a_tip_it_finds_already_attached():
   """A session that connects to a machine still holding a tip clears it before anything else."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     shaft = p.pipettes.shaft(0)
     assert shaft is not None
     await p.stop()
     # A crash leaves a tip on without stop() running, which would have cleared it.
-    shaft.mount_tip(hamilton_tip_300uL(name="left on"))
+    await shaft.store.create("hamilton_tip_300uL", name="left on", parent=shaft)
 
     sent = _record(p)
     await p.setup(smart=True)  # and the next one connects, to a machine still holding it
@@ -2759,7 +2817,7 @@ def test_setup_discards_a_tip_it_finds_already_attached():
 
     assert [c for c in sent if isinstance(c, PrepCmd.PrepDropTips)]  # into the waste
     assert not (await p.pipettes.sense_tip_presence())[0]
-    assert p.pipettes.get_mounted_tip(0) is None
+    assert await p.pipettes.get_mounted_tip(0) is None
     await p.stop()
 
   _run(_t())
@@ -2769,14 +2827,14 @@ def test_setup_discards_tips_it_finds_on_both_channels():
   """Each channel found carrying gets a tip of its own in the model, so both are dropped."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     shafts = [p.pipettes.shaft(ch) for ch in range(2)]
     await p.stop()
     for ch, shaft in enumerate(shafts):
       assert shaft is not None
-      shaft.mount_tip(hamilton_tip_50uL(name=f"left on {ch}"))
+      await shaft.store.create("hamilton_tip_50uL", name=f"left on {ch}", parent=shaft)
 
     sent = _record(p)
     await p.setup(smart=True)
@@ -2785,7 +2843,7 @@ def test_setup_discards_tips_it_finds_on_both_channels():
     drops = [c for c in sent if isinstance(c, PrepCmd.PrepDropTips)]
     assert len(drops) == 1 and len(drops[0].tip_positions) == 2  # both, in one move
     assert await p.pipettes.sense_tip_presence() == [False, False]
-    assert all(p.pipettes.get_mounted_tip(ch) is None for ch in range(2))
+    assert await p.pipettes.get_mounted_tips() == [None, None]
     await p.stop()
 
   _run(_t())
@@ -2804,14 +2862,14 @@ def test_setup_treats_a_stale_tool_definition_as_the_tips_that_are_on():
   Z window says what is really on, so those are dropped as tips."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None and p.core_grippers is not None
     shafts = [p.pipettes.shaft(ch) for ch in range(2)]
     await p.stop()
     for ch, shaft in enumerate(shafts):
       assert shaft is not None
-      shaft.mount_tip(hamilton_tip_50uL(name=f"left on {ch}"))
+      await shaft.store.create("hamilton_tip_50uL", name=f"left on {ch}", parent=shaft)
 
     stale = PrepCmd.TipDefinition(
       default_values=False,
@@ -2851,14 +2909,14 @@ def test_setup_releases_over_the_waste_when_the_device_refuses_to_drop():
   release over the waste, after the channels were taken there."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None
     shafts = [p.pipettes.shaft(ch) for ch in range(2)]
     await p.stop()
     for ch, shaft in enumerate(shafts):
       assert shaft is not None
-      shaft.mount_tip(hamilton_tip_50uL(name=f"left on {ch}"))
+      await shaft.store.create("hamilton_tip_50uL", name=f"left on {ch}", parent=shaft)
 
     async def no_tips_held(*args, **kwargs):
       raise _refusal(0x0F03, 14)
@@ -2882,12 +2940,12 @@ def test_setup_puts_a_tool_it_finds_attached_back_rather_than_discarding_it():
   """A grip tool is not a tip: it goes back in its holder, and no drop into the waste is sent."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck(with_core_grippers=True))
+    p = PrepSimulationDriver(deck=await make_prep_deck(with_core_grippers=True))
     await p.setup()
     assert p.pipettes is not None
     shaft = p.pipettes.shaft(0)
     assert shaft is not None
-    shaft.mount_tip(hamilton_core_gripper_tool(name="left on"))
+    await shaft.store.create("hamilton_core_gripper_tool", name="left on", parent=shaft)
     await p.stop()  # the session ends without putting it back
 
     sent = _record(p)
@@ -2904,8 +2962,8 @@ def test_a_drop_travels_over_its_destination_before_letting_go():
   """Left to itself the gantry drives X, Y and Z at once, arcing the tips through the deck."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
@@ -2920,7 +2978,7 @@ def test_a_drop_travels_over_its_destination_before_letting_go():
     # Into the waste, which has its own position per channel and no planning.
     await pipettes.pick_up_tips(rack["A2", "B2"], use_channels=[0, 1])
     sent.clear()
-    waste = deck.waste_block
+    waste = (await parts_of(deck)).waste_block
     assert waste is not None
     await pipettes.drop_tips([waste, waste], use_channels=[0, 1])
     assert sent == ["PrepMoveToPosition", "PrepDropTips"]
@@ -2928,7 +2986,7 @@ def test_a_drop_travels_over_its_destination_before_letting_go():
     # Two groups, too far apart in x to share a move: each is travelled to.
     await pipettes.pick_up_tips(rack["A3", "B3"], use_channels=[0, 1])
     sent.clear()
-    await pipettes.drop_tips(rack["A3", "B4"], use_channels=[0, 1])
+    await pipettes.drop_tips(rack["A3", "B2"], use_channels=[0, 1])
     assert sent == [
       "PrepMoveToPosition",
       "PrepDropTips",
@@ -2944,8 +3002,8 @@ def test_discard_tips_drops_what_the_channels_carry_into_the_waste():
   """Only the channels carrying a tip go, in one move; nothing carried, nothing sent."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_50uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
@@ -2959,46 +3017,47 @@ def test_discard_tips_drops_what_the_channels_carry_into_the_waste():
     sent.clear()
     await pipettes.discard_tips()
     assert sent == ["PrepMoveToPosition", "PrepDropTips"]
-    assert pipettes.get_mounted_tip(1) is None
+    assert await pipettes.get_mounted_tip(1) is None
     await p.stop()
 
   _run(_t())
 
 
-def _shaft_end_z(p: PrepSimulationDriver, channel: int) -> float:
+async def _shaft_end_z(p: PrepSimulationDriver, channel: int) -> float:
   """Where the model has the end of a channel's shaft, in mm on the deck."""
   assert p.pipettes is not None and p.pipettes.deck is not None
   resource = p.pipettes.resources[channel]
-  return resource.get_location_wrt(p.pipettes.deck).z + p.pipettes._reference_anchor(resource).z
+  bottom = (await resource.get_location_wrt(p.pipettes.deck)).z
+  return bottom + p.pipettes._reference_anchor().z
 
 
 def test_z_is_where_the_device_reports_it_at_the_bottom_of_what_a_channel_carries():
   """A reported Z is the tip's bottom when there is one: the shaft ends that much higher."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
     pipettes = p.pipettes
 
-    pipettes.update_location_by_reference_point(0, z=100.0)
-    assert _shaft_end_z(p, 0) == pytest.approx(100.0)
+    await pipettes.update_location_by_reference_point(0, z=100.0)
+    assert await _shaft_end_z(p, 0) == pytest.approx(100.0)
 
     await pipettes.pick_up_tips(rack["A1"], use_channels=[0])
-    tip = pipettes.get_mounted_tip(0)
+    tip = await pipettes.get_mounted_tip(0)
     assert tip is not None
-    below = tip.get_size_z() - tip.fitting_depth
-    pipettes.update_location_by_reference_point(0, z=100.0)
-    assert _shaft_end_z(p, 0) == pytest.approx(100.0 + below)
-    point = pipettes.get_reference_point_location(0)
+    below = tip.length
+    await pipettes.update_location_by_reference_point(0, z=100.0)
+    assert await _shaft_end_z(p, 0) == pytest.approx(100.0 + below)
+    point = await pipettes.get_reference_point_location(0)
     assert point is not None and point.z == pytest.approx(100.0)
     assert (await pipettes.request_locations())[0].z == pytest.approx(100.0)
 
     await pipettes.drop_tips(rack["A1"], use_channels=[0])
-    pipettes.update_location_by_reference_point(0, z=100.0)
-    assert _shaft_end_z(p, 0) == pytest.approx(100.0)
+    await pipettes.update_location_by_reference_point(0, z=100.0)
+    assert await _shaft_end_z(p, 0) == pytest.approx(100.0)
     await p.stop()
 
   _run(_t())
@@ -3008,7 +3067,7 @@ def test_every_y_and_z_move_is_recorded_from_where_the_device_says_the_channels_
   """Done, failed or cancelled: the model is read back from the device, never set from the target."""
 
   async def _t():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.pipettes is not None and p.x_arm is not None
     pipettes = p.pipettes
@@ -3060,12 +3119,13 @@ def test_every_y_and_z_move_is_recorded_from_where_the_device_says_the_channels_
   _run(_t())
 
 
-def _batch_probe_setup(second_session: bool):
+async def _batch_probe_setup(second_session: bool):
   """A simulated Prep with tips on both channels over a 30 mm block; each seek's link recorded."""
-  deck = PrepDeck()
-  tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-  block = Resource(name="block", size_x=40, size_y=40, size_z=30)
-  deck[6].assign_child_resource(block, location=Coordinate(10, 10, 0))
+  deck = await make_prep_deck()
+  tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+  block = await _box(
+    (await parts_of(deck))[6], "block", Coordinate(40, 40, 30), Coordinate(10, 10, 0)
+  )
   p = PrepSimulationDriver(deck=deck)
   if second_session:
     p._second_io = _SimulatedIO(p)
@@ -3094,11 +3154,11 @@ def test_probe_batch_liquid_heights_seeks_each_channel_and_stays_where_it_detect
   """
 
   async def _t():
-    p, tip_rack, block, links = _batch_probe_setup(second_session)
+    p, tip_rack, block, links = await _batch_probe_setup(second_session)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(tip_rack["A1:B1"], use_channels=[0, 1])
-    top = block.get_location_wrt(p.deck, "c", "c", "t")
+    top = await block.get_location_wrt(p.deck, "c", "c", "t")
     await p.pipettes.move_to_safe_z()
     await p.pipettes.move_to_xy_positions(x=top.x, ys={0: top.y + 6, 1: top.y - 6}, make_space=True)
     found = await p.pipettes._probe_batch_liquid_heights(
@@ -3122,7 +3182,7 @@ def test_probe_batch_liquid_heights_refuses_pressure_lld():
   """Pressure LLD has no seek of its own: refused before anything moves."""
 
   async def _t():
-    p, _, block, links = _batch_probe_setup(second_session=False)
+    p, _, block, links = await _batch_probe_setup(second_session=False)
     await p.setup()
     assert p.pipettes is not None
     with pytest.raises(ValueError, match="only capacitive LLD has a seek"):
@@ -3141,135 +3201,206 @@ def test_probe_batch_liquid_heights_refuses_pressure_lld():
   _run(_t())
 
 
+async def _plate_well() -> handles.Well:
+  """Well A1 of a 360 uL flat-bottom plate on spot 0 of a Prep deck."""
+  plate = await _plate(await make_prep_deck(), "cor_96_wellplate_360uL_Fb", "plate", 0)
+  return plate.get_well("A1")
+
+
+async def _made_facts(
+  name: str,
+  size: Coordinate,
+  spec: pb.ContainerSpec,
+  kind: pb.ResourceKind = pb.RESOURCE_KIND_CONTAINER,
+) -> ContainerFacts:
+  """The facts of a container of `size` and `spec`, made on spot 0 of a Prep deck."""
+  deck = await make_prep_deck()
+  made = await deck.store.create(
+    build.resource(name, size, kind=kind, container=spec),
+    name=name,
+    parent=(await parts_of(deck))[0],
+    location=Coordinate(0, 0, 0),
+  )
+  return await _facts(made)
+
+
+def _knots(points: Sequence[Tuple[float, float]]) -> List[pb.HeightVolumePoint]:
+  return [pb.HeightVolumePoint(height=h, volume=v) for h, v in points]
+
+
 def test_container_segments_are_one_step_per_height_volume_knot():
   """Each knot interval of the data is one segment of its own dV/dh."""
-  well = cor_96_wellplate_360uL_Fb(name="plate")["A1"][0]
-  assert well.height_volume_data is not None
-  knots = sorted(well.height_volume_data.items())
-  segments = _get_container_segments(well)
-  assert len(segments) == len(knots) - 1
-  for segment, (h0, v0), (h1, v1) in zip(segments, knots, knots[1:]):
-    assert segment.height == pytest.approx(h1 - h0)
-    assert segment.area_bottom == segment.area_top == pytest.approx((v1 - v0) / (h1 - h0))
+
+  async def _t():
+    well = await _facts(await _plate_well())
+    knots = well.height_volume_data
+    assert knots
+    segments = _get_container_segments(well)
+    assert len(segments) == len(knots) - 1
+    for segment, (h0, v0), (h1, v1) in zip(segments, knots, knots[1:]):
+      assert segment.height == pytest.approx(h1 - h0)
+      assert segment.area_bottom == segment.area_top == pytest.approx((v1 - v0) / (h1 - h0))
+
+  _run(_t())
 
 
-def test_container_segments_from_functions_join_steps_of_one_area():
-  """Without data, steps of one area are one segment: a cylinder by functions is one cylinder."""
-  container = Container(
-    name="c",
-    size_x=10,
-    size_y=10,
-    size_z=12,
-    material_z_thickness=2,
-    compute_volume_from_height=lambda h: 50.0 * h,
-    compute_height_from_volume=lambda v: v / 50.0,
-  )
-  segments = _get_container_segments(container)
-  assert len(segments) == 1
-  assert segments[0].height == pytest.approx(10.0)
-  assert segments[0].area_bottom == pytest.approx(50.0)
+def test_container_segments_join_steps_of_one_area():
+  """Steps of one area are one segment: a cylinder by many knots is one cylinder."""
+
+  async def _t():
+    container = await _made_facts(
+      "c",
+      Coordinate(10, 10, 12),
+      pb.ContainerSpec(
+        material_z_thickness=2,
+        height_volume_data=_knots([(h, 50.0 * h) for h in (0.0, 2.5, 5.0, 7.5, 10.0)]),
+      ),
+    )
+    segments = _get_container_segments(container)
+    assert len(segments) == 1
+    assert segments[0].height == pytest.approx(10.0)
+    assert segments[0].area_bottom == pytest.approx(50.0)
+
+  _run(_t())
 
 
 def test_container_segments_are_at_most_what_the_device_takes_and_keep_the_volume():
-  """A cone's 0.5 mm steps become MAX_CONTAINER_SEGMENTS, holding what the functions say."""
-  container = Container(
-    name="cone",
-    size_x=10,
-    size_y=10,
-    size_z=42,
-    material_z_thickness=2,
-    compute_volume_from_height=lambda h: 0.5 * h**2,
-    compute_height_from_volume=lambda v: (2 * v) ** 0.5,
-  )
-  segments = _get_container_segments(container)
-  assert len(segments) == MAX_CONTAINER_SEGMENTS
-  assert sum(s.height for s in segments) == pytest.approx(40.0)
-  assert sum(s.area_bottom * s.height for s in segments) == pytest.approx(0.5 * 40.0**2)
+  """A cone's 0.5 mm steps become MAX_CONTAINER_SEGMENTS, holding what its data says."""
+
+  async def _t():
+    steps = [0.5 * i for i in range(81)]
+    container = await _made_facts(
+      "cone",
+      Coordinate(10, 10, 42),
+      pb.ContainerSpec(
+        material_z_thickness=2, height_volume_data=_knots([(h, 0.5 * h**2) for h in steps])
+      ),
+    )
+    segments = _get_container_segments(container)
+    assert len(segments) == MAX_CONTAINER_SEGMENTS
+    assert sum(s.height for s in segments) == pytest.approx(40.0)
+    assert sum(s.area_bottom * s.height for s in segments) == pytest.approx(0.5 * 40.0**2)
+
+  _run(_t())
 
 
 def test_container_segments_fall_back_to_the_footprint_and_warn_for_a_v_bottom():
   """No height-volume model: one cylinder over the cavity depth, and a V-bottom says so once."""
-  well = Well(name="v_well", size_x=6, size_y=6, size_z=10, material_z_thickness=1, bottom_type="V")
-  with patch.object(pipettes_logger, "warning") as warning:
-    segments = _get_container_segments(well)
-    _get_container_segments(well)
-  assert len(segments) == 1
-  assert segments[0].area_bottom == pytest.approx(3.14159 * 9, rel=1e-4)
-  assert segments[0].height == pytest.approx(9.0)
-  assert warning.call_count == 1
+
+  async def _t():
+    well = await _made_facts(
+      "v_well",
+      Coordinate(6, 6, 10),
+      pb.ContainerSpec(
+        material_z_thickness=1,
+        bottom_type=pb.WELL_BOTTOM_TYPE_V,
+        cross_section_type=pb.CROSS_SECTION_TYPE_CIRCLE,
+      ),
+      kind=pb.RESOURCE_KIND_WELL,
+    )
+    with patch.object(pipettes_logger, "warning") as warning:
+      segments = _get_container_segments(well)
+      _get_container_segments(well)
+    assert len(segments) == 1
+    assert segments[0].area_bottom == pytest.approx(3.14159 * 9, rel=1e-4)
+    assert segments[0].height == pytest.approx(9.0)
+    assert warning.call_count == 1
+
+  _run(_t())
 
 
 def test_profile_drop_matches_the_containers_own_height_from_volume():
   """The firmware's drop through the steps is the tracker's: height now less height after."""
-  well = cor_96_wellplate_360uL_Fb(name="plate")["A1"][0]
-  start = well.compute_height_from_volume(200.0)
-  expected = start - well.compute_height_from_volume(175.0)
-  assert _get_profile_drop(_get_container_segments(well), start, 25.0) == pytest.approx(expected)
+
+  async def _t():
+    handle = await _plate_well()
+    well = await _facts(handle)
+    start = await handle.compute_height_from_volume(200.0)
+    expected = start - await handle.compute_height_from_volume(175.0)
+    assert _get_profile_drop(_get_container_segments(well), start, 25.0) == pytest.approx(expected)
+
+  _run(_t())
 
 
 def test_a_surface_following_distance_scales_the_profile_to_that_drop():
   """The areas are scaled so the tip sinks exactly the distance asked; 0 is not yet known."""
-  well = cor_96_wellplate_360uL_Fb(name="plate")["A1"][0]
-  start = well.compute_height_from_volume(200.0)
-  segments = _get_container_segments(well, start, 25.0, surface_following_distance=0.3)
-  assert _get_profile_drop(segments, start, 25.0) == pytest.approx(0.3, abs=1e-4)
-  assert _get_container_segments(well, start, 25.0, surface_following_distance=0.0) == []
-  with pytest.raises(ValueError, match="liquid height and piston volume"):
-    _get_container_segments(well, surface_following_distance=0.3)
+
+  async def _t():
+    handle = await _plate_well()
+    well = await _facts(handle)
+    start = await handle.compute_height_from_volume(200.0)
+    segments = _get_container_segments(well, start, 25.0, surface_following_distance=0.3)
+    assert _get_profile_drop(segments, start, 25.0) == pytest.approx(0.3, abs=1e-4)
+    assert _get_container_segments(well, start, 25.0, surface_following_distance=0.0) == []
+    with pytest.raises(ValueError, match="liquid height and piston volume"):
+      _get_container_segments(well, surface_following_distance=0.3)
+
+  _run(_t())
 
 
 def test_container_segments_start_at_z_minimum_as_the_firmware_counts_them():
   """Segment 0 begins at z_minimum: cut inside an interval, on a knot, and extended below it."""
-  well = cor_96_wellplate_360uL_Fb(name="plate")["A1"][0]
-  whole = _get_container_segments(well)
-  inside = _get_container_segments(well, profile_start=1.0)
-  assert inside[0].height == pytest.approx(1.69 - 1.0)
-  assert inside[0].area_bottom == pytest.approx(whole[1].area_bottom)
-  assert len(inside) == len(whole) - 1
-  on_knot = _get_container_segments(well, profile_start=1.69)
-  assert on_knot[0].height == pytest.approx(whole[2].height)
-  below = _get_container_segments(well, profile_start=-0.5)
-  assert below[0].height == pytest.approx(whole[0].height + 0.5)
-  with pytest.raises(ValueError, match="above the profile"):
-    _get_container_segments(well, profile_start=20.0)
+
+  async def _t():
+    well = await _facts(await _plate_well())
+    whole = _get_container_segments(well)
+    inside = _get_container_segments(well, profile_start=1.0)
+    assert inside[0].height == pytest.approx(1.69 - 1.0)
+    assert inside[0].area_bottom == pytest.approx(whole[1].area_bottom)
+    assert len(inside) == len(whole) - 1
+    on_knot = _get_container_segments(well, profile_start=1.69)
+    assert on_knot[0].height == pytest.approx(whole[2].height)
+    below = _get_container_segments(well, profile_start=-0.5)
+    assert below[0].height == pytest.approx(whole[0].height + 0.5)
+    with pytest.raises(ValueError, match="above the profile"):
+      _get_container_segments(well, profile_start=20.0)
+
+  _run(_t())
 
 
 def test_a_surface_following_distance_counts_from_z_minimum():
   """Scaled from where the firmware starts the profile, the tip still sinks the distance asked."""
-  well = cor_96_wellplate_360uL_Fb(name="plate")["A1"][0]
-  start = well.compute_height_from_volume(200.0)
-  segments = _get_container_segments(
-    well, start, 25.0, surface_following_distance=0.3, profile_start=2.0
-  )
-  assert _get_profile_drop(segments, start - 2.0, 25.0) == pytest.approx(0.3, abs=1e-4)
+
+  async def _t():
+    handle = await _plate_well()
+    well = await _facts(handle)
+    start = await handle.compute_height_from_volume(200.0)
+    segments = _get_container_segments(
+      well, start, 25.0, surface_following_distance=0.3, profile_start=2.0
+    )
+    assert _get_profile_drop(segments, start - 2.0, 25.0) == pytest.approx(0.3, abs=1e-4)
+
+  _run(_t())
 
 
 def test_a_containers_top_is_its_own_top_on_the_deck():
   """The top, and z_air above it, is the container's top: its material thickness counted once."""
-  deck = PrepDeck()
-  glass = PetriDish(name="glass", diameter=77.0, height=86.0, material_z_thickness=11.0)
-  deck[6].assign_child_by_anchor(glass, parent_anchor=("c", "c", "t"), child_anchor=("c", "c", "b"))
-  plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-  azenta = deck[2] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="azenta")
-  wells = [plate.get_well("A1"), azenta.get_well("A1")]
-  for container in [glass, *wells]:
-    top = container.get_location_wrt(deck, "c", "c", "t").z
-    geometry = _absolute_z_from_well(container, deck)
-    assert geometry.top_of_well == pytest.approx(top)
-    assert geometry.z_air == pytest.approx(top + 2.0)
-  assert _absolute_z_from_well(glass, deck).top_of_well == pytest.approx(99.5)
+
+  async def _t():
+    deck = await make_prep_deck()
+    glass = await _dish(deck, "glass", 86.0, 11.0)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    azenta = await _plate(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "azenta", 2)
+    wells = [plate.get_well("A1"), azenta.get_well("A1")]
+    for container in [glass, *wells]:
+      top = (await container.get_location_wrt(deck, "c", "c", "t")).z
+      geometry = _absolute_z_from_well(await _facts(container))
+      assert geometry.top_of_well == pytest.approx(top)
+      assert geometry.z_air == pytest.approx(top + 2.0)
+    assert _absolute_z_from_well(await _facts(glass)).top_of_well == pytest.approx(99.5)
+
+  _run(_t())
 
 
-def _probe_liquid_setup():
-  """A simulated Prep with a plate and a dish without height-volume functions.
+async def _probe_liquid_setup():
+  """A simulated Prep with a plate and a dish without height-volume data.
 
   Both channels carry a tip.
   """
-  deck = PrepDeck()
-  tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-  plate = deck[4] = cor_96_wellplate_360uL_Fb(name="plate")
-  dish = PetriDish(name="dish", diameter=77.0, height=20.0, material_z_thickness=2.0)
-  deck[6].assign_child_resource(dish, location=Coordinate(20, 5, 0))
+  deck = await make_prep_deck()
+  tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+  plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 4)
+  dish = await _dish(deck, "dish", 20.0, 2.0, location=Coordinate(20, 5, 0))
   return PrepSimulationDriver(deck=deck), tip_rack, plate, dish
 
 
@@ -3277,7 +3408,7 @@ def test_probe_liquid_heights_deals_the_containers_in_cycles_and_rises_to_safe_z
   """Four wells on two channels: two cycles, each channel's seek in each; left at Z safety."""
 
   async def _t():
-    p, tip_rack, plate, _ = _probe_liquid_setup()
+    p, tip_rack, plate, _ = await _probe_liquid_setup()
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(tip_rack["A1:B1"], use_channels=[0, 1])
@@ -3289,11 +3420,11 @@ def test_probe_liquid_heights_deals_the_containers_in_cycles_and_rises_to_safe_z
       return await send(command, *args, **kwargs)
 
     p.send_command = recording  # type: ignore[method-assign]
-    wells = plate["A1:D1"]
+    wells = plate.get_wells("A1:D1")
     heights = await p.pipettes.probe_liquid_heights(wells)
     # The simulator meets the plate as a solid, at its top.
-    top = plate.get_location_wrt(p.deck, "c", "c", "t").z
-    tops = [top - w.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z for w in wells]
+    top = (await plate.get_location_wrt(p.deck, "c", "c", "t")).z
+    tops = [top - (await w.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z for w in wells]
     assert heights == pytest.approx(tops, abs=0.01)
     seeks = [c.dest.node for c in sent if isinstance(c, PrepCmd.PrepZAxisSeekCapacitiveLld)]
     assert len(seeks) == 4 and len(set(seeks)) == 2
@@ -3307,7 +3438,7 @@ def test_probe_liquid_volumes_refuses_a_container_without_height_volume_function
   """Refused before anything moves."""
 
   async def _t():
-    p, tip_rack, _, dish = _probe_liquid_setup()
+    p, tip_rack, _, dish = await _probe_liquid_setup()
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(tip_rack["A1:B1"], use_channels=[0, 1])
@@ -3322,22 +3453,24 @@ def test_probe_liquid_heights_refuses_pressure_lld():
   """Pressure LLD has no seek on the Prep: refused before anything moves."""
 
   async def _t():
-    p, tip_rack, plate, _ = _probe_liquid_setup()
+    p, tip_rack, plate, _ = await _probe_liquid_setup()
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(tip_rack["A1:B1"], use_channels=[0, 1])
     with pytest.raises(ValueError, match="capacitive"):
-      await p.pipettes.probe_liquid_heights([plate["A1"][0]], lld_mode=Pipettes.LLDMode.PRESSURE)
+      await p.pipettes.probe_liquid_heights(
+        [plate.get_well("A1")], lld_mode=Pipettes.LLDMode.PRESSURE
+      )
     await p.stop()
 
   _run(_t())
 
 
-def _aspirate_following_setup():
+async def _aspirate_following_setup():
   """A simulated Prep with a tip on channel 0 and a Corning 3603 well of 200 uL."""
-  deck = PrepDeck()
-  tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-  plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+  deck = await make_prep_deck()
+  tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+  plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
   return PrepSimulationDriver(deck=deck), tip_rack, plate
 
 
@@ -3345,13 +3478,13 @@ def test_aspirate_sends_the_containers_profile_from_z_minimum():
   """No segments and tube_radius 0 by default; under auto the well's own profile, from z_minimum."""
 
   async def _t():
-    p, tip_rack, plate = _aspirate_following_setup()
+    p, tip_rack, plate = await _aspirate_following_setup()
     await p.setup()
     assert p.pipettes is not None
-    well = plate.get_item("A1")
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
+    well = plate.get_well("A1")
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
     sent = _record(p)
-    floor = well.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z + 1.0
+    floor = (await well.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z + 1.0
     await p.pipettes.aspirate(
       [well],
       piston_volumes=[20.0],
@@ -3373,7 +3506,7 @@ def test_aspirate_sends_the_containers_profile_from_z_minimum():
       minimum_allowed_z_positions_during=[floor],
     )
     entry = next(c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)).aspirate_parameters[0]
-    expected = _get_container_segments(well, profile_start=1.0)
+    expected = _get_container_segments(await _facts(well), profile_start=1.0)
     assert [(s.area_bottom, s.height) for s in entry.container_description] == [
       (pytest.approx(s.area_bottom), pytest.approx(s.height)) for s in expected
     ]
@@ -3386,11 +3519,11 @@ def test_aspirate_scales_the_profile_to_a_surface_following_distance():
   """A distance scales the profile so the tip sinks exactly that; 0 sends none and tube_radius 0."""
 
   async def _t():
-    p, tip_rack, plate = _aspirate_following_setup()
+    p, tip_rack, plate = await _aspirate_following_setup()
     await p.setup()
     assert p.pipettes is not None
-    well = plate.get_item("A1")
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
+    well = plate.get_well("A1")
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
     sent = _record(p)
     await p.pipettes.aspirate(
       [well],
@@ -3430,25 +3563,21 @@ def test_aspirate_auto_surface_following_searches_capacitive_and_sends_the_profi
   """lld_mode None under auto searches the surface; the draw sends the well's profile as it is."""
 
   async def _t():
-    set_volume_tracking(True)
-    try:
-      p, tip_rack, plate = _aspirate_following_setup()
-      await p.setup()
-      assert p.pipettes is not None
-      well = plate.get_item("A1")
-      well.tracker.set_volume(200.0)
-      await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
-      sent = _record(p)
-      await p.pipettes.aspirate(
-        [well], piston_volumes=[20.0], use_channels=[0], auto_surface_following=True
-      )
-      assert any(isinstance(c, PrepCmd.PrepZAxisSeekCapacitiveLld) for c in sent)
-      entry = next(c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)).aspirate_parameters[0]
-      assert entry.container_description != []
-      assert entry.common.tube_radius > 0.0
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
+    p, tip_rack, plate = await _aspirate_following_setup()
+    await p.setup()
+    assert p.pipettes is not None
+    well = plate.get_well("A1")
+    await well.set_volume(200.0)
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
+    sent = _record(p)
+    await p.pipettes.aspirate(
+      [well], piston_volumes=[20.0], use_channels=[0], auto_surface_following=True
+    )
+    assert any(isinstance(c, PrepCmd.PrepZAxisSeekCapacitiveLld) for c in sent)
+    entry = next(c for c in sent if isinstance(c, _ASPIRATE_COMMANDS)).aspirate_parameters[0]
+    assert entry.container_description != []
+    assert entry.common.tube_radius > 0.0
+    await p.stop()
 
   _run(_t())
 
@@ -3457,11 +3586,11 @@ def test_auto_surface_following_refused_beside_a_distance_or_without_a_surface()
   """Beside a distance, under OFF without a liquid height, or on a pre-mix: nothing is sent."""
 
   async def _t():
-    p, tip_rack, plate = _aspirate_following_setup()
+    p, tip_rack, plate = await _aspirate_following_setup()
     await p.setup()
     assert p.pipettes is not None
-    well = plate.get_item("A1")
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
+    well = plate.get_well("A1")
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
     sent = _record(p)
     auto_mix = Mix(volume=10.0, repetitions=2, flow_rate=50.0, auto_surface_following=True)
     refused: List[Dict[str, Any]] = [
@@ -3622,41 +3751,31 @@ async def _capture_aspirate(name: str) -> List[str]:
   The frame is built with source 2.1.65535 and sequence 0. Volume tracking is on, 200 uL a well.
   """
   tip_volume, where, use_channels, kwargs = _GOLDEN_ASPIRATE_CALLS[name]
-  set_volume_tracking(True)
-  try:
-    deck = PrepDeck()
-    tip_rack = hamilton_96_tiprack_300uL_NTR if tip_volume == 300 else hamilton_96_tiprack_50uL_NTR
-    rack = deck[1] = tip_rack(name="tips", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-    dish = PetriDish(name="dish", diameter=77.0, height=30.0, material_z_thickness=2.0)
-    deck[6].assign_child_by_anchor(
-      dish, parent_anchor=("c", "c", "t"), child_anchor=("c", "c", "b")
-    )
-    for well in plate.get_all_items():
-      well.tracker.set_volume(200.0)
-    dish.tracker.set_volume(20000.0)
-    containers: List[Container] = (
-      [dish, dish] if where == "dish" else [w for part in where.split(",") for w in plate[part]]
-    )
-    channels = sorted(use_channels if use_channels is not None else range(len(containers)))
-    p = PrepSimulationDriver(deck=deck)
-    await p.setup()
-    assert p.pipettes is not None
-    await p.pipettes.pick_up_tips([rack.get_item(c) for c in channels], use_channels=channels)
-    session = p.io._session
-    exchange = session.exchange
-    frames: List[str] = []
+  deck = await make_prep_deck()
+  model = "hamilton_96_tiprack_300uL_NTR" if tip_volume == 300 else "hamilton_96_tiprack_50uL_NTR"
+  rack = await _rack(deck, model, "tips", 1)
+  plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+  dish = await _dish(deck, "dish", 30.0, 2.0)
+  await plate.set_well_volumes(200.0)
+  await dish.set_volume(20000.0)
+  containers: List[handles.Container] = [dish, dish] if where == "dish" else _wells(plate, where)
+  channels = sorted(use_channels if use_channels is not None else range(len(containers)))
+  p = PrepSimulationDriver(deck=deck)
+  await p.setup()
+  assert p.pipettes is not None
+  await p.pipettes.pick_up_tips([rack.get_tip_spot(c) for c in channels], use_channels=channels)
+  session = p.io._session
+  exchange = session.exchange
+  frames: List[str] = []
 
-    async def record(command, *args, **kw):
-      request = command.request if isinstance(command, _ResolvedPrepCommand) else command
-      if isinstance(request, _ASPIRATE_COMMANDS):
-        frames.append(f"{kw.get('read_timeout')} {command.build(Address(2, 1, 65535), 0).hex()}")
-      return await exchange(command, *args, **kw)
+  async def record(command, *args, **kw):
+    request = command.request if isinstance(command, _ResolvedPrepCommand) else command
+    if isinstance(request, _ASPIRATE_COMMANDS):
+      frames.append(f"{kw.get('read_timeout')} {command.build(Address(2, 1, 65535), 0).hex()}")
+    return await exchange(command, *args, **kw)
 
-    session.exchange = record  # type: ignore[method-assign]
-    await p.pipettes.aspirate(containers, use_channels=use_channels, **kwargs)
-  finally:
-    set_volume_tracking(False)
+  session.exchange = record  # type: ignore[method-assign]
+  await p.pipettes.aspirate(containers, use_channels=use_channels, **kwargs)
   return frames
 
 
@@ -3774,70 +3893,72 @@ def test_aspirate_runs_one_command_per_x_and_books_each_batch_on_its_own():
   """Two X: a move before one command per X; each batch booked on its own, a failed one undone."""
 
   async def _t():
-    set_volume_tracking(True)
-    try:
-      deck = PrepDeck()
-      rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-      plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-      for well in plate.get_all_items():
-        well.tracker.set_volume(200.0)
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-      tips = [p.pipettes.get_mounted_tip(ch) for ch in (0, 1)]
-      sent: List[Any] = []
-      at_second: List[float] = []
-      fail_second = False
-      send = p.send_command
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    await plate.set_well_volumes(200.0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
+    sent: List[Any] = []
+    at_second: List[float] = []
+    fail_second = False
+    send = p.send_command
 
-      async def record(command, *args, **kwargs):
-        if isinstance(command, _ASPIRATE_COMMANDS) and any(
-          isinstance(c, _ASPIRATE_COMMANDS) for c in sent
-        ):
-          at_second.extend([rear.tracker.volume, front.tracker.volume])
-          at_second.append(front.tracker.pending_volume)
-          if fail_second:
-            sent.append(command)
-            raise RuntimeError("refused")
-        sent.append(command)
-        return await send(command, *args, **kwargs)
+    async def record(command, *args, **kwargs):
+      if isinstance(command, _ASPIRATE_COMMANDS) and any(
+        isinstance(c, _ASPIRATE_COMMANDS) for c in sent
+      ):
+        at_second.extend(
+          [await rear.get_volume(pb.VIEW_COMMITTED), await front.get_volume(pb.VIEW_COMMITTED)]
+        )
+        at_second.append(await front.get_volume())
+        if fail_second:
+          sent.append(command)
+          raise RuntimeError("refused")
+      sent.append(command)
+      return await send(command, *args, **kwargs)
 
-      p.send_command = record  # type: ignore[method-assign]
-      rear, front = plate.get_item("A1"), plate.get_item("B2")
-      heights: Dict[str, Any] = {"piston_volumes": [10.0, 20.0], "liquid_heights": [3.0, 3.0]}
-      await p.pipettes.aspirate(
-        [rear, front],
-        use_channels=[0, 1],
-        minimum_traverse_height_during=100.0,
-        minimum_traverse_height_end=110.0,
-        **heights,
-      )
-      first, second = [i for i, c in enumerate(sent) if isinstance(c, _ASPIRATE_COMMANDS)]
-      for index, well, z_final in ((first, rear, 100.0), (second, front, 110.0)):
-        (entry,) = sent[index].aspirate_parameters
-        x = well.get_location_wrt(deck, "c", "c", "cavity_bottom").x
-        assert entry.aspirate.x_position == pytest.approx(x)
-        assert entry.common.z_final == z_final
-      moves = [i for i, c in enumerate(sent) if isinstance(c, PrepCmd.PrepMoveToPosition)]
-      assert len(moves) == 2 and moves[0] < first < moves[1] < second
-      # At the second command the first batch is committed and the second only pending.
-      assert at_second == [190.0, 200.0, 180.0]
-      assert (rear.tracker.volume, front.tracker.volume) == (190.0, 180.0)
+    p.send_command = record  # type: ignore[method-assign]
+    rear, front = plate.get_well("A1"), plate.get_well("B2")
+    heights: Dict[str, Any] = {"piston_volumes": [10.0, 20.0], "liquid_heights": [3.0, 3.0]}
+    await p.pipettes.aspirate(
+      [rear, front],
+      use_channels=[0, 1],
+      minimum_traverse_height_during=100.0,
+      minimum_traverse_height_end=110.0,
+      **heights,
+    )
+    first, second = [i for i, c in enumerate(sent) if isinstance(c, _ASPIRATE_COMMANDS)]
+    for index, well, z_final in ((first, rear, 100.0), (second, front, 110.0)):
+      (entry,) = sent[index].aspirate_parameters
+      x = (await well.get_location_wrt(deck, "c", "c", "cavity_bottom")).x
+      assert entry.aspirate.x_position == pytest.approx(x)
+      assert entry.common.z_final == z_final
+    moves = [i for i, c in enumerate(sent) if isinstance(c, PrepCmd.PrepMoveToPosition)]
+    assert len(moves) == 2 and moves[0] < first < moves[1] < second
+    # At the second command the first batch is committed and the second only pending.
+    assert at_second == [190.0, 200.0, 180.0]
+    assert (
+      await rear.get_volume(pb.VIEW_COMMITTED),
+      await front.get_volume(pb.VIEW_COMMITTED),
+    ) == (190.0, 180.0)
 
-      rear, front = plate.get_item("A5"), plate.get_item("B6")
-      sent.clear()
-      at_second.clear()
-      fail_second = True
-      with pytest.raises(RuntimeError, match="refused"):
-        await p.pipettes.aspirate([rear, front], use_channels=[0, 1], **heights)
-      assert (rear.tracker.volume, front.tracker.volume) == (190.0, 200.0)
-      assert front.tracker.pending_volume == 200.0
-      assert [tip.tracker.get_used_volume() for tip in tips if tip is not None] == [20.0, 20.0]
-      failed = max(i for i, c in enumerate(sent) if isinstance(c, _ASPIRATE_COMMANDS))
-      assert any(isinstance(c, PrepCmd.PrepMoveZUpToSafe) for c in sent[failed + 1 :])
-    finally:
-      set_volume_tracking(False)
+    rear, front = plate.get_well("A5"), plate.get_well("B6")
+    sent.clear()
+    at_second.clear()
+    fail_second = True
+    with pytest.raises(RuntimeError, match="refused"):
+      await p.pipettes.aspirate([rear, front], use_channels=[0, 1], **heights)
+    assert (
+      await rear.get_volume(pb.VIEW_COMMITTED),
+      await front.get_volume(pb.VIEW_COMMITTED),
+    ) == (190.0, 200.0)
+    assert await front.get_volume() == 200.0
+    assert [await _tip_volume(p, ch) for ch in (0, 1)] == [20.0, 20.0]
+    failed = max(i for i, c in enumerate(sent) if isinstance(c, _ASPIRATE_COMMANDS))
+    assert any(isinstance(c, PrepCmd.PrepMoveZUpToSafe) for c in sent[failed + 1 :])
 
   _run(_t())
 
@@ -3846,78 +3967,93 @@ def test_aspirate_refuses_what_the_model_decides_before_any_command():
   """Each refusal the model can decide is raised with no command sent, not a tip sense or a move."""
 
   async def _t():
-    set_volume_tracking(True)
-    try:
-      deck = PrepDeck()
-      rack_300 = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips_300", with_tips=True)
-      rack_50 = deck[3] = hamilton_96_tiprack_50uL_NTR(name="tips_50", with_tips=True)
-      plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-      for well in plate.get_all_items():
-        well.tracker.set_volume(200.0)
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips([rack_300.get_item("A1")], use_channels=[0])
-      two = plate["A1:B1"]
-      one: Dict[str, Any] = {"use_channels": [0], "piston_volumes": [10.0], "liquid_heights": [3.0]}
-      both: Dict[str, Any] = {
-        "use_channels": [0, 1],
-        "piston_volumes": [10.0, 10.0],
-        "liquid_heights": [3.0] * 2,
-      }
-      searching: Dict[str, Any] = {"use_channels": [0, 1], "piston_volumes": [10.0, 10.0]}
-      capacitive, pressure = Pipettes.LLDMode.CAPACITIVE, Pipettes.LLDMode.PRESSURE
-      sent = _record(p)
-      refusals: List[Tuple[Any, str, Sequence[Container], Dict[str, Any]]] = [
-        (NoTipError, "no tip is mounted", two, both),
-      ]
-      for error, match, containers, kwargs in refusals:
-        with pytest.raises(error, match=match):
-          await p.pipettes.aspirate(containers, **kwargs)
-        assert sent == [], match
-      await p.pipettes.pick_up_tips([rack_50.get_item("B1")], use_channels=[1])
-      sent.clear()
-      refusals = [
-        (ValueError, "no liquid class", two, {"use_channels": [0, 1], "volumes": [10.0, 10.0]}),
-        (ValueError, "one distinct channel", two, {**both, "use_channels": [0, 0]}),
-        (ValueError, "3 containers for 2 channels", plate["A1:C1"], {"piston_volumes": [1.0] * 3}),
-        (ValueError, "flow_rates length", plate["A1"], {**one, "flow_rates": [50.0, 50.0]}),
-        (ValueError, "flow_rates must be above 0", plate["A1"], {**one, "flow_rates": [0.0]}),
-        (ValueError, "clot detection", plate["A1"], {**one, "clot_detection_heights": [1.5]}),
-        (
-          ValueError,
-          "one of z_air and pull_out",
-          plate["A1"],
-          {**one, "z_air": [60.0], "pull_out_distances_transport_air": [5.0]},
-        ),
-        (ValueError, "outside channel", two, {**both, "minimum_traverse_height_end": 200.0}),
-        (TooLittleVolumeError, "room for", two, {**both, "piston_volumes": [10.0, 70.0]}),
-        (
-          NotImplementedError,
-          "PRESSURE LLD is not supported",
-          two,
-          {**searching, "lld_mode": pressure},
-        ),
-        (ValueError, "must be LLDMode", two, {**both, "lld_mode": [capacitive, "capacitive"]}),
-        (ValueError, "1 lld modes for 2", two, {**both, "lld_mode": [capacitive]}),
-        (
-          ValueError,
-          "finds the surface or the floor itself",
-          two,
-          {**both, "lld_mode": capacitive},
-        ),
-        (ValueError, "cannot be mixed", two, {**both, "lld_mode": [capacitive, pressure]}),
-      ]
-      for error, match, containers, kwargs in refusals:
-        with pytest.raises(error, match=match):
-          await p.pipettes.aspirate(containers, **kwargs)
-        assert sent == [], match
-      set_volume_tracking(False)
-      with pytest.raises(RuntimeError, match="nothing knows where its liquid is"):
-        await p.pipettes.aspirate(two, use_channels=[0, 1], piston_volumes=[10.0, 10.0])
-      assert sent == []
-    finally:
-      set_volume_tracking(False)
+    deck = await make_prep_deck()
+    rack_300 = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips_300", 1)
+    rack_50 = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "tips_50", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    await plate.set_well_volumes(200.0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips([rack_300.get_tip_spot("A1")], use_channels=[0])
+    two = plate.get_wells("A1:B1")
+    one: Dict[str, Any] = {"use_channels": [0], "piston_volumes": [10.0], "liquid_heights": [3.0]}
+    both: Dict[str, Any] = {
+      "use_channels": [0, 1],
+      "piston_volumes": [10.0, 10.0],
+      "liquid_heights": [3.0] * 2,
+    }
+    searching: Dict[str, Any] = {"use_channels": [0, 1], "piston_volumes": [10.0, 10.0]}
+    capacitive, pressure = Pipettes.LLDMode.CAPACITIVE, Pipettes.LLDMode.PRESSURE
+    sent = _record(p)
+    refusals: List[Tuple[Any, str, Sequence[handles.Container], Dict[str, Any]]] = [
+      (NoTipError, "no tip is mounted", two, both),
+    ]
+    for error, match, containers, kwargs in refusals:
+      with pytest.raises(error, match=match):
+        await p.pipettes.aspirate(containers, **kwargs)
+      assert sent == [], match
+    await p.pipettes.pick_up_tips([rack_50.get_tip_spot("B1")], use_channels=[1])
+    sent.clear()
+    refusals = [
+      (ValueError, "no liquid class", two, {"use_channels": [0, 1], "volumes": [10.0, 10.0]}),
+      (ValueError, "one distinct channel", two, {**both, "use_channels": [0, 0]}),
+      (
+        ValueError,
+        "3 containers for 2 channels",
+        plate.get_wells("A1:C1"),
+        {"piston_volumes": [1.0] * 3},
+      ),
+      (
+        ValueError,
+        "flow_rates length",
+        [plate.get_well("A1")],
+        {**one, "flow_rates": [50.0, 50.0]},
+      ),
+      (
+        ValueError,
+        "flow_rates must be above 0",
+        [plate.get_well("A1")],
+        {**one, "flow_rates": [0.0]},
+      ),
+      (
+        ValueError,
+        "clot detection",
+        [plate.get_well("A1")],
+        {**one, "clot_detection_heights": [1.5]},
+      ),
+      (
+        ValueError,
+        "one of z_air and pull_out",
+        [plate.get_well("A1")],
+        {**one, "z_air": [60.0], "pull_out_distances_transport_air": [5.0]},
+      ),
+      (ValueError, "outside channel", two, {**both, "minimum_traverse_height_end": 200.0}),
+      (TooLittleVolumeError, "room for", two, {**both, "piston_volumes": [10.0, 70.0]}),
+      (
+        NotImplementedError,
+        "PRESSURE LLD is not supported",
+        two,
+        {**searching, "lld_mode": pressure},
+      ),
+      (ValueError, "must be LLDMode", two, {**both, "lld_mode": [capacitive, "capacitive"]}),
+      (ValueError, "1 lld modes for 2", two, {**both, "lld_mode": [capacitive]}),
+      (
+        ValueError,
+        "finds the surface or the floor itself",
+        two,
+        {**both, "lld_mode": capacitive},
+      ),
+      (ValueError, "cannot be mixed", two, {**both, "lld_mode": [capacitive, pressure]}),
+    ]
+    for error, match, containers, kwargs in refusals:
+      with pytest.raises(error, match=match):
+        await p.pipettes.aspirate(containers, **kwargs)
+      assert sent == [], match
+    await plate.set_volume_tracking(False)
+    with pytest.raises(RuntimeError, match="nothing knows where its liquid is"):
+      await p.pipettes.aspirate(two, use_channels=[0, 1], piston_volumes=[10.0, 10.0])
+    assert sent == []
 
   _run(_t())
 
@@ -3926,16 +4062,16 @@ def test_aspirate_sends_one_command_per_lld_mode():
   """Modes OFF and CAPACITIVE at one X: one command each, both without the firmware's LLD."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
     sent = _record(p, only=_ASPIRATE_COMMANDS)
     await p.pipettes.aspirate(
-      plate["A1:B1"],
+      plate.get_wells("A1:B1"),
       use_channels=[0, 1],
       piston_volumes=[10.0, 20.0],
       liquid_heights=[3.0, None],
@@ -3948,10 +4084,10 @@ def test_aspirate_sends_one_command_per_lld_mode():
   _run(_t())
 
 
-def _empty_setup(second_session: bool):
+async def _empty_setup(second_session: bool):
   """A simulated Prep with a 50 uL tip rack; every command recorded with the link it went on."""
-  deck = PrepDeck()
-  rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
+  deck = await make_prep_deck()
+  rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
   p = PrepSimulationDriver(deck=deck)
   if second_session:
     p._second_io = _SimulatedIO(p)
@@ -3975,19 +4111,21 @@ def test_empty_tip_moves_the_piston_to_rest_on_its_own_drive_and_empties_the_tra
   """`DDrive.MoveAbsolute(0.0, flow_rate)` on the channel's own drive; the tip's tracker to 0."""
 
   async def _t():
-    p, rack, sent = _empty_setup(False)
+    p, rack, sent = await _empty_setup(False)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-    tip = p.pipettes.get_mounted_tip(1)
-    assert tip is not None
-    tip.tracker.set_volume(20.0)
+    shaft = p.pipettes.shaft(1)
+    assert isinstance(shaft, handles.TipMountingShaft)
+    tip = await shaft.get_tool()
+    assert isinstance(tip, handles.Tip)
+    await tip.set_volume(20.0)
     sent.clear()
     await p.pipettes.empty_tip(1, flow_rate=100.0)
     (move,) = [c for _, c in sent if isinstance(c, PrepCmd.PrepDDriveMoveAbsolute)]
     assert move.dest == p.pipettes.channels[1].ddrive
     assert (move.volume, move.speed) == (0.0, 100.0)
-    assert tip.tracker.get_used_volume() == 0.0
+    assert await tip.get_volume() == 0.0
     await p.stop()
 
   _run(_t())
@@ -3997,7 +4135,7 @@ def test_empty_tip_refuses_a_position_other_than_rest_and_a_flow_rate_of_0():
   """Above 0 is not emptying; below 0 is not verified on the Prep. Nothing is sent."""
 
   async def _t():
-    p, rack, sent = _empty_setup(False)
+    p, rack, sent = await _empty_setup(False)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
@@ -4023,7 +4161,7 @@ def test_empty_tips_empties_every_channel_holding_a_tip(second_session):
   """By default every channel sensing a tip; the second on the second session, if there is one."""
 
   async def _t():
-    p, rack, sent = _empty_setup(second_session)
+    p, rack, sent = await _empty_setup(second_session)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
@@ -4047,25 +4185,21 @@ def test_consolidating_moves_the_last_tips_into_the_first_empty_spots_two_at_a_t
   """
 
   async def _t():
-    p, rack, sent = _empty_setup(False)
-    set_tip_tracking(True)
-    try:
-      await p.setup()
-      assert p.pipettes is not None
-      rack.set_tip_state([index >= 86 for index in range(96)])
-      tips = [spot.tracker.get_tip() for spot in rack.get_all_items()[86:]]
-      sent.clear()
-      await p.pipettes.consolidate_tip_inventory([rack])
-      spots = rack.get_all_items()
-      assert [spot.has_tip() for spot in spots] == [True] * 10 + [False] * 86
-      assert [spot.tracker.get_tip() for spot in spots[:10]] == tips
-      assert all(p.pipettes.get_mounted_tip(ch) is None for ch in range(p.pipettes.num_channels))
-      picked = [c for _, c in sent if isinstance(c, PrepCmd.PrepPickUpTips)]
-      dropped = [c for _, c in sent if isinstance(c, PrepCmd.PrepDropTips)]
-      assert [len(c.tip_positions) for c in picked] == [2] * 5
-      assert [len(c.tip_positions) for c in dropped] == [2] * 5
-    finally:
-      set_tip_tracking(False)
+    p, rack, sent = await _empty_setup(False)
+    await p.setup()
+    assert p.pipettes is not None
+    await rack.set_tip_state([index >= 86 for index in range(96)])
+    tips = [await spot.get_tip() for spot in rack.get_tip_spots(rack.identifiers[86:])]
+    sent.clear()
+    await p.pipettes.consolidate_tip_inventory([rack])
+    spots = rack.get_tip_spots(rack.identifiers)
+    assert [await spot.has_tip() for spot in spots] == [True] * 10 + [False] * 86
+    assert [await spot.get_tip() for spot in spots[:10]] == tips
+    assert await p.pipettes.get_mounted_tips() == [None] * p.pipettes.num_channels
+    picked = [c for _, c in sent if isinstance(c, PrepCmd.PrepPickUpTips)]
+    dropped = [c for _, c in sent if isinstance(c, PrepCmd.PrepDropTips)]
+    assert [len(c.tip_positions) for c in picked] == [2] * 5
+    assert [len(c.tip_positions) for c in dropped] == [2] * 5
     await p.stop()
 
   _run(_t())
@@ -4075,29 +4209,28 @@ def test_consolidating_a_rack_that_mixes_tip_models_is_refused_with_nothing_sent
   """The planner refuses a rack holding two tip models; no pick-up is sent."""
 
   async def _t():
-    p, rack, sent = _empty_setup(False)
-    set_tip_tracking(True)
-    try:
-      await p.setup()
-      assert p.pipettes is not None
-      rack.set_tip_state([index >= 90 for index in range(96)])
-      rack.get_item("H12").tracker.remove_tip()
-      rack.get_item("H12").tracker.add_tip(hamilton_tip_300uL("other"))
-      sent.clear()
-      with pytest.raises(ValueError, match="mixed tip models"):
-        await p.pipettes.consolidate_tip_inventory([rack])
-      assert [c for _, c in sent if isinstance(c, PrepCmd.PrepPickUpTips)] == []
-    finally:
-      set_tip_tracking(False)
+    p, rack, sent = await _empty_setup(False)
+    await p.setup()
+    assert p.pipettes is not None
+    await rack.set_tip_state([index >= 90 for index in range(96)])
+    last = rack.get_tip_spot("H12")
+    held = await last.get_tip()
+    assert held is not None
+    await held.delete()
+    await rack.store.create("hamilton_tip_300uL", name="other", parent=last)
+    sent.clear()
+    with pytest.raises(ValueError, match="mixed tip models"):
+      await p.pipettes.consolidate_tip_inventory([rack])
+    assert [c for _, c in sent if isinstance(c, PrepCmd.PrepPickUpTips)] == []
     await p.stop()
 
   _run(_t())
 
 
-def _probe_setup():
+async def _probe_setup():
   """A simulated Prep over a full 50 uL rack; every pick-up and drop recorded."""
-  deck = PrepDeck()
-  rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
+  deck = await make_prep_deck()
+  rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
   p = PrepSimulationDriver(deck=deck)
   sent = _record(p, only=(PrepCmd.PrepPickUpTips, PrepCmd.PrepDropTips), names=True)
   return p, rack, sent
@@ -4106,15 +4239,15 @@ def _probe_setup():
 _ZTOUCH = Pipettes.LLDMode.ZTOUCH
 
 
-def _ztouch_setup(second_session: bool, touch: Optional[float]):
+async def _ztouch_setup(second_session: bool, touch: Optional[float]):
   """A simulated Prep whose seeks for a floor answer `touch` mm under the modelled cavity bottom.
 
   None answers as an untouched search does: a detection about 1 mm below its end. Every command
   is recorded with the link it went on.
   """
-  deck = PrepDeck()
-  rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-  plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+  deck = await make_prep_deck()
+  rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+  plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
   p = PrepSimulationDriver(deck=deck)
   if second_session:
     p._second_io = _SimulatedIO(p)
@@ -4149,43 +4282,38 @@ def test_aspirate_on_ztouch_touches_each_floor_then_draws_just_off_it_without_ll
   """Each channel's seek on its own link, both before the draw; the draw 0.2 mm off the floor."""
 
   async def _t():
-    p, rack, plate, sent = _ztouch_setup(second_session, touch=0.3)
-    set_volume_tracking(True)
-    try:
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-      wells = plate["A1:B1"]
-      wells[0].tracker.set_volume(5.0)
-      wells[1].tracker.set_volume(200.0)
-      sent.clear()
-      with (
-        patch.object(pipettes_logger, "warning") as warning,
-        patch.object(pipettes_logger, "info") as info,
-      ):
-        await p.pipettes.aspirate(
-          wells, use_channels=[0, 1], piston_volumes=[10.0, 10.0], lld_mode=_ZTOUCH
-        )
-      warned = " ".join(str(c.args) for c in warning.call_args_list)
-      assert "aspirate on Z touch" in warned and "50 uL tips" in warned
-      assert any("the rest is air" in str(c.args) for c in info.call_args_list)
-      seeks = [(link, c) for link, c in sent if isinstance(c, PrepCmd.PrepZAxisSeekObstacle)]
-      assert [link for link, _ in seeks] == (["main", "second"] if second_session else ["main"] * 2)
-      assert [c.dest for _, c in seeks] == [p.pipettes.channels[ch].zaxis for ch in (0, 1)]
-      commands = [c for _, c in sent]
-      (draw,) = [c for c in commands if isinstance(c, _ASPIRATE_COMMANDS)]
-      assert isinstance(draw, PrepCmd.PrepAspirateNoLldMonitoringV2)
-      assert commands.index(draw) > commands.index(seeks[-1][1])
-      for entry, well in zip(draw.aspirate_parameters, wells):
-        floor = well.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z - 0.3
-        assert entry.no_lld.z_fluid == pytest.approx(floor + 0.2)
-        assert entry.common.z_minimum == pytest.approx(floor + 0.2)
-      # A1 held 5 uL: it gives those, and the tip takes the rest as air.
-      assert [w.tracker.get_used_volume() for w in wells] == [0.0, 190.0]
-      tips = [p.pipettes.get_mounted_tip(ch) for ch in (0, 1)]
-      assert [t.tracker.get_used_volume() for t in tips if t is not None] == [5.0, 10.0]
-    finally:
-      set_volume_tracking(False)
+    p, rack, plate, sent = await _ztouch_setup(second_session, touch=0.3)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
+    wells = plate.get_wells("A1:B1")
+    await wells[0].set_volume(5.0)
+    await wells[1].set_volume(200.0)
+    sent.clear()
+    with (
+      patch.object(pipettes_logger, "warning") as warning,
+      patch.object(pipettes_logger, "info") as info,
+    ):
+      await p.pipettes.aspirate(
+        wells, use_channels=[0, 1], piston_volumes=[10.0, 10.0], lld_mode=_ZTOUCH
+      )
+    warned = " ".join(str(c.args) for c in warning.call_args_list)
+    assert "aspirate on Z touch" in warned and "50 uL tips" in warned
+    assert any("the rest is air" in str(c.args) for c in info.call_args_list)
+    seeks = [(link, c) for link, c in sent if isinstance(c, PrepCmd.PrepZAxisSeekObstacle)]
+    assert [link for link, _ in seeks] == (["main", "second"] if second_session else ["main"] * 2)
+    assert [c.dest for _, c in seeks] == [p.pipettes.channels[ch].zaxis for ch in (0, 1)]
+    commands = [c for _, c in sent]
+    (draw,) = [c for c in commands if isinstance(c, _ASPIRATE_COMMANDS)]
+    assert isinstance(draw, PrepCmd.PrepAspirateNoLldMonitoringV2)
+    assert commands.index(draw) > commands.index(seeks[-1][1])
+    for entry, well in zip(draw.aspirate_parameters, wells):
+      floor = (await well.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z - 0.3
+      assert entry.no_lld.z_fluid == pytest.approx(floor + 0.2)
+      assert entry.common.z_minimum == pytest.approx(floor + 0.2)
+    # A1 held 5 uL: it gives those, and the tip takes the rest as air.
+    assert [await w.get_volume() for w in wells] == [0.0, 190.0]
+    assert [await _tip_volume(p, ch) for ch in (0, 1)] == [5.0, 10.0]
     await p.stop()
 
   _run(_t())
@@ -4195,7 +4323,7 @@ def test_parallel_ztouch_seeks_set_off_in_a_cascade_lowest_channel_first():
   """With a second session the seeks start `ztouch_cascade_interval` apart, channel 0 first."""
 
   async def _t():
-    p, rack, plate, sent = _ztouch_setup(True, touch=0.3)
+    p, rack, plate, sent = await _ztouch_setup(True, touch=0.3)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
@@ -4217,14 +4345,17 @@ def test_parallel_ztouch_seeks_set_off_in_a_cascade_lowest_channel_first():
     p.send_command_on_second_session = on_second  # type: ignore[method-assign]
     floors = await p.pipettes._probe_batch_floors(
       ChannelBatch(
-        x_position=plate["A1"][0].get_location_wrt(p.deck, "c", "c", "c").x,
+        x_position=(await plate.get_well("A1").get_location_wrt(p.deck, "c", "c", "c")).x,
         indices=[0, 1],
         channels=[1, 0],
       ),
       z_cavity_bottom=[
-        plate[w][0].get_location_wrt(p.deck, "c", "c", "cavity_bottom").z for w in ("B1", "A1")
+        (await plate.get_well(w).get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z
+        for w in ("B1", "A1")
       ],
-      z_top=[plate[w][0].get_location_wrt(p.deck, "c", "c", "t").z for w in ("B1", "A1")],
+      z_top=[
+        (await plate.get_well(w).get_location_wrt(p.deck, "c", "c", "t")).z for w in ("B1", "A1")
+      ],
       search_speed=10.0,
     )
     rear, front = (p.pipettes.channels[ch].zaxis for ch in (0, 1))
@@ -4240,11 +4371,11 @@ def test_aspirate_on_ztouch_refuses_an_untouched_floor_with_nothing_drawn():
   ZTOUCH is refused before anything is sent."""
 
   async def _t():
-    p, rack, plate, sent = _ztouch_setup(second_session=True, touch=None)
+    p, rack, plate, sent = await _ztouch_setup(second_session=True, touch=None)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-    wells = plate["A1:B1"]
+    wells = plate.get_wells("A1:B1")
     sent.clear()
     with pytest.raises(ValueError, match="finds the surface or the floor itself"):
       await p.pipettes.aspirate(
@@ -4258,8 +4389,7 @@ def test_aspirate_on_ztouch_refuses_an_untouched_floor_with_nothing_drawn():
     assert len(seeks) == 2
     assert not any(isinstance(c, _ASPIRATE_COMMANDS) for c in commands)
     assert any(isinstance(c, PrepCmd.PrepMoveZUpToSafe) for c in commands[seeks[-1] :])
-    tips = [p.pipettes.get_mounted_tip(ch) for ch in (0, 1)]
-    assert [t.tracker.get_used_volume() for t in tips if t is not None] == [0.0, 0.0]
+    assert [await _tip_volume(p, ch) for ch in (0, 1)] == [0.0, 0.0]
     await p.stop()
 
   _run(_t())
@@ -4269,11 +4399,11 @@ def test_aspirate_runs_ztouch_and_off_in_batches_of_their_own():
   """ZTOUCH beside OFF at one X: a command each, both without LLD; only the ZTOUCH one seeks."""
 
   async def _t():
-    p, rack, plate, sent = _ztouch_setup(second_session=False, touch=0.2)
+    p, rack, plate, sent = await _ztouch_setup(second_session=False, touch=0.2)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-    wells = plate["A1:B1"]
+    wells = plate.get_wells("A1:B1")
     sent.clear()
     await p.pipettes.aspirate(
       wells,
@@ -4287,7 +4417,7 @@ def test_aspirate_runs_ztouch_and_off_in_batches_of_their_own():
     assert [c.dest for c in seeks] == [p.pipettes.channels[0].zaxis]
     draws = [c for c in commands if isinstance(c, _ASPIRATE_COMMANDS)]
     assert [type(c) for c in draws] == [PrepCmd.PrepAspirateNoLldMonitoringV2] * 2
-    bottoms = [w.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z for w in wells]
+    bottoms = [(await w.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z for w in wells]
     heights = sorted(e.no_lld.z_fluid for c in draws for e in c.aspirate_parameters)
     # The touched floor 0.2 under the model, the draw 0.2 over it.
     assert heights == pytest.approx(sorted([bottoms[0] - 0.2 + 0.2, bottoms[1] + 3.0]))
@@ -4310,11 +4440,11 @@ def test_dispense_follows_nothing_by_default_a_distance_as_scaled_and_the_profil
   exactly that; auto sends the profile as it is."""
 
   async def _t():
-    p, tip_rack, plate = _aspirate_following_setup()
+    p, tip_rack, plate = await _aspirate_following_setup()
     await p.setup()
     assert p.pipettes is not None
-    well = plate.get_item("A1")
-    await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
+    well = plate.get_well("A1")
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
     await p.pipettes.aspirate([well], piston_volumes=[30.0], use_channels=[0], liquid_heights=[3.0])
     sent = _record(p)
     runs: List[Dict[str, Any]] = [
@@ -4347,12 +4477,19 @@ _SEGMENTS = [
   [],
 ]
 _WATER_JET = get_star_liquid_class(1000, False, True, False, Liquid.WATER, True, True)
+_TIP_300 = library.get_model("hamilton_tip_300uL").definition.attributes.tip
 _WATER_300 = get_star_liquid_class(
-  hamilton_tip_300uL("t").maximal_volume, False, True, False, Liquid.WATER, False, False
+  _TIP_300.maximal_volume, False, True, False, Liquid.WATER, False, False
 )
 _TWO = [10.0, 20.0]
+
+
 # A well of the golden plate; its cavity bottom is 7.03 mm above the deck
-_PLATE_WELL = cor_96_wellplate_360uL_Fb(name="plate")["A1"][0]
+async def _plate_well_facts() -> ContainerFacts:
+  return await _facts(await _plate_well())
+
+
+_PLATE_WELL = asyncio.run(_plate_well_facts())
 
 
 def _as_piston_volumes(
@@ -4538,23 +4675,21 @@ _GOLDEN_DISPENSE_CALLS: Dict[
 async def _capture_dispense(name: str) -> List[str]:
   """Each dispense frame a golden call sends: its read timeout, then its bytes as hex.
 
-  The frame is built with source 2.1.65535 and sequence 0.
+  The frame is built with source 2.1.65535 and sequence 0. Volume tracking is off.
   """
   tip_volume, where, vols, use_channels, kwargs = _GOLDEN_DISPENSE_CALLS[name]
-  deck = PrepDeck()
-  tip_rack = hamilton_96_tiprack_300uL_NTR if tip_volume == 300 else hamilton_96_tiprack_50uL_NTR
-  rack = deck[1] = tip_rack(name="tips", with_tips=True)
-  plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-  dish = PetriDish(name="dish", diameter=77.0, height=30.0, material_z_thickness=2.0)
-  deck[6].assign_child_by_anchor(dish, parent_anchor=("c", "c", "t"), child_anchor=("c", "c", "b"))
-  containers: List[Container] = (
-    [dish, dish] if where == "dish" else [w for part in where.split(",") for w in plate[part]]
-  )
+  deck = await make_prep_deck()
+  model = "hamilton_96_tiprack_300uL_NTR" if tip_volume == 300 else "hamilton_96_tiprack_50uL_NTR"
+  rack = await _rack(deck, model, "tips", 1)
+  plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+  dish = await _dish(deck, "dish", 30.0, 2.0)
+  await deck.set_volume_tracking(False)
+  containers: List[handles.Container] = [dish, dish] if where == "dish" else _wells(plate, where)
   channels = sorted(use_channels if use_channels is not None else range(len(containers)))
   p = PrepSimulationDriver(deck=deck)
   await p.setup()
   assert p.pipettes is not None
-  await p.pipettes.pick_up_tips([rack.get_item(c) for c in channels], use_channels=channels)
+  await p.pipettes.pick_up_tips([rack.get_tip_spot(c) for c in channels], use_channels=channels)
   session = p.io._session
   exchange = session.exchange
   frames: List[str] = []
@@ -5109,16 +5244,19 @@ def test_dispense_of_one_batch_senses_the_tips_and_moves_over_it_before_its_comm
   """One X: the tips sensed, Z safety, one move over the batch at its X speed, then the command."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
     sent = _record(p, names=True)
     await p.pipettes.dispense(
-      plate["A1:B1"], piston_volumes=[10.0, 10.0], use_channels=[0, 1], liquid_heights=[3.0] * 2
+      plate.get_wells("A1:B1"),
+      piston_volumes=[10.0, 10.0],
+      use_channels=[0, 1],
+      liquid_heights=[3.0] * 2,
     )
     assert sent == [
       "PrepProbeRequest",
@@ -5142,41 +5280,38 @@ def test_dispense_runs_one_command_per_x_and_books_each_batch_on_its_own():
   """Two X: a move before one command per X, each leaving the tips where told; each booked."""
 
   async def _t():
-    set_volume_tracking(True)
-    try:
-      deck = PrepDeck()
-      rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-      plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-      tips = [p.pipettes.get_mounted_tip(ch) for ch in (0, 1)]
-      for tip in tips:
-        assert tip is not None
-        tip.tracker.set_volume(50.0)
-      rear, front = plate.get_item("A1"), plate.get_item("B2")
-      sent = _record(p)
-      await p.pipettes.dispense(
-        [rear, front],
-        use_channels=[0, 1],
-        piston_volumes=[10.0, 20.0],
-        liquid_heights=[3.0, 3.0],
-        minimum_traverse_height_during=100.0,
-        minimum_traverse_height_end=110.0,
-      )
-      first, second = [i for i, c in enumerate(sent) if isinstance(c, _DISPENSE_COMMANDS)]
-      for index, well, z_final in ((first, rear, 100.0), (second, front, 110.0)):
-        (entry,) = sent[index].dispense_parameters
-        x = well.get_location_wrt(deck, "c", "c", "cavity_bottom").x
-        assert entry.dispense.x_position == pytest.approx(x)
-        assert entry.common.z_final == z_final
-      moves = [i for i, c in enumerate(sent) if isinstance(c, PrepCmd.PrepMoveToPosition)]
-      assert len(moves) == 2 and moves[0] < first < moves[1] < second
-      assert (rear.tracker.volume, front.tracker.volume) == (10.0, 20.0)
-      assert [t.tracker.get_used_volume() for t in tips if t is not None] == [40.0, 30.0]
-    finally:
-      set_volume_tracking(False)
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
+    for ch in (0, 1):
+      await _set_tip_volume(p, ch, 50.0)
+    rear, front = plate.get_well("A1"), plate.get_well("B2")
+    sent = _record(p)
+    await p.pipettes.dispense(
+      [rear, front],
+      use_channels=[0, 1],
+      piston_volumes=[10.0, 20.0],
+      liquid_heights=[3.0, 3.0],
+      minimum_traverse_height_during=100.0,
+      minimum_traverse_height_end=110.0,
+    )
+    first, second = [i for i, c in enumerate(sent) if isinstance(c, _DISPENSE_COMMANDS)]
+    for index, well, z_final in ((first, rear, 100.0), (second, front, 110.0)):
+      (entry,) = sent[index].dispense_parameters
+      x = (await well.get_location_wrt(deck, "c", "c", "cavity_bottom")).x
+      assert entry.dispense.x_position == pytest.approx(x)
+      assert entry.common.z_final == z_final
+    moves = [i for i, c in enumerate(sent) if isinstance(c, PrepCmd.PrepMoveToPosition)]
+    assert len(moves) == 2 and moves[0] < first < moves[1] < second
+    assert (
+      await rear.get_volume(pb.VIEW_COMMITTED),
+      await front.get_volume(pb.VIEW_COMMITTED),
+    ) == (10.0, 20.0)
+    assert [await _tip_volume(p, ch) for ch in (0, 1)] == [40.0, 30.0]
 
   _run(_t())
 
@@ -5185,44 +5320,40 @@ def test_dispense_refuses_before_booking_or_sending():
   """No class for volumes, a flow rate of 0, blow-out air and unverified slots refused; no move."""
 
   async def _t():
-    set_volume_tracking(True)
-    try:
-      deck = PrepDeck()
-      tip_rack = deck[3] = hamilton_96_tiprack_50uL_NTR(name="ntr", with_tips=True)
-      plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      well = plate.get_item("A1")
-      await p.pipettes.pick_up_tips([tip_rack.get_item("A1")], use_channels=[0])
-      sent = _record(p)
-      for kwargs, match in (
-        ({"volumes": [5.0]}, "no liquid class is known for channel 0"),
-        ({"piston_volumes": [5.0], "flow_rates": [0.0]}, "flow_rates must be above 0"),
-        ({"piston_volumes": [5.0], "blow_out_air_volumes": [1.0]}, "blow-out air on aspirate"),
-        ({"piston_volumes": [5.0], "swap_speeds": [1.0, 1.0]}, "swap_speeds length"),
-        (
-          {"piston_volumes": [5.0], "z_air": [60.0], "pull_out_distances_transport_air": [5.0]},
-          "one of z_air and pull_out",
-        ),
-        ({"piston_volumes": [5.0], "side_touch_off_distance": 1.0}, "no side touch-off"),
-        ({"piston_volumes": [5.0], "post_mixes": [Mix(5.0, 2, 50.0)]}, "post-mixing"),
-        ({"piston_volumes": [5.0], "mix_positions_from_liquid_surface": [1.0]}, "post-mixing"),
-        ({"piston_volumes": [5.0], "limit_curve_indices": [1]}, "limit curve 0"),
-        ({"piston_volumes": [5.0], "post_mixes": [None, None]}, "post_mixes length"),
-        ({"piston_volumes": [5.0], "minimum_traverse_height_end": 500.0}, "outside channel"),
-        (
-          {"piston_volumes": [5.0], "lld_mode": _CAPACITIVE},
-          "finds the surface or the floor itself",
-        ),
-      ):
-        with pytest.raises(ValueError, match=match):
-          await p.pipettes.dispense([well], use_channels=[0], liquid_heights=[2.0], **kwargs)
-      assert sent == []
-      assert well.tracker.get_used_volume() == 0.0
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
+    deck = await make_prep_deck()
+    tip_rack = await _rack(deck, "hamilton_96_tiprack_50uL_NTR", "ntr", 3)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    well = plate.get_well("A1")
+    await p.pipettes.pick_up_tips([tip_rack.get_tip_spot("A1")], use_channels=[0])
+    sent = _record(p)
+    for kwargs, match in (
+      ({"volumes": [5.0]}, "no liquid class is known for channel 0"),
+      ({"piston_volumes": [5.0], "flow_rates": [0.0]}, "flow_rates must be above 0"),
+      ({"piston_volumes": [5.0], "blow_out_air_volumes": [1.0]}, "blow-out air on aspirate"),
+      ({"piston_volumes": [5.0], "swap_speeds": [1.0, 1.0]}, "swap_speeds length"),
+      (
+        {"piston_volumes": [5.0], "z_air": [60.0], "pull_out_distances_transport_air": [5.0]},
+        "one of z_air and pull_out",
+      ),
+      ({"piston_volumes": [5.0], "side_touch_off_distance": 1.0}, "no side touch-off"),
+      ({"piston_volumes": [5.0], "post_mixes": [Mix(5.0, 2, 50.0)]}, "post-mixing"),
+      ({"piston_volumes": [5.0], "mix_positions_from_liquid_surface": [1.0]}, "post-mixing"),
+      ({"piston_volumes": [5.0], "limit_curve_indices": [1]}, "limit curve 0"),
+      ({"piston_volumes": [5.0], "post_mixes": [None, None]}, "post_mixes length"),
+      ({"piston_volumes": [5.0], "minimum_traverse_height_end": 500.0}, "outside channel"),
+      (
+        {"piston_volumes": [5.0], "lld_mode": _CAPACITIVE},
+        "finds the surface or the floor itself",
+      ),
+    ):
+      with pytest.raises(ValueError, match=match):
+        await p.pipettes.dispense([well], use_channels=[0], liquid_heights=[2.0], **kwargs)
+    assert sent == []
+    assert await well.get_volume() == 0.0
+    await p.stop()
 
   _run(_t())
 
@@ -5234,11 +5365,11 @@ def test_dispense_on_ztouch_touches_each_floor_then_dispenses_just_above_it_with
   """Each channel's seek on its own link before the dispense, which goes 0.2 mm off the floor."""
 
   async def _t():
-    p, rack, plate, sent = _ztouch_setup(second_session, touch=0.3)
+    p, rack, plate, sent = await _ztouch_setup(second_session, touch=0.3)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-    wells = plate["A1:B1"]
+    wells = plate.get_wells("A1:B1")
     sent.clear()
     with patch.object(pipettes_logger, "warning") as warning:
       await p.pipettes.dispense(wells, piston_volumes=[5.0, 5.0], lld_mode=_ZTOUCH)
@@ -5251,7 +5382,7 @@ def test_dispense_on_ztouch_touches_each_floor_then_dispenses_just_above_it_with
     assert isinstance(push, PrepCmd.PrepDispenseNoLldV2)
     assert commands.index(push) > commands.index(seeks[-1][1])
     for entry, well in zip(push.dispense_parameters, wells):
-      floor = well.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z - 0.3
+      floor = (await well.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z - 0.3
       assert entry.no_lld.z_fluid == pytest.approx(floor + 0.2)
       assert entry.common.z_minimum == pytest.approx(floor)
     await p.stop()
@@ -5263,29 +5394,23 @@ def test_dispense_on_ztouch_refuses_an_untouched_floor_with_nothing_dispensed():
   """A seek that reaches its end untouched refuses the batch before its dispense."""
 
   async def _t():
-    p, rack, plate, sent = _ztouch_setup(second_session=True, touch=None)
-    set_volume_tracking(True)
-    try:
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-      tips = [p.pipettes.get_mounted_tip(ch) for ch in (0, 1)]
-      for tip in tips:
-        assert tip is not None
-        tip.tracker.set_volume(20.0)
-      wells = plate["A1:B1"]
-      sent.clear()
-      with pytest.raises(RuntimeError, match="channel 0 met no floor in plate_well_A1"):
-        await p.pipettes.dispense(wells, piston_volumes=[5.0, 5.0], lld_mode=_ZTOUCH)
-      commands = [c for _, c in sent]
-      seeks = [i for i, c in enumerate(commands) if isinstance(c, PrepCmd.PrepZAxisSeekObstacle)]
-      assert len(seeks) == 2
-      assert not any(isinstance(c, _DISPENSE_COMMANDS) for c in commands)
-      assert any(isinstance(c, PrepCmd.PrepMoveZUpToSafe) for c in commands[seeks[-1] :])
-      assert [t.tracker.get_used_volume() for t in tips if t is not None] == [20.0, 20.0]
-      assert [w.tracker.get_used_volume() for w in wells] == [0.0, 0.0]
-    finally:
-      set_volume_tracking(False)
+    p, rack, plate, sent = await _ztouch_setup(second_session=True, touch=None)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
+    for ch in (0, 1):
+      await _set_tip_volume(p, ch, 20.0)
+    wells = plate.get_wells("A1:B1")
+    sent.clear()
+    with pytest.raises(RuntimeError, match="channel 0 met no floor in plate_well_A1"):
+      await p.pipettes.dispense(wells, piston_volumes=[5.0, 5.0], lld_mode=_ZTOUCH)
+    commands = [c for _, c in sent]
+    seeks = [i for i, c in enumerate(commands) if isinstance(c, PrepCmd.PrepZAxisSeekObstacle)]
+    assert len(seeks) == 2
+    assert not any(isinstance(c, _DISPENSE_COMMANDS) for c in commands)
+    assert any(isinstance(c, PrepCmd.PrepMoveZUpToSafe) for c in commands[seeks[-1] :])
+    assert [await _tip_volume(p, ch) for ch in (0, 1)] == [20.0, 20.0]
+    assert [await w.get_volume() for w in wells] == [0.0, 0.0]
     await p.stop()
 
   _run(_t())
@@ -5295,11 +5420,11 @@ def test_dispense_runs_ztouch_and_off_in_batches_of_their_own():
   """ZTOUCH beside OFF at one X: a command each, both without LLD; only the ZTOUCH one seeks."""
 
   async def _t():
-    p, rack, plate, sent = _ztouch_setup(second_session=False, touch=0.0)
+    p, rack, plate, sent = await _ztouch_setup(second_session=False, touch=0.0)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-    wells = plate["A1:B1"]
+    wells = plate.get_wells("A1:B1")
     sent.clear()
     await p.pipettes.dispense(
       wells,
@@ -5313,7 +5438,7 @@ def test_dispense_runs_ztouch_and_off_in_batches_of_their_own():
     assert [c.dest for c in seeks] == [p.pipettes.channels[0].zaxis]
     pushes = [c for c in commands if isinstance(c, _DISPENSE_COMMANDS)]
     assert [type(c) for c in pushes] == [PrepCmd.PrepDispenseNoLldV2] * 2
-    bottoms = [w.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z for w in wells]
+    bottoms = [(await w.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z for w in wells]
     heights = sorted(e.no_lld.z_fluid for c in pushes for e in c.dispense_parameters)
     assert heights == pytest.approx(sorted([bottoms[0] + 0.2, bottoms[1] + 3.0]))
     await p.stop()
@@ -5329,77 +5454,66 @@ def test_aspirate_on_capacitive_searches_each_channel_then_draws_at_the_surface_
   tracker takes the measured volume, with a warning when it is 20 % off."""
 
   async def _t():
-    p, rack, plate, sent = _clld_setup(second_session, found=4.0)
-    set_volume_tracking(True)
-    try:
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-      wells = plate["A1:B1"]
-      wells[0].tracker.set_volume(120.0)
-      wells[1].tracker.set_volume(200.0)
-      sent.clear()
-      probe = p.pipettes._probe_batch_liquid_heights
-      with (
-        patch.object(pipettes_logger, "warning") as warning,
-        patch.object(p.pipettes, "_probe_batch_liquid_heights", wraps=probe) as spy,
-      ):
-        await p.pipettes.aspirate(
-          wells, use_channels=[0, 1], piston_volumes=[10.0, 10.0], lld_mode=_CAPACITIVE
-        )
-      tops = [w.get_location_wrt(p.deck, "c", "c", "t").z for w in wells]
-      assert spy.call_args.kwargs["z_start"] == pytest.approx([t + 2.0 for t in tops], abs=0.01)
-      warned = [str(c.args) for c in warning.call_args_list if "measured" in str(c.args)]
-      assert len(warned) == 1 and "plate_well_B1" in warned[0]
-      seeks = [(link, c) for link, c in sent if isinstance(c, PrepCmd.PrepZAxisSeekCapacitiveLld)]
-      assert [link for link, _ in seeks] == (["main", "second"] if second_session else ["main"] * 2)
-      commands = [c for _, c in sent]
-      (draw,) = [c for c in commands if isinstance(c, _ASPIRATE_COMMANDS)]
-      assert isinstance(draw, PrepCmd.PrepAspirateNoLldMonitoringV2)
-      assert commands.index(draw) > commands.index(seeks[-1][1])
-      for entry, well in zip(draw.aspirate_parameters, wells):
-        bottom = well.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z
-        assert entry.no_lld.z_fluid == pytest.approx(bottom + 4.0)
-        assert well.tracker.get_used_volume() == pytest.approx(126.0 - 10.0)
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
+    p, rack, plate, sent = await _clld_setup(second_session, found=4.0)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
+    wells = plate.get_wells("A1:B1")
+    await wells[0].set_volume(120.0)
+    await wells[1].set_volume(200.0)
+    sent.clear()
+    probe = p.pipettes._probe_batch_liquid_heights
+    with (
+      patch.object(pipettes_logger, "warning") as warning,
+      patch.object(p.pipettes, "_probe_batch_liquid_heights", wraps=probe) as spy,
+    ):
+      await p.pipettes.aspirate(
+        wells, use_channels=[0, 1], piston_volumes=[10.0, 10.0], lld_mode=_CAPACITIVE
+      )
+    tops = [(await w.get_location_wrt(p.deck, "c", "c", "t")).z for w in wells]
+    assert spy.call_args.kwargs["z_start"] == pytest.approx([t + 2.0 for t in tops], abs=0.01)
+    warned = [str(c.args) for c in warning.call_args_list if "measured" in str(c.args)]
+    assert len(warned) == 1 and "plate_well_B1" in warned[0]
+    seeks = [(link, c) for link, c in sent if isinstance(c, PrepCmd.PrepZAxisSeekCapacitiveLld)]
+    assert [link for link, _ in seeks] == (["main", "second"] if second_session else ["main"] * 2)
+    commands = [c for _, c in sent]
+    (draw,) = [c for c in commands if isinstance(c, _ASPIRATE_COMMANDS)]
+    assert isinstance(draw, PrepCmd.PrepAspirateNoLldMonitoringV2)
+    assert commands.index(draw) > commands.index(seeks[-1][1])
+    for entry, well in zip(draw.aspirate_parameters, wells):
+      bottom = (await well.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z
+      assert entry.no_lld.z_fluid == pytest.approx(bottom + 4.0)
+      assert await well.get_volume() == pytest.approx(126.0 - 10.0)
+    await p.stop()
 
   _run(_t())
 
 
 def test_capacitive_refuses_a_container_without_liquid_or_height_volume_functions():
-  """No liquid found: refused, nothing drawn or booked. No height-volume functions: refused before
+  """No liquid found: refused, nothing drawn or booked. No height-volume data: refused before
   any command."""
 
   async def _t():
-    p, rack, plate, sent = _clld_setup(second_session=False, found=None)
-    set_volume_tracking(True)
-    try:
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
-      well = plate.get_item("A1")
-      well.tracker.set_volume(100.0)
-      sent.clear()
-      with pytest.raises(RuntimeError, match="channel 0 found no liquid in plate_well_A1"):
-        await p.pipettes.aspirate(
-          [well], use_channels=[0], piston_volumes=[10.0], lld_mode=_CAPACITIVE
-        )
-      assert not any(isinstance(c, _ASPIRATE_COMMANDS) for _, c in sent)
-      assert well.tracker.get_used_volume() == 100.0
-      dish = PetriDish(name="dish", diameter=77.0, height=30.0, material_z_thickness=2.0)
-      p.deck[6].assign_child_by_anchor(
-        dish, parent_anchor=("c", "c", "t"), child_anchor=("c", "c", "b")
+    p, rack, plate, sent = await _clld_setup(second_session=False, found=None)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
+    well = plate.get_well("A1")
+    await well.set_volume(100.0)
+    sent.clear()
+    with pytest.raises(RuntimeError, match="channel 0 found no liquid in plate_well_A1"):
+      await p.pipettes.aspirate(
+        [well], use_channels=[0], piston_volumes=[10.0], lld_mode=_CAPACITIVE
       )
-      sent.clear()
-      for call in (p.pipettes.aspirate, p.pipettes.dispense):
-        with pytest.raises(RuntimeError, match="Generate a height_volume_data dictionary"):
-          await call([dish], use_channels=[0], piston_volumes=[1.0], lld_mode=_CAPACITIVE)
-      assert sent == []
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
+    assert not any(isinstance(c, _ASPIRATE_COMMANDS) for _, c in sent)
+    assert await well.get_volume() == 100.0
+    dish = await _dish(p.deck, "dish", 30.0, 2.0)
+    sent.clear()
+    for call in (p.pipettes.aspirate, p.pipettes.dispense):
+      with pytest.raises(RuntimeError, match="Generate a height_volume_data dictionary"):
+        await call([dish], use_channels=[0], piston_volumes=[1.0], lld_mode=_CAPACITIVE)
+    assert sent == []
+    await p.stop()
 
   _run(_t())
 
@@ -5408,37 +5522,32 @@ def test_dispense_on_capacitive_searches_then_dispenses_at_the_surface_without_l
   """The dispense goes at the surface found, no LLD; too little room as measured refuses it."""
 
   async def _t():
-    p, rack, plate, sent = _clld_setup(second_session=False, found=4.0)
-    set_volume_tracking(True)
-    try:
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
-      plate.get_item("H12").tracker.set_volume(100.0)
-      await p.pipettes.aspirate(
-        [plate.get_item("H12")], use_channels=[0], piston_volumes=[20.0], liquid_heights=[5.0]
-      )
-      well = plate.get_item("A1")
-      sent.clear()
-      await p.pipettes.dispense(
-        [well], use_channels=[0], piston_volumes=[5.0], lld_mode=_CAPACITIVE
-      )
-      (push,) = [c for _, c in sent if isinstance(c, _DISPENSE_COMMANDS)]
-      assert isinstance(push, PrepCmd.PrepDispenseNoLldV2)
-      bottom = well.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z
-      assert push.dispense_parameters[0].no_lld.z_fluid == pytest.approx(bottom + 4.0)
-      assert well.tracker.get_used_volume() == pytest.approx(126.0 + 5.0)
-      sent.clear()
-      well.tracker.set_volume(0.0)
-      with patch.object(well, "compute_volume_from_height", return_value=356.0):
-        with pytest.raises(RuntimeError, match="room for 4.0 uL as measured"):
-          await p.pipettes.dispense(
-            [well], use_channels=[0], piston_volumes=[5.0], lld_mode=_CAPACITIVE
-          )
-      assert not any(isinstance(c, _DISPENSE_COMMANDS) for _, c in sent)
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
+    p, rack, plate, sent = await _clld_setup(second_session=False, found=4.0)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
+    await plate.get_well("H12").set_volume(100.0)
+    await p.pipettes.aspirate(
+      [plate.get_well("H12")], use_channels=[0], piston_volumes=[20.0], liquid_heights=[5.0]
+    )
+    well = plate.get_well("A1")
+    sent.clear()
+    await p.pipettes.dispense([well], use_channels=[0], piston_volumes=[5.0], lld_mode=_CAPACITIVE)
+    (push,) = [c for _, c in sent if isinstance(c, _DISPENSE_COMMANDS)]
+    assert isinstance(push, PrepCmd.PrepDispenseNoLldV2)
+    bottom = (await well.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z
+    assert push.dispense_parameters[0].no_lld.z_fluid == pytest.approx(bottom + 4.0)
+    assert await well.get_volume() == pytest.approx(126.0 + 5.0)
+    sent.clear()
+    await well.set_volume(0.0)
+    measured = AsyncMock(return_value=[356.0])
+    with patch("pylabrobot.hamilton.prep.driver.features.pipettes.volumes_from_heights", measured):
+      with pytest.raises(RuntimeError, match="room for 4.0 uL as measured"):
+        await p.pipettes.dispense(
+          [well], use_channels=[0], piston_volumes=[5.0], lld_mode=_CAPACITIVE
+        )
+    assert not any(isinstance(c, _DISPENSE_COMMANDS) for _, c in sent)
+    await p.stop()
 
   _run(_t())
 
@@ -5449,44 +5558,38 @@ def test_shortfalls_warn_and_move_air_only_while_volumes_are_tracked(tracking):
   the rest is air, with a warning while tracking; with tracking off, nothing is checked."""
 
   async def _t():
-    set_volume_tracking(tracking)
-    try:
-      deck = PrepDeck()
-      rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-      plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
-      dish = PetriDish(name="dish", diameter=77.0, height=30.0, material_z_thickness=2.0)
-      deck[6].assign_child_by_anchor(
-        dish, parent_anchor=("c", "c", "t"), child_anchor=("c", "c", "b")
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
+    dish = await _dish(deck, "dish", 30.0, 2.0)
+    await deck.set_volume_tracking(tracking)
+    if tracking:
+      await dish.set_volume(180.0)
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
+    sent = _record(p, only=(*_ASPIRATE_COMMANDS, *_DISPENSE_COMMANDS))
+    with patch.object(pipettes_logger, "warning") as warning:
+      await p.pipettes.aspirate(
+        [dish, dish],
+        use_channels=[0, 1],
+        piston_volumes=[150.0, 40.0],
+        liquid_heights=[5.0, 5.0],
+        resource_offsets=[Coordinate(-5.0, 0, 0), Coordinate(5.0, 0, 0)],
       )
-      if tracking:
-        dish.tracker.set_volume(180.0)
-      p = PrepSimulationDriver(deck=deck)
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1:B1"], use_channels=[0, 1])
-      sent = _record(p, only=(*_ASPIRATE_COMMANDS, *_DISPENSE_COMMANDS))
-      with patch.object(pipettes_logger, "warning") as warning:
-        await p.pipettes.aspirate(
-          [dish, dish],
-          use_channels=[0, 1],
-          piston_volumes=[150.0, 40.0],
-          liquid_heights=[5.0, 5.0],
-          resource_offsets=[Coordinate(-5.0, 0, 0), Coordinate(5.0, 0, 0)],
-        )
-        well = plate.get_item("A1")
-        await p.pipettes.dispense([well], use_channels=[0], piston_volumes=[200.0])
-      warned = " ".join(c.args[0] % c.args[1:] for c in warning.call_args_list)
-      assert len(sent) == 3
-      if tracking:
-        assert "which holds 30.0 uL; the rest is air" in warned
-        assert "from a tip holding 150.0 uL; the rest is air" in warned
-        assert dish.tracker.get_used_volume() == 0.0
-        assert well.tracker.get_used_volume() == 150.0
-      else:
-        assert "the rest is air" not in warned
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
+      well = plate.get_well("A1")
+      await p.pipettes.dispense([well], use_channels=[0], piston_volumes=[200.0])
+    warned = " ".join(c.args[0] % c.args[1:] for c in warning.call_args_list)
+    assert len(sent) == 3
+    if tracking:
+      assert "which holds 30.0 uL; the rest is air" in warned
+      assert "from a tip holding 150.0 uL; the rest is air" in warned
+      assert await dish.get_volume() == 0.0
+      assert await well.get_volume() == 150.0
+    else:
+      assert "the rest is air" not in warned
+    await p.stop()
 
   _run(_t())
 
@@ -5496,32 +5599,28 @@ def test_capacitive_search_goes_under_the_model_and_the_floor_follows_a_surface_
   nothing, and becomes the aspirate height and the floor sent."""
 
   async def _t():
-    p, rack, plate, sent = _clld_setup(second_session=False, found=-0.5)
-    set_volume_tracking(True)
-    try:
-      await p.setup()
-      assert p.pipettes is not None
-      await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
-      well = plate.get_item("A1")
-      well.tracker.set_volume(100.0)
-      bottom = well.get_location_wrt(p.deck, "c", "c", "cavity_bottom").z
-      sent.clear()
-      with patch.object(pipettes_logger, "warning") as warning:
-        await p.pipettes.aspirate(
-          [well], use_channels=[0], piston_volumes=[10.0], lld_mode=_CAPACITIVE
-        )
-      warned = " ".join(c.args[0] % c.args[1:] for c in warning.call_args_list)
-      assert "0.50 mm below its modelled cavity bottom" in warned
-      (seek,) = [c for _, c in sent if isinstance(c, PrepCmd.PrepZAxisSeekCapacitiveLld)]
-      assert seek.position - SIMULATED_Z_DRIVE_OFFSETS[0] == pytest.approx(bottom - 1.0, abs=0.02)
-      (draw,) = [c for _, c in sent if isinstance(c, _ASPIRATE_COMMANDS)]
-      entry = draw.aspirate_parameters[0]
-      assert entry.no_lld.z_fluid == pytest.approx(bottom - 0.5, abs=0.01)
-      assert entry.common.z_minimum == pytest.approx(bottom - 0.5, abs=0.01)
-      assert well.tracker.get_used_volume() == pytest.approx(90.0)
-      await p.stop()
-    finally:
-      set_volume_tracking(False)
+    p, rack, plate, sent = await _clld_setup(second_session=False, found=-0.5)
+    await p.setup()
+    assert p.pipettes is not None
+    await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
+    well = plate.get_well("A1")
+    await well.set_volume(100.0)
+    bottom = (await well.get_location_wrt(p.deck, "c", "c", "cavity_bottom")).z
+    sent.clear()
+    with patch.object(pipettes_logger, "warning") as warning:
+      await p.pipettes.aspirate(
+        [well], use_channels=[0], piston_volumes=[10.0], lld_mode=_CAPACITIVE
+      )
+    warned = " ".join(c.args[0] % c.args[1:] for c in warning.call_args_list)
+    assert "0.50 mm below its modelled cavity bottom" in warned
+    (seek,) = [c for _, c in sent if isinstance(c, PrepCmd.PrepZAxisSeekCapacitiveLld)]
+    assert seek.position - SIMULATED_Z_DRIVE_OFFSETS[0] == pytest.approx(bottom - 1.0, abs=0.02)
+    (draw,) = [c for _, c in sent if isinstance(c, _ASPIRATE_COMMANDS)]
+    entry = draw.aspirate_parameters[0]
+    assert entry.no_lld.z_fluid == pytest.approx(bottom - 0.5, abs=0.01)
+    assert entry.common.z_minimum == pytest.approx(bottom - 0.5, abs=0.01)
+    assert await well.get_volume() == pytest.approx(90.0)
+    await p.stop()
 
   _run(_t())
 
@@ -5530,15 +5629,15 @@ def test_transport_air_height_is_the_pipetting_height_plus_the_pull_out_distance
   """No z_air and no pull-out given: 10 mm over the aspirate and the dispense height."""
 
   async def _t():
-    deck = PrepDeck()
-    rack = deck[1] = hamilton_96_tiprack_300uL_NTR(name="tips", with_tips=True)
-    plate = deck[0] = cor_96_wellplate_360uL_Fb(name="plate")
+    deck = await make_prep_deck()
+    rack = await _rack(deck, "hamilton_96_tiprack_300uL_NTR", "tips", 1)
+    plate = await _plate(deck, "cor_96_wellplate_360uL_Fb", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.pick_up_tips(rack["A1"], use_channels=[0])
-    well = plate.get_item("A1")
-    bottom = well.get_location_wrt(deck, "c", "c", "cavity_bottom").z
+    well = plate.get_well("A1")
+    bottom = (await well.get_location_wrt(deck, "c", "c", "cavity_bottom")).z
     sent = _record(p, only=(*_ASPIRATE_COMMANDS, *_DISPENSE_COMMANDS))
     await p.pipettes.aspirate([well], use_channels=[0], piston_volumes=[5.0], liquid_heights=[3.0])
     await p.pipettes.dispense([well], use_channels=[0], piston_volumes=[5.0], liquid_heights=[4.0])

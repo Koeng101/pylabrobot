@@ -1,0 +1,2358 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        {
+          "rpc": "/sila2.org.silastandard.core.lockcontroller.v1.LockController/UnlockServer",
+          "timeout": 30.0,
+          "request": "0a0c0a0a70796c6162726f626f74"
+        },
+        {
+          "rpc": "/sila2.org.silastandard.core.lockcontroller.v1.LockController/LockServer",
+          "timeout": 30.0,
+          "request": "0a0c0a0a70796c6162726f626f74120308901c"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/Get_InstalledObjectives",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/GetAvailableObjectivesForPosition",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a0e0a0c7b22496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a2a0a287b224964223a2022504c20464c554f5441522034782f302e3133222c2022496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/GetAvailableObjectivesForPosition",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a0e0a0c7b22496e646578223a20317d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a2b0a297b224964223a2022504c20464c554f544152203130782f302e3330222c2022496e646578223a20317d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_InstalledFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_CompatibleFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a1c0a1a7b224964223a202244415049222c2022496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_CompatibleFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a1c0a1a7b224964223a202246495443222c2022496e646578223a20317d"
+        }
+      ]
+    },
+    {
+      "call": "capture(row=3, column=5, mode=BRIGHTFIELD, objective=O_4X_PL_FL, exposure_time=2.0, focal_height=2.5, plate=plate)",
+      "result": {
+        "images": [
+          [
+            [
+              9,
+              8
+            ],
+            [
+              7,
+              6
+            ]
+          ]
+        ],
+        "exposure_time": 2.0,
+        "focal_height": 2.5
+      },
+      "sent": [
+        {
+          "rpc": "/sila2.moldev.com.instruments.instrumentcontroller.v1.InstrumentController/Initialize",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 60.0,
+          "request": {
+            "labware": {
+              "LabwareType": 1,
+              "LabwareDimensions": {
+                "ncavities": 96,
+                "nrows": 8,
+                "columns": 12,
+                "labware_length": 127.76,
+                "labware_width": 85.11,
+                "labware_height": 14.3,
+                "dist2firstcol": 14.225,
+                "dist2firstrow": 10.925,
+                "row_distance": 8.99,
+                "well2well_dist_col": 8.99,
+                "bottom_elevation": 1.92,
+                "bottom_thickness": 1.55,
+                "bottom_clearance": 1.73,
+                "bottom_length": 6.35,
+                "bottom_width": 6.35,
+                "round_bottom": true,
+                "volume": 300
+              },
+              "RefractionIndex": 1.0
+            },
+            "snap": {
+              "imagesChannelParameters": [
+                {
+                  "focusOffsetNm": 0,
+                  "imageSize": {
+                    "X": 2008,
+                    "Y": 2008
+                  },
+                  "exposureTimeUs": 2000,
+                  "illuminationConfig": {
+                    "filterCubeId": "",
+                    "excitationSourceId": "5069278",
+                    "lightChannel": 5
+                  },
+                  "imageDataFormat": {
+                    "ImageFormat": "Tiff",
+                    "BPPLayout": {
+                      "TotBPP": 16,
+                      "SigBPP": 12,
+                      "ShiftToMSB": true
+                    }
+                  },
+                  "objectiveId": "PL FLUOTAR 4x/0.13",
+                  "doAutoExposure": false,
+                  "autoFocusRange": "normal",
+                  "softwareAutofocusRange": "none",
+                  "hardwareAutofocusSearch": "plateBottom"
+                }
+              ],
+              "capturePosition": {
+                "cavityCoordinatesIndexXy": {
+                  "Item1": 5,
+                  "Item2": 3
+                },
+                "siteCoordinatesNmXy": {
+                  "Item1": 0,
+                  "Item2": 0
+                }
+              },
+              "skipAutofocus": true,
+              "localTimeReferencePosixMSec": 1700000000000,
+              "storageId": 0,
+              "focusSettings": {
+                "autofocusLocation": "fixedFocus",
+                "baseZPositionUm": 2500.0
+              }
+            }
+          }
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages_Intermediate",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 300.0,
+          "request": "0a09657865632d75756964"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.snapcontroller.v1.SnapController/SnapImages_Result",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 60.0,
+          "request": "0a09657865632d75756964"
+        }
+      ],
+      "resources": [
+        {
+          "name": "plate",
+          "parent": "",
+          "kind": "RESOURCE_KIND_PLATE"
+        },
+        {
+          "name": "plate_well_A1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            11.05,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            11.05,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            11.05,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            11.05,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            11.05,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            11.05,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            11.05,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            11.05,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A2",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            20.04,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B2",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            20.04,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C2",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            20.04,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D2",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            20.04,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E2",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            20.04,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F2",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            20.04,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G2",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            20.04,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H2",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            20.04,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A3",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            29.03,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B3",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            29.03,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C3",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            29.03,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D3",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            29.03,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E3",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            29.03,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F3",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            29.03,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G3",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            29.03,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H3",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            29.03,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A4",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            38.02,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B4",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            38.02,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C4",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            38.02,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D4",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            38.02,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E4",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            38.02,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F4",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            38.02,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G4",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            38.02,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H4",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            38.02,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A5",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            47.01,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B5",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            47.01,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C5",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            47.01,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D5",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            47.01,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E5",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            47.01,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F5",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            47.01,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G5",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            47.01,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H5",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            47.01,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A6",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            56.0,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B6",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            56.0,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C6",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            56.0,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D6",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            56.0,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E6",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            56.0,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F6",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            56.0,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G6",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            56.0,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H6",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            56.0,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A7",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            64.99,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B7",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            64.99,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C7",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            64.99,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D7",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            64.99,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E7",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            64.99,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F7",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            64.99,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G7",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            64.99,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H7",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            64.99,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A8",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            73.98,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B8",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            73.98,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C8",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            73.98,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D8",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            73.98,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E8",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            73.98,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F8",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            73.98,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G8",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            73.98,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H8",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            73.98,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A9",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            82.97,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B9",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            82.97,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C9",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            82.97,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D9",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            82.97,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E9",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            82.97,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F9",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            82.97,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G9",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            82.97,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H9",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            82.97,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A10",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            91.96,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B10",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            91.96,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C10",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            91.96,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D10",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            91.96,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E10",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            91.96,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F10",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            91.96,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G10",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            91.96,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H10",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            91.96,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A11",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            100.95,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B11",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            100.95,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C11",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            100.95,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D11",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            100.95,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E11",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            100.95,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F11",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            100.95,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G11",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            100.95,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H11",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            100.95,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_A12",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            109.94,
+            70.68,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_B12",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            109.94,
+            61.69,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_C12",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            109.94,
+            52.7,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_D12",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            109.94,
+            43.71,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_E12",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            109.94,
+            34.72,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_F12",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            109.94,
+            25.73,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_G12",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            109.94,
+            16.74,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_well_H12",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            109.94,
+            7.75,
+            1.92
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "plate_lid",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_LID",
+          "location": [
+            -0.001,
+            -0.1805,
+            6.0
+          ]
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "plate",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE"
+    },
+    {
+      "name": "plate_well_A1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        11.05,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        11.05,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        11.05,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        11.05,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        11.05,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        11.05,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        11.05,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        11.05,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        20.04,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        20.04,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        20.04,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        20.04,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        20.04,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        20.04,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        20.04,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        20.04,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        29.03,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        29.03,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        29.03,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        29.03,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        29.03,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        29.03,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        29.03,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        29.03,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        38.02,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        38.02,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        38.02,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        38.02,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        38.02,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        38.02,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        38.02,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        38.02,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        47.01,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        47.01,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        47.01,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        47.01,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        47.01,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        47.01,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        47.01,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        47.01,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        56.0,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        56.0,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        56.0,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        56.0,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        56.0,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        56.0,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        56.0,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        56.0,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.99,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.99,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.99,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.99,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.99,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.99,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.99,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.99,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.98,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.98,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.98,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.98,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.98,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.98,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.98,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.98,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.97,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.97,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.97,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.97,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.97,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.97,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.97,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.97,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.96,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.96,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.96,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.96,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.96,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.96,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.96,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.96,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.95,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.95,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.95,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.95,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.95,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.95,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.95,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.95,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.94,
+        70.68,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.94,
+        61.69,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.94,
+        52.7,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.94,
+        43.71,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_E12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.94,
+        34.72,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_F12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.94,
+        25.73,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_G12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.94,
+        16.74,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_H12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.94,
+        7.75,
+        1.92
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_lid",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_LID",
+      "location": [
+        -0.001,
+        -0.1805,
+        6.0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "name": "Trough_CAR_4R200_A00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TroughCarrier",
+      "model": "Trough_CAR_4R200_A00",
+      "category": "trough_carrier",
+      "size": {
+        "x": 45.0,
+        "y": 497.0,
+        "z": 71.5
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 37.0,
+            "y": 118.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 2.0,
+            "z": 35.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 37.0,
+            "y": 118.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 123.0,
+            "z": 35.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 37.0,
+            "y": 118.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 245.0,
+            "z": 35.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 37.0,
+            "y": 118.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 366.0,
+            "z": 35.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Hamilton cat. no.: 185436\nHamilton name: 'RGT_CAR_4R200_A00'.\nTrough carrier for 4x 200ml troughs. 2 tracks(T) wide.\n- Material: ? (recognisable via cLLD)\n- Sterilization_compatibility: ?\n\ncarrier_site_pedestal_top = 134\ncarrier_site_pedestal_bottom = 132.5\npedestal_z_height = 1.5\ntrue_dz = 1.2\ntrough_z_thickness = 1.4"
+}

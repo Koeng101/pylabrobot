@@ -1,0 +1,37 @@
+{
+  "name": "hamilton_tip_10uL",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "typeName": "HamiltonTip",
+      "model": "hamilton_tip_10uL",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 29.9
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "maximalVolume": 15.0,
+        "nominalVolume": 10.0,
+        "collarHeight": 6.0,
+        "hamilton": {
+          "tipSize": "LOW_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton 10 uL tip without filter (`tt02` in venus)\n\nVariants:\n  - Hamilton cat. no.: 235935 - black/conductive, framed EmbeddedTipRack, sterile\n  - Hamilton cat. no.: 235900 - black/conductive, framed EmbeddedTipRack, non-sterile\n  - Hamilton cat. no.: 235983 - black/conductive, nested StandingTipRack, sterile\n  - Hamilton cat. no.: 235949 - black/conductive, nested StandingTipRack, non-sterile\n  - Hamilton cat. no.: 235971 - transparent, nested StandingTipRack, non-sterile\n  - Hamilton cat. no.: 235932 - steel (single tip)"
+}

@@ -3,10 +3,6 @@
 import warnings
 from typing import Optional
 
-from pylabrobot.resources.height_volume_functions import (
-  compute_height_from_volume_conical_frustum,
-  compute_volume_from_height_conical_frustum,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -16,6 +12,13 @@ from pylabrobot.resources.well import (
 )
 
 # # # # # # # # # # cor_falcon_96_wellplate_275uL_Fb # # # # # # # # # #
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_falcon_96_wellplate_275uL_Fb_height_volume_data = {
+  0.0: 0.0,
+  14.3: 489.464782,
+}
 
 
 def cor_falcon_96_wellplate_275uL_Fb(name: str, lid: Optional[Lid] = None) -> Plate:
@@ -28,8 +31,6 @@ def cor_falcon_96_wellplate_275uL_Fb(name: str, lid: Optional[Lid] = None) -> Pl
   - material: Polypropylene
   - max_volume: 275 uL
   """
-  BOTTOM_RADIUS = 3.175
-  TOP_RADIUS = 3.425
 
   return Plate(
     name=name,
@@ -51,12 +52,8 @@ def cor_falcon_96_wellplate_275uL_Fb(name: str, lid: Optional[Lid] = None) -> Pl
       size_y=6.35,
       size_z=14.30,
       bottom_type=WellBottomType.FLAT,
-      compute_volume_from_height=lambda liquid_height: compute_volume_from_height_conical_frustum(
-        liquid_height, BOTTOM_RADIUS, TOP_RADIUS
-      ),
-      compute_height_from_volume=lambda liquid_volume: compute_height_from_volume_conical_frustum(
-        liquid_volume, BOTTOM_RADIUS, TOP_RADIUS
-      ),
+      height_volume_data=_cor_falcon_96_wellplate_275uL_Fb_height_volume_data,
+      max_volume=489.4648,
       name_prefix=name,
     ),
   )
@@ -115,6 +112,13 @@ def cor_falcon_96_wellplate_250uL_Rb(name: str, lid: Optional[Lid] = None) -> Pl
 # # # # # # # # # # cor_falcon_96_wellplate_340uL_Fb_black # # # # # # # # # #
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_falcon_96_wellplate_340uL_Fb_black_height_volume_data = {
+  0.0: 0.0,
+  10.75: 387.070159,
+}
+
+
 def cor_falcon_96_wellplate_340uL_Fb_black(name: str, lid: Optional[Lid] = None) -> Plate:
   """
   Corning cat. no.: 353219
@@ -127,7 +131,6 @@ def cor_falcon_96_wellplate_340uL_Fb_black(name: str, lid: Optional[Lid] = None)
   - max_volume: 340 uL
   """
   TOP_INNER_WELL_RADIUS = 6.96 / 2  # from spec
-  BOTTOM_INNER_WELL_RADIUS = 6.58 / 2  # from spec
 
   well_kwargs = {
     "size_x": TOP_INNER_WELL_RADIUS * 2,  # from spec
@@ -135,12 +138,8 @@ def cor_falcon_96_wellplate_340uL_Fb_black(name: str, lid: Optional[Lid] = None)
     "size_z": 10.90,  # from spec
     "bottom_type": WellBottomType.FLAT,
     "cross_section_type": CrossSectionType.CIRCLE,
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_conical_frustum(
-      liquid_height, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_conical_frustum(
-      liquid_volume, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
+    "height_volume_data": _cor_falcon_96_wellplate_340uL_Fb_black_height_volume_data,
+    "max_volume": 392.4711,
     "material_z_thickness": 0.15,  # measured at 0.15 mm
   }
 

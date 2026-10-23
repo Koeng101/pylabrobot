@@ -1,0 +1,164 @@
+{
+  "transport": {
+    "human_readable_device_name": "QInstruments BioShake",
+    "port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "bytesize": 8,
+    "parity": "N",
+    "stopbits": 1,
+    "write_timeout": 10,
+    "timeout": 60
+  },
+  "steps": [
+    {
+      "call": "setup(skip_home=True)",
+      "result": null,
+      "sent": [
+        "setup"
+      ]
+    },
+    {
+      "call": "start_shaking(speed=5000)",
+      "error": "ValueError: Speed 5000 RPM is out of range. Allowed range is 200-3000 RPM",
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeMinRpm\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeMaxRpm\r"
+      ],
+      "waits": [
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "start_shaking(speed=1000.5)",
+      "error": "ValueError: Speed must be a whole number, not 1000.5",
+      "sent": []
+    },
+    {
+      "call": "start_shaking(speed=1000, acceleration=60)",
+      "error": "ValueError: Acceleration 60 seconds is out of range. Allowed range is 0-30 seconds",
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeMinRpm\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeMaxRpm\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write setShakeTargetSpeed1000\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeAccelerationMin\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeAccelerationMax\r"
+      ],
+      "waits": [
+        0.2,
+        0.2,
+        0.5,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "stop_shaking(deceleration=0.5)",
+      "error": "ValueError: Deceleration must be a whole number, not 0.5",
+      "sent": []
+    },
+    {
+      "call": "lock_plate()  # no ELM",
+      "error": "RuntimeError: This BioShake device does not have an ELM and cannot lock plates.",
+      "sent": []
+    },
+    {
+      "call": "set_temperature(37)  # no heater",
+      "error": "RuntimeError: This BioShake device does not support temperature control.",
+      "sent": []
+    },
+    {
+      "call": "start_shaking(speed=1000)  # device error",
+      "error": "RuntimeError: Unexpected error while sending 'shakeOn': RuntimeError: Device returned error for 'shakeOn': 'e3'",
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeMinRpm\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeMaxRpm\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write setShakeTargetSpeed1000\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeAccelerationMin\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeAccelerationMax\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write setShakeAcceleration0\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write shakeOn\r"
+      ],
+      "waits": [
+        0.2,
+        0.2,
+        0.5,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "start_shaking(speed=1000)  # unsupported",
+      "error": "RuntimeError: Unexpected error while sending 'shakeOn': NotImplementedError: 'shakeOn' not supported: 'u -> shakeOn'",
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeMinRpm\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeMaxRpm\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write setShakeTargetSpeed1000\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeAccelerationMin\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getShakeAccelerationMax\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write setShakeAcceleration0\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write shakeOn\r"
+      ],
+      "waits": [
+        0.2,
+        0.2,
+        0.5,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "bioshake",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    }
+  ]
+}

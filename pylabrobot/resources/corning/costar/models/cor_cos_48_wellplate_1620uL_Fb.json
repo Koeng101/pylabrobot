@@ -1,0 +1,67 @@
+{
+  "name": "cor_cos_48_wellplate_1620uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "cor_cos_48_wellplate_1620uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.6,
+        "z": 20.02
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 8,
+        "numItemsY": 6,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 11.56,
+                "y": 11.56,
+                "z": 17.4
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 1620.0,
+                "materialZThickness": 1.27,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 16.13,
+                    "volume": 1619.343681
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 12.635,
+            "y": 4.555,
+            "z": 2.87
+          },
+          "itemDx": 13.08,
+          "itemDy": 13.08
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Corning cat. no.s: 3548\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2b/UK/en/Microplates/Assay-Microplates/96-Well-Microplates/Costar%C2%AE-Multiple-Well-Cell-Culture-Plates/p/3548\n- brand: Costar\n- distributor: (Fisher Scientific, 07-200-86)\n- material: Polystyrene\n- tc_treated: Yes\n- sterile: yes\n- notes:\n\n  - not validated"
+}

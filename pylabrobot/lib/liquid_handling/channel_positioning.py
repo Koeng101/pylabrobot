@@ -1,7 +1,14 @@
+"""Where in a container each of several channels goes, along Y.
+
+The planning works on a `ChannelFootprint`: the few facts about the target it needs, so it serves
+a resource held in this process (`footprint_of`) and one read from a resource store alike.
+"""
+
 import logging
 import math
 import warnings
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from pylabrobot.lib.liquid_handling.errors import ChannelsDoNotFitError
 from pylabrobot.resources.container import Container
@@ -16,8 +23,42 @@ MIN_SPACING_BETWEEN_CHANNELS = GENERIC_LH_MIN_SPACING_BETWEEN_CHANNELS
 MIN_SPACING_EDGE = 2.0
 
 
+@dataclass(frozen=True)
+class ChannelFootprint:
+  """What placing channels in a resource needs to know of it.
+
+  Attributes:
+    name: Its name, for messages; resources of one name are one resource.
+    size_y: Its size along its own Y axis.
+    absolute_size_y: The Y size of its box once turned, along its root's axes.
+    center_y: The Y of its own box's centre, turned as it is turned in its root, from its origin.
+    no_go_zones: Where a tip must not go, each as its front left bottom and back right top corners
+      in its own frame; a container's, and none for anything else.
+  """
+
+  name: str
+  size_y: float
+  absolute_size_y: float
+  center_y: float
+  no_go_zones: Tuple[Tuple[Coordinate, Coordinate], ...] = ()
+
+
+def footprint_of(resource: Resource) -> ChannelFootprint:
+  """A resource's footprint, read from PLR's `Resource` classes."""
+  zones: Sequence[Tuple[Coordinate, Coordinate]] = (
+    resource.no_go_zones if isinstance(resource, Container) else ()
+  )
+  return ChannelFootprint(
+    name=resource.name,
+    size_y=resource.get_size_y(),
+    absolute_size_y=resource.get_absolute_size_y(),
+    center_y=resource.center().rotated(resource.get_absolute_rotation()).y,
+    no_go_zones=tuple((front, back) for front, back in zones),
+  )
+
+
 def _get_compartments(
-  container: Container,
+  footprint: ChannelFootprint,
   edge_clearance: float = MIN_SPACING_EDGE,
 ) -> List[Tuple[float, float]]:
   """Compute the usable Y compartments within a container created by no-go zones.
@@ -26,15 +67,15 @@ def _get_compartments(
   shrunk by ``edge_clearance`` on each side.
 
   Args:
-    container: The container whose no-go zones define the compartments.
+    footprint: The container whose no-go zones define the compartments.
     edge_clearance: Minimum clearance between the pipette border and a compartment
       boundary (container wall or no-go zone) in mm.
 
   Returns:
     List of (y_min, y_max) tuples representing usable Y ranges for channel centers.
   """
-  container_y = container.get_size_y()
-  zones = sorted(container.no_go_zones, key=lambda z: z[0].y)
+  container_y = footprint.size_y
+  zones = sorted(footprint.no_go_zones, key=lambda z: z[0].y)
 
   raw_compartments = []
   prev_end = 0.0
@@ -187,9 +228,9 @@ def _position_channels_tight(
   return centers
 
 
-def _centers_to_offsets(centers: List[float], resource: Resource) -> List[Coordinate]:
+def _centers_to_offsets(centers: List[float], footprint: ChannelFootprint) -> List[Coordinate]:
   """Convert absolute Y centers to offsets relative to the resource center, sorted back-to-front."""
-  center_y = resource.center().rotated(resource.get_absolute_rotation()).y
+  center_y = footprint.center_y
   offsets = [Coordinate(x=0, y=c - center_y, z=0) for c in centers]
   offsets.sort(key=lambda o: o.y, reverse=True)
   return offsets
@@ -298,14 +339,24 @@ def compute_channel_offsets(
   spread: str = "wide",
   channel_spacings: Optional[List[float]] = None,
 ) -> List[Coordinate]:
+  """`channel_offsets` for a resource held in this process."""
+  return channel_offsets(footprint_of(resource), num_channels, spread, channel_spacings)
+
+
+def channel_offsets(
+  footprint: ChannelFootprint,
+  num_channels: int,
+  spread: str = "wide",
+  channel_spacings: Optional[List[float]] = None,
+) -> List[Coordinate]:
   """Compute Y offsets for positioning consecutive channels (0..num_channels-1) in a resource.
 
   Handles container geometry: compartments with no-go zones, wide/tight spread.
   Assumes channels are consecutively indexed — for non-consecutive channel selections
-  (e.g. [0, 2, 5]), use ``compute_nonconsecutive_channel_offsets`` instead.
+  (e.g. [0, 2, 5]), use ``nonconsecutive_channel_offsets`` instead.
 
   Args:
-    resource: The target resource (Container, Trough, Well, etc.).
+    footprint: The target resource (Container, Trough, Well, etc.).
     num_channels: Number of channels to position.
     spread: Positioning strategy:
       - "wide": spread channels as far apart as possible (respects no-go zones if present)
@@ -338,18 +389,18 @@ def compute_channel_offsets(
   spacings_front_to_back = list(reversed(spacings))
 
   # Container with no-go zones: distribute across compartments
-  if isinstance(resource, Container) and len(resource.no_go_zones) > 0:
-    compartments = _get_compartments(resource)
+  if len(footprint.no_go_zones) > 0:
+    compartments = _get_compartments(footprint)
     if not compartments:
       raise ChannelsDoNotFitError(
         f"Cannot fit {num_channels} channels into the compartments of "
-        f"'{resource.name}' while respecting its no-go zones. "
+        f"'{footprint.name}' while respecting its no-go zones. "
         f"Use fewer channels or spread='custom' with manual offsets."
       )
 
     distribution = _distribute_channels(compartments, num_channels, spacings_front_to_back)
 
-    container_center_y = resource.get_size_y() / 2
+    container_center_y = footprint.size_y / 2
     offsets = []
     spacing_idx = 0
 
@@ -366,7 +417,7 @@ def compute_channel_offsets(
         if comp_width <= 0:
           raise ChannelsDoNotFitError(
             f"Cannot fit {num_channels} channels into the compartments of "
-            f"'{resource.name}' while respecting its no-go zones. "
+            f"'{footprint.name}' while respecting its no-go zones. "
             f"Use fewer channels or spread='custom' with manual offsets."
           )
         centers = [(comp_lo + comp_hi) / 2]
@@ -383,7 +434,7 @@ def compute_channel_offsets(
         if usable < needed:
           raise ChannelsDoNotFitError(
             f"Cannot fit {num_channels} channels into the compartments of "
-            f"'{resource.name}' while respecting its no-go zones. "
+            f"'{footprint.name}' while respecting its no-go zones. "
             f"Use fewer channels or spread='custom' with manual offsets."
           )
 
@@ -430,7 +481,7 @@ def compute_channel_offsets(
       if actual < required - 0.05:
         raise ChannelsDoNotFitError(
           f"Cannot fit {num_channels} channels into the compartments of "
-          f"'{resource.name}' while respecting spacing constraints across no-go zones "
+          f"'{footprint.name}' while respecting spacing constraints across no-go zones "
           f"(gap {actual:.1f}mm < required {required:.1f}mm between compartments "
           f"{comp_i} and {comp_i + 1}). "
           f"Use fewer channels or spread='custom' with manual offsets."
@@ -441,12 +492,12 @@ def compute_channel_offsets(
     return offsets
 
   # Plain resource (no no-go zones): wide or tight across full Y
-  resource_size = resource.get_absolute_size_y()
+  resource_size = footprint.absolute_size_y
   if spread == "wide":
     centers = _position_channels_wide(resource_size, spacings_front_to_back)
   else:
     centers = _position_channels_tight(resource_size, spacings_front_to_back)
-  return _centers_to_offsets(centers, resource)
+  return _centers_to_offsets(centers, footprint)
 
 
 # ---------------------------------------------------------------------------
@@ -459,9 +510,18 @@ def compute_nonconsecutive_channel_offsets(
   use_channels: List[int],
   channel_spacings: List[float],
 ) -> Optional[List[Coordinate]]:
+  """`nonconsecutive_channel_offsets` for a container held in this process."""
+  return nonconsecutive_channel_offsets(footprint_of(container), use_channels, channel_spacings)
+
+
+def nonconsecutive_channel_offsets(
+  container: ChannelFootprint,
+  use_channels: List[int],
+  channel_spacings: List[float],
+) -> Optional[List[Coordinate]]:
   """Compute Y offsets for non-consecutive channel selections targeting one container.
 
-  Wraps ``compute_channel_offsets``: fills in phantom channels for gaps in the
+  Wraps ``channel_offsets``: fills in phantom channels for gaps in the
   channel sequence (e.g. [0, 2, 5] → physical span 0..5), attempts to fit the
   full span, and falls back to splitting into consecutive sub-groups when it
   doesn't fit.
@@ -494,11 +554,11 @@ def compute_nonconsecutive_channel_offsets(
     spacing = max(channel_spacings[g_lo : g_hi + 1])
     num_physical = g_hi - g_lo + 1
     min_required = MIN_SPACING_EDGE * 2 + (num_physical - 1) * spacing
-    if container.get_absolute_size_y() < min_required:
+    if container.absolute_size_y < min_required:
       return None
     try:
-      all_offsets = compute_channel_offsets(
-        resource=container,
+      all_offsets = channel_offsets(
+        footprint=container,
         num_channels=num_physical,
         spread="wide",
         channel_spacings=[spacing] * num_physical,

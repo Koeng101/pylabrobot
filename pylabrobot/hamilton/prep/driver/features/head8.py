@@ -25,6 +25,8 @@ import math
 import struct as _struct
 from typing import (
   TYPE_CHECKING,
+  Any,
+  Dict,
   List,
   Literal,
   NamedTuple,
@@ -40,29 +42,37 @@ from pylabrobot.hamilton.liquid_classes import HamiltonLiquidClass
 from pylabrobot.hamilton.transport.tcp.packets import Address
 from pylabrobot.legacy.liquid_handling.errors import ChannelizedError
 from pylabrobot.lib.liquid_handling.mix import Mix
-from pylabrobot.resources import Container, Coordinate, Tip, Trash
+from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.errors import HasTipError, TooLittleLiquidError
-from pylabrobot.resources.hamilton.prep_decks import PrepDeck
-from pylabrobot.resources.n_channel_pipettes import (
-  SHAFT_DIAMETER,
-  SHAFT_LENGTH,
-  NChannelPipette,
-  TipMountingShaft,
-)
-from pylabrobot.resources.resource_state import (
-  VolumeTransferIntent,
-  all_channels_succeeded,
-  finalize_volume_ops,
-  queue_volume_transfers,
-  successes_from_failed_channels,
-)
-from pylabrobot.resources.tip_rack import TipSpot, check_tip_racks_available, tip_origin
-from pylabrobot.resources.utils import create_ordered_items_2d
-from pylabrobot.resources.volume_tracker import does_volume_tracking
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from .. import prep_commands as PrepCmd
+from ..model import (
+  ArmModel,
+  ContainerFacts,
+  SpotFacts,
+  ToolFacts,
+  check_racks_available,
+  get_nodes,
+  locate,
+  position,
+  read_arm,
+  read_containers,
+  read_spots,
+  record_positions,
+  ref,
+  resolve,
+  store_problem,
+  tool_length,
+  tool_on,
+)
 from ..prep_commands import MPH_OBJECT_PATH
 from .pipettes import (
+  SHAFT_DIAMETER,
+  SHAFT_LENGTH,
   PipetteChannel,
   Pipettes,
   PipettesConfiguration,
@@ -70,6 +80,7 @@ from .pipettes import (
   _effective_radius,
   _get_container_segments,
   get_mix_parameters,
+  tip_mounting_shaft,
 )
 from .pipettes import (
   default_lld_params as _default_lld_params_fn,
@@ -88,7 +99,7 @@ from .pipettes import (
 )
 
 if TYPE_CHECKING:
-  from pylabrobot.resources.deck import Deck
+  from pylabrobot.resources.store.client import ResourceStore
 
   from ..configuration import DeviceConfiguration
   from ..master import PrepDriver
@@ -99,6 +110,7 @@ PROBE_PITCH_MM: float = 9.0
 NUM_PROBES: int = 8
 _FULL_TIP_MASK: int = 0xFF
 _V2_MPH_CMD_IDS: frozenset = frozenset({29, 30, 31, 32, 33, 34})
+_ROWS = "ABCDEFGH"  # the head's rows, probe 0 (row A) first
 _PROBE_POS_TOLERANCE_MM: float = 1.0  # max deviation from expected 9mm pitch before raising
 
 
@@ -109,13 +121,24 @@ class _Head8LiquidTargets(NamedTuple):
   op_targets: Union[str, List[str]]
   ref_x: float
   ref_y: float
-  ref_resource: Container
-  volume_containers: List[Container]
+  ref_resource: ContainerFacts
+  volume_containers: List[ContainerFacts]
+
+
+# Where a tip is picked up on the head: the axis of probe 0's shaft, at its end, from the head's
+# left front bottom corner.
+_SPAN_Y = (NUM_PROBES - 1) * PROBE_PITCH_MM
+HEAD8_REFERENCE_POINT = Coordinate(SHAFT_DIAMETER / 2, _SPAN_Y + SHAFT_DIAMETER / 2, -SHAFT_LENGTH)
+
+
+def head8_shaft_names(name: str) -> List[str]:
+  """The head's eight shafts' names, probe 0 (row A) first."""
+  return [f"{name}_tipmountingshaft_{_ROWS[row]}1" for row in range(NUM_PROBES)]
 
 
 def head8_pipette(
   name: str = "head8", size_z: float = PipettesConfiguration.channel_size_z
-) -> NChannelPipette:
+) -> pb.ResourceDefinition:
   """The 8MPH as a resource: one column of eight tip mounting shafts, probe 0 at the back.
 
   As tall as a channel, its shafts hanging below it as a channel's does. Only the probes' grid is
@@ -126,29 +149,28 @@ def head8_pipette(
     size_z: how tall it is above its shafts, in mm.
 
   Returns:
-    The pipette.
+    The pipette's definition.
   """
-  span_y = (NUM_PROBES - 1) * PROBE_PITCH_MM
-  return NChannelPipette(
-    name=name,
-    size_x=SHAFT_DIAMETER,
-    size_y=span_y + SHAFT_DIAMETER,
-    size_z=size_z,
-    # Where a tip is picked up: the axis of probe 0's shaft, at its end.
-    reference_point=Coordinate(SHAFT_DIAMETER / 2, span_y + SHAFT_DIAMETER / 2, -SHAFT_LENGTH),
-    ordered_items=create_ordered_items_2d(
-      TipMountingShaft,
-      name_prefix=name,
-      num_items_x=1,
-      num_items_y=NUM_PROBES,
-      dx=0,
-      dy=0,
-      dz=-SHAFT_LENGTH,
-      item_dx=PROBE_PITCH_MM,
-      item_dy=PROBE_PITCH_MM,
-      tip_pickup_mode="core",
-    ),
+  shafts = [
+    tip_mounting_shaft(
+      shaft,
+      Coordinate(0.0, (NUM_PROBES - 1 - row) * PROBE_PITCH_MM, -SHAFT_LENGTH),
+      identifier=f"{_ROWS[row]}1",
+    )
+    for row, shaft in enumerate(head8_shaft_names(name))
+  ]
+  return build.resource(
+    name,
+    Coordinate(SHAFT_DIAMETER, _SPAN_Y + SHAFT_DIAMETER, size_z),
+    kind=pb.RESOURCE_KIND_N_CHANNEL_PIPETTE,
+    type_name="NChannelPipette",
+    category="n_channel_pipette",
     model="hamilton_prep_8mph",
+    itemized=pb.ItemizedSpec(num_items_x=1, num_items_y=NUM_PROBES),
+    n_channel_pipette=pb.NChannelPipetteSpec(
+      reference_point=build.vec3(HEAD8_REFERENCE_POINT), independent_channel_actuation=False
+    ),
+    children=shafts,
   )
 
 
@@ -179,14 +201,32 @@ class Head8:
     self._use_v1_aspirate_dispense: bool = use_v1_aspirate_dispense
     self.channels: List[PipetteChannel] = []  # built by discover
     self._supports_v2_pipetting: Optional[bool] = None
-    # The head's probes, each a shaft carrying the tip it has picked up.
-    name = "head8" if driver is None else driver.get_component_name("head8")
-    self.resource: NChannelPipette = head8_pipette(name=name)
+    # The head, hung from the X-arm's resource on a Prep deck, and its probes, each a shaft carrying
+    # the tip it has picked up. Setup puts them there; reads and moves keep them in step.
+    self.resource: Optional[handles.Resource] = None
+    self.shafts: List[handles.Resource] = []
 
   @property
-  def deck(self) -> Optional["Deck"]:
+  def deck(self) -> Optional[handles.Deck]:
     """The deck positions are measured from: the driver's."""
     return self._driver.deck
+
+  @property
+  def store(self) -> "ResourceStore":
+    """The resource store the deck is in."""
+    return self._driver.store
+
+  async def _attach_model(self, head: handles.Resource) -> None:
+    """Model the head on `head`, a resource from `head8_pipette`, and on the shafts it carries."""
+    names = head8_shaft_names(head.name)
+    found = {
+      shaft.name: shaft
+      for shaft in await head.find_resources(
+        kinds=[pb.RESOURCE_KIND_TIP_MOUNTING_SHAFT], names=names
+      )
+    }
+    self.resource = head
+    self.shafts = [found[name] for name in names]
 
   async def _on_setup(self) -> None:
     reported = await self._driver.request_default_traverse_height()
@@ -227,7 +267,7 @@ class Head8:
       raise RuntimeError("no configuration read; have you called `prep.setup()`?")
     return self._driver.configuration
 
-  def _require_deck(self) -> "Deck":
+  def _require_deck(self) -> pb.ResourceRef:
     """The deck positions are measured from, which is what the firmware counts from.
 
     Raises:
@@ -235,7 +275,7 @@ class Head8:
     """
     if self.deck is None:
       raise RuntimeError("no deck to measure positions from; pass one to the driver")
-    return self.deck
+    return ref(self.deck.id)
 
   async def discover(self) -> None:
     """Find the 8MPH channels in the firmware tree (``MPH Channel Root``) and build `channels`."""
@@ -337,56 +377,94 @@ class Head8:
 
   # -- xyz position --------------------------------------------------------------------------------
 
-  def _mounted_length(self) -> float:
-    """How far below the end of probe 0's shaft the tip on it reaches, in mm; 0 with no tip."""
-    tip = self.resource.get_item(0).tip
-    return float(tip.get_size_z() - tip.fitting_depth) if isinstance(tip, Tip) else 0.0
+  async def _read_arm(self) -> Optional[ArmModel]:
+    """The arm and everything on it, as the store has it now; None while nothing models it."""
+    arm = self._driver.x_arm
+    if arm is None or arm.resource is None:
+      return None
+    return await read_arm(arm.resource.store, arm.resource.id)
 
-  def get_reference_point_location(self) -> Optional[Coordinate]:
+  def _mounted_length_in(self, model: ArmModel) -> float:
+    """How far below the end of probe 0's shaft the tip on it reaches, in mm; 0 with no tip."""
+    tool = model.tool(self.shafts[0].id) if self.shafts else None
+    return tool_length(tool) if tool is not None and tool.is_tip else 0.0
+
+  async def _mounted_length(self) -> float:
+    """How far below the end of probe 0's shaft the tip on it reaches, in mm; 0 with no tip."""
+    model = await self._read_arm()
+    return 0.0 if model is None else self._mounted_length_in(model)
+
+  def _reference_point_in(self, model: ArmModel) -> Optional[Coordinate]:
+    """`get_reference_point_location`, from a read of the arm already made."""
+    if self.resource is None or model.arm is None:
+      return None
+    here, on_the_arm = model.location(self.resource.id), model.location(model.arm.id)
+    if here is None or on_the_arm is None:
+      return None
+    return (
+      here + on_the_arm + HEAD8_REFERENCE_POINT - Coordinate(0, 0, self._mounted_length_in(model))
+    )
+
+  async def get_reference_point_location(self) -> Optional[Coordinate]:
     """Where the model has probe 0, in mm on the deck: Z at the bottom of what it carries.
 
     The inverse of `update_location_by_reference_point`. None when nothing models the head yet.
     """
-    head, deck = self.resource, self.deck
-    if head.location is None or head.parent is None or deck is None:
+    model = await self._read_arm()
+    return None if model is None else self._reference_point_in(model)
+
+  def _position_by_reference_point(
+    self,
+    model: ArmModel,
+    x: Optional[float] = None,
+    y: Optional[float] = None,
+    z: Optional[float] = None,
+    arm_x: Optional[float] = None,
+  ) -> Optional[spb.DevicePosition]:
+    """Where the head is in the arm, from where probe 0 is on the deck. None while nothing models it.
+
+    Positions are in the deck's frame, a resource is located in its parent's, so the arm's position
+    is taken out first.
+
+    Args:
+      arm_x: where the arm is along X in the deck, when it is moved in the same record; where the
+        model has it when None.
+    """
+    if self.resource is None or model.arm is None:
       return None
-    return (
-      head.location
-      + head.parent.get_location_wrt(deck)
-      + head.reference_point
-      - Coordinate(0, 0, self._mounted_length())
+    on_the_arm = model.location(model.arm.id)
+    if model.location(self.resource.id) is None or on_the_arm is None:
+      return None
+    if arm_x is not None:
+      on_the_arm = Coordinate(arm_x, on_the_arm.y, on_the_arm.z)
+    anchor = HEAD8_REFERENCE_POINT
+    shaft_z = None if z is None else z + self._mounted_length_in(model)
+    return position(
+      self.resource.id,
+      x=None if x is None else x - on_the_arm.x - anchor.x,
+      y=None if y is None else y - on_the_arm.y - anchor.y,
+      z=None if shaft_z is None else shaft_z - on_the_arm.z - anchor.z,
     )
 
-  def update_location_by_reference_point(
+  async def update_location_by_reference_point(
     self, x: Optional[float] = None, y: Optional[float] = None, z: Optional[float] = None
   ) -> None:
     """Record where the head is on the resource that models it, a child of the arm's.
 
-    As `Pipettes.update_location_by_reference_point` does for a channel. Positions are in the deck's
-    frame, a resource is located in its parent's, so the arm's position is taken out first. Does
-    nothing when nothing models the head.
+    As `Pipettes.update_location_by_reference_point` does for a channel. Does nothing when nothing
+    models the head.
 
     Args:
       x: where probe 0 is, in mm on the deck. Left as it was on the arm when None.
       y: where probe 0 is, in mm on the deck. Left as it was when None.
       z: where the bottom of what probe 0 carries is, in mm on the deck. Left as it was when None.
     """
-    head, deck = self.resource, self.deck
-    if head.location is None or head.parent is None or deck is None:
-      return
-    here, on_the_arm, anchor = (
-      head.location,
-      head.parent.get_location_wrt(deck),
-      head.reference_point,
-    )
-    shaft_z = None if z is None else z + self._mounted_length()
-    head.location = Coordinate(
-      here.x if x is None else x - on_the_arm.x - anchor.x,
-      here.y if y is None else y - on_the_arm.y - anchor.y,
-      here.z if shaft_z is None else shaft_z - on_the_arm.z - anchor.z,
-    )
+    model = await self._read_arm()
+    where = None if model is None else self._position_by_reference_point(model, x, y, z)
+    if where is not None:
+      await record_positions(self.store, [where])
 
-  def _record_target(self, x: float, y: float, z: float) -> None:
+  async def _record_target(self, x: float, y: float, z: float) -> None:
     """Record where a command sends the head, as it is sent: the read in its `finally` has the last word.
 
     Args:
@@ -394,16 +472,25 @@ class Head8:
       y: where probe 0 is sent, in mm on the deck.
       z: where the bottom of what probe 0 carries is sent, in mm on the deck.
     """
-    arm, at = self._driver.x_arm, self.get_reference_point_location()
-    if arm is not None and arm.resource is not None and at is not None:
+    model = await self._read_arm()
+    if model is None:
+      return
+    arm, at = self._driver.x_arm, self._reference_point_in(model)
+    recorded = []
+    if arm is not None and model.arm is not None and at is not None:
+      on_deck = model.location(model.arm.id)
       # The head sits a fixed distance along the arm, so the arm moves as far as the head does.
-      arm.update_location_by_reference_point(
-        arm.resource.get_location_wrt(self._require_deck()).x
-        + arm.configuration.reference_point_from_left
-        + x
-        - at.x
-      )
-    self.update_location_by_reference_point(y=y, z=z)
+      moved = None
+      if on_deck is not None:
+        moved = arm.location_by_reference_point(
+          on_deck.x + arm.configuration.reference_point_from_left + x - at.x
+        )
+      if moved is not None:
+        recorded.append(moved)
+    head = self._position_by_reference_point(model, y=y, z=z)
+    if head is not None:
+      recorded.append(head)
+    await record_positions(self.store, recorded)
 
   async def _record_where_it_stopped(self) -> None:
     """Read where the head, the arm and the channels came to rest, and record it. For a `finally`.
@@ -437,7 +524,7 @@ class Head8:
     self._check_reachable("x", x)
     self._check_reachable("y", y)
     self._check_reachable("z", z)
-    self._record_target(x, y, z)
+    await self._record_target(x, y, z)
     try:
       if via_lane:
         await self._driver.send_command(
@@ -463,10 +550,10 @@ class Head8:
       RuntimeError: If nothing models where the head is.
     """
     await self._record_where_it_stopped()
-    at = self.get_reference_point_location()
+    at = await self.get_reference_point_location()
     if at is None:
       raise RuntimeError("where the head is is not known; have you called `prep.setup()`?")
-    z = self.default_minimum_traverse_height - self._mounted_length()
+    z = self.default_minimum_traverse_height - await self._mounted_length()
     await self.move_to_position(at.x, at.y, z)
     return z
 
@@ -476,41 +563,56 @@ class Head8:
 
   # -- tip pickup / drop ---------------------------------------------------------------------------
 
-  def shaft(self, channel: int) -> TipMountingShaft:
+  def shaft(self, channel: int) -> handles.Resource:
     """The mounting shaft for one channel.
 
     Args:
       channel: which channel, 0 at the back (row A).
-    """
-    return self.resource.get_item(channel)
 
-  def get_mounted_tip(self, channel: int) -> Optional[Tip]:
+    Raises:
+      RuntimeError: If nothing models the head yet.
+    """
+    if not self.shafts:
+      raise RuntimeError("nothing models the 8-channel head; have you called `prep.setup()`?")
+    return self.shafts[channel]
+
+  async def get_mounted_tips(self) -> List[Optional[ToolFacts]]:
+    """Tips currently mounted on the 8MPH (``None`` if empty): what each channel's shaft carries.
+
+    One read of the store.
+    """
+    if not self.shafts:
+      return [None] * NUM_PROBES
+    nodes = await get_nodes(self.shafts[0].store, [ref(s.id) for s in self.shafts], depth=1)
+    by_id = {node.id: node for node in nodes}
+    mounted: List[Optional[ToolFacts]] = []
+    for shaft in self.shafts:
+      tool = tool_on(by_id[shaft.id], by_id)
+      mounted.append(tool if tool is not None and tool.is_tip else None)
+    return mounted
+
+  async def get_mounted_tip(self, channel: int) -> Optional[ToolFacts]:
     """The tip on one channel's shaft, or ``None`` if that shaft is empty.
 
     Args:
       channel: which channel, 0 at the back (row A).
     """
-    tip = self.shaft(channel).tip
-    return tip if isinstance(tip, Tip) else None
+    return (await self.get_mounted_tips())[channel]
 
-  def get_mounted_tips(self) -> List[Optional[Tip]]:
-    """Tips currently mounted on the 8MPH (``None`` if empty): what each channel's shaft carries."""
-    return [self.get_mounted_tip(i) for i in range(NUM_PROBES)]
-
-  def _require_mounted_tips(self) -> List[Tip]:
-    tips: List[Tip] = []
-    for tip in self.get_mounted_tips():
+  async def _require_mounted_tips(self) -> List[ToolFacts]:
+    tips: List[ToolFacts] = []
+    for tip in await self.get_mounted_tips():
       if tip is None:
         raise RuntimeError("No tips mounted on head8; call pick_up_tips first.")
       tips.append(tip)
     return tips
 
-  def _require_mounted_tip(self) -> Tip:
-    return self._require_mounted_tips()[0]
+  async def _require_mounted_tip(self) -> ToolFacts:
+    return (await self._require_mounted_tips())[0]
 
   async def pick_up_tips(
     self,
-    tip_spots: Sequence[TipSpot],
+    tip_spots: Sequence[handles.Resource],
     use_channels: Optional[Sequence[int]] = None,
     offset: Coordinate = Coordinate.zero(),
     minimum_traverse_height_start: Optional[float] = None,
@@ -547,22 +649,23 @@ class Head8:
     self._require_all_channels(use_channels, "pick_up_tips")
     if len(tip_spots) != NUM_PROBES:
       raise ValueError(f"pick_up_tips requires {NUM_PROBES} tip spots, got {len(tip_spots)}")
-    check_tip_racks_available(tip_spots, "pick up tips from")
+    spots = await read_spots(self.store, self._require_deck(), tip_spots)
+    check_racks_available(spots, "pick up tips from")
     resolved_end = self._resolve_traverse_height(minimum_traverse_height_end)
 
+    mounted = await self.get_mounted_tips()
     for ch in use_channels:
-      if self.shaft(ch).has_tip():
+      if mounted[ch] is not None:
         raise RuntimeError(f"Channel {ch} already has a tip")
-    tips = [s.tip_for_pickup() for s in tip_spots]
-    ref_spot = tip_spots[0]
+    tips = [s.tip_for_pickup() for s in spots]
+    ref_spot = spots[0]
     tip = tips[0]
-    rack = ref_spot.parent
     logger.info(
       "[Prep MPH] pick_up_tips: rack=%s, tip_spots=%s",
-      rack.name if rack is not None else ref_spot.name,
-      [s.name.rsplit("_", 1)[-1] for s in tip_spots],
+      ref_spot.rack_name,
+      [s.name.rsplit("_", 1)[-1] for s in spots],
     )
-    loc = ref_spot.get_location_wrt(self._require_deck(), "c", "c", "t") + offset
+    loc = ref_spot.placed.top + offset
 
     self._check_reachable("x", loc.x)
     # Over the spots first, so the pick-up itself is straight down
@@ -577,15 +680,30 @@ class Head8:
     tip_definition = PrepCmd.TipPickupParameters(
       default_values=False,
       volume=tip.maximal_volume,
-      length=tip.get_size_z() - tip.fitting_depth,
+      length=tip.length,
       tip_type=PrepCmd.TipTypes.StandardVolume,
       has_filter=tip.has_filter,
       is_needle=tip.maximal_volume == 0,  # a needle is closed: it holds no liquid
       is_tool=False,
     )
 
+    await self._record_target(loc.x, loc.y, resolved_end)
+    # A tip is a resource: once the device has it, it leaves its spot for the probe's shaft
+    try:
+      staged = await self.store.commands.begin_tool_pickup(
+        spb.BeginToolPickupRequest(
+          lock_tokens=self.store.lock_tokens,
+          frame=self._require_deck(),
+          items=[
+            spb.ToolPickupItem(source=spot.ref, shaft=ref(self.shaft(ch).id))
+            for ch, spot in zip(use_channels, spots)
+          ],
+          on_tracking_problem=pb.ON_TRACKING_PROBLEM_REJECT,
+        )
+      )
+    except StoreError as e:
+      raise store_problem(e) from e
     picked_up = {ch: False for ch in use_channels}
-    self._record_target(loc.x, loc.y, resolved_end)
     try:
       await self._driver.send_command(
         PrepCmd.MphPickupTips(
@@ -599,22 +717,19 @@ class Head8:
           tip_mask=_FULL_TIP_MASK,
         )
       )
-      picked_up = all_channels_succeeded(use_channels)
+      picked_up = {ch: True for ch in use_channels}
     except ChannelizedError as e:
       # It can fail on some shafts and not others; the device says which
-      picked_up = successes_from_failed_channels(use_channels, e.errors)
+      picked_up = {ch: ch not in e.errors for ch in use_channels}
       raise
     finally:
-      # A tip is a resource: once the device has it, it leaves its spot for the probe's shaft
-      for ch, taken in zip(use_channels, tips):
-        if picked_up[ch]:
-          self.shaft(ch).mount_tip(taken)
+      await resolve(self.store, staged.operation, [picked_up[ch] for ch in use_channels])
       # Read once the tips are on the model: Z is reported at their bottom.
       await self._record_where_it_stopped()
 
   async def drop_tips(
     self,
-    destinations: Sequence[Union[TipSpot, Trash]],
+    destinations: Sequence[handles.Resource],
     use_channels: Optional[Sequence[int]] = None,
     offset: Coordinate = Coordinate.zero(),
     z_seek_offset: Optional[float] = None,
@@ -629,7 +744,7 @@ class Head8:
 
     Args:
       destinations: the spot each shaft drops its tip into, or the waste. Waste drops use the
-        PrepDeck's `waste_mph` position.
+        Prep deck's `waste_mph` position.
       use_channels: which shafts drop them. The head drops all of them, so this only says so.
       offset: how far the destinations are missed by, in mm.
       z_seek_offset: how far above the destination the tip bottom stops, in mm. A height the drop
@@ -644,34 +759,34 @@ class Head8:
     self._require_all_channels(use_channels, "drop_tips")
     if len(destinations) != NUM_PROBES:
       raise ValueError(f"drop_tips requires {NUM_PROBES} destinations, got {len(destinations)}")
-    check_tip_racks_available(
-      [destination for destination in destinations if isinstance(destination, TipSpot)],
-      "drop tips into",
-    )
-    tip = self._require_mounted_tip()
+    deck = self._require_deck()
+    spot_list = [d for d in destinations if not isinstance(d, handles.Trash)]
+    spots: Dict[bytes, SpotFacts] = {s.id: s for s in await read_spots(self.store, deck, spot_list)}
+    check_racks_available(list(spots.values()), "drop tips into")
+    mounted = await self._require_mounted_tips()
+    tip = mounted[0]
     resolved_end = self._resolve_traverse_height(minimum_traverse_height_end)
 
     ref_spot = destinations[0]
-    is_trash = isinstance(ref_spot, Trash)
-    dest = ref_spot if is_trash else ref_spot.parent
+    is_trash = isinstance(ref_spot, handles.Trash)
     logger.info(
       "[Prep MPH] drop_tips: dest=%s, resources=%s",
-      dest.name if dest is not None else ref_spot.name,
+      ref_spot.name if is_trash else spots[ref_spot.id].rack_name,
       [s.name.rsplit("_", 1)[-1] for s in destinations],
     )
 
-    deck = self._require_deck()
     if is_trash:
-      if not isinstance(deck, PrepDeck):
+      parts = await self._driver.request_parts()
+      if parts is None:
         raise RuntimeError("tips are discarded into a PrepDeck's waste")
-      waste = deck.waste_positions.get("waste_mph")
+      waste = parts.waste_positions.get("waste_mph")
       if waste is None:
         raise RuntimeError("the deck has no waste position 'waste_mph'")
-      loc = waste.get_location_wrt(deck, "c", "c", "t")
+      loc = (await locate(self.store, deck, [waste.id]))[waste.id].top
       # The waste site locates the tip's end; the drop parameters locate its collar.
-      loc = Coordinate(loc.x, loc.y, loc.z + tip.get_size_z() - tip.collar_height)
+      loc = Coordinate(loc.x, loc.y, loc.z + tip.size.z - tip.collar_height)
     else:
-      loc = ref_spot.get_location_wrt(deck, "c", "c", "t") + offset
+      loc = spots[ref_spot.id].placed.top + offset
     drop_type = PrepCmd.TipDropType.Stall if is_trash else PrepCmd.TipDropType.FixedHeight
 
     tip_position = PrepCmd.TipDropParameters.for_op(
@@ -682,21 +797,32 @@ class Head8:
       drop_type=drop_type,
     )
     roll_off = 3.0 if (is_trash and tip_roll_off_distance == 0.0) else tip_roll_off_distance
-    mounted = self._require_mounted_tips()
     for ch in use_channels:
-      used = mounted[ch].tracker.get_used_volume()
-      if not mounted[ch].tracker.is_disabled and used > 1e-6:
+      used = mounted[ch].volume
+      if mounted[ch].tracks_volume and used > 1e-6:
         logger.warning("dropping the tip on channel %d with %s uL in it", ch, used)
-    spots = [d for d in destinations if isinstance(d, TipSpot)]
-    if len({id(spot) for spot in spots}) != len(spots):
+    into = [spots[d.id] for d in destinations if d.id in spots]
+    if len({spot.id for spot in into}) != len(into):
       raise ValueError("each tip must go into a spot of its own")
-    for spot in spots:
+    for spot in into:
       if spot.tracks_tips and spot.tip is not None:
         raise HasTipError(f"{spot.name} already holds a tip")
 
-    dropped = {ch: False for ch in use_channels}
     # The drop ends with the shaft at the final height, the tips still on the model until it answers.
-    self._record_target(loc.x, loc.y, resolved_end - self._mounted_length())
+    await self._record_target(loc.x, loc.y, resolved_end - await self._mounted_length())
+    # Once the device has let go, a tip goes into its spot, or to nothing in the waste
+    staged = await self.store.commands.begin_tool_drop(
+      spb.BeginToolDropRequest(
+        lock_tokens=self.store.lock_tokens,
+        frame=deck,
+        items=[
+          spb.ToolDropItem(shaft=ref(self.shaft(ch).id), target=ref(destination.id))
+          for ch, destination in zip(use_channels, destinations)
+        ],
+        on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
+      )
+    )
+    dropped = {ch: False for ch in use_channels}
     try:
       await self._driver.send_command(
         PrepCmd.MphDropTips(
@@ -706,19 +832,13 @@ class Head8:
           tip_roll_off_distance=roll_off,
         )
       )
-      dropped = all_channels_succeeded(use_channels)
+      dropped = {ch: True for ch in use_channels}
     except ChannelizedError as e:
       # It can fail on some shafts and not others; the device says which
-      dropped = successes_from_failed_channels(use_channels, e.errors)
+      dropped = {ch: ch not in e.errors for ch in use_channels}
       raise
     finally:
-      # Once the device has let go, a tip goes into its spot, or to nothing in the waste
-      for ch, destination in zip(use_channels, destinations):
-        if not dropped[ch]:
-          continue
-        released = self.shaft(ch).release_tip()
-        if isinstance(destination, TipSpot) and destination.tracks_tips:
-          destination.assign_tip(cast(Tip, released))
+      await resolve(self.store, staged.operation, [dropped[ch] for ch in use_channels])
       await self._record_where_it_stopped()
 
   async def return_tips(self, use_channels: Optional[Sequence[int]] = None, **kwargs) -> None:
@@ -735,10 +855,19 @@ class Head8:
     """
     channels = list(use_channels) if use_channels is not None else list(range(NUM_PROBES))
     self._require_all_channels(channels, "return_tips")
-    deck = self._require_deck()
-    spots: List[TipSpot] = []
-    for ch, tip in enumerate(self._require_mounted_tips()):
-      spot = tip_origin(tip, deck)
+    self._require_deck()
+    tips = await self._require_mounted_tips()
+    names = [tip.name.rpartition("#")[0] for tip in tips]
+    found = {
+      spot.name: spot
+      for spot in await self.store.find_resources(
+        scope=self.deck,
+        filter=spb.ResourceFilter(names=[n for n in names if n], kinds=[pb.RESOURCE_KIND_TIP_SPOT]),
+      )
+    }
+    spots: List[handles.Resource] = []
+    for ch, (tip, name) in enumerate(zip(tips, names)):
+      spot = found.get(name)
       if spot is None:
         raise RuntimeError(f"the spot channel {ch}'s tip {tip.name} came from is not on the deck")
       spots.append(spot)
@@ -756,16 +885,17 @@ class Head8:
     Raises:
       ValueError: If `use_channels` does not select all eight channels in order.
       RuntimeError: If there is no deck, only some channels carry tips, or the deck is not a
-        PrepDeck with a waste block and an MPH waste position.
+        Prep deck with a waste block and an MPH waste position.
     """
     channels = list(use_channels) if use_channels is not None else list(range(NUM_PROBES))
     self._require_all_channels(channels, "discard_tips")
-    deck = self._require_deck()
-    if all(tip is None for tip in self.get_mounted_tips()):
+    self._require_deck()
+    if all(tip is None for tip in await self.get_mounted_tips()):
       return
-    if not isinstance(deck, PrepDeck):
+    parts = await self._driver.request_parts()
+    if parts is None:
       raise RuntimeError("tips are discarded into a PrepDeck's waste block")
-    waste = deck.waste_block
+    waste = parts.waste_block
     if waste is None:
       raise RuntimeError("tips are discarded into the deck's waste block; this deck has none")
     await self.drop_tips([waste] * NUM_PROBES, use_channels=channels, **kwargs)
@@ -845,7 +975,9 @@ class Head8:
         "Partial tip pickup/drop/aspirate/dispense is not physically supported."
       )
 
-  def _resolve_probe_positions(self, wells) -> List[float]:
+  def _resolve_probe_positions(
+    self, wells: Sequence[ContainerFacts], ys: Sequence[float]
+  ) -> List[float]:
     """Compute expected probe Y positions and validate actual well Ys match.
 
     Probe 0 = row A = highest Y. Expected position for probe i:
@@ -854,22 +986,25 @@ class Head8:
     Works for any labware at 9mm pitch: standard 96-well columns, or
     interleaved 384-well selections (every other row = 2 × 4.5mm = 9mm).
 
+    Args:
+      wells: the wells, row A first.
+      ys: each well's cavity bottom's absolute y, in mm.
+
     Returns the expected Y values (one per probe) for logging/accounting.
     Raises ValueError if any well deviates beyond _PROBE_POS_TOLERANCE_MM.
     """
-    ref_y = wells[0].get_absolute_location("c", "c", "cavity_bottom").y
+    ref_y = ys[0]
     expected_ys = [ref_y - i * PROBE_PITCH_MM for i in range(len(wells))]
 
     mismatches = []
-    for i, (well, exp_y) in enumerate(zip(wells, expected_ys)):
-      actual_y = well.get_absolute_location("c", "c", "cavity_bottom").y
+    for i, (well, exp_y, actual_y) in enumerate(zip(wells, expected_ys, ys)):
       if abs(actual_y - exp_y) > _PROBE_POS_TOLERANCE_MM:
         mismatches.append(
           f"  probe {i} ({well.name}): expected y={exp_y:.2f}, actual y={actual_y:.2f}"
         )
 
     if mismatches:
-      actual_ys = [round(w.get_absolute_location("c", "c", "cavity_bottom").y, 2) for w in wells]
+      actual_ys = [round(y, 2) for y in ys]
       raise ValueError(
         f"Wells are not at {PROBE_PITCH_MM} mm probe pitch from wells[0]. "
         f"Pass wells in row-A-first order at {PROBE_PITCH_MM} mm spacing "
@@ -880,13 +1015,13 @@ class Head8:
 
     return expected_ys
 
-  def _validate_container_span(self, container) -> None:
+  def _validate_container_span(self, container: ContainerFacts) -> None:
     """Raise ValueError if the container is too narrow for all 8 channels.
 
     Minimum Y span = (NUM_PROBES - 1) * PROBE_PITCH_MM = 63 mm.
     """
     min_span = (NUM_PROBES - 1) * PROBE_PITCH_MM
-    span = container.get_size_y()
+    span = container.placed.size.y
     if span < min_span:
       raise ValueError(
         f"Container '{container.name}' Y span ({span:.1f} mm) is too narrow for "
@@ -894,9 +1029,9 @@ class Head8:
         f"(minimum {min_span:.1f} mm required)."
       )
 
-  def _resolve_liquid_targets(
+  async def _resolve_liquid_targets(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[handles.Resource],
     op: str,
   ) -> _Head8LiquidTargets:
     """Resolve `containers` as one trough spanning the head, or eight wells at channel pitch.
@@ -911,33 +1046,29 @@ class Head8:
     Raises:
       ValueError: If the count is not 1 or 8, a trough is too narrow, or wells are mistimed.
     """
-    containers_list = list(containers)
+    if len(containers) not in (1, NUM_PROBES):
+      raise ValueError(f"{op} requires 1 container or {NUM_PROBES} wells, got {len(containers)}")
+    containers_list = await read_containers(self.store, self._require_deck(), list(containers))
     if len(containers_list) == 1:
       container = containers_list[0]
       self._validate_container_span(container)
-      resource_name = container.parent.name if container.parent is not None else container.name
-      loc = container.get_location_wrt(self._require_deck(), "c", "c", "cavity_bottom")
+      loc = container.cavity_bottom
       return _Head8LiquidTargets(
-        resource_name=resource_name,
+        resource_name=container.parent_name,
         op_targets=container.name,
         ref_x=loc.x,
         ref_y=loc.y + 3.5 * PROBE_PITCH_MM,
         ref_resource=container,
         volume_containers=[container] * NUM_PROBES,
       )
-    if len(containers_list) != NUM_PROBES:
-      raise ValueError(
-        f"{op} requires 1 container or {NUM_PROBES} wells, got {len(containers_list)}"
-      )
-    self._resolve_probe_positions(containers_list)
-    resource_name = (
-      containers_list[0].parent.name
-      if containers_list[0].parent is not None
-      else containers_list[0].name
+    ids = [c.id for c in containers_list]
+    absolute = await locate(
+      self.store, None, ids, [c.id for c in containers_list if c.material_z_thickness is not None]
     )
-    ref_loc = containers_list[0].get_location_wrt(self._require_deck(), "c", "c", "cavity_bottom")
+    self._resolve_probe_positions(containers_list, [absolute[i].cavity_bottom.y for i in ids])
+    ref_loc = containers_list[0].cavity_bottom
     return _Head8LiquidTargets(
-      resource_name=resource_name,
+      resource_name=containers_list[0].parent_name,
       op_targets=[w.name.rsplit("_", 1)[-1] for w in containers_list],
       ref_x=ref_loc.x,
       ref_y=ref_loc.y,
@@ -945,7 +1076,7 @@ class Head8:
       volume_containers=containers_list,
     )
 
-  def _validate_mix(self, mix: Mix, volume_containers: Sequence[Container]) -> None:
+  async def _validate_mix(self, mix: Mix, volume_containers: Sequence[ContainerFacts]) -> None:
     """Check a `Mix` against the firmware's mix block, the mounted tips and the liquid present.
 
     Args:
@@ -969,15 +1100,13 @@ class Head8:
       raise ValueError("Mix flow_rate must be finite and positive")
     if mix.auto_surface_following or mix.surface_following_distance != 0:
       raise ValueError("Prep head8 mixing does not support surface following")
-    for tip in self._require_mounted_tips():
-      if mix.volume > tip.maximal_volume - tip.tracker.get_used_volume():
+    for tip in await self._require_mounted_tips():
+      if mix.volume > tip.maximal_volume - tip.volume:
         raise ValueError("Mix volume exceeds available tip capacity")
-    if not does_volume_tracking():
-      return
     # a trough gives every probe's mix volume at once
-    for container in {id(c): c for c in volume_containers}.values():
-      needed = mix.volume * sum(c is container for c in volume_containers)
-      if not container.tracker.is_disabled and container.tracker.get_used_volume() < needed:
+    for container in {c.id: c for c in volume_containers}.values():
+      needed = mix.volume * sum(c.id == container.id for c in volume_containers)
+      if container.tracks_volume and container.volume < needed:
         raise TooLittleLiquidError(f"'{container.name}' has too little liquid for the mix")
 
   # -- aspirate: assemble --------------------------------------------------------------------------
@@ -1356,9 +1485,9 @@ class Head8:
 
   # -- aspirate / dispense orchestrators -----------------------------------------------------------
 
-  def _get_volume_and_class(
+  async def _get_volume_and_class(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     volume: float,
     hamilton_liquid_classes: Optional[
       Union[HamiltonLiquidClass, List[Optional[HamiltonLiquidClass]]]
@@ -1396,9 +1525,9 @@ class Head8:
         "disable_volume_correction sends the volume as given; a class would correct it"
       )
     liquid, piston, classes = get_volumes_and_classes(
-      containers,
+      [container.name for container in containers],
       list(range(NUM_PROBES)),
-      self._require_mounted_tips(),
+      cast(Any, await self._require_mounted_tips()),
       None if disable_volume_correction else [volume] * NUM_PROBES,
       [volume] * NUM_PROBES if disable_volume_correction else None,
       cast(Optional[List[HamiltonLiquidClass]], given),
@@ -1412,7 +1541,7 @@ class Head8:
 
   async def aspirate(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[handles.Resource],
     *,
     volume: float,
     pre_mix: Optional[Mix] = None,
@@ -1468,13 +1597,13 @@ class Head8:
     del offset  # geometry uses container absolute locations
     use_channels = list(use_channels) if use_channels is not None else list(range(NUM_PROBES))
     self._require_all_channels(use_channels, "aspirate")
-    targets = self._resolve_liquid_targets(containers, "aspirate")
+    targets = await self._resolve_liquid_targets(containers, "aspirate")
     if pre_mix is not None:
-      self._validate_mix(pre_mix, targets.volume_containers)
+      await self._validate_mix(pre_mix, targets.volume_containers)
     if not math.isfinite(mix_position_from_liquid_surface) or mix_position_from_liquid_surface < 0:
       raise ValueError("Mix depth must be finite and non-negative")
     mix_block = get_mix_parameters([pre_mix], 1, [mix_position_from_liquid_surface])[0]
-    tip = self._require_mounted_tip()
+    tip = await self._require_mounted_tip()
 
     lld_mode = self._get_lld_mode(
       lld_mode, auto_surface_following, surface_following_distance, liquid_height, z_fluid
@@ -1482,12 +1611,10 @@ class Head8:
     # None follows the profile as it is, which is what the firmware's own following does
     following = None if auto_surface_following else surface_following_distance
     traverse_z = self._resolve_traverse_height()
-    end_resolved = (
-      z_final if z_final is not None else traverse_z - (tip.get_size_z() - tip.fitting_depth)
-    )
+    end_resolved = z_final if z_final is not None else traverse_z - tip.length
 
-    wg = _absolute_z_from_well(targets.ref_resource, self._require_deck(), liquid_height)
-    liquid, corrected, hlc = self._get_volume_and_class(
+    wg = _absolute_z_from_well(targets.ref_resource, liquid_height)
+    liquid, corrected, hlc = await self._get_volume_and_class(
       targets.volume_containers,
       float(volume),
       hamilton_liquid_classes,
@@ -1499,9 +1626,7 @@ class Head8:
     resolved_z_air = z_air if z_air is not None else wg.z_air
     resolved_z_minimum = z_minimum if z_minimum is not None else wg.well_bottom
     # the firmware counts segment 0 from z_minimum
-    cavity_bottom_z = targets.ref_resource.get_location_wrt(
-      self._require_deck(), "c", "c", "cavity_bottom"
-    ).z
+    cavity_bottom_z = targets.ref_resource.cavity_bottom.z
     if container_segments is not None:
       ref_segments = container_segments
     else:
@@ -1602,39 +1727,47 @@ class Head8:
         resolved_read_timeout or 0, self._driver.default_read_timeout
       ) + pre_mix.repetitions * (2 * pre_mix.volume / pre_mix.flow_rate + 2)
 
-    mounted = self._require_mounted_tips()
-    volume_intents = [
-      VolumeTransferIntent(
-        channel=ch,
-        container=targets.volume_containers[ch],
-        tip=mounted[ch],
-        volume_ul=liquid,
-        direction="aspirate",
+    # What each shaft moves is staged, refused when the model holds too little for it.
+    try:
+      staged = await self.store.commands.begin_liquid_transfer(
+        spb.BeginLiquidTransferRequest(
+          lock_tokens=self.store.lock_tokens,
+          frame=self._require_deck(),
+          direction=spb.TRANSFER_DIRECTION_ASPIRATE,
+          items=[
+            spb.TransferItem(
+              container=targets.volume_containers[ch].ref,
+              shaft=ref(self.shaft(ch).id),
+              volume=liquid,
+            )
+            for ch in use_channels
+          ],
+          on_tracking_problem=pb.ON_TRACKING_PROBLEM_REJECT,
+        )
       )
-      for ch in use_channels
-    ]
-    queue_volume_transfers(volume_intents)
+    except StoreError as e:
+      raise store_problem(e) from e
 
     aspirated = {ch: False for ch in use_channels}
-    self._record_target(targets.ref_x, targets.ref_y, end_resolved)
+    await self._record_target(targets.ref_x, targets.ref_y, end_resolved)
     try:
       await self._driver.send_command(
         cmd_cls(aspirate_parameters=[param_struct]),  # type: ignore[arg-type]
         read_timeout=resolved_read_timeout,
       )
-      aspirated = all_channels_succeeded(use_channels)
+      aspirated = {ch: True for ch in use_channels}
     except ChannelizedError as e:
       # It can fail on some shafts and not others; the device says which
-      aspirated = successes_from_failed_channels(use_channels, e.errors)
+      aspirated = {ch: ch not in e.errors for ch in use_channels}
       raise
     finally:
       # What each shaft moved is what its tip now holds, and the well no longer does.
-      finalize_volume_ops(volume_intents, aspirated)
+      await resolve(self.store, staged.operation, [aspirated[ch] for ch in use_channels])
       await self._record_where_it_stopped()
 
   async def dispense(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[handles.Resource],
     *,
     volume: float,
     use_channels: Optional[Sequence[int]] = None,
@@ -1685,8 +1818,8 @@ class Head8:
     del blow_out_air_volume  # dispense blowout not on Prep dispense wire path today
     use_channels = list(use_channels) if use_channels is not None else list(range(NUM_PROBES))
     self._require_all_channels(use_channels, "dispense")
-    targets = self._resolve_liquid_targets(containers, "dispense")
-    tip = self._require_mounted_tip()
+    targets = await self._resolve_liquid_targets(containers, "dispense")
+    tip = await self._require_mounted_tip()
 
     lld_mode = self._get_lld_mode(
       lld_mode, auto_surface_following, surface_following_distance, liquid_height, z_fluid
@@ -1694,12 +1827,10 @@ class Head8:
     # None follows the profile as it is, which is what the firmware's own following does
     following = None if auto_surface_following else surface_following_distance
     traverse_z = self._resolve_traverse_height()
-    end_resolved = (
-      z_final if z_final is not None else traverse_z - (tip.get_size_z() - tip.fitting_depth)
-    )
+    end_resolved = z_final if z_final is not None else traverse_z - tip.length
 
-    wg = _absolute_z_from_well(targets.ref_resource, self._require_deck(), liquid_height)
-    liquid, corrected, hlc = self._get_volume_and_class(
+    wg = _absolute_z_from_well(targets.ref_resource, liquid_height)
+    liquid, corrected, hlc = await self._get_volume_and_class(
       targets.volume_containers,
       float(volume),
       hamilton_liquid_classes,
@@ -1711,9 +1842,7 @@ class Head8:
     resolved_z_air = z_air if z_air is not None else wg.z_air
     resolved_z_minimum = z_minimum if z_minimum is not None else wg.well_bottom
     # the firmware counts segment 0 from z_minimum
-    cavity_bottom_z = targets.ref_resource.get_location_wrt(
-      self._require_deck(), "c", "c", "cavity_bottom"
-    ).z
+    cavity_bottom_z = targets.ref_resource.cavity_bottom.z
     if container_segments is not None:
       ref_segments = container_segments
     else:
@@ -1804,39 +1933,47 @@ class Head8:
         lld_params, resolved_z_minimum, approach_from_z=end_resolved
       )
 
-    mounted = self._require_mounted_tips()
-    volume_intents = [
-      VolumeTransferIntent(
-        channel=ch,
-        container=targets.volume_containers[ch],
-        tip=mounted[ch],
-        volume_ul=liquid,
-        direction="dispense",
+    # What each shaft moves is staged, refused when the model holds too little for it.
+    try:
+      staged = await self.store.commands.begin_liquid_transfer(
+        spb.BeginLiquidTransferRequest(
+          lock_tokens=self.store.lock_tokens,
+          frame=self._require_deck(),
+          direction=spb.TRANSFER_DIRECTION_DISPENSE,
+          items=[
+            spb.TransferItem(
+              container=targets.volume_containers[ch].ref,
+              shaft=ref(self.shaft(ch).id),
+              volume=liquid,
+            )
+            for ch in use_channels
+          ],
+          on_tracking_problem=pb.ON_TRACKING_PROBLEM_REJECT,
+        )
       )
-      for ch in use_channels
-    ]
-    queue_volume_transfers(volume_intents)
+    except StoreError as e:
+      raise store_problem(e) from e
 
     dispensed = {ch: False for ch in use_channels}
-    self._record_target(targets.ref_x, targets.ref_y, end_resolved)
+    await self._record_target(targets.ref_x, targets.ref_y, end_resolved)
     try:
       await self._driver.send_command(
         cmd_cls(dispense_parameters=[param_struct]),  # type: ignore[arg-type]
         read_timeout=resolved_read_timeout if effective_lld else None,
       )
-      dispensed = all_channels_succeeded(use_channels)
+      dispensed = {ch: True for ch in use_channels}
     except ChannelizedError as e:
       # It can fail on some shafts and not others; the device says which
-      dispensed = successes_from_failed_channels(use_channels, e.errors)
+      dispensed = {ch: ch not in e.errors for ch in use_channels}
       raise
     finally:
       # What each shaft moved is what the well now holds, and its tip no longer does.
-      finalize_volume_ops(volume_intents, dispensed)
+      await resolve(self.store, staged.operation, [dispensed[ch] for ch in use_channels])
       await self._record_where_it_stopped()
 
   async def mix(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[handles.Resource],
     mix: Mix,
     *,
     liquid_height: float = 1.0,
@@ -1855,11 +1992,11 @@ class Head8:
       liquid_height: mixing height above the cavity bottom, in mm.
       command_version: "v1" or "v2"; None picks what the head supports.
     """
-    targets = self._resolve_liquid_targets(containers, "mix")
-    self._validate_mix(mix, targets.volume_containers)
+    targets = await self._resolve_liquid_targets(containers, "mix")
+    await self._validate_mix(mix, targets.volume_containers)
     if not math.isfinite(liquid_height) or liquid_height < 0:
       raise ValueError("liquid_height must be finite and non-negative")
-    if any(tip.tracker.get_used_volume() > 0 for tip in self._require_mounted_tips()):
+    if any(tip.volume > 0 for tip in await self._require_mounted_tips()):
       raise ValueError("Mixing requires empty tips")
     await self.aspirate(
       containers,

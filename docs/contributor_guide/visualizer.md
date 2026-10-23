@@ -30,10 +30,19 @@ spins up two threads:
 1. **File server** – a simple HTTP server that serves the static files above.
 2. **Websocket server** – used to push state updates from Python to the browser.
 
-When `Visualizer.setup()` is called, it launches both servers and optionally
-opens a browser pointing to the file server.  As resources are assigned to the
-root resource or their state changes, callbacks in Python send JSON messages to
-the browser via the websocket.
+A `Visualizer` takes a handle to a resource in a resource store, its root: a
+deck, say.  When `Visualizer.setup()` is called, it reads the root and everything
+under it from the store once (`GetResources`, with the revision it was read at),
+follows the store's `Watch` stream from that revision, launches both servers, and
+optionally opens a browser pointing to the file server.  The tree it keeps is a
+`TreeMirror` (`visualizer/mirror.py`); `visualizer/nodes.py` turns a node into the
+JSON `Resource.serialize()` and `Resource.serialize_state()` give.
+
+Every event of one store request has the same revision, and the mirror applies
+them together: resources assigned and unassigned are sent as they happen, and
+every changed state of one request in one `set_state` message, so a 96-channel
+operation is one message.  A held tool, such as the tip in a tip spot, is drawn
+as its holder's state, and its comings and goings send nothing.
 
 ## Browser side
 

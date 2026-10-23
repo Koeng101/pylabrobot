@@ -1,0 +1,109 @@
+{
+  "name": "TIP_CAR_384BC_A00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TipCarrier",
+      "model": "TIP_CAR_384BC_A00",
+      "category": "tip_carrier",
+      "size": {
+        "x": 135.0,
+        "y": 497.0,
+        "z": 130.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+          "typeName": "EmbeddedTipRackHolder",
+          "category": "embedded_tip_rack_holder",
+          "size": {
+            "x": 114.5,
+            "y": 74.0
+          },
+          "location": {
+            "x": 10.25,
+            "y": 82.5,
+            "z": 114.8
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+          "typeName": "EmbeddedTipRackHolder",
+          "category": "embedded_tip_rack_holder",
+          "size": {
+            "x": 114.5,
+            "y": 74.0
+          },
+          "location": {
+            "x": 10.25,
+            "y": 167.4,
+            "z": 114.8
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+          "typeName": "EmbeddedTipRackHolder",
+          "category": "embedded_tip_rack_holder",
+          "size": {
+            "x": 114.5,
+            "y": 74.0
+          },
+          "location": {
+            "x": 10.25,
+            "y": 252.4,
+            "z": 114.8
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+          "typeName": "EmbeddedTipRackHolder",
+          "category": "embedded_tip_rack_holder",
+          "size": {
+            "x": 114.5,
+            "y": 74.0
+          },
+          "location": {
+            "x": 10.25,
+            "y": 337.4,
+            "z": 114.8
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Tip carrier with 4 empty tip rack positions landscape, with Barcode Identification  [revision A00]"
+}

@@ -1,8 +1,13 @@
 import asyncio
+import types
 import unittest
+from typing import Optional
+from unittest import mock
 from unittest.mock import AsyncMock
 
-from pylabrobot.qinstruments.bioshake import BioShake
+from pylabrobot.qinstruments import bioshake as bioshake_module
+from pylabrobot.qinstruments.bioshake import BioShake, BioShake3000Elm
+from pylabrobot.resources.store.client import ResourceStore
 
 
 class TestBioShakeReset(unittest.TestCase):
@@ -14,3 +19,33 @@ class TestBioShakeReset(unittest.TestCase):
     asyncio.run(bioshake.reset())
 
     bioshake.io.write.assert_awaited_once_with(b"resetDevice\r")
+
+
+def _bioshake(store: Optional[ResourceStore] = None) -> BioShake:
+  """A BioShake 3000 elm on a serial transport that is never opened."""
+  constants = types.SimpleNamespace(EIGHTBITS=8, PARITY_NONE="N", STOPBITS_ONE=1)
+  with (
+    mock.patch.object(bioshake_module, "HAS_SERIAL", True),
+    mock.patch.object(bioshake_module, "serial", constants, create=True),
+    mock.patch.object(bioshake_module, "Serial", mock.MagicMock()),
+  ):
+    return BioShake3000Elm("bioshake", "/dev/ttyUSB0", store=store)
+
+
+class TestBioShakeBody(unittest.IsolatedAsyncioTestCase):
+  async def test_body_is_found_again_in_its_store(self) -> None:
+    first = _bioshake()
+    body = await first.create_body()
+    again = _bioshake(store=first.store)
+    self.assertEqual(await again.create_body(), body)
+
+  async def test_resource_is_set_and_cleared(self) -> None:
+    bioshake = _bioshake()
+    plate = await bioshake.store.create("cor_96_wellplate_360uL_Fb", name="plate")
+    await bioshake.set_resource(plate)
+    self.assertEqual(await bioshake.get_resource(), plate)
+    other = await bioshake.store.create("cor_96_wellplate_360uL_Fb", name="other")
+    with self.assertRaises(ValueError):
+      await bioshake.set_resource(other)
+    await bioshake.set_resource(None)
+    self.assertIsNone(await bioshake.get_resource())

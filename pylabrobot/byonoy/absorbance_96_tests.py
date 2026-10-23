@@ -7,6 +7,7 @@ from pylabrobot.byonoy.absorbance_96 import ByonoyAbsorbance96
 from pylabrobot.io.binary import Writer
 from pylabrobot.io.hid import HID
 from pylabrobot.resources import Coordinate, Lid, Plate, Well
+from pylabrobot.resources.store.definitions import definition_from_resource
 
 
 class CalibrationErrorOverrideTests(unittest.IsolatedAsyncioTestCase):
@@ -136,23 +137,26 @@ def _plate(size_z: float) -> Plate:
   return Plate(name="plate", size_x=127.76, size_y=85.48, size_z=size_z, ordered_items={"A1": well})
 
 
-class IlluminationUnitHeightCheckTests(unittest.TestCase):
-  def _check_with(self, plate: Plate) -> None:
+class IlluminationUnitHeightCheckTests(unittest.IsolatedAsyncioTestCase):
+  async def _check_with(self, plate: Plate) -> None:
     base = byonoy_a96a_parking_unit(name="base")
-    base.plate_holder.assign_child_resource(plate)
-    base.illumination_unit_holder.check_can_drop_resource_here(
-      byonoy_a96a_illumination_unit(name="illumination_unit")
+    await base.create_body()
+    stored = await base.store.create(definition_from_resource(plate), plate.name)
+    await base.plate_holder.assign_child_resource(stored)
+    unit = byonoy_a96a_illumination_unit(name="illumination_unit")
+    await base.illumination_unit_holder.check_can_drop_resource_here(
+      await base.store.create(unit, "illumination_unit")
     )
 
-  def test_the_tallest_plate_that_clears_is_allowed_and_the_next_is_not(self):
-    self._check_with(_plate(16.0))
+  async def test_the_tallest_plate_that_clears_is_allowed_and_the_next_is_not(self):
+    await self._check_with(_plate(16.0))
     with self.assertRaises(RuntimeError):
-      self._check_with(_plate(16.01))
+      await self._check_with(_plate(16.01))
 
-  def test_a_lid_counts_towards_the_height(self):
+  async def test_a_lid_counts_towards_the_height(self):
     plate = _plate(14.0)
     plate.assign_child_resource(
       Lid(name="lid", size_x=127.76, size_y=85.48, size_z=4.0, nesting_z_height=1.0)
     )
     with self.assertRaises(RuntimeError):
-      self._check_with(plate)
+      await self._check_with(plate)

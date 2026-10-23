@@ -2,81 +2,81 @@ import asyncio
 import logging
 import time
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
+from pylabrobot.byonoy.body import (
+  Holder,
+  Unit,
+  assign_unlocated,
+  body_definition,
+  holder_definition,
+)
 from pylabrobot.byonoy.driver import ABS96_ERROR_NAMES, ByonoyDevice, ByonoyDriver
 from pylabrobot.byonoy.results import AbsorbanceResult
 from pylabrobot.io.binary import Reader, Writer
-from pylabrobot.resources import Coordinate, PlateHolder, Resource, ResourceHolder
-from pylabrobot.resources.barcode import Barcode
-from pylabrobot.resources.plate import Plate
-from pylabrobot.resources.rotation import Rotation
-from pylabrobot.resources.well import Well
+from pylabrobot.resources import Coordinate, Rotation
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.utils.list import reshape_2d
 
 logger = logging.getLogger(__name__)
 
 
-class _ByonoyAbsorbanceReaderPlateHolder(PlateHolder):
+class _ByonoyAbsorbanceReaderPlateHolder(Holder):
   """Plate holder with interlock: blocks drops while illumination unit is on the base."""
 
-  def __init__(
-    self,
-    name: str,
-    size_x: float,
-    size_y: float,
-    size_z: float,
-    pedestal_size_z: float = 0,
-    child_location: Coordinate = Coordinate.zero(),
-    category: str = "plate_holder",
-    model: Optional[str] = None,
-  ):
-    super().__init__(
-      name=name,
-      size_x=size_x,
-      size_y=size_y,
-      size_z=size_z,
-      pedestal_size_z=pedestal_size_z,
-      child_location=child_location,
-      category=category,
-      model=model,
-    )
-    self._byonoy_base: Optional[ByonoyAbsorbanceBaseUnit] = None
+  def __init__(self, base: "ByonoyAbsorbanceBaseUnit"):
+    super().__init__(base, base.name + "_plate_holder")
+    self._base = base
 
-  def check_can_drop_resource_here(self, resource: Resource, *, reassign: bool = True) -> None:
-    if self._byonoy_base is None:
-      raise RuntimeError(
-        "Plate holder not assigned to a ByonoyAbsorbanceBaseUnit. This should not happen."
-      )
-    if self._byonoy_base.illumination_unit_holder.resource is not None:
+  async def check_can_drop_resource_here(self, resource: handles.Resource) -> None:
+    if await self._base.illumination_unit_holder.get_resource_held() is not None:
       raise RuntimeError(
         f"Cannot drop resource {resource.name} onto plate holder while illumination unit is on "
         "the base. Please remove the illumination unit from the base before dropping a resource."
       )
-    super().check_can_drop_resource_here(resource, reassign=reassign)
+    await super().check_can_drop_resource_here(resource)
 
 
-class _ByonoyAbsorbanceIlluminationUnitHolder(ResourceHolder):
+class _ByonoyAbsorbanceIlluminationUnitHolder(Holder):
   """Illumination unit holder: blocks drops onto a plate taller than the unit clears."""
 
   # The tallest plate, lid included, the illumination unit goes on over.
   MAX_PLATE_SIZE_Z = 16.0
 
-  def check_can_drop_resource_here(self, resource: Resource, *, reassign: bool = True) -> None:
-    base = self.parent
-    assert isinstance(base, ByonoyAbsorbanceBaseUnit)
-    plate = base.plate_holder.resource
+  def __init__(self, base: "ByonoyAbsorbanceBaseUnit"):
+    super().__init__(base, base.name + "_illumination_unit_holder")
+    self._base = base
+
+  async def check_can_drop_resource_here(self, resource: handles.Resource) -> None:
+    plate_holder = self._base.plate_holder.handle
+    plate = await self._base.plate_holder.get_resource_held()
     if plate is not None:
-      top = plate.get_highest_known_point() - base.plate_holder.get_absolute_location().z
+      # The plate's highest point and the plate holder's height, in one read.
+      response = await plate.store.commands.resolve_geometry(
+        spb.ResolveGeometryRequest(
+          queries=[
+            spb.GeometryQuery(resource=plate.ref),
+            spb.GeometryQuery(resource=plate_holder.ref),
+          ]
+        )
+      )
+      highest, holder = response.results
+      top = highest.highest_point - holder.locations[0].z
       if top > self.MAX_PLATE_SIZE_Z:
         raise RuntimeError(
           f"Cannot drop resource {resource.name} onto {self.name}: {plate.name} stands {top:.2f} mm "
           f"tall, above the {self.MAX_PLATE_SIZE_Z:.2f} mm the illumination unit clears."
         )
-    super().check_can_drop_resource_here(resource, reassign=reassign)
+    await super().check_can_drop_resource_here(resource)
 
 
-class ByonoyAbsorbanceBaseUnit(Resource):
+class ByonoyAbsorbanceBaseUnit(Unit):
+  """The base of the Byonoy A96A: its body in a resource store, a plate holder and an
+  illumination unit holder."""
+
   def __init__(
     self,
     name: str,
@@ -86,53 +86,67 @@ class ByonoyAbsorbanceBaseUnit(Resource):
     rotation: Optional[Rotation] = None,
     category: Optional[str] = None,
     model: Optional[str] = None,
-    barcode: Optional[Barcode] = None,
+    barcode: Optional[pb.Barcode] = None,
     preferred_pickup_location: Optional[Coordinate] = None,
+    store: Optional[ResourceStore] = None,
   ):
-    super().__init__(
-      name=name,
-      size_x=size_x,
-      size_y=size_y,
-      size_z=size_z,
-      rotation=rotation,
-      category=category,
-      model=model,
-      barcode=barcode,
-      preferred_pickup_location=preferred_pickup_location,
+    """
+    Args:
+      name: the name of its body in the resource store.
+      store: the resource store its body is in; None makes one in memory.
+    """
+    Unit.__init__(self, name, store)
+    self.size = Coordinate(size_x, size_y, size_z)
+    self.rotation = rotation
+    self.category = category
+    self.model = model
+    self.barcode = barcode
+    self.preferred_pickup_location = preferred_pickup_location
+    self.plate_holder = _ByonoyAbsorbanceReaderPlateHolder(self)
+    self.illumination_unit_holder = _ByonoyAbsorbanceIlluminationUnitHolder(self)
+
+  def definition(self) -> pb.ResourceDefinition:
+    """The base, its plate holder and its illumination unit holder."""
+    plate_holder = holder_definition(
+      self.plate_holder.name,
+      Coordinate(127.76, 85.48, 0),
+      location=Coordinate(x=22.5, y=5.0, z=16.0),
+      child_location=Coordinate.zero(),
+      kind=pb.RESOURCE_KIND_PLATE_HOLDER,
+    )
+    illumination_unit_holder = holder_definition(
+      self.illumination_unit_holder.name,
+      Coordinate(self.size.x, self.size.y, 0),
+      location=Coordinate(x=0, y=0, z=14.1),
+      child_location=Coordinate.zero(),
+    )
+    return body_definition(
+      self.name,
+      self.size,
+      self.rotation,
+      self.category,
+      self.model,
+      self.barcode,
+      self.preferred_pickup_location,
+      children=[plate_holder, illumination_unit_holder],
     )
 
-    self.plate_holder = _ByonoyAbsorbanceReaderPlateHolder(
-      name=self.name + "_plate_holder",
-      size_x=127.76,
-      size_y=85.48,
-      size_z=0,
-      pedestal_size_z=0,
-    )
-    self.assign_child_resource(self.plate_holder, location=Coordinate(x=22.5, y=5.0, z=16.0))
-
-    self.illumination_unit_holder = _ByonoyAbsorbanceIlluminationUnitHolder(
-      name=self.name + "_illumination_unit_holder",
-      size_x=size_x,
-      size_y=size_y,
-      size_z=0,
-    )
-    self.assign_child_resource(self.illumination_unit_holder, location=Coordinate(x=0, y=0, z=14.1))
-
-  def assign_child_resource(
-    self, resource: Resource, location: Optional[Coordinate], reassign: bool = True
-  ) -> None:
-    if isinstance(resource, _ByonoyAbsorbanceReaderPlateHolder):
-      if self.plate_holder._byonoy_base is not None:
-        raise ValueError("ByonoyDriver can only have one plate holder assigned.")
-      self.plate_holder._byonoy_base = self
-    super().assign_child_resource(resource, location, reassign)
-
-  def check_can_drop_resource_here(self, resource: Resource, *, reassign: bool = True) -> None:
+  async def check_can_drop_resource_here(self, resource: handles.Resource) -> None:
     raise RuntimeError(
       "ByonoyDriver does not support assigning child resources directly. "
       "Use the plate_holder or illumination_unit_holder to assign plates and the "
       "illumination unit, respectively."
     )
+
+  async def assign_child_resource(
+    self, resource: handles.Resource, location: Optional[Coordinate]
+  ) -> None:
+    """Put `resource` on the base itself, at `location`, or with no location when None."""
+    body = await self.create_body()
+    if location is None:
+      await assign_unlocated(body, resource)
+    else:
+      await body.assign_child_resource(resource, location=location)
 
 
 class ByonoyAbsorbance96(ByonoyAbsorbanceBaseUnit, ByonoyDriver):
@@ -140,17 +154,20 @@ class ByonoyAbsorbance96(ByonoyAbsorbanceBaseUnit, ByonoyDriver):
 
   Inherits the base unit so it owns the ``plate_holder`` and
   ``illumination_unit_holder``. ``ByonoyAbsorbanceBaseUnit`` comes first in the
-  MRO so ``Resource``'s ``name`` property (and its setter, which the resource
-  tree needs) wins over the driver's device-name property.
+  MRO so the body's ``name`` wins over the driver's device-name property.
   """
 
   _ERROR_NAMES = ABS96_ERROR_NAMES
   _DD_IGNORE_ERRORS_IN_CALIBRATION = 0x800E
 
-  def __init__(self, name: str = "byonoy_absorbance_96") -> None:
+  def __init__(
+    self, name: str = "byonoy_absorbance_96", store: Optional[ResourceStore] = None
+  ) -> None:
     # Drawn with the parking unit's housing, which is the same part, until the detection unit is
     # modelled on its own.
-    ByonoyAbsorbanceBaseUnit.__init__(self, name=name, model="byonoy_a96a_parking_unit")
+    ByonoyAbsorbanceBaseUnit.__init__(
+      self, name=name, model="byonoy_a96a_parking_unit", store=store
+    )
     ByonoyDriver.__init__(
       self, pid=0x1199, device_type=ByonoyDevice.ABSORBANCE_96, name="Byonoy A96"
     )
@@ -338,7 +355,8 @@ class ByonoyAbsorbance96(ByonoyAbsorbanceBaseUnit, ByonoyDriver):
     """
     if not isinstance(ignore_errors_in_calibration, bool):
       raise TypeError("ignore_errors_in_calibration must be a bool.")
-    await super().setup()
+    await self.create_body()
+    await ByonoyDriver.setup(self)
     original_override = None
     if ignore_errors_in_calibration:
       original_override = await self.request_ignore_errors_in_calibration()
@@ -358,8 +376,8 @@ class ByonoyAbsorbance96(ByonoyAbsorbanceBaseUnit, ByonoyDriver):
 
   async def read_absorbance(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: handles.Plate,
+    wells: Sequence[handles.Resource],
     wavelength: int,
   ) -> List[AbsorbanceResult]:
     if wavelength not in self.available_wavelengths:
@@ -393,49 +411,59 @@ class ByonoyAbsorbance96(ByonoyAbsorbanceBaseUnit, ByonoyDriver):
     ]
 
 
-def byonoy_sbs_adapter(name: str) -> ResourceHolder:
-  """Create a Byonoy SBS adapter ResourceHolder."""
-  return ResourceHolder(
-    name=name,
-    size_x=127.76,
-    size_y=85.48,
-    size_z=17.0,
-    child_location=Coordinate(
-      x=-(155.26 - 127.76) / 2,
-      y=-(95.48 - 85.48) / 2,
-      z=17.0,
-    ),
+def byonoy_sbs_adapter(name: str) -> pb.ResourceDefinition:
+  """A Byonoy SBS adapter: a resource holder, to create in a store."""
+  return build.resource(
+    name,
+    Coordinate(127.76, 85.48, 17.0),
+    kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
+    category="resource_holder",
     model="byonoy_a96a_sbs_adapter",
+    type_name="ResourceHolder",
+    holder=pb.HolderSpec(
+      child_location=build.vec3(
+        Coordinate(x=-(155.26 - 127.76) / 2, y=-(95.48 - 85.48) / 2, z=17.0)
+      ),
+      capacity=1,
+    ),
   )
 
 
-def byonoy_a96a_illumination_unit(name: str) -> Resource:
+def byonoy_a96a_illumination_unit(name: str) -> pb.ResourceDefinition:
+  """A Byonoy A96A illumination unit, to create in a store."""
   size_x = 155.26
   size_y = 95.48
-  return Resource(
-    name=name,
-    size_x=size_x,
-    size_y=size_y,
-    size_z=42.898,
+  return build.resource(
+    name,
+    Coordinate(size_x, size_y, 42.898),
     model="byonoy_a96a_illumination_unit",
-    preferred_pickup_location=Coordinate(x=size_x / 2, y=size_y / 2, z=29.5),
+    preferred_pickup_location=build.vec3(Coordinate(x=size_x / 2, y=size_y / 2, z=29.5)),
   )
 
 
-def byonoy_a96a_detection_unit(name: str) -> ByonoyAbsorbance96:
+def byonoy_a96a_detection_unit(
+  name: str, store: Optional[ResourceStore] = None
+) -> ByonoyAbsorbance96:
   """Create a Byonoy A96A detection unit."""
-  return ByonoyAbsorbance96(name=name)
+  return ByonoyAbsorbance96(name=name, store=store)
 
 
-def byonoy_a96a_parking_unit(name: str) -> ByonoyAbsorbanceBaseUnit:
+def byonoy_a96a_parking_unit(
+  name: str, store: Optional[ResourceStore] = None
+) -> ByonoyAbsorbanceBaseUnit:
   """Create a Byonoy A96A detection unit holder (base only, no backend)."""
-  return ByonoyAbsorbanceBaseUnit(name=name, model="byonoy_a96a_parking_unit")
+  return ByonoyAbsorbanceBaseUnit(name=name, model="byonoy_a96a_parking_unit", store=store)
 
 
-def byonoy_a96a(name: str, assign: bool = True) -> Tuple[ByonoyAbsorbance96, Resource]:
-  """Create a full Byonoy A96A setup (reader + illumination unit)."""
-  reader = byonoy_a96a_detection_unit(name=name)
-  illumination_unit = byonoy_a96a_illumination_unit(name=name + "_illumination_unit")
+async def byonoy_a96a(
+  name: str, assign: bool = True, store: Optional[ResourceStore] = None
+) -> Tuple[ByonoyAbsorbance96, handles.Resource]:
+  """Create a full Byonoy A96A setup (reader + illumination unit) in `store` (a new one in
+  memory when None); the illumination unit goes on the reader when `assign`."""
+  reader = byonoy_a96a_detection_unit(name=name, store=store)
+  await reader.create_body()
+  unit_name = name + "_illumination_unit"
+  illumination_unit = await reader.store.create(byonoy_a96a_illumination_unit(unit_name), unit_name)
   if assign:
-    reader.illumination_unit_holder.assign_child_resource(illumination_unit)
+    await reader.illumination_unit_holder.assign_child_resource(illumination_unit)
   return reader, illumination_unit

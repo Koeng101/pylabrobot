@@ -1,0 +1,90 @@
+{
+  "name": "PLT_CAR_P3LI_A00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "PlateCarrier",
+      "model": "PLT_CAR_P3LI_A00",
+      "category": "plate_carrier",
+      "size": {
+        "x": 112.5,
+        "y": 497.0,
+        "z": 130.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 109.0,
+            "y": 152.0
+          },
+          "location": {
+            "x": 2.5,
+            "y": 12.2,
+            "z": 111.6
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 109.0,
+            "y": 152.0
+          },
+          "location": {
+            "x": 2.5,
+            "y": 166.6,
+            "z": 111.6
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 109.0,
+            "y": 152.0
+          },
+          "location": {
+            "x": 2.5,
+            "y": 321.6,
+            "z": 111.6
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Carrier for 3 Limbro Plates portrait"
+}

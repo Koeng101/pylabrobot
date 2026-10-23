@@ -3,10 +3,6 @@
 import logging
 import math
 
-from pylabrobot.resources.height_volume_functions import (
-  calculate_liquid_height_in_container_2segments_square_ubottom,
-  calculate_liquid_volume_container_2segments_square_ubottom,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -14,7 +10,6 @@ from pylabrobot.resources.well import (
   Well,
   WellBottomType,
 )
-from pylabrobot.utils.interpolation import interpolate_1d
 
 logger = logging.getLogger(__name__)
 
@@ -40,31 +35,6 @@ logger = logging.getLogger(__name__)
 # # # # # # # # # # Thermo_TS_96_wellplate_1200ul_Rb # # # # # # # # # #
 
 
-def _compute_volume_from_height_Thermo_TS_96_wellplate_1200ul_Rb(
-  h: float,
-):
-  if h > 20.5:
-    raise ValueError(f"Height {h} is too large for" + "Thermo_TS_96_wellplate_1200ul_Rb")
-  return calculate_liquid_volume_container_2segments_square_ubottom(
-    x=8.15, h_cuboid=16.45, liquid_height=h
-  )
-
-
-def _compute_height_from_volume_Thermo_TS_96_wellplate_1200ul_Rb(
-  liquid_volume: float,
-):
-  if liquid_volume > 1260:  # 5% tolerance
-    raise ValueError(
-      f"Volume {liquid_volume} is too large for" + "Thermo_TS_96_wellplate_1200ul_Rb"
-    )
-  return round(
-    calculate_liquid_height_in_container_2segments_square_ubottom(
-      x=8.15, h_cuboid=16.45, liquid_volume=liquid_volume
-    ),
-    3,
-  )
-
-
 def Thermo_TS_96_wellplate_1200ul_Rb_Lid(name: str) -> Lid:
   raise NotImplementedError("This lid is not currently defined.")
   # See https://github.com/PyLabRobot/pylabrobot/pull/161.
@@ -76,6 +46,38 @@ def Thermo_TS_96_wellplate_1200ul_Rb_Lid(name: str) -> Lid:
   #   nesting_z_height=None, # measure overlap between lid and plate
   #   model="Thermo_TS_96_wellplate_1200ul_Rb_Lid",
   # )
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_Thermo_TS_96_wellplate_1200ul_Rb_height_volume_data = {
+  0.0: 0.0,
+  0.04: 0.020416,
+  0.12: 0.182539,
+  0.24: 0.722918,
+  0.37: 1.699549,
+  0.5: 3.069598,
+  0.63: 4.819261,
+  0.76: 6.934735,
+  0.9: 9.606205,
+  1.04: 12.668678,
+  1.18: 16.104912,
+  1.33: 20.181765,
+  1.48: 24.646682,
+  1.63: 29.47846,
+  1.79: 35.012823,
+  1.96: 41.295213,
+  2.13: 47.961654,
+  2.31: 55.404533,
+  2.5: 63.649976,
+  2.7: 72.714518,
+  2.92: 83.082718,
+  3.16: 94.791761,
+  3.44: 108.864747,
+  3.81: 127.918303,
+  4.07: 141.462524,
+  4.1: 143.383927,
+  19.35: 1156.327052,
+}
 
 
 def Thermo_TS_96_wellplate_1200ul_Rb(name: str, with_lid: bool = False) -> Plate:
@@ -116,8 +118,8 @@ def Thermo_TS_96_wellplate_1200ul_Rb(name: str, with_lid: bool = False) -> Plate
       bottom_type=WellBottomType.U,
       material_z_thickness=1.15,
       cross_section_type=CrossSectionType.RECTANGLE,
-      compute_volume_from_height=(_compute_volume_from_height_Thermo_TS_96_wellplate_1200ul_Rb),
-      compute_height_from_volume=(_compute_height_from_volume_Thermo_TS_96_wellplate_1200ul_Rb),
+      height_volume_data=_Thermo_TS_96_wellplate_1200ul_Rb_height_volume_data,
+      max_volume=1232.7129,
       name_prefix=name,
     ),
   )
@@ -141,26 +143,6 @@ _enduraplate_height_to_volume = {
 _enduraplate_volume_to_height = {v: k for k, v in _enduraplate_height_to_volume.items()}
 
 
-def _compute_volume_from_height_Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate(
-  h: float,
-) -> float:
-  if h > 20.1 * 1.05:
-    raise ValueError(f"Height {h} is too large for Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate")
-  return round(interpolate_1d(h, _enduraplate_height_to_volume, bounds_handling="extrapolate"), 3)
-
-
-def _compute_height_from_volume_Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate(
-  liquid_volume: float,
-) -> float:
-  if liquid_volume > 315:  # 5% tolerance
-    raise ValueError(
-      f"Volume {liquid_volume} is too large for Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate"
-    )
-  return round(
-    interpolate_1d(liquid_volume, _enduraplate_volume_to_height, bounds_handling="extrapolate"), 3
-  )
-
-
 def Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate_Lid(name: str) -> Lid:
   raise NotImplementedError("This lid is not currently defined.")
   # See https://github.com/PyLabRobot/pylabrobot/pull/161.
@@ -172,6 +154,19 @@ def Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate_Lid(name: str) -> Lid:
   #   nesting_z_height=None, # measure overlap between lid and plate
   #   model="Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate_Lid",
   # )
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate_height_volume_data = {
+  0.0: 0.0,
+  0.17: 4.0,
+  0.8: 8.24,
+  2.28: 20.116,
+  6.57: 70.0,
+  9.17: 120.0,
+  13.18: 220.2,
+  18.5: 326.6,
+}
 
 
 def Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate(name: str, with_lid: bool = False) -> Plate:
@@ -211,12 +206,8 @@ def Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate(name: str, with_lid: bool = Fals
       bottom_type=WellBottomType.V,
       material_z_thickness=1.6,
       cross_section_type=CrossSectionType.CIRCLE,
-      compute_volume_from_height=(
-        _compute_volume_from_height_Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate
-      ),
-      compute_height_from_volume=(
-        _compute_height_from_volume_Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate
-      ),
+      height_volume_data=_Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate_height_volume_data,
+      max_volume=358.6,
       name_prefix=name,
     ),
   )
@@ -282,28 +273,22 @@ _microamp_height_to_volume = {
 _microamp_volume_to_height = {v: k for k, v in _microamp_height_to_volume.items()}
 
 
-def _compute_volume_from_height_thermo_AB_96_wellplate_300ul_Vb_MicroAmp(height_mm: float) -> float:
-  if height_mm > (23.24 - 0.74) * 1.05:
-    raise ValueError(
-      f"Height {height_mm} is too large for thermo_AB_96_wellplate_300ul_Vb_MicroAmp"
-    )
-  return round(
-    interpolate_1d(height_mm, _microamp_height_to_volume, bounds_handling="extrapolate"), 3
-  )
-
-
-def _compute_height_from_volume_thermo_AB_96_wellplate_300ul_Vb_MicroAmp(volume_ul: float) -> float:
-  if volume_ul > 305:  # 5% tolerance above 290 µL
-    raise ValueError(
-      f"Volume {volume_ul} is too large for thermo_AB_96_wellplate_300ul_Vb_MicroAmp"
-    )
-  return round(
-    interpolate_1d(volume_ul, _microamp_volume_to_height, bounds_handling="extrapolate"), 3
-  )
-
-
 def thermo_AB_96_wellplate_300ul_Vb_MicroAmp_Lid(name: str) -> Lid:
   raise NotImplementedError("This lid is not currently defined.")
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_thermo_AB_96_wellplate_300ul_Vb_MicroAmp_height_volume_data = {
+  0.0: 0.0,
+  1.69: 4.0,
+  2.35: 8.45,
+  3.9: 20.105,
+  5.87: 40.889,
+  8.49: 70.0,
+  14.82: 220.667,
+  16.65: 261.385,
+  22.5: 396.385,
+}
 
 
 def thermo_AB_96_wellplate_300ul_Vb_MicroAmp(name: str, with_lid: bool = False) -> Plate:
@@ -345,12 +330,8 @@ def thermo_AB_96_wellplate_300ul_Vb_MicroAmp(name: str, with_lid: bool = False) 
       bottom_type=WellBottomType.V,
       material_z_thickness=0.74,
       cross_section_type=CrossSectionType.CIRCLE,
-      compute_volume_from_height=(
-        _compute_volume_from_height_thermo_AB_96_wellplate_300ul_Vb_MicroAmp
-      ),
-      compute_height_from_volume=(
-        _compute_height_from_volume_thermo_AB_96_wellplate_300ul_Vb_MicroAmp
-      ),
+      height_volume_data=_thermo_AB_96_wellplate_300ul_Vb_MicroAmp_height_volume_data,
+      max_volume=413.462,
       name_prefix=name,
     ),
   )

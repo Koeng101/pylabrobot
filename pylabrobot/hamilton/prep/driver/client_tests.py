@@ -9,9 +9,9 @@ import pytest
 from pylabrobot.hamilton.prep import PrepDriver, PrepSimulationDriver
 from pylabrobot.hamilton.prep.driver import prep_commands as PrepCmd
 from pylabrobot.hamilton.prep.driver.configuration import read_configuration, to_jsonable
+from pylabrobot.hamilton.prep.driver.test_helpers import make_plain_deck, make_prep_deck
 from pylabrobot.hamilton.transport.tcp.packets import Address
 from pylabrobot.hamilton.transport.tcp.protocol import Hoi2Action
-from pylabrobot.resources.hamilton import PrepDeck, STARLetDeck
 
 
 def _index_of(sent: list, command_type) -> "int | None":
@@ -24,7 +24,7 @@ def test_firmware_string_queries_send_status_requests(command_id, interface_id):
   """Identity queries send the requested method and decode its string response."""
 
   async def _run() -> None:
-    driver = PrepDriver(deck=STARLetDeck(), host="127.0.0.1")
+    driver = PrepDriver(deck=await make_plain_deck(), host="127.0.0.1")
     address = Address(1, 1, 0x100)
     payload = b"\x0f\x00\x08\x00PREP123\x00"
     driver.send_command = AsyncMock(return_value=payload)  # type: ignore[method-assign]
@@ -46,7 +46,7 @@ def test_simulation_setup_detects_v2_pipetting_and_keeps_the_configuration_after
   """V1.2.2 carries the v2 aspirate/dispense commands, and the configuration outlives the link."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=STARLetDeck())
+    p = PrepSimulationDriver(deck=await make_plain_deck())
     await p.setup()
     assert p.pipettes is not None
     assert p.pipettes.configuration.supports_v2_pipetting is True
@@ -58,7 +58,7 @@ def test_simulation_setup_detects_v2_pipetting_and_keeps_the_configuration_after
 
 def test_simulation_use_v1_skips_v2_probe():
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=STARLetDeck())
+    p = PrepSimulationDriver(deck=await make_plain_deck())
     await p.setup(use_v1_aspirate_dispense=True)
     assert p.pipettes is not None
     assert p.pipettes.configuration.supports_v2_pipetting is False
@@ -69,7 +69,7 @@ def test_simulation_use_v1_skips_v2_probe():
 
 def test_prep_device_motion_method_and_power_commands():
   async def _run() -> None:
-    deck = STARLetDeck()
+    deck = await make_plain_deck()
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     await p.park_device()
@@ -85,7 +85,7 @@ def test_prep_device_motion_method_and_power_commands():
 
 def test_prep_method_run_context_manager_aborts_on_exception():
   async def _run() -> None:
-    deck = STARLetDeck()
+    deck = await make_plain_deck()
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.method is not None
@@ -130,7 +130,7 @@ def test_prep_method_run_context_manager_aborts_on_exception():
 
 def test_mounted_picks_up_the_tools_and_returns_them():
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck(with_core_grippers=True))
+    p = PrepSimulationDriver(deck=await make_prep_deck())
     await p.setup()
     assert p.core_grippers is not None
     assert p.core_grippers is not None
@@ -145,7 +145,7 @@ def test_mounted_picks_up_the_tools_and_returns_them():
 
 def test_send_command_surfaces_clear_error_for_unresolvable_path():
   async def _run() -> None:
-    deck = STARLetDeck()
+    deck = await make_plain_deck()
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
 
@@ -168,7 +168,7 @@ def test_send_command_surfaces_clear_error_for_unresolvable_path():
 
 def test_simulation_resolves_diagnostic_paths():
   async def _run() -> None:
-    d = PrepSimulationDriver(deck=STARLetDeck())
+    d = PrepSimulationDriver(deck=await make_plain_deck())
     await d.setup()
     assert isinstance(await d.resolve_path("MLPrepRoot.MLPrepCpu"), Address)
     assert isinstance(await d.resolve_path("MLPrepRoot.PipettorRoot.ModuleInformation"), Address)
@@ -182,7 +182,7 @@ def test_force_initialize_skips_is_initialized_check():
   from unittest.mock import AsyncMock
 
   async def _run() -> None:
-    deck = STARLetDeck()
+    deck = await make_plain_deck()
     p = PrepSimulationDriver(deck=deck)
     p.request_initialization_status = AsyncMock(side_effect=AssertionError("should not be called"))  # type: ignore[method-assign]
     await p.setup(force_initialize=True)
@@ -196,7 +196,7 @@ def test_setup_switches_safe_speeds_to_what_is_asked_and_sets_the_x_speed_scale(
   """Safe speeds switch only when the device reports otherwise; X runs at the arm's default speed."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     await p.setup()
     declared = str(tmp_path / "declared.json")
     p.save_configuration(declared)
@@ -208,7 +208,7 @@ def test_setup_switches_safe_speeds_to_what_is_asked_and_sets_the_x_speed_scale(
       json.dump(saved, f)
 
     for asked, switched in ((False, [False]), (True, [])):
-      q = PrepSimulationDriver(deck=PrepDeck(), declared_configuration_json=declared)
+      q = PrepSimulationDriver(declared_configuration_json=declared)
       sent: list = []
       send = q.send_command
 
@@ -231,7 +231,7 @@ def test_saved_configuration_holds_channel_count_and_head8(tmp_path):
   """What a device reports it has fitted is saved, and a declaration of it drives the simulator."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=STARLetDeck())
+    p = PrepSimulationDriver(deck=await make_plain_deck())
     await p.setup()
     path = str(tmp_path / "prep.json")
     p.save_configuration(path)
@@ -250,7 +250,7 @@ def test_saved_configuration_holds_channel_count_and_head8(tmp_path):
     declared = str(tmp_path / "declared.json")
     with open(declared, "w", encoding="utf-8") as f:
       json.dump({"device": to_jsonable(saved), "pipettes": to_jsonable(one_channel)}, f)
-    q = PrepSimulationDriver(deck=STARLetDeck(), declared_configuration_json=declared)
+    q = PrepSimulationDriver(deck=await make_plain_deck(), declared_configuration_json=declared)
     await q.setup()
     assert q.num_channels == 1
     assert q.head8_installed is False
@@ -275,7 +275,7 @@ def test_setup_logs_one_summary_of_what_was_found(caplog):
   """Setup ends with one INFO block describing the device, as the STAR driver's does."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=STARLetDeck())
+    p = PrepSimulationDriver(deck=await make_plain_deck())
     assert p.format_setup_summary() == "[Hamilton Prep] not discovered yet"
     prep_logger = logging.getLogger("pylabrobot.hamilton.prep")
     records = _Records()
@@ -303,7 +303,7 @@ def test_stop_raises_the_channels_to_z_safety_and_reads_them_back():
   """stop() sends MoveZUpToSafe for every channel, then finds nothing low, then closes the link."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     await p.setup()
     assert p.pipettes is not None and p.configuration is not None
     await p.pipettes.move_tool_bottom_to_z_positions({0: 120.0, 1: 130.0})
@@ -337,7 +337,7 @@ def test_setup_reads_what_is_held_and_raises_the_channels():
   """A device left low or holding a tip is read and raised before anything moves laterally."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     sent: list = []
     send = p.send_command
 
@@ -360,7 +360,7 @@ def test_setup_raises_a_device_that_was_left_low():
   """A device left with a channel low is raised at setup, and nothing is low afterwards."""
 
   async def _run() -> None:
-    deck = PrepDeck()
+    deck = await make_prep_deck()
     first = PrepSimulationDriver(deck=deck)
     await first.setup()
     assert first.pipettes is not None
@@ -389,7 +389,7 @@ def test_stop_can_leave_the_channels_where_they_stand():
   """skip_raise_to_z_safety closes the link without raising anything, and says what is low."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_tool_bottom_to_z_positions({0: 120.0})
@@ -412,7 +412,7 @@ def test_stop_closes_the_link_when_the_channels_do_not_go_up():
   """A retract that fails is logged with what is still low, and the link closes anyway."""
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     await p.setup()
     assert p.pipettes is not None
     await p.pipettes.move_tool_bottom_to_z_positions({0: 120.0})
@@ -443,14 +443,14 @@ def test_the_driver_opens_a_second_session_for_channel_commands():
   """
 
   async def _run() -> None:
-    simulated = PrepSimulationDriver(deck=PrepDeck())
+    simulated = PrepSimulationDriver()
     assert simulated._second_io is None
-    assert PrepDriver(deck=PrepDeck(), io=simulated.io)._second_io is None
+    assert PrepDriver(io=simulated.io)._second_io is None
     channel_read = PrepCmd.PrepZDriveGetPosition(dest=Address(1, 238, 516))
     with pytest.raises(RuntimeError, match="no second session"):
       await simulated.send_command_on_second_session(channel_read)
 
-    driver = PrepDriver(deck=PrepDeck(), host="127.0.0.1")
+    driver = PrepDriver(host="127.0.0.1")
     assert driver._second_io is not None
     assert driver._second_io is not driver.io
     execute = AsyncMock(return_value="answer")

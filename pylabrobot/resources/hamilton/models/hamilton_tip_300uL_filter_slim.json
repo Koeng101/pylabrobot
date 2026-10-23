@@ -1,0 +1,38 @@
+{
+  "name": "hamilton_tip_300uL_filter_slim",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "typeName": "HamiltonTip",
+      "model": "hamilton_tip_300uL_filter_slim",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 95.0
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "hasFilter": true,
+        "maximalVolume": 345.0,
+        "nominalVolume": 300.0,
+        "collarHeight": 10.0,
+        "hamilton": {
+          "tipSize": "HIGH_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton cat. no.: 235646 (CORE-II: conductive)\nHamilton 300 uL slim tip with filter"
+}

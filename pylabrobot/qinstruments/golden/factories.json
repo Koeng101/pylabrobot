@@ -1,0 +1,154 @@
+{
+  "BioShake3000": {
+    "model": "BioShake3000",
+    "category": "bioshake",
+    "size": [
+      142,
+      99,
+      60.67
+    ],
+    "supports_shaking": true,
+    "supports_locking": false,
+    "supports_temperature_control": false,
+    "supports_active_cooling": false,
+    "pedestal_size_z": 0,
+    "child_location": [
+      7.12,
+      6.76,
+      51.75
+    ],
+    "transport": {
+      "human_readable_device_name": "QInstruments BioShake",
+      "port": "/dev/ttyUSB0",
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "write_timeout": 10,
+      "timeout": 60
+    },
+    "resources": [
+      {
+        "name": "bioshake",
+        "parent": "",
+        "kind": "RESOURCE_KIND_PLATE_HOLDER"
+      }
+    ]
+  },
+  "BioShake3000Elm": {
+    "model": "BioShake3000Elm",
+    "category": "bioshake",
+    "size": [
+      142,
+      99,
+      55.35
+    ],
+    "supports_shaking": true,
+    "supports_locking": true,
+    "supports_temperature_control": false,
+    "supports_active_cooling": false,
+    "pedestal_size_z": 0,
+    "child_location": [
+      7.12,
+      6.76,
+      48.2
+    ],
+    "transport": {
+      "human_readable_device_name": "QInstruments BioShake",
+      "port": "/dev/ttyUSB0",
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "write_timeout": 10,
+      "timeout": 60
+    },
+    "resources": [
+      {
+        "name": "bioshake",
+        "parent": "",
+        "kind": "RESOURCE_KIND_PLATE_HOLDER"
+      }
+    ]
+  },
+  "BioShake3000ElmDWP": {
+    "model": "BioShake3000ElmDWP",
+    "category": "bioshake",
+    "size": [
+      142,
+      99,
+      55.35
+    ],
+    "supports_shaking": true,
+    "supports_locking": true,
+    "supports_temperature_control": false,
+    "supports_active_cooling": false,
+    "pedestal_size_z": 0,
+    "child_location": [
+      7.12,
+      6.76,
+      48.2
+    ],
+    "transport": {
+      "human_readable_device_name": "QInstruments BioShake",
+      "port": "/dev/ttyUSB0",
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "write_timeout": 10,
+      "timeout": 60
+    },
+    "resources": [
+      {
+        "name": "bioshake",
+        "parent": "",
+        "kind": "RESOURCE_KIND_PLATE_HOLDER"
+      }
+    ]
+  },
+  "BioShakeQ1": {
+    "model": "BioShakeQ1",
+    "category": "bioshake",
+    "size": [
+      142,
+      99,
+      97.3
+    ],
+    "supports_shaking": true,
+    "supports_locking": true,
+    "supports_temperature_control": true,
+    "supports_active_cooling": true,
+    "pedestal_size_z": 0,
+    "child_location": [
+      7.12,
+      6.76,
+      90.5
+    ],
+    "transport": {
+      "human_readable_device_name": "QInstruments BioShake",
+      "port": "/dev/ttyUSB0",
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "write_timeout": 10,
+      "timeout": 60
+    },
+    "resources": [
+      {
+        "name": "bioshake",
+        "parent": "",
+        "kind": "RESOURCE_KIND_PLATE_HOLDER"
+      }
+    ]
+  },
+  "BioShakeD30Elm": "NotImplementedError: BioShakeD30Elm is missing resource definition.",
+  "BioShake5000Elm": "NotImplementedError: BioShake5000Elm is missing resource definition.",
+  "BioShake3000T": "NotImplementedError: BioShake3000T is missing resource definition.",
+  "BioShake3000TElm": "NotImplementedError: BioShake3000TElm is missing resource definition.",
+  "BioShakeD30TElm": "NotImplementedError: BioShakeD30TElm is missing resource definition.",
+  "BioShakeQ2": "NotImplementedError: BioShakeQ2 is missing resource definition.",
+  "Heatplate": "NotImplementedError: Heatplate is missing resource definition.",
+  "ColdPlate": "NotImplementedError: ColdPlate is missing resource definition."
+}

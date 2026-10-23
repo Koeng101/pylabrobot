@@ -20,9 +20,10 @@ from pylabrobot.agilent.vspin._state import (
 from pylabrobot.agilent.vspin.access2 import Access2
 from pylabrobot.agilent.vspin.errors import CentrifugeDoorError
 from pylabrobot.agilent.vspin.vspin import VSpin
-from pylabrobot.events import EventBus, PLREvent, resource_reference, use_event_bus
+from pylabrobot.events import EventBus, PLREvent, handle_reference, use_event_bus
 from pylabrobot.io.binary import Writer
-from pylabrobot.resources import Coordinate, Resource
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, handles
 
 _SERVO_STATUS_MASK = (
   _nmc.SEND_POSITION | _nmc.SEND_ANALOG | _nmc.SEND_VELOCITY | _nmc.SEND_AUXILIARY | _nmc.SEND_HOME
@@ -179,6 +180,10 @@ class _ScriptedVSpinFTDI:
     test.assertEqual(bytes(self._response), b"")
 
 
+async def _plate(vspin: VSpin, size: Coordinate = Coordinate(1, 1, 1)) -> handles.Resource:
+  return await vspin.store.create(build.resource("plate_1", size), name="plate_1")
+
+
 class TestVSpinEvents(unittest.IsolatedAsyncioTestCase):
   def setUp(self):
     self.vspin_ftdi = patch("pylabrobot.agilent.vspin.vspin.FTDI", autospec=True)
@@ -262,8 +267,9 @@ class TestVSpinEvents(unittest.IsolatedAsyncioTestCase):
   async def test_spin_emits_loaded_bucket_resources_and_parameters(self):
     vspin = VSpin(name="centrifuge", device_id="test")
     _mark_vspin_ready(vspin)
-    plate = Resource("plate_1", size_x=1, size_y=1, size_z=1)
-    vspin.bucket1.assign_child_resource(plate, location=Coordinate.zero())
+    await vspin.create_resources()
+    plate = await _plate(vspin)
+    await vspin.bucket1.assign_child_resource(plate, location=Coordinate.zero())
     vspin.request_door_open = AsyncMock(return_value=False)  # type: ignore[method-assign]
     vspin.request_door_locked = AsyncMock(return_value=True)  # type: ignore[method-assign]
     vspin.request_bucket_locked = AsyncMock(return_value=False)  # type: ignore[method-assign]
@@ -389,6 +395,9 @@ class TestVSpinProtocol(unittest.IsolatedAsyncioTestCase):
     self.io = ftdi_class.return_value
     self.vspin = VSpin(name="centrifuge")
     _mark_vspin_ready(self.vspin)
+
+  async def asyncSetUp(self):
+    await self.vspin.create_resources()
 
   async def test_connection_does_not_imply_initialization_or_homing(self):
     vspin = VSpin(name="fresh centrifuge")
@@ -1206,7 +1215,7 @@ class TestVSpinProtocol(unittest.IsolatedAsyncioTestCase):
     self.vspin._go_to_position.assert_has_awaits(  # type: ignore[attr-defined]
       [call(8400, transition=ANY), call(16400, transition=ANY)]
     )
-    self.assertIs(self.vspin.at_bucket, self.vspin.bucket1)
+    self.assertEqual(self.vspin.at_bucket, self.vspin.bucket1)
 
 
 class TestVSpinScriptedFTDI(unittest.IsolatedAsyncioTestCase):
@@ -1728,6 +1737,7 @@ class TestVSpinScriptedFTDI(unittest.IsolatedAsyncioTestCase):
       _io_step(io_status, inputs=safe_inputs),
     ]
     vspin, io = self._make_vspin(steps)
+    await vspin.create_resources()
     vspin._at_bucket = vspin.bucket1
 
     await vspin.spin(g, duration, acceleration, deceleration)
@@ -1769,13 +1779,14 @@ class TestVSpinScriptedFTDI(unittest.IsolatedAsyncioTestCase):
       with self.subTest(bucket=bucket_name):
         steps = self._bucket_presentation_steps(current_position, target_position)
         vspin, io = self._make_vspin(steps)
+        await vspin.create_resources()
         vspin._home_position = 500
         vspin._bucket_1_remainder = 100
 
         await getattr(vspin, method_name)()
 
         io.assert_complete(self)
-        self.assertIs(vspin.at_bucket, getattr(vspin, bucket_name))
+        self.assertEqual(vspin.at_bucket, getattr(vspin, bucket_name))
         self.assertEqual(vspin.state.activity, VSpinActivity.IDLE)
 
   async def test_bucket_motion_fault_prevents_lock_and_door_commands(self):
@@ -1841,6 +1852,7 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
   async def asyncSetUp(self):
     self.vspin = VSpin(name="centrifuge", device_id="test")
     _mark_vspin_ready(self.vspin)
+    await self.vspin.create_resources()
     self.vspin._at_bucket = self.vspin.bucket1
     self.vspin.request_door_open = AsyncMock(return_value=True)  # type: ignore[method-assign]
     self.vspin.request_bucket_locked = AsyncMock(return_value=True)  # type: ignore[method-assign]
@@ -1848,8 +1860,25 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
       return_value=True
     )
     self.loader = Access2(name="loader", device_id="test", vspin=self.vspin)
+    await self.loader.create_resources()
     self.loader.driver.load = AsyncMock()  # type: ignore[method-assign]
     self.loader.driver.unload = AsyncMock()  # type: ignore[method-assign]
+
+  async def test_buckets_and_stage_are_found_again_in_the_same_store(self):
+    vspin = VSpin(name="centrifuge", device_id="test", store=self.vspin.store)
+    with self.assertRaises(RuntimeError):
+      vspin.bucket1  # noqa: B018
+    await vspin.create_resources()
+    self.assertEqual(vspin.bucket1, self.vspin.bucket1)
+    self.assertEqual(vspin.bucket2, self.vspin.bucket2)
+    loader = Access2(name="loader", device_id="test", vspin=vspin)
+    self.assertIs(loader.store, self.vspin.store)
+    await loader.create_resources()
+    self.assertEqual(loader.body, self.loader.body)
+    self.assertEqual(
+      sorted(root.name for root in await self.vspin.store.roots()),
+      ["centrifuge_bucket1", "centrifuge_bucket2", "loader"],
+    )
 
   async def test_setup_lifecycle_events(self):
     """Report one correlated lifecycle and preserve the original failure."""
@@ -1878,7 +1907,7 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
           ],
         )
         started, terminal = events
-        self.assertEqual(started.data, {"device": resource_reference(self.loader)})
+        self.assertEqual(started.data, {"device": await handle_reference(self.loader.body)})
         self.assertEqual(terminal.data["device"], started.data["device"])
         self.assertEqual(started.context["operation"], "centrifuge_loader.setup")
         self.assertEqual(started.context["operation_id"], terminal.context["operation_id"])
@@ -1914,7 +1943,7 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
           ],
         )
         started, terminal = events
-        self.assertEqual(started.data, {"device": resource_reference(self.loader)})
+        self.assertEqual(started.data, {"device": await handle_reference(self.loader.body)})
         self.assertEqual(terminal.data["device"], started.data["device"])
         self.assertEqual(started.context["operation"], "centrifuge_loader.stop")
         self.assertEqual(started.context["operation_id"], terminal.context["operation_id"])
@@ -1924,8 +1953,8 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
           self.assertEqual(terminal.data["error_message"], str(error))
 
   async def test_load_emits_loader_to_bucket_transfer(self):
-    plate = Resource("plate_1", size_x=1, size_y=1, size_z=1)
-    self.loader.assign_child_resource(plate, location=Coordinate.zero())
+    plate = await _plate(self.vspin, Coordinate(1, 1, 1))
+    await self.loader.assign_child_resource(plate, location=Coordinate.zero())
     events: list[PLREvent] = []
     event_bus = EventBus()
     event_bus.subscribe(events.append)
@@ -1948,7 +1977,7 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(started.data["resources"][0]["name"], "plate_1")
     self.assertEqual(started.data["source"]["name"], "loader")
     self.assertEqual(started.data["destination"]["name"], "centrifuge_bucket1")
-    self.assertIs(self.vspin.bucket1.resource, plate)
+    self.assertEqual(await self.vspin.bucket1.get_resource_held(), plate)
     self.loader.driver.load.assert_awaited_once_with(  # type: ignore[attr-defined]
       protocol.TEACHPOINT_BUCKET_1,
       plate_height=10,
@@ -1967,8 +1996,8 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
     )
 
   async def test_load_maps_presented_bucket_2_to_its_teachpoint(self):
-    plate = Resource("plate_1", size_x=1, size_y=1, size_z=1)
-    self.loader.assign_child_resource(plate, location=Coordinate.zero())
+    plate = await _plate(self.vspin, Coordinate(1, 1, 1))
+    await self.loader.assign_child_resource(plate, location=Coordinate.zero())
     self.vspin._at_bucket = self.vspin.bucket2
 
     await self.loader.load()
@@ -1989,11 +2018,11 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
       gripper_close_speed="slow",
       gripper_release_speed="slow",
     )
-    self.assertIs(self.vspin.bucket2.resource, plate)
+    self.assertEqual(await self.vspin.bucket2.get_resource_held(), plate)
 
   async def test_transfer_parameters_reach_driver_and_events(self):
-    plate = Resource("plate_1", size_x=127, size_y=85, size_z=22)
-    self.loader.assign_child_resource(plate, location=Coordinate.zero())
+    plate = await _plate(self.vspin, Coordinate(127, 85, 22))
+    await self.loader.assign_child_resource(plate, location=Coordinate.zero())
     parameters = {
       "plate_height": 22.0,
       "source_z_offset": 4.0,
@@ -2015,8 +2044,8 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
 
     with use_event_bus(event_bus):
       await self.loader.load(**parameters)
-      self.assertIs(self.vspin.bucket1.resource, plate)
-      self.assertIsNone(self.loader.resource)
+      self.assertEqual(await self.vspin.bucket1.get_resource_held(), plate)
+      self.assertIsNone(await self.loader.get_resource_held())
       await self.loader.unload(**parameters)
 
     self.loader.driver.load.assert_awaited_once_with(  # type: ignore[attr-defined]
@@ -2025,8 +2054,8 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
     self.loader.driver.unload.assert_awaited_once_with(  # type: ignore[attr-defined]
       protocol.TEACHPOINT_BUCKET_1, **parameters
     )
-    self.assertIs(self.loader.resource, plate)
-    self.assertIsNone(self.vspin.bucket1.resource)
+    self.assertEqual(await self.loader.get_resource_held(), plate)
+    self.assertIsNone(await self.vspin.bucket1.get_resource_held())
     started = [
       event
       for event in events
@@ -2037,10 +2066,11 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
       self.assertEqual(event.data["parameters"], parameters)
 
   async def test_invalid_transfer_settings_release_vspin_without_recovery(self):
-    plate = Resource("plate_1", size_x=127, size_y=85, size_z=22)
+    plate = await _plate(self.vspin, Coordinate(127, 85, 22))
     # Use the real transfer entry points; FTDI remains mocked by the fixture.
     self.loader = Access2(name="loader", device_id="test", vspin=self.vspin)
-    self.loader.assign_child_resource(plate, location=Coordinate.zero())
+    await self.loader.create_resources()
+    await self.loader.assign_child_resource(plate, location=Coordinate.zero())
     before = self.vspin.state
     loader_before = self.loader.driver.state
 
@@ -2049,12 +2079,12 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
 
     self.assertEqual(self.vspin.state, before)
     self.assertEqual(self.loader.driver.state, loader_before)
-    self.assertIs(self.loader.resource, plate)
-    self.assertIsNone(self.vspin.bucket1.resource)
+    self.assertEqual(await self.loader.get_resource_held(), plate)
+    self.assertIsNone(await self.vspin.bucket1.get_resource_held())
 
   async def test_actuated_loader_failure_blocks_vspin_motion(self):
-    plate = Resource("plate_1", size_x=1, size_y=1, size_z=1)
-    self.loader.assign_child_resource(plate, location=Coordinate.zero())
+    plate = await _plate(self.vspin, Coordinate(1, 1, 1))
+    await self.loader.assign_child_resource(plate, location=Coordinate.zero())
 
     async def fail_after_actuation(bucket_teachpoint: int, **parameters: float | str) -> None:
       self.assertEqual(bucket_teachpoint, protocol.TEACHPOINT_BUCKET_1)
@@ -2068,12 +2098,12 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
 
     self.assertTrue(self.vspin.state.recovery_required)
     self.assertEqual(self.vspin.state.activity, VSpinActivity.TRANSFERRING)
-    self.assertIs(self.loader.resource, plate)
-    self.assertIsNone(self.vspin.bucket1.resource)
+    self.assertEqual(await self.loader.get_resource_held(), plate)
+    self.assertIsNone(await self.vspin.bucket1.get_resource_held())
 
   async def test_unload_failure_emits_bucket_to_loader_transfer(self):
-    plate = Resource("plate_1", size_x=1, size_y=1, size_z=1)
-    self.vspin.bucket1.assign_child_resource(plate, location=Coordinate.zero())
+    plate = await _plate(self.vspin, Coordinate(1, 1, 1))
+    await self.vspin.bucket1.assign_child_resource(plate, location=Coordinate.zero())
     self.loader.driver.unload = AsyncMock(  # type: ignore[method-assign]
       side_effect=RuntimeError("loader fault")
     )
@@ -2102,20 +2132,20 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(failed.data["error_type"], "RuntimeError")
 
   async def test_load_requires_physical_bucket_lock_before_driver_motion(self):
-    plate = Resource("plate_1", size_x=1, size_y=1, size_z=1)
-    self.loader.assign_child_resource(plate, location=Coordinate.zero())
+    plate = await _plate(self.vspin, Coordinate(1, 1, 1))
+    await self.loader.assign_child_resource(plate, location=Coordinate.zero())
     self.vspin.request_bucket_locked = AsyncMock(return_value=False)  # type: ignore[method-assign]
 
     with self.assertRaisesRegex(RuntimeError, "physically locked"):
       await self.loader.load()
 
     self.loader.driver.load.assert_not_awaited()  # type: ignore[attr-defined]
-    self.assertIs(self.loader.resource, plate)
-    self.assertIsNone(self.vspin.bucket1.resource)
+    self.assertEqual(await self.loader.get_resource_held(), plate)
+    self.assertIsNone(await self.vspin.bucket1.get_resource_held())
 
   async def test_unload_requires_stopped_vspin_before_driver_motion(self):
-    plate = Resource("plate_1", size_x=1, size_y=1, size_z=1)
-    self.vspin.bucket1.assign_child_resource(plate, location=Coordinate.zero())
+    plate = await _plate(self.vspin, Coordinate(1, 1, 1))
+    await self.vspin.bucket1.assign_child_resource(plate, location=Coordinate.zero())
     self.vspin._request_rotor_safe_to_access = AsyncMock(  # type: ignore[method-assign]
       return_value=False
     )
@@ -2124,12 +2154,12 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
       await self.loader.unload()
 
     self.loader.driver.unload.assert_not_awaited()  # type: ignore[attr-defined]
-    self.assertIs(self.vspin.bucket1.resource, plate)
-    self.assertIsNone(self.loader.resource)
+    self.assertEqual(await self.vspin.bucket1.get_resource_held(), plate)
+    self.assertIsNone(await self.loader.get_resource_held())
 
   async def test_load_requires_physical_door_open_before_driver_motion(self):
-    plate = Resource("plate_1", size_x=1, size_y=1, size_z=1)
-    self.loader.assign_child_resource(plate, location=Coordinate.zero())
+    plate = await _plate(self.vspin, Coordinate(1, 1, 1))
+    await self.loader.assign_child_resource(plate, location=Coordinate.zero())
     self.vspin.request_door_open = AsyncMock(return_value=False)  # type: ignore[method-assign]
 
     with self.assertRaisesRegex(CentrifugeDoorError, "door-open sensor"):

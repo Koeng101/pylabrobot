@@ -2,8 +2,18 @@
 
 from typing import Any, Dict, Optional, Sequence
 
-from pylabrobot.events import device_reference, event_operation, resource_reference
-from pylabrobot.resources import Coordinate, Resource, Rotation
+from pylabrobot.events import (
+  device_reference,
+  event_operation,
+  handle_reference,
+  is_event_bus_active,
+)
+from pylabrobot.resources import Coordinate, Rotation
+from pylabrobot.resources.store import StoreError
+from pylabrobot.resources.store.handles import Resource
+from pylabrobot.resources.store.tree import to_coordinate, to_rotation
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from .provider import OperatorActionProvider
 from .standard import (
@@ -13,9 +23,21 @@ from .standard import (
   OperatorActionResult,
 )
 
+# Kinds that hold one resource at a time, as PLR's `ResourceHolder` does.
+_HOLDER_KINDS = frozenset(
+  {
+    pb.RESOURCE_KIND_RESOURCE_HOLDER,
+    pb.RESOURCE_KIND_PLATE_HOLDER,
+    pb.RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER,
+  }
+)
+
 
 class ManualOperator:
-  """Await manual protocol work through a pluggable acknowledgement provider."""
+  """Await manual protocol work through a pluggable acknowledgement provider.
+
+  Resources are handles to resources in a resource store; a completed move is made there.
+  """
 
   def __init__(self, provider: OperatorActionProvider, name: str = "operator"):
     if not name.strip():
@@ -52,19 +74,21 @@ class ManualOperator:
       source=source,
       destination=destination,
     )
-    operation_data: Dict[str, Any] = {
-      "device": device_reference(self, name=self.name),
-      "resources": [resource_reference(resource) for resource in request.resources],
-      "manual_action": request.action,
-      "title": request.title,
-      "instructions": request.instructions,
-      "confirmation_text": request.confirmation_text,
-      "details": request.details.copy(),
-    }
-    if source is not None:
-      operation_data["source"] = resource_reference(source)
-    if destination is not None:
-      operation_data["destination"] = resource_reference(destination)
+    operation_data: Dict[str, Any] = {}
+    if is_event_bus_active():
+      operation_data = {
+        "device": device_reference(self, name=self.name),
+        "resources": [await handle_reference(resource) for resource in request.resources],
+        "manual_action": request.action,
+        "title": request.title,
+        "instructions": request.instructions,
+        "confirmation_text": request.confirmation_text,
+        "details": request.details.copy(),
+      }
+      if source is not None:
+        operation_data["source"] = await handle_reference(source)
+      if destination is not None:
+        operation_data["destination"] = await handle_reference(destination)
 
     result: Optional[OperatorActionResult] = None
 
@@ -108,11 +132,13 @@ class ManualOperator:
     confirmation_text: str = "Confirm resource moved",
     details: Optional[Dict[str, Any]] = None,
   ) -> OperatorActionResult:
-    """Await a manual resource move, then reconcile the PLR resource model.
+    """Await a manual resource move, then reconcile the resource store.
 
     The resource remains assigned to ``source`` while the operator action is pending. A completed
-    acknowledgement reassigns it to ``destination`` using PLR's normal assignment machinery.
-    Cancellation, reported failure, and provider exceptions leave the model unchanged.
+    acknowledgement assigns it to ``destination`` in the store, in one assignment; with a
+    ``destination_rotation`` it is taken out of ``source``, turned, and assigned, and put back as
+    it was if ``destination`` refuses it. Cancellation, reported failure, and provider exceptions
+    leave the store unchanged.
 
     Args:
       resource: Resource physically moved by the operator.
@@ -122,7 +148,8 @@ class ManualOperator:
         holders calculate their normal child location when this is omitted.
       destination_rotation: Optional resource-local rotation to apply before destination
         assignment. It is relative to ``destination``, not an absolute/world rotation. After
-        assignment, PLR composes the destination's absolute rotation with this local rotation.
+        assignment, the store composes the destination's absolute rotation with this local
+        rotation.
         For a manual replacement of an automated transfer, pass the destination-local pose the
         automated transfer would produce; do not copy the source local rotation unless it is
         physically correct for ``destination``. This is not inferred from ``destination``.
@@ -131,9 +158,14 @@ class ManualOperator:
         instruction.
       confirmation_text: Provider-facing completion acknowledgement text.
       details: Additional transport-safe details for the provider.
+
+    Raises:
+      ValueError: ``resource`` is not in ``source``, or ``source`` is ``destination``.
+      RuntimeError: ``destination`` holds another resource, the store changed while the move
+        was pending, or ``destination`` refused the resource.
     """
 
-    self._validate_resource_move(
+    await self._validate_resource_move(
       resource=resource,
       source=source,
       destination=destination,
@@ -166,7 +198,7 @@ class ManualOperator:
     )
 
     try:
-      self._validate_resource_move(
+      node = await self._validate_resource_move(
         resource=resource,
         source=source,
         destination=destination,
@@ -177,45 +209,62 @@ class ManualOperator:
         "the completed physical move was not applied to the model."
       ) from error
 
-    previous_location = resource.location
-    previous_rotation = Rotation(
-      x=resource.rotation.x,
-      y=resource.rotation.y,
-      z=resource.rotation.z,
-    )
-    source.unassign_child_resource(resource)
+    if requested_rotation is None:
+      await self._assign(destination, resource, destination_location)
+      return result
+
+    previous_location = to_coordinate(node.attributes.location)
+    previous_rotation = to_rotation(node.attributes.rotation)
+    await resource.unassign()
     try:
-      if requested_rotation is not None:
-        resource.rotation = requested_rotation
-      destination.assign_child_resource(
-        resource=resource,
-        location=destination_location,
-        reassign=True,
+      await resource.rotate_to(
+        x=requested_rotation.x, y=requested_rotation.y, z=requested_rotation.z
       )
+      await self._assign(destination, resource, destination_location)
     except Exception:
-      if resource.parent is not None:
-        resource.parent.unassign_child_resource(resource)
-      resource.rotation = previous_rotation
-      source.assign_child_resource(
-        resource=resource,
-        location=previous_location,
-        reassign=True,
-      )
+      if await resource.get_parent() is not None:
+        await resource.unassign()
+      await resource.rotate_to(x=previous_rotation.x, y=previous_rotation.y, z=previous_rotation.z)
+      await source.assign_child_resource(resource, location=previous_location)
       raise
     return result
 
   @staticmethod
-  def _validate_resource_move(
+  async def _assign(
+    destination: Resource, resource: Resource, location: Optional[Coordinate]
+  ) -> None:
+    """Assign ``resource`` to ``destination``, raising the store's refusal as a RuntimeError."""
+    try:
+      await destination.assign_child_resource(resource, location=location)
+    except StoreError as error:
+      raise RuntimeError(str(error)) from error
+
+  @staticmethod
+  async def _validate_resource_move(
     *,
     resource: Resource,
     source: Resource,
     destination: Resource,
-  ) -> None:
-    if resource.parent is not source:
-      current_parent = None if resource.parent is None else resource.parent.name
+  ) -> pb.ResourceNode:
+    """Refuse a move the store would not make, in one read; the resource as it is now."""
+    response = await resource.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[resource.ref, destination.ref], depth=0, ancestors=True)
+    )
+    by_id = {node.id: node for node in response.nodes}
+    node = by_id[resource.id]
+    if node.parent_id != source.id:
+      current_parent = by_id[node.parent_id].attributes.name if node.parent_id else None
       raise ValueError(
         f"Resource {resource.name!r} is assigned to {current_parent!r}, not source {source.name!r}."
       )
-    if source is destination:
+    if source == destination:
       raise ValueError("source and destination must be different resources")
-    destination.check_can_drop_resource_here(resource, reassign=True)
+    target = by_id[destination.id]
+    if target.attributes.kind in _HOLDER_KINDS and any(
+      child_id != resource.id for child_id in target.child_ids
+    ):
+      raise RuntimeError(
+        f"Cannot drop resource {resource.name} onto resource holder {destination.name} while it "
+        "already has a resource. Please remove the resource before dropping a new one."
+      )
+    return node

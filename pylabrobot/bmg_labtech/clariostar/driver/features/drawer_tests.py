@@ -1,8 +1,11 @@
 """Drawer tests over a fake io, with replies recorded from a CLARIOstar Plus."""
 
 import unittest
+from typing import Optional, Union
 
+from pylabrobot.bmg_labtech.clariostar.device import clariostar_definition
 from pylabrobot.bmg_labtech.clariostar.driver.errors import CommandRefusedError, FrameError
+from pylabrobot.bmg_labtech.clariostar.driver.master import CLARIOstarDriver
 from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
   STATUS_BUSY,
   STATUS_DRAWER_OPEN,
@@ -12,7 +15,12 @@ from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
   FakeFTDI,
   make_driver,
 )
-from pylabrobot.resources import Coordinate, PlateHolder
+from pylabrobot.resources import Coordinate, Plate
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.definitions import definition_from_resource
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 # Frames this driver exchanged with a CLARIOstar Plus (FTDI, firmware 1.35) on its first runs.
 OPEN_DRAWER_FRAME = bytes.fromhex("02000e0c0301000000000000200d")
@@ -27,23 +35,61 @@ LOCATION_IN = Coordinate(10, 20, 30)
 LOCATION_OUT = Coordinate(10, -200, 30)
 
 
-def make_plate_holder() -> PlateHolder:
-  return PlateHolder(
-    name="plate_holder",
-    size_x=127.76,
-    size_y=85.48,
-    size_z=0,
-    pedestal_size_z=0,
-    child_location=Coordinate.zero(),
+async def make_plate_holder(store: Optional[ResourceStore] = None) -> handles.PlateHolder:
+  """A CLARIOstar's plate holder, at the origin of the reader's body, in `store` (a new one in
+  memory when None)."""
+  store = store if store is not None else ResourceStore.in_memory()
+  body = await store.create(clariostar_definition("reader", "CLARIOstarPlus"), "reader")
+  holder = await body.get_resource("reader_plate_holder")
+  assert isinstance(holder, handles.PlateHolder)
+  return holder
+
+
+async def stored(
+  plate: Union[str, Plate], store: Optional[ResourceStore] = None, name: str = "plate"
+) -> handles.Plate:
+  """`plate` in `store` (a new one in memory when None): a model by name, called `name`, or a
+  plate built in Python, as it is."""
+  store = store if store is not None else ResourceStore.in_memory()
+  if isinstance(plate, str):
+    created = await store.create(plate, name)
+  else:
+    created = await store.create(definition_from_resource(plate), plate.name)
+  assert isinstance(created, handles.Plate)
+  return created
+
+
+async def hold(driver: CLARIOstarDriver, plate: Union[str, Plate, None]) -> Optional[handles.Plate]:
+  """Give the driver's drawer a plate holder in a new store, holding `plate` (stored as `stored`
+  stores it) unless None."""
+  holder = await make_plate_holder()
+  driver.drawer.plate_holder = holder
+  if plate is None:
+    return None
+  handle = await stored(plate, holder.store)
+  await holder.assign_child_resource(handle)
+  return handle
+
+
+async def set_location(resource: handles.Resource, location: Coordinate) -> None:
+  """Record `resource` at `location` in its parent, as a drive reporting it would."""
+  await resource.store.commands.record_device_positions(
+    spb.RecordDevicePositionsRequest(
+      positions=[
+        spb.DevicePosition(
+          resource=resource.ref,
+          location=pb.PartialVec3(x=location.x, y=location.y, z=location.z),
+        )
+      ]
+    )
   )
 
 
 class DrawerTests(unittest.IsolatedAsyncioTestCase):
-  def setUp(self):
+  async def asyncSetUp(self):
     self.io = FakeFTDI()
     self.driver = make_driver(self.io)
-    self.plate_holder = make_plate_holder()
-    self.plate_holder.location = Coordinate.zero()
+    self.plate_holder = await make_plate_holder()
     drawer = self.driver.drawer
     drawer.plate_holder = self.plate_holder
     drawer.location_in = LOCATION_IN
@@ -61,30 +107,30 @@ class DrawerTests(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(
       self.io.written, [STATUS_QUERY_FRAME, OPEN_DRAWER_FRAME] + [STATUS_QUERY_FRAME] * 3
     )
-    self.assertEqual(self.plate_holder.location, LOCATION_OUT)
+    self.assertEqual(await self.plate_holder.get_location(), LOCATION_OUT)
 
   async def test_close_updates_in(self):
-    self.plate_holder.location = LOCATION_OUT
+    await set_location(self.plate_holder, LOCATION_OUT)
     self.io.replies = [STATUS_DRAWER_OPEN, CLOSE_DRAWER_REPLY, STATUS_IDLE, STATUS_IDLE]
     await self.driver.drawer.close()
     self.assertEqual(
       self.io.written, [STATUS_QUERY_FRAME, CLOSE_DRAWER_FRAME] + [STATUS_QUERY_FRAME] * 2
     )
-    self.assertEqual(self.plate_holder.location, LOCATION_IN)
+    self.assertEqual(await self.plate_holder.get_location(), LOCATION_IN)
 
   async def test_idle_but_not_open_times_out(self):
     self.driver.drawer.default_move_timeout = 0
     self.io.replies = [STATUS_IDLE, OPEN_DRAWER_REPLY, STATUS_IDLE, STATUS_IDLE]
     with self.assertRaises(TimeoutError):
       await self.driver.drawer.open()
-    self.assertEqual(self.plate_holder.location, LOCATION_IN)
+    self.assertEqual(await self.plate_holder.get_location(), LOCATION_IN)
 
   async def test_refused_open_raises_and_updates_where_the_drawer_is(self):
     self.io.replies = [STATUS_IDLE, REFUSED_OPEN_DRAWER_BUSY, STATUS_IDLE]
     with self.assertRaises(CommandRefusedError) as ctx:
       await self.driver.drawer.open()
     self.assertEqual(ctx.exception.quit_codes[0], 202)
-    self.assertEqual(self.plate_holder.location, LOCATION_IN)
+    self.assertEqual(await self.plate_holder.get_location(), LOCATION_IN)
 
   async def test_failed_move_still_updates_where_the_drawer_is(self):
     truncated = CLOSE_DRAWER_REPLY[:10]
@@ -94,19 +140,19 @@ class DrawerTests(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(
       self.io.written, [STATUS_QUERY_FRAME] + [CLOSE_DRAWER_FRAME] * 3 + [STATUS_QUERY_FRAME]
     )
-    self.assertEqual(self.plate_holder.location, LOCATION_OUT)
+    self.assertEqual(await self.plate_holder.get_location(), LOCATION_OUT)
 
   async def test_failed_read_after_failed_move_keeps_the_move_error(self):
     self.io.replies = [STATUS_DRAWER_OPEN] + [CLOSE_DRAWER_REPLY[:10]] * 3
     with self.assertRaises(FrameError):
       await self.driver.drawer.close()
-    self.assertEqual(self.plate_holder.location, Coordinate.zero())
+    self.assertEqual(await self.plate_holder.get_location(), Coordinate.zero())
 
   async def test_without_locations_the_model_is_left_alone(self):
     self.driver.drawer.location_out = None
     self.io.replies = [STATUS_DRAWER_OPEN]
     self.assertTrue(await self.driver.drawer.sense_drawer_open())
-    self.assertEqual(self.plate_holder.location, Coordinate.zero())
+    self.assertEqual(await self.plate_holder.get_location(), Coordinate.zero())
 
   async def test_plate_present(self):
     self.io.replies = [STATUS_PLATE_DETECTED]

@@ -1,45 +1,42 @@
-"""PLR labware conversion and bindings scoped to one Opentrons run."""
+"""PLR labware conversion and bindings scoped to one Opentrons run.
+
+Definitions are built from a labware as the resource store holds it, read once with
+`read_labware`; bindings are keyed by the labware's id in the store.
+"""
 
 import math
 import uuid
 from dataclasses import dataclass, replace
-from typing import Any, Dict, Optional, Tuple, cast
+from typing import Any, Dict, Optional, Tuple
 
+from pylabrobot.opentrons.model import Identified, ItemFacts, LabwareFacts, TipFacts, read_labware
 from pylabrobot.opentrons.run import OpentronsRun
 from pylabrobot.opentrons.types import LabwareIdentity
-from pylabrobot.resources import (
-  Container,
-  Coordinate,
-  CrossSectionType,
-  Plate,
-  Resource,
-  Tip,
-  TipRack,
-  Trough,
-  TroughBottomType,
-  Well,
-  WellBottomType,
-)
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.utils import reshape_2d
+
+__all__ = [
+  "LabwareBinding",
+  "LabwareRegistry",
+  "build_container_definition",
+  "build_movable_labware_definition",
+  "build_plate_definition",
+  "build_tip_rack_definition",
+  "official_identity_for_model",
+  "official_tip_rack_identity",
+  "read_labware",
+]
 
 _NAMESPACE = "pylabrobot"
 _VERSION = 1
 _SCHEMA_VERSION = 2
 
-_WELL_BOTTOM_SHAPES = {
-  WellBottomType.FLAT: "flat",
-  WellBottomType.U: "u",
-  WellBottomType.V: "v",
-  WellBottomType.UNKNOWN: "flat",
-}
-
-# The robot-server validates wellBottomShape as Literal["flat", "u", "v"],
-# so the enum's own "U"/"V"/"unknown" values cannot be passed through.
-_TROUGH_BOTTOM_SHAPES = {
-  TroughBottomType.FLAT: "flat",
-  TroughBottomType.U: "u",
-  TroughBottomType.V: "v",
-  TroughBottomType.UNKNOWN: "flat",
+# The robot-server validates wellBottomShape as Literal["flat", "u", "v"].
+_BOTTOM_SHAPES = {
+  pb.WELL_BOTTOM_TYPE_FLAT: "flat",
+  pb.WELL_BOTTOM_TYPE_U: "u",
+  pb.WELL_BOTTOM_TYPE_V: "v",
+  pb.WELL_BOTTOM_TYPE_UNSPECIFIED: "flat",
 }
 
 _OFFICIAL_TIP_RACKS = {
@@ -58,15 +55,20 @@ _OFFICIAL_TIP_RACKS = {
 }
 
 
-def official_tip_rack_identity(tip_rack: TipRack) -> Optional[LabwareIdentity]:
-  """Look up a rack's official definition identity for its calibration data."""
-  load_name = _OFFICIAL_TIP_RACKS.get(tip_rack.model or "")
+def official_identity_for_model(model: str) -> Optional[LabwareIdentity]:
+  """The official definition identity of a tip rack model, for its calibration data."""
+  load_name = _OFFICIAL_TIP_RACKS.get(model or "")
   return LabwareIdentity("opentrons", load_name, 1) if load_name is not None else None
 
 
+def official_tip_rack_identity(tip_rack: LabwareFacts) -> Optional[LabwareIdentity]:
+  """Look up a rack's official definition identity for its calibration data."""
+  return official_identity_for_model(tip_rack.model)
+
+
 def build_tip_rack_definition(
-  tip_rack: TipRack,
-  tip: Optional[Tip] = None,
+  tip_rack: LabwareFacts,
+  tip: Optional[TipFacts] = None,
   load_name: Optional[str] = None,
   *,
   for_flex: bool = False,
@@ -77,22 +79,23 @@ def build_tip_rack_definition(
   Defaults to OT-2's diagonal tip-spot diameter and empty group metadata.
   ``for_flex`` uses the spot width as the diameter and adds group metadata.
   Rotated racks or spots and tips seated below the rack's base are rejected.
-  If omitted, the tip comes from A1 and the load name is a random UUID.
+  If omitted, the tip is the one spot A1 makes and the load name is a random UUID.
   ``grip_distance_from_top`` adds a gripper height to the definition.
   """
   _require_unrotated(tip_rack)
   if tip is None:
-    tip = tip_rack.get_item("A1").make_tip()
+    a1 = tip_rack.item("A1")
+    tip = a1.prototype or a1.tip
+    if tip is None:
+      raise ValueError(f"'{tip_rack.name}' does not say what tip it holds")
   if load_name is None:
     load_name = uuid.uuid4().hex
-  tip_spots = tip_rack.get_all_items()
-  well_names = {spot.name: tip_rack.get_child_identifier(spot) for spot in tip_spots}
+  tip_spots = tip_rack.items
   for spot in tip_spots:
     _require_unrotated(spot)
-    location = cast(Coordinate, spot.location)
-    if location.z < 0:
+    if spot.location.z < 0:
       raise ValueError(
-        f"'{tip_rack.name}' seats its tips {-location.z} mm BELOW its own base (spot "
+        f"'{tip_rack.name}' seats its tips {-spot.location.z} mm BELOW its own base (spot "
         f"'{spot.name}'), which an Opentrons definition cannot express -- its well z must "
         "be non-negative, and the robot-server rejects the upload outright. Re-anchor the "
         "rack so its tip seats sit at or above its base, or give it an official Opentrons "
@@ -111,13 +114,13 @@ def build_tip_rack_definition(
     "parameters": {
       "format": _format_from_grid(tip_rack.num_items_x, tip_rack.num_items_y),
       "isTiprack": True,
-      "tipLength": tip.get_size_z(),
+      "tipLength": tip.size.z,
       "tipOverlap": tip.fitting_depth,
       "loadName": load_name,
       "isMagneticModuleCompatible": False,
     },
     "ordering": reshape_2d(
-      [well_names[tip_spot.name] for tip_spot in tip_spots],
+      [spot.identifier for spot in tip_spots],
       (tip_rack.num_items_x, tip_rack.num_items_y),
     ),
     "cornerOffsetFromSlot": {
@@ -126,30 +129,27 @@ def build_tip_rack_definition(
       "z": 0,
     },
     "dimensions": {
-      "xDimension": tip_rack.get_absolute_size_x(),
-      "yDimension": tip_rack.get_absolute_size_y(),
-      "zDimension": tip_rack.get_absolute_size_z(),
+      "xDimension": tip_rack.absolute_size.x,
+      "yDimension": tip_rack.absolute_size.y,
+      "zDimension": tip_rack.absolute_size.z,
     },
     "wells": {
-      well_names[child.name]: {
-        "depth": tip.get_size_z(),
-        "x": cast(Coordinate, child.location).x + child.get_absolute_size_x() / 2,
-        "y": cast(Coordinate, child.location).y + child.get_absolute_size_y() / 2,
-        "z": cast(Coordinate, child.location).z,
+      spot.identifier: {
+        "depth": tip.size.z,
+        "x": spot.location.x + spot.absolute_size.x / 2,
+        "y": spot.location.y + spot.absolute_size.y / 2,
+        "z": spot.location.z,
         "shape": "circular",
-        "diameter": child.get_size_x()
+        "diameter": spot.size.x
         if for_flex
-        else math.hypot(
-          child.get_absolute_size_x(),
-          child.get_absolute_size_y(),
-        ),
+        else math.hypot(spot.absolute_size.x, spot.absolute_size.y),
         "totalLiquidVolume": tip.maximal_volume,
       }
-      for child in tip_spots
+      for spot in tip_spots
     },
     "groups": [
       {
-        "wells": [well_names[tip_spot.name] for tip_spot in tip_spots],
+        "wells": [spot.identifier for spot in tip_spots],
         "metadata": (
           {"displayName": None, "displayCategory": "tipRack", "wellBottomShape": "flat"}
           if for_flex
@@ -160,7 +160,7 @@ def build_tip_rack_definition(
   }
   if grip_distance_from_top is not None:
     definition["gripHeightFromLabwareBottom"] = max(
-      0.0, tip_rack.get_absolute_size_z() - grip_distance_from_top
+      0.0, tip_rack.absolute_size.z - grip_distance_from_top
     )
   return definition
 
@@ -169,31 +169,35 @@ def build_tip_rack_definition(
 class LabwareBinding:
   """A resource's server identity and location within one run."""
 
-  resource: Resource
+  resource: Identified
   labware_id: str
   slot: str
   identity: LabwareIdentity
 
 
 class LabwareRegistry:
-  """Record successful labware loads independently of the device's deck model."""
+  """Record successful labware loads independently of the device's deck model.
+
+  Keyed by each labware's id in the resource store, so a different labware of the same name never
+  inherits another's binding.
+  """
 
   def __init__(self, run: OpentronsRun, server_assigned_ids: bool = False) -> None:
     self._run = run
-    self._bindings: Dict[int, LabwareBinding] = {}
-    self._definitions: Dict[int, Tuple[Resource, LabwareIdentity]] = {}
+    self._bindings: Dict[bytes, LabwareBinding] = {}
+    self._definitions: Dict[bytes, Tuple[Identified, LabwareIdentity]] = {}
     self._server_assigned_ids = server_assigned_ids
 
-  def is_loaded(self, resource: Resource) -> bool:
-    return id(resource) in self._bindings
+  def is_loaded(self, resource: Identified) -> bool:
+    return resource.id in self._bindings
 
-  def get(self, resource: Resource) -> LabwareBinding:
+  def get(self, resource: Identified) -> LabwareBinding:
     """Look up an existing binding without uploading, loading, or allocating an ID."""
-    return self._bindings[id(resource)]
+    return self._bindings[resource.id]
 
   async def load(
     self,
-    resource: Resource,
+    resource: Identified,
     slot: str,
     identity: LabwareIdentity,
     definition: Optional[Dict[str, Any]] = None,
@@ -224,31 +228,31 @@ class LabwareRegistry:
     else:
       labware_id = uuid.uuid4().hex
       await self._run.load_labware(identity, slot, labware_id, resource.name)
-    self._bindings[id(resource)] = LabwareBinding(resource, labware_id, slot, identity)
+    self._bindings[resource.id] = LabwareBinding(resource, labware_id, slot, identity)
 
-  async def define(self, resource: Resource, definition: Dict[str, Any]) -> LabwareIdentity:
+  async def define(self, resource: Identified, definition: Dict[str, Any]) -> LabwareIdentity:
     """Upload a resource definition once per run, retaining its server identity."""
     self._run._require_active()
     cached = self.definition(resource)
     if cached is not None:
       return cached
     identity = await self._run.define_labware(definition)
-    self._definitions[id(resource)] = (resource, identity)
+    self._definitions[resource.id] = (resource, identity)
     return identity
 
-  def definition(self, resource: Resource) -> Optional[LabwareIdentity]:
+  def definition(self, resource: Identified) -> Optional[LabwareIdentity]:
     """Return a previously uploaded definition without communicating."""
-    cached = self._definitions.get(id(resource))
+    cached = self._definitions.get(resource.id)
     return cached[1] if cached is not None else None
 
-  def record_location(self, resource: Resource, slot: str) -> None:
+  def record_location(self, resource: Identified, slot: str) -> None:
     """Update a binding after a confirmed server-side move."""
-    self._bindings[id(resource)] = replace(self.get(resource), slot=slot)
+    self._bindings[resource.id] = replace(self.get(resource), slot=slot)
 
-  def remove(self, resource: Resource) -> None:
+  def remove(self, resource: Identified) -> None:
     """Forget a resource after its confirmed departure from the run's deck."""
-    self._bindings.pop(id(resource), None)
-    self._definitions.pop(id(resource), None)
+    self._bindings.pop(resource.id, None)
+    self._definitions.pop(resource.id, None)
 
 
 def _format_from_grid(num_items_x: int, num_items_y: int) -> str:
@@ -260,8 +264,8 @@ def _format_from_grid(num_items_x: int, num_items_y: int) -> str:
   return "irregular"
 
 
-def _require_unrotated(resource: Resource) -> None:
-  """Refuse a rotated resource: an Opentrons definition cannot describe one.
+def _require_unrotated(resource: Any) -> None:
+  """Refuse a rotated labware or item: an Opentrons definition cannot describe one.
 
   A schema-2 definition places its front-left-bottom corner at the slot's, and
   positions every well from that corner, with no rotation anywhere. PLR
@@ -269,7 +273,7 @@ def _require_unrotated(resource: Resource) -> None:
   rotation into the well coordinates would still leave the labware body and
   the slot disagreeing.
   """
-  rotation = resource.get_absolute_rotation()
+  rotation = resource.absolute_rotation
   if (rotation.x, rotation.y, rotation.z) != (0, 0, 0):
     raise ValueError(
       f"'{resource.name}' has absolute rotation {rotation}. An Opentrons labware "
@@ -278,31 +282,39 @@ def _require_unrotated(resource: Resource) -> None:
     )
 
 
-def _container_bottom_shape(container: Container) -> str:
-  """The schema's ``wellBottomShape`` for any container the builders can see.
+def _material_z_thickness(name: str, type_name: str, spec: Optional[pb.ContainerSpec]) -> float:
+  """A container's floor thickness.
 
-  Only troughs and wells carry a bottom shape; a plain ``Container``,
-  ``PetriDish``, ``Trash`` or ``Tube`` has none, so they get the schema's
-  safest default.
+  Raises:
+    NotImplementedError: The container does not say.
   """
-  if isinstance(container, Trough):
-    return _TROUGH_BOTTOM_SHAPES[container.bottom_type]
-  if isinstance(container, Well):
-    return _WELL_BOTTOM_SHAPES[container.bottom_type]
-  return "flat"
+  if spec is None or not spec.HasField("material_z_thickness"):
+    raise NotImplementedError(
+      f"The current operation is not supported for resource named '{name}' of type "
+      f"'{type_name}' because material_z_thickness is not defined."
+    )
+  return spec.material_z_thickness
 
 
-def _well_shape(well: Well) -> dict:
-  if well.cross_section_type == CrossSectionType.RECTANGLE:
+def _bottom_shape(kind: int, spec: Optional[pb.ContainerSpec]) -> str:
+  """The schema's ``wellBottomShape``: troughs and wells carry one; anything else is flat."""
+  if spec is None or kind not in (pb.RESOURCE_KIND_TROUGH, pb.RESOURCE_KIND_WELL):
+    return "flat"
+  return _BOTTOM_SHAPES[spec.bottom_type]
+
+
+def _well_shape(well: ItemFacts) -> dict:
+  spec = well.container
+  if spec is not None and spec.cross_section_type == pb.CROSS_SECTION_TYPE_RECTANGLE:
     return {
       "shape": "rectangular",
-      "xDimension": well.get_size_x(),
-      "yDimension": well.get_size_y(),
+      "xDimension": well.size.x,
+      "yDimension": well.size.y,
     }
-  return {"shape": "circular", "diameter": well.get_size_x()}
+  return {"shape": "circular", "diameter": well.size.x}
 
 
-def _plate_well(well: Well) -> dict:
+def _plate_well(well: ItemFacts) -> dict:
   """One ``wells`` entry: the well's cavity floor, depth and footprint.
 
   ``depth`` is the well's own size_z, which in PLR already spans cavity floor
@@ -310,23 +322,25 @@ def _plate_well(well: Well) -> dict:
   Opentrons plate definition does.
   """
   _require_unrotated(well)
-  location = cast(Coordinate, well.location)
+  thickness = _material_z_thickness(well.name, "Well", well.container)
   return {
-    "depth": well.get_size_z(),
-    "x": location.x + well.get_size_x() / 2,
-    "y": location.y + well.get_size_y() / 2,
-    "z": location.z + well.material_z_thickness,
-    "totalLiquidVolume": well.max_volume,
+    "depth": well.size.z,
+    "x": well.location.x + well.size.x / 2,
+    "y": well.location.y + well.size.y / 2,
+    "z": well.location.z + thickness,
+    "totalLiquidVolume": well.container.max_volume if well.container is not None else 0,
     **_well_shape(well),
   }
 
 
-def build_plate_definition(plate: Plate, grip_distance_from_top: Optional[float] = None) -> dict:
+def build_plate_definition(
+  plate: LabwareFacts, grip_distance_from_top: Optional[float] = None
+) -> dict:
   """Build a robot-server wellPlate definition from a PLR plate's geometry.
 
   Wells carry their real depth, volume, cross-section (circular or
   rectangular) and bottom shape so well-referencing commands (``touchTip``,
-  ``liquidProbe``) get the true geometry. Wells are keyed by their PLR child
+  ``liquidProbe``) get the true geometry. Wells are keyed by their PLR
   identifier ("A1" style), matching the ``wellName`` the pipetting commands
   send. Each well's ``z`` is its CAVITY floor -- its PLR origin plus its wall
   thickness -- which puts the well top (``z + depth``) at the plate's real
@@ -340,8 +354,8 @@ def build_plate_definition(plate: Plate, grip_distance_from_top: Optional[float]
       cavity floor is measured from.
   """
   _require_unrotated(plate)
-  wells = plate.get_all_items()
-  well_names = [plate.get_child_identifier(well) for well in wells]
+  wells = plate.items
+  well_names = [well.identifier for well in wells]
   definition: dict = {
     "schemaVersion": _SCHEMA_VERSION,
     "version": _VERSION,
@@ -361,27 +375,27 @@ def build_plate_definition(plate: Plate, grip_distance_from_top: Optional[float]
     "ordering": reshape_2d(well_names, (plate.num_items_x, plate.num_items_y)),
     "cornerOffsetFromSlot": {"x": 0, "y": 0, "z": 0},
     "dimensions": {
-      "xDimension": plate.get_absolute_size_x(),
-      "yDimension": plate.get_absolute_size_y(),
-      "zDimension": plate.get_absolute_size_z(),
+      "xDimension": plate.absolute_size.x,
+      "yDimension": plate.absolute_size.y,
+      "zDimension": plate.absolute_size.z,
     },
-    "wells": {plate.get_child_identifier(well): _plate_well(well) for well in wells},
+    "wells": {well.identifier: _plate_well(well) for well in wells},
     "groups": [
       {
         "wells": well_names,
-        "metadata": {"wellBottomShape": _WELL_BOTTOM_SHAPES[wells[0].bottom_type]},
+        "metadata": {"wellBottomShape": _bottom_shape(wells[0].kind, wells[0].container)},
       }
     ],
   }
   if grip_distance_from_top is not None:
     definition["gripHeightFromLabwareBottom"] = max(
-      0.0, plate.get_absolute_size_z() - grip_distance_from_top
+      0.0, plate.absolute_size.z - grip_distance_from_top
     )
   return definition
 
 
 def build_container_definition(
-  container: Container, grip_distance_from_top: Optional[float] = None
+  container: LabwareFacts, grip_distance_from_top: Optional[float] = None
 ) -> dict:
   """Build a robot-server reservoir definition from a PLR container's geometry.
 
@@ -402,9 +416,11 @@ def build_container_definition(
     NotImplementedError: If the container does not declare the wall thickness its
       cavity floor is measured from.
   """
-  size_x = container.get_absolute_size_x()
-  size_y = container.get_absolute_size_y()
-  size_z = container.get_absolute_size_z()
+  size_x = container.absolute_size.x
+  size_y = container.absolute_size.y
+  size_z = container.absolute_size.z
+  thickness = _material_z_thickness(container.name, container.type_name, container.container)
+  max_volume = container.container.max_volume if container.container is not None else 0
   definition: dict = {
     "schemaVersion": _SCHEMA_VERSION,
     "version": _VERSION,
@@ -427,18 +443,21 @@ def build_container_definition(
     "dimensions": {"xDimension": size_x, "yDimension": size_y, "zDimension": size_z},
     "wells": {
       "A1": {
-        "depth": size_z - container.material_z_thickness,
+        "depth": size_z - thickness,
         "x": size_x / 2,
         "y": size_y / 2,
-        "z": container.material_z_thickness,
+        "z": thickness,
         "shape": "rectangular",
         "xDimension": size_x,
         "yDimension": size_y,
-        "totalLiquidVolume": container.max_volume,
+        "totalLiquidVolume": max_volume,
       }
     },
     "groups": [
-      {"wells": ["A1"], "metadata": {"wellBottomShape": _container_bottom_shape(container)}}
+      {
+        "wells": ["A1"],
+        "metadata": {"wellBottomShape": _bottom_shape(container.kind, container.container)},
+      }
     ],
   }
   if grip_distance_from_top is not None:
@@ -447,7 +466,7 @@ def build_container_definition(
 
 
 def build_movable_labware_definition(
-  resource: Resource, grip_distance_from_top: Optional[float] = None
+  resource: LabwareFacts, grip_distance_from_top: Optional[float] = None
 ) -> dict:
   """Build a minimal single-well stub definition for gripper moves of any resource.
 
@@ -457,9 +476,9 @@ def build_movable_labware_definition(
   ``grip_distance_from_top`` is given; without it the robot-server grips at
   its default mid-height.
   """
-  size_x = resource.get_absolute_size_x()
-  size_y = resource.get_absolute_size_y()
-  size_z = resource.get_absolute_size_z()
+  size_x = resource.absolute_size.x
+  size_y = resource.absolute_size.y
+  size_z = resource.absolute_size.z
   definition: dict = {
     "schemaVersion": _SCHEMA_VERSION,
     "version": _VERSION,

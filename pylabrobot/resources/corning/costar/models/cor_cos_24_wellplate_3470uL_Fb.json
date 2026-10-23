@@ -1,0 +1,67 @@
+{
+  "name": "cor_cos_24_wellplate_3470uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "cor_cos_24_wellplate_3470uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.47,
+        "z": 20.27
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 16.26,
+                "y": 16.26,
+                "z": 17.4
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 3400.0,
+                "materialZThickness": 1.27,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 16.13,
+                    "volume": 3219.283485
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.65,
+            "y": 5.97,
+            "z": 2.54
+          },
+          "itemDx": 19.3,
+          "itemDy": 19.3
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Corning cat. no.s: 3337, 3524, 3526, 3527\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2b/UK/en/Microplates/Assay-Microplates/96-Well-Microplates/Costar%C2%AE-Multiple-Well-Cell-Culture-Plates/p/3337\n- brand: Costar\n- material: Polystyrene\n- tc_treated: Yes\n- tech_drawing: tech_drawings/Cor_Cos_24_wellplate_3470ul_Fb.pdf"
+}

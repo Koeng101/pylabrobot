@@ -1,0 +1,285 @@
+{
+  "name": "boekel_15mL_falcon_carrier",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TubeCarrier",
+      "model": "Boekel Scientific Tube Carrier",
+      "category": "tube_carrier",
+      "size": {
+        "x": 174.0,
+        "y": 52.0,
+        "z": 95.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "ResourceHolder_0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 5.0,
+            "y": 27.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 34.0,
+            "y": 27.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 63.0,
+            "y": 27.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 88.0,
+            "y": 27.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_4",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 118.0,
+            "y": 27.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_5",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 147.0,
+            "y": 27.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_6",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 5.0,
+            "y": 4.5,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_7",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 34.0,
+            "y": 4.5,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_8",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 63.0,
+            "y": 4.5,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_9",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 88.0,
+            "y": 4.5,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_10",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 118.0,
+            "y": 4.5,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_11",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 17.0,
+            "y": 17.0
+          },
+          "location": {
+            "x": 147.0,
+            "y": 4.5,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "15 mL Falcon tube carrier orientation.\n\nhttps://www.boekelsci.com/multi-tube-rack-for-50ml-conical-15ml-conical-and-\nmicrocentrifuge-tubes-pn-120008.html\n\nOriented in landscape mode with the male connector to the right.\n\nSizes from website; carrier site locations measured with ruler."
+}

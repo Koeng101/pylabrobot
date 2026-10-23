@@ -1,0 +1,28 @@
+{
+  "name": "hamilton_core_gripper_tool",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_HEAD_TOOL",
+      "typeName": "HamiltonCoreGripperTool",
+      "model": "hamilton_core_gripper_tool",
+      "category": "core_gripper_tool",
+      "size": {
+        "x": 36.0,
+        "y": 8.346,
+        "z": 32.0
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0,
+        "isConductive": true,
+        "pickUpLocation": {
+          "x": 18.0,
+          "y": 4.25,
+          "z": 32.0
+        }
+      }
+    }
+  },
+  "description": "Hamilton CO-RE grip tool, for 1000 uL channels.\n\nHamilton cat. no.: 186100 (firmware tip type 14)\n\n36 x 8.346 x 32 mm, lying along x with its pins pointing +y. The grip line is 2 mm above\nthe tool's bottom. The collar is 10 mm tall; its opening is off centre in y, at 4.25."
+}

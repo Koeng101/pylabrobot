@@ -1,0 +1,38 @@
+{
+  "name": "hamilton_tip_1000uL_filter",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "typeName": "HamiltonTip",
+      "model": "hamilton_tip_1000uL_filter",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 95.1
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "hasFilter": true,
+        "maximalVolume": 1065.0,
+        "nominalVolume": 1000.0,
+        "collarHeight": 10.0,
+        "hamilton": {
+          "tipSize": "HIGH_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton 1000 uL tip with filter\n\nHamilton cat. no.: 235940 - conductive, sterile"
+}

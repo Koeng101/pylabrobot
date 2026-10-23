@@ -9,32 +9,6 @@ from pylabrobot.resources.well import (
 # # # # # # # # # # Eppendorf_96_wellplate_250ul_Vb # # # # # # # # # #
 
 
-def _compute_volume_from_height_Eppendorf_96_wellplate_250ul_Vb(
-  h: float,
-):
-  if h > 20.3:
-    raise ValueError(f"Height {h} is too large for" + "Eppendorf_96_wellplate_250ul_Vb")
-  return max(
-    0.89486648 + 2.92455131 * h + 2.03472797 * h**2 + -0.16509371 * h**3 + 0.00675759 * h**4,
-    0,
-  )
-
-
-def _compute_height_from_volume_Eppendorf_96_wellplate_250ul_Vb(
-  liquid_volume: float,
-):
-  if liquid_volume > 262.5:  # 5% tolerance
-    raise ValueError(f"Volume {liquid_volume} is too large for" + "Eppendorf_96_wellplate_250ul_Vb")
-  return max(
-    0.118078503
-    + 0.133333914 * liquid_volume
-    + -0.000802726227 * liquid_volume**2
-    + 3.29761957e-06 * liquid_volume**3
-    + -5.29119614e-09 * liquid_volume**4,
-    0,
-  )
-
-
 # results_measurement_fitting_dict = {
 #     "Volume (ul)": [0, 4, 8, 20, 70, 120, 170, 220, 260],
 #     "Observed Height (mm)": [0, 0.45, 1.45, 2.55, 6.45, 9.05, 11.6, 13.15, 14.349],
@@ -54,6 +28,68 @@ def Eppendorf_96_wellplate_250ul_Vb_Lid(name: str) -> Lid:
   #   nesting_z_height=None, # measure overlap between lid and plate
   #   model="Eppendorf_96_wellplate_250ul_Vb_Lid",
   # )
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_Eppendorf_96_wellplate_250ul_Vb_height_volume_data = {
+  0.0: 0.894866,
+  0.26: 1.789927,
+  0.57: 3.193083,
+  0.91: 5.121391,
+  1.26: 7.496918,
+  1.63: 10.400677,
+  2.02: 13.856706,
+  2.44: 17.985973,
+  2.88: 22.715587,
+  3.35: 28.171169,
+  3.85: 34.37749,
+  4.39: 41.489316,
+  4.96: 49.402775,
+  5.56: 58.13779,
+  6.17: 67.414526,
+  6.78: 77.08188,
+  7.37: 86.816436,
+  7.93: 96.434706,
+  8.46: 105.917483,
+  8.96: 115.24792,
+  9.42: 124.207525,
+  9.86: 133.160365,
+  10.27: 141.883089,
+  10.66: 150.562039,
+  11.03: 159.178618,
+  11.38: 167.708142,
+  11.72: 176.380735,
+  12.04: 184.922703,
+  12.35: 193.57821,
+  12.65: 202.339,
+  12.94: 211.193841,
+  13.22: 220.12855,
+  13.49: 229.126072,
+  13.75: 238.166594,
+  14.0: 247.227704,
+  14.25: 256.669831,
+  14.49: 266.111588,
+  14.73: 275.941734,
+  14.96: 285.744378,
+  15.19: 295.938464,
+  15.41: 306.071925,
+  15.63: 316.595592,
+  15.84: 327.019843,
+  16.05: 337.8289,
+  16.25: 348.49451,
+  16.45: 359.53558,
+  16.65: 370.965397,
+  16.84: 382.196138,
+  17.03: 393.801783,
+  17.22: 405.794376,
+  17.4: 417.523819,
+  17.58: 429.622144,
+  17.76: 442.100116,
+  17.94: 454.968673,
+  18.11: 467.490955,
+  18.28: 480.38103,
+  18.3: 481.922135,
+}
 
 
 def Eppendorf_96_wellplate_250ul_Vb(name: str, with_lid: bool = False) -> Plate:
@@ -94,8 +130,8 @@ def Eppendorf_96_wellplate_250ul_Vb(name: str, with_lid: bool = False) -> Plate:
       bottom_type=WellBottomType.V,
       material_z_thickness=1.2,  # engineering_diagram says 0.8 but could not replicate
       cross_section_type=CrossSectionType.CIRCLE,
-      compute_volume_from_height=(_compute_volume_from_height_Eppendorf_96_wellplate_250ul_Vb),
-      compute_height_from_volume=(_compute_height_from_volume_Eppendorf_96_wellplate_250ul_Vb),
+      height_volume_data=_Eppendorf_96_wellplate_250ul_Vb_height_volume_data,
+      max_volume=584.5601,
       name_prefix=name,
     ),
   )

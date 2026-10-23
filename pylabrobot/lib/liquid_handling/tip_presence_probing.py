@@ -5,32 +5,56 @@ drop and tip sensor calls, so it works on any liquid handler whose channels sens
 """
 
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Collection, Dict, List, Optional, Sequence, Tuple
+from typing import (
+  Awaitable,
+  Callable,
+  Collection,
+  Dict,
+  Generic,
+  List,
+  Optional,
+  Protocol,
+  Sequence,
+  Tuple,
+  TypeVar,
+)
 
-from pylabrobot.resources import TipSpot
+from pylabrobot.resources import Coordinate, TipSpot
+
+
+class Named(Protocol):
+  """A spot: anything with a name, a `TipSpot` or a store handle."""
+
+  @property
+  def name(self) -> str: ...
+
+
+N = TypeVar("N", bound=Named)
 
 
 @dataclass
-class TipProbeBatch:
+class TipProbeBatch(Generic[N]):
   """Parallel spot and channel lists for one pick-up and the drop that puts the tips back."""
 
-  tip_spots: List[TipSpot]
+  tip_spots: List[N]
   use_channels: List[int]
 
 
-def _x_of(tip_spot: TipSpot) -> float:
-  """Where the spot stands in X, in mm, on whatever it is placed on."""
-  return round(tip_spot.get_absolute_location("c", "c", "t").x, 3)
-
-
-def _y_of(tip_spot: TipSpot) -> float:
-  """Where the spot stands in Y, in mm, on whatever it is placed on."""
-  return round(tip_spot.get_absolute_location("c", "c", "t").y, 3)
+def tops_of(tip_spots: Sequence[TipSpot]) -> List[Coordinate]:
+  """Each spot's centre centre top, absolute, read from PLR's `Resource` classes."""
+  return [tip_spot.get_absolute_location("c", "c", "t") for tip_spot in tip_spots]
 
 
 def plan_tip_presence_probes(
   tip_spots: List[TipSpot], use_channels: List[int]
-) -> List[TipProbeBatch]:
+) -> List[TipProbeBatch[TipSpot]]:
+  """`plan_probes` for spots held in this process."""
+  return plan_probes(tip_spots, tops_of(tip_spots), use_channels)
+
+
+def plan_probes(
+  tip_spots: List[N], tops: Sequence[Coordinate], use_channels: List[int]
+) -> List[TipProbeBatch[N]]:
   """Group the spots, one channel each, into pick-ups at one X, in ascending X.
 
   The channels ride one arm, so spots at different X cannot be taken in one move. Each spot keeps
@@ -38,6 +62,7 @@ def plan_tip_presence_probes(
 
   Args:
     tip_spots: the spots to probe.
+    tops: each spot's centre centre top, along the axes of whatever the spots are placed on.
     use_channels: the channel for each spot, 0-indexed from the back.
 
   Returns:
@@ -52,16 +77,25 @@ def plan_tip_presence_probes(
     )
   if len(set(use_channels)) != len(use_channels):
     raise ValueError(f"use_channels must each be named once, are {use_channels}")
-  groups: Dict[float, List[Tuple[TipSpot, int]]] = {}
-  for tip_spot, channel in zip(tip_spots, use_channels):
-    groups.setdefault(_x_of(tip_spot), []).append((tip_spot, channel))
+  groups: Dict[float, List[Tuple[N, int]]] = {}
+  for tip_spot, top, channel in zip(tip_spots, tops, use_channels):
+    groups.setdefault(round(top.x, 3), []).append((tip_spot, channel))
   return [
     TipProbeBatch(tip_spots=[s for s, _ in group], use_channels=[c for _, c in group])
     for _, group in sorted(groups.items())
   ]
 
 
-def plan_tip_inventory(tip_spots: List[TipSpot], use_channels: List[int]) -> List[TipProbeBatch]:
+def plan_tip_inventory(
+  tip_spots: List[TipSpot], use_channels: List[int]
+) -> List[TipProbeBatch[TipSpot]]:
+  """`plan_inventory` for spots held in this process."""
+  return plan_inventory(tip_spots, tops_of(tip_spots), use_channels)
+
+
+def plan_inventory(
+  tip_spots: List[N], tops: Sequence[Coordinate], use_channels: List[int]
+) -> List[TipProbeBatch[N]]:
   """Deal the spots to the channels one column at a time, so each pick-up stays at one X.
 
   Columns in ascending X; in each, the spots rear to front go to the channels in ascending order,
@@ -70,6 +104,7 @@ def plan_tip_inventory(tip_spots: List[TipSpot], use_channels: List[int]) -> Lis
 
   Args:
     tip_spots: the spots to probe, in any order.
+    tops: each spot's centre centre top, along the axes of whatever the spots are placed on.
     use_channels: the channels to probe with, 0-indexed from the back.
 
   Returns:
@@ -86,14 +121,14 @@ def plan_tip_inventory(tip_spots: List[TipSpot], use_channels: List[int]) -> Lis
   if len(set(names)) != len(names):
     raise ValueError(f"tip spots must each be given once, are {names}")
   channels = sorted(use_channels)
-  columns: Dict[float, List[TipSpot]] = {}
-  for tip_spot in tip_spots:
-    columns.setdefault(_x_of(tip_spot), []).append(tip_spot)
-  batches = []
-  for _, column in sorted(columns.items()):
-    column.sort(key=_y_of, reverse=True)
+  columns: Dict[float, List[Tuple[N, float]]] = {}
+  for tip_spot, top in zip(tip_spots, tops):
+    columns.setdefault(round(top.x, 3), []).append((tip_spot, round(top.y, 3)))
+  batches: List[TipProbeBatch[N]] = []
+  for _, column in sorted(columns.items(), key=lambda entry: entry[0]):
+    column.sort(key=lambda entry: entry[1], reverse=True)
     for start in range(0, len(column), len(channels)):
-      spots = column[start : start + len(channels)]
+      spots = [spot for spot, _ in column[start : start + len(channels)]]
       batches.append(TipProbeBatch(tip_spots=spots, use_channels=channels[: len(spots)]))
   return batches
 
@@ -133,6 +168,28 @@ async def probe_tip_presence_via_pickup(
   sense_tip_presence: Optional[Callable[[], Awaitable[Sequence[bool]]]] = None,
   missed_channels: Optional[Callable[[Exception], Optional[Collection[int]]]] = None,
 ) -> Dict[str, bool]:
+  """`probe_tip_presence` for spots held in this process."""
+  return await probe_tip_presence(
+    tip_spots,
+    tops_of(tip_spots),
+    use_channels,
+    pick_up_tips=pick_up_tips,
+    drop_tips=drop_tips,
+    sense_tip_presence=sense_tip_presence,
+    missed_channels=missed_channels,
+  )
+
+
+async def probe_tip_presence(
+  tip_spots: List[N],
+  tops: Sequence[Coordinate],
+  use_channels: List[int],
+  *,
+  pick_up_tips: Callable[[List[N], List[int]], Awaitable[None]],
+  drop_tips: Callable[[List[N], List[int]], Awaitable[None]],
+  sense_tip_presence: Optional[Callable[[], Awaitable[Sequence[bool]]]] = None,
+  missed_channels: Optional[Callable[[Exception], Optional[Collection[int]]]] = None,
+) -> Dict[str, bool]:
   """Pick up the tip in each spot and put it back; a channel that comes up empty found none.
 
   After a pick-up that raises, which channels came up empty is read from the error by
@@ -143,6 +200,7 @@ async def probe_tip_presence_via_pickup(
 
   Args:
     tip_spots: the spots to probe.
+    tops: as `plan_probes`.
     use_channels: the channel for each spot, 0-indexed from the back.
     pick_up_tips: the device's pick-up, taking spots and channels.
     drop_tips: the device's drop, taking spots and channels.
@@ -157,7 +215,7 @@ async def probe_tip_presence_via_pickup(
     ValueError: As `plan_tip_presence_probes`.
   """
   present = {tip_spot.name: True for tip_spot in tip_spots}
-  for batch in plan_tip_presence_probes(tip_spots, use_channels):
+  for batch in plan_probes(tip_spots, tops, use_channels):
     held = list(batch.use_channels)
     try:
       await pick_up_tips(batch.tip_spots, batch.use_channels)
@@ -186,10 +244,33 @@ async def probe_tip_inventory(
   sense_tip_presence: Optional[Callable[[], Awaitable[Sequence[bool]]]] = None,
   missed_channels: Optional[Callable[[Exception], Optional[Collection[int]]]] = None,
 ) -> Dict[str, bool]:
+  """`probe_inventory` for spots held in this process."""
+  return await probe_inventory(
+    tip_spots,
+    tops_of(tip_spots),
+    use_channels,
+    pick_up_tips=pick_up_tips,
+    drop_tips=drop_tips,
+    sense_tip_presence=sense_tip_presence,
+    missed_channels=missed_channels,
+  )
+
+
+async def probe_inventory(
+  tip_spots: List[N],
+  tops: Sequence[Coordinate],
+  use_channels: List[int],
+  *,
+  pick_up_tips: Callable[[List[N], List[int]], Awaitable[None]],
+  drop_tips: Callable[[List[N], List[int]], Awaitable[None]],
+  sense_tip_presence: Optional[Callable[[], Awaitable[Sequence[bool]]]] = None,
+  missed_channels: Optional[Callable[[Exception], Optional[Collection[int]]]] = None,
+) -> Dict[str, bool]:
   """Probe any number of spots in any order, dealt to the channels as `plan_tip_inventory` does.
 
   Args:
     tip_spots: the spots to probe, in any order; the result keeps it.
+    tops: as `plan_inventory`.
     use_channels: the channels to probe with, 0-indexed from the back.
     pick_up_tips: as `probe_tip_presence_via_pickup`.
     drop_tips: as `probe_tip_presence_via_pickup`.
@@ -202,11 +283,13 @@ async def probe_tip_inventory(
   Raises:
     ValueError: As `plan_tip_inventory`.
   """
+  top_of = {id(tip_spot): top for tip_spot, top in zip(tip_spots, tops)}
   present: Dict[str, bool] = {}
-  for batch in plan_tip_inventory(tip_spots, use_channels):
+  for batch in plan_inventory(tip_spots, tops, use_channels):
     present.update(
-      await probe_tip_presence_via_pickup(
+      await probe_tip_presence(
         batch.tip_spots,
+        [top_of[id(tip_spot)] for tip_spot in batch.tip_spots],
         batch.use_channels,
         pick_up_tips=pick_up_tips,
         drop_tips=drop_tips,

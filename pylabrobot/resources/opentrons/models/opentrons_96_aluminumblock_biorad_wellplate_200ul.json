@@ -1,0 +1,49 @@
+{
+  "name": "opentrons_96_aluminumblock_biorad_wellplate_200ul",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "typeName": "TubeRack",
+      "model": "Opentrons 96 Well Aluminum Block with Bio-Rad Well Plate 200 \u00b5L",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 18.81
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "typeName": "ResourceHolder",
+              "category": "resource_holder",
+              "size": {
+                "x": 3.861,
+                "y": 3.861,
+                "z": 14.81
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 12.4495,
+            "y": 9.3095,
+            "z": 4.0
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      }
+    }
+  }
+}

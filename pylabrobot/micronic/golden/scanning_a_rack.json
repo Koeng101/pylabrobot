@@ -1,0 +1,2253 @@
+{
+  "transport": {
+    "human_readable_device_name": "Micronic rack ID reader",
+    "port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "bytesize": 7,
+    "parity": "E",
+    "stopbits": 1,
+    "timeout": 0.1,
+    "write_timeout": 1.0
+  },
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        "scanner.setup",
+        "serial.setup"
+      ],
+      "last_image_path": null
+    },
+    {
+      "call": "scan_rack_id()",
+      "result": "9500017722",
+      "sent": [
+        "serial.reset_input_buffer",
+        "serial.write <t>\r\n"
+      ],
+      "last_image_path": null
+    },
+    {
+      "call": "scan_rack(rack)",
+      "result": {
+        "rack_id": "9500017722",
+        "rack_barcode": {
+          "data": "9500017722",
+          "symbology": "Code 128 (Subset B and C)",
+          "position_on_resource": "right"
+        },
+        "entries": [
+          [
+            "A1",
+            "1000000001",
+            "OK",
+            {
+              "data": "1000000001",
+              "symbology": "DataMatrix",
+              "position_on_resource": "bottom"
+            }
+          ],
+          [
+            "A2",
+            "1000000002",
+            "OK",
+            {
+              "data": "1000000002",
+              "symbology": "DataMatrix",
+              "position_on_resource": "bottom"
+            }
+          ],
+          [
+            "A3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B1",
+            "1000000013",
+            "OK",
+            {
+              "data": "1000000013",
+              "symbology": "DataMatrix",
+              "position_on_resource": "bottom"
+            }
+          ],
+          [
+            "B2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H12",
+            null,
+            "NOREAD",
+            null
+          ]
+        ]
+      },
+      "sent": [
+        "serial.reset_input_buffer",
+        "serial.write <t>\r\n",
+        "scanner.acquire <image_dir>/micronic_<timestamp>.bmp 90.0",
+        "decode_image <image_dir>/micronic_<timestamp>.bmp"
+      ],
+      "last_image_path": null
+    },
+    {
+      "call": "scan_rack(rack)  # no rack ID",
+      "result": {
+        "rack_id": "NOREAD",
+        "rack_barcode": null,
+        "entries": [
+          [
+            "A1",
+            "1000000001",
+            "OK",
+            {
+              "data": "1000000001",
+              "symbology": "DataMatrix",
+              "position_on_resource": "bottom"
+            }
+          ],
+          [
+            "A2",
+            "1000000002",
+            "OK",
+            {
+              "data": "1000000002",
+              "symbology": "DataMatrix",
+              "position_on_resource": "bottom"
+            }
+          ],
+          [
+            "A3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "A12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B1",
+            "1000000013",
+            "OK",
+            {
+              "data": "1000000013",
+              "symbology": "DataMatrix",
+              "position_on_resource": "bottom"
+            }
+          ],
+          [
+            "B2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "B12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "C12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "D12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "E12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "F12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "G12",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H1",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H2",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H3",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H4",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H5",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H6",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H7",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H8",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H9",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H10",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H11",
+            null,
+            "NOREAD",
+            null
+          ],
+          [
+            "H12",
+            null,
+            "NOREAD",
+            null
+          ]
+        ]
+      },
+      "sent": [
+        "serial.reset_input_buffer",
+        "serial.write <t>\r\n",
+        "scanner.acquire <image_dir>/micronic_<timestamp>.bmp 90.0",
+        "decode_image <image_dir>/micronic_<timestamp>.bmp"
+      ],
+      "last_image_path": null
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        "serial.stop",
+        "scanner.stop"
+      ],
+      "last_image_path": null
+    }
+  ],
+  "resources": [
+    {
+      "name": "rack",
+      "parent": "",
+      "kind": "RESOURCE_KIND_TUBE_RACK"
+    },
+    {
+      "name": "rack_resourceholder_A1",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        10.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_tube_A1",
+      "parent": "rack_resourceholder_A1",
+      "kind": "RESOURCE_KIND_TUBE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "rack_resourceholder_B1",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        10.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_tube_B1",
+      "parent": "rack_resourceholder_B1",
+      "kind": "RESOURCE_KIND_TUBE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "rack_resourceholder_C1",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        10.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D1",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        10.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E1",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        10.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F1",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        10.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G1",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        10.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H1",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        10.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A2",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        19.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_tube_A2",
+      "parent": "rack_resourceholder_A2",
+      "kind": "RESOURCE_KIND_TUBE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "rack_resourceholder_B2",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        19.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C2",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        19.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D2",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        19.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E2",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        19.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F2",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        19.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G2",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        19.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H2",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        19.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A3",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        28.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B3",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        28.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C3",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        28.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D3",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        28.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E3",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        28.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F3",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        28.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G3",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        28.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H3",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        28.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A4",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        37.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B4",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        37.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C4",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        37.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D4",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        37.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E4",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        37.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F4",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        37.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G4",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        37.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H4",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        37.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A5",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        46.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B5",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        46.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C5",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        46.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D5",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        46.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E5",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        46.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F5",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        46.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G5",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        46.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H5",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        46.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A6",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        55.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B6",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        55.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C6",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        55.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D6",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        55.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E6",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        55.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F6",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        55.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G6",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        55.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H6",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        55.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A7",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        64.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B7",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        64.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C7",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        64.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D7",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        64.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E7",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        64.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F7",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        64.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G7",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        64.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H7",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        64.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A8",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        73.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B8",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        73.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C8",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        73.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D8",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        73.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E8",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        73.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F8",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        73.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G8",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        73.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H8",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        73.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A9",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        82.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B9",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        82.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C9",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        82.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D9",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        82.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E9",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        82.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F9",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        82.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G9",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        82.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H9",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        82.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A10",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        91.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B10",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        91.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C10",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        91.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D10",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        91.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E10",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        91.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F10",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        91.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G10",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        91.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H10",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        91.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A11",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B11",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C11",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D11",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E11",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F11",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G11",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H11",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.38,
+        7.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_A12",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        109.38,
+        70.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_B12",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        109.38,
+        61.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_C12",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        109.38,
+        52.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_D12",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        109.38,
+        43.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_E12",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        109.38,
+        34.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_F12",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        109.38,
+        25.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_G12",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        109.38,
+        16.24,
+        2.0
+      ]
+    },
+    {
+      "name": "rack_resourceholder_H12",
+      "parent": "rack",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        109.38,
+        7.24,
+        2.0
+      ]
+    }
+  ]
+}

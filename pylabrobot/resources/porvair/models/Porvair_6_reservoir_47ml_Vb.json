@@ -1,0 +1,586 @@
+{
+  "name": "Porvair_6_reservoir_47ml_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "Porvair_6_reservoir_47ml_Vb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 44.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 16.8,
+                "y": 70.8,
+                "z": 42.5
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 47141.0,
+                "materialZThickness": 1.4,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 0.02,
+                    "volume": 0.000128
+                  },
+                  {
+                    "height": 0.06,
+                    "volume": 0.003466
+                  },
+                  {
+                    "height": 0.12,
+                    "volume": 0.027731
+                  },
+                  {
+                    "height": 0.2,
+                    "volume": 0.128384
+                  },
+                  {
+                    "height": 0.3,
+                    "volume": 0.433296
+                  },
+                  {
+                    "height": 0.4,
+                    "volume": 1.027072
+                  },
+                  {
+                    "height": 0.49,
+                    "volume": 1.888031
+                  },
+                  {
+                    "height": 0.57,
+                    "volume": 2.971977
+                  },
+                  {
+                    "height": 0.65,
+                    "volume": 4.407182
+                  },
+                  {
+                    "height": 0.72,
+                    "volume": 5.989884
+                  },
+                  {
+                    "height": 0.79,
+                    "volume": 7.91229
+                  },
+                  {
+                    "height": 0.86,
+                    "volume": 10.207427
+                  },
+                  {
+                    "height": 0.92,
+                    "volume": 12.496385
+                  },
+                  {
+                    "height": 0.98,
+                    "volume": 15.104249
+                  },
+                  {
+                    "height": 1.04,
+                    "volume": 18.051817
+                  },
+                  {
+                    "height": 1.1,
+                    "volume": 21.359888
+                  },
+                  {
+                    "height": 1.16,
+                    "volume": 25.049259
+                  },
+                  {
+                    "height": 1.21,
+                    "volume": 28.430011
+                  },
+                  {
+                    "height": 1.26,
+                    "volume": 32.102034
+                  },
+                  {
+                    "height": 1.31,
+                    "volume": 36.077364
+                  },
+                  {
+                    "height": 1.36,
+                    "volume": 40.368038
+                  },
+                  {
+                    "height": 1.41,
+                    "volume": 44.986091
+                  },
+                  {
+                    "height": 1.46,
+                    "volume": 49.943559
+                  },
+                  {
+                    "height": 1.51,
+                    "volume": 55.252478
+                  },
+                  {
+                    "height": 1.56,
+                    "volume": 60.924884
+                  },
+                  {
+                    "height": 1.61,
+                    "volume": 66.972813
+                  },
+                  {
+                    "height": 1.66,
+                    "volume": 73.408302
+                  },
+                  {
+                    "height": 1.71,
+                    "volume": 80.243386
+                  },
+                  {
+                    "height": 1.75,
+                    "volume": 86.00725
+                  },
+                  {
+                    "height": 1.79,
+                    "volume": 92.04072
+                  },
+                  {
+                    "height": 1.83,
+                    "volume": 98.349959
+                  },
+                  {
+                    "height": 1.87,
+                    "volume": 104.94113
+                  },
+                  {
+                    "height": 1.91,
+                    "volume": 111.820394
+                  },
+                  {
+                    "height": 1.95,
+                    "volume": 118.993914
+                  },
+                  {
+                    "height": 1.99,
+                    "volume": 126.467853
+                  },
+                  {
+                    "height": 2.03,
+                    "volume": 134.248372
+                  },
+                  {
+                    "height": 2.07,
+                    "volume": 142.341636
+                  },
+                  {
+                    "height": 2.11,
+                    "volume": 150.753805
+                  },
+                  {
+                    "height": 2.15,
+                    "volume": 159.491042
+                  },
+                  {
+                    "height": 2.19,
+                    "volume": 168.55951
+                  },
+                  {
+                    "height": 2.23,
+                    "volume": 177.965371
+                  },
+                  {
+                    "height": 2.27,
+                    "volume": 187.714788
+                  },
+                  {
+                    "height": 2.31,
+                    "volume": 197.813923
+                  },
+                  {
+                    "height": 2.35,
+                    "volume": 208.268938
+                  },
+                  {
+                    "height": 2.39,
+                    "volume": 219.085996
+                  },
+                  {
+                    "height": 2.43,
+                    "volume": 230.27126
+                  },
+                  {
+                    "height": 2.47,
+                    "volume": 241.830891
+                  },
+                  {
+                    "height": 2.51,
+                    "volume": 253.771052
+                  },
+                  {
+                    "height": 2.55,
+                    "volume": 266.097906
+                  },
+                  {
+                    "height": 2.59,
+                    "volume": 278.817615
+                  },
+                  {
+                    "height": 2.62,
+                    "volume": 288.618915
+                  },
+                  {
+                    "height": 2.65,
+                    "volume": 298.647262
+                  },
+                  {
+                    "height": 2.68,
+                    "volume": 308.905256
+                  },
+                  {
+                    "height": 2.71,
+                    "volume": 319.395497
+                  },
+                  {
+                    "height": 2.74,
+                    "volume": 330.120584
+                  },
+                  {
+                    "height": 2.77,
+                    "volume": 341.083117
+                  },
+                  {
+                    "height": 2.8,
+                    "volume": 352.285696
+                  },
+                  {
+                    "height": 2.83,
+                    "volume": 363.730921
+                  },
+                  {
+                    "height": 2.86,
+                    "volume": 375.421391
+                  },
+                  {
+                    "height": 2.89,
+                    "volume": 387.359707
+                  },
+                  {
+                    "height": 2.92,
+                    "volume": 399.548468
+                  },
+                  {
+                    "height": 2.95,
+                    "volume": 411.990274
+                  },
+                  {
+                    "height": 2.98,
+                    "volume": 424.687724
+                  },
+                  {
+                    "height": 3.01,
+                    "volume": 437.643419
+                  },
+                  {
+                    "height": 3.04,
+                    "volume": 450.859958
+                  },
+                  {
+                    "height": 3.07,
+                    "volume": 464.339941
+                  },
+                  {
+                    "height": 3.1,
+                    "volume": 478.085968
+                  },
+                  {
+                    "height": 3.13,
+                    "volume": 492.100638
+                  },
+                  {
+                    "height": 3.16,
+                    "volume": 506.386552
+                  },
+                  {
+                    "height": 3.19,
+                    "volume": 520.946308
+                  },
+                  {
+                    "height": 3.22,
+                    "volume": 535.782508
+                  },
+                  {
+                    "height": 3.25,
+                    "volume": 550.89775
+                  },
+                  {
+                    "height": 3.28,
+                    "volume": 566.294634
+                  },
+                  {
+                    "height": 3.31,
+                    "volume": 581.975761
+                  },
+                  {
+                    "height": 3.34,
+                    "volume": 597.94373
+                  },
+                  {
+                    "height": 3.37,
+                    "volume": 614.20114
+                  },
+                  {
+                    "height": 3.4,
+                    "volume": 630.750592
+                  },
+                  {
+                    "height": 3.43,
+                    "volume": 647.594685
+                  },
+                  {
+                    "height": 3.46,
+                    "volume": 664.736019
+                  },
+                  {
+                    "height": 3.49,
+                    "volume": 682.177194
+                  },
+                  {
+                    "height": 3.52,
+                    "volume": 699.92081
+                  },
+                  {
+                    "height": 3.55,
+                    "volume": 717.969466
+                  },
+                  {
+                    "height": 3.58,
+                    "volume": 736.325762
+                  },
+                  {
+                    "height": 3.61,
+                    "volume": 754.992298
+                  },
+                  {
+                    "height": 3.64,
+                    "volume": 773.971674
+                  },
+                  {
+                    "height": 3.67,
+                    "volume": 793.266489
+                  },
+                  {
+                    "height": 3.7,
+                    "volume": 812.879344
+                  },
+                  {
+                    "height": 3.73,
+                    "volume": 832.812838
+                  },
+                  {
+                    "height": 3.76,
+                    "volume": 853.06957
+                  },
+                  {
+                    "height": 3.79,
+                    "volume": 873.652141
+                  },
+                  {
+                    "height": 3.82,
+                    "volume": 894.56315
+                  },
+                  {
+                    "height": 3.85,
+                    "volume": 915.805198
+                  },
+                  {
+                    "height": 3.88,
+                    "volume": 937.380883
+                  },
+                  {
+                    "height": 3.91,
+                    "volume": 959.292807
+                  },
+                  {
+                    "height": 3.94,
+                    "volume": 981.543567
+                  },
+                  {
+                    "height": 3.97,
+                    "volume": 1004.135765
+                  },
+                  {
+                    "height": 4.0,
+                    "volume": 1027.072
+                  },
+                  {
+                    "height": 4.03,
+                    "volume": 1050.354872
+                  },
+                  {
+                    "height": 4.06,
+                    "volume": 1073.98698
+                  },
+                  {
+                    "height": 4.09,
+                    "volume": 1097.970925
+                  },
+                  {
+                    "height": 4.12,
+                    "volume": 1122.309305
+                  },
+                  {
+                    "height": 4.15,
+                    "volume": 1147.004722
+                  },
+                  {
+                    "height": 4.18,
+                    "volume": 1172.059774
+                  },
+                  {
+                    "height": 4.21,
+                    "volume": 1197.477062
+                  },
+                  {
+                    "height": 4.24,
+                    "volume": 1223.259185
+                  },
+                  {
+                    "height": 4.27,
+                    "volume": 1249.408743
+                  },
+                  {
+                    "height": 4.3,
+                    "volume": 1275.928336
+                  },
+                  {
+                    "height": 4.33,
+                    "volume": 1302.820563
+                  },
+                  {
+                    "height": 4.36,
+                    "volume": 1330.088025
+                  },
+                  {
+                    "height": 4.39,
+                    "volume": 1357.733321
+                  },
+                  {
+                    "height": 4.42,
+                    "volume": 1385.759051
+                  },
+                  {
+                    "height": 4.45,
+                    "volume": 1414.167814
+                  },
+                  {
+                    "height": 4.48,
+                    "volume": 1442.962211
+                  },
+                  {
+                    "height": 4.51,
+                    "volume": 1472.144841
+                  },
+                  {
+                    "height": 4.54,
+                    "volume": 1501.718304
+                  },
+                  {
+                    "height": 4.57,
+                    "volume": 1531.6852
+                  },
+                  {
+                    "height": 4.6,
+                    "volume": 1562.048128
+                  },
+                  {
+                    "height": 4.63,
+                    "volume": 1592.809689
+                  },
+                  {
+                    "height": 4.66,
+                    "volume": 1623.972481
+                  },
+                  {
+                    "height": 4.69,
+                    "volume": 1655.539106
+                  },
+                  {
+                    "height": 4.72,
+                    "volume": 1687.512162
+                  },
+                  {
+                    "height": 4.75,
+                    "volume": 1719.89425
+                  },
+                  {
+                    "height": 4.78,
+                    "volume": 1752.687969
+                  },
+                  {
+                    "height": 4.81,
+                    "volume": 1785.895919
+                  },
+                  {
+                    "height": 4.84,
+                    "volume": 1819.520699
+                  },
+                  {
+                    "height": 4.87,
+                    "volume": 1853.564911
+                  },
+                  {
+                    "height": 4.9,
+                    "volume": 1888.031152
+                  },
+                  {
+                    "height": 4.93,
+                    "volume": 1922.922024
+                  },
+                  {
+                    "height": 4.96,
+                    "volume": 1958.240125
+                  },
+                  {
+                    "height": 4.99,
+                    "volume": 1993.988056
+                  },
+                  {
+                    "height": 41.1,
+                    "volume": 45455.96
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.3,
+            "y": 5.7,
+            "z": 0.97
+          },
+          "itemDx": 18.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Porvair cat. no.: 390015.\n- Material: Polypropylene\n- Sterilization compatibility: Autoclaving (15 minutes at 121\u00b0C) or Gamma Irradiation\n- Chemical resistance: \"High chemical resistance\"\n- Temperature resistance: high: -196\u00b0C to + 121\u00b0C\n- Cleanliness: 390015: Free of detectable DNase, RNase\n- ANSI/SLAS-format for compatibility with automated systems\n- Tolerances: \"Uniform external dimensions and tolerances\"\n- Each well is segmented into four V bottom wells similar to cor_axy_24_wellplate_10mL_Vb.\n- The bottom can only be reached when using 2 or 4 channels."
+}

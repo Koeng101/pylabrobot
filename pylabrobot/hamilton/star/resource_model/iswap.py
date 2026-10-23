@@ -2,6 +2,17 @@
 
 from typing import Optional, Tuple
 
+from pylabrobot.hamilton.star.resource_model.parts import (
+  ELBOW_DRIVE_COLUMN_ABOVE_REPORTED_Z,
+  GRIPPER_BODY_SIZE,
+  GRIPPER_FINGER_LOCATION,
+  GRIPPER_FINGER_SIZE,
+  GRIPPER_JOINT,
+  GRIPPER_PAD_LOCATION,
+  GRIPPER_PAD_SIZE,
+  LINK_1_BODY_SIZE,
+  LINK_1_JOINT,
+)
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.end_effector import MechanicalGripper
 from pylabrobot.resources.manipulator import LinkBody
@@ -65,34 +76,6 @@ class iSWAPHead(Resource):
       "elbow_drive_angle": self.elbow_drive_angle,
       "wrist_drive_angle": self.wrist_drive_angle,
     }
-
-
-# The material each part of the arm is made of, measured on the manufacturer's own model: its
-# size, and where the joint it turns on sits inside it. A member's origin is a corner, as any
-# resource's is, so the joint is somewhere within it rather than at the corner, and the arm turns
-# about the joint rather than about the corner.
-#
-# The heights are what makes the arm an arm rather than a flat plate: it steps down from the drive
-# to the plate it holds. They are measured against the height the Z drive reports, which is the
-# same plane `elbow_z_offset_above_finger` is measured from - and the model agrees with
-# it independently, since the pads' underside comes out exactly that far below. Link 1's joint is
-# below its member because the elbow drive's column stands under the arm.
-LINK_1_BODY_SIZE = (163.4, 25.5, 15.3)
-LINK_1_JOINT = Coordinate(12.7, 12.75, -20.3)
-GRIPPER_BODY_SIZE = (59.0, 90.0, 20.3)
-GRIPPER_JOINT = Coordinate(13.0, 45.0, 0.0)
-# A finger has no Y of its own: the jaw width stands it where it stands.
-GRIPPER_FINGER_SIZE = (135.0, 7.0, 8.0)
-GRIPPER_FINGER_LOCATION = GRIPPER_JOINT + Coordinate(6.5, 0.0, 4.0)
-# From the finger it is fixed to, as a child's location always is.
-GRIPPER_PAD_SIZE = (37.0, 4.0, 17.0)
-GRIPPER_PAD_LOCATION = Coordinate(109.0, 1.5, -17.0)
-
-# How far the elbow drive's own column stands above the height the Z drive reports, in mm. The
-# arm hangs below that: the drive reports where the material it carries is, not where its column
-# begins. The column stands on link 1 with nothing between them, so this follows link 1's own top
-# rather than being stated again - the two cannot drift apart.
-ELBOW_DRIVE_COLUMN_ABOVE_REPORTED_Z = -LINK_1_JOINT.z + LINK_1_BODY_SIZE[2]
 
 
 def iswap_head(

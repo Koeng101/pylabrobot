@@ -1,0 +1,90 @@
+{
+  "name": "Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 21.200000000000003
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 5.49,
+                "y": 5.49,
+                "z": 20.1
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 358.6,
+                "materialZThickness": 1.6,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 0.17,
+                    "volume": 4.0
+                  },
+                  {
+                    "height": 0.8,
+                    "volume": 8.24
+                  },
+                  {
+                    "height": 2.28,
+                    "volume": 20.116
+                  },
+                  {
+                    "height": 6.57,
+                    "volume": 70.0
+                  },
+                  {
+                    "height": 9.17,
+                    "volume": 120.0
+                  },
+                  {
+                    "height": 13.18,
+                    "volume": 220.2
+                  },
+                  {
+                    "height": 18.5,
+                    "volume": 326.6
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 11.63,
+            "y": 9.95
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "semi-skirted"
+      }
+    }
+  },
+  "description": "Thermo Fisher Scientific/Fisher Scientific cat. no.: 4483354/15273005 (= with barcode)\n- alternative cat. no.: 16698853 (FS) (= **without** barcode).\n- See `./engineering_diagrams/` directory for more part numbers (different colours).\n- Material: Polycarbonate, Polypropylene\n- Sterilization compatibility: ?\n- Chemical resistance: ?\n- Thermal resistance: ?\n- Cleanliness: 'Certified DNA-, RNAse-, and PCR inhibitor-free with in-process sampling tests'.\n- ANSI/SLAS-format for compatibility with automated systems.\n- optimal pickup_distance_from_top=4 mm (i.e. pickup_distance_from_bottom=size_z-4).\n- total_volume = 300 ul.\n- working_volume = 200 ul (recommended by manufacturer)."
+}

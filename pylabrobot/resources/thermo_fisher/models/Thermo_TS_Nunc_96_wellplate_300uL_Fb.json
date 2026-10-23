@@ -1,0 +1,60 @@
+{
+  "name": "Thermo_TS_Nunc_96_wellplate_300uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "Thermo_TS_Nunc_96_wellplate_300uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.47,
+        "z": 14.86
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 6.45,
+                "y": 6.45,
+                "z": 12.1
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 395.3617778221824,
+                "materialZThickness": 2.2,
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 11.095,
+            "y": 8.025,
+            "z": 1.98
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Thermo Scientific\u2122 Nunc\u2122 96-Well Optical-Bottom Microplate, black, TC surface\n- Product Number: 165305\n- Max Volume: 400 uL\n- working volume: 50-300uL (in practice, although spec sheet says 50-200uL))\n- Manufacturer link: https://www.fishersci.com/shop/products/nunc-microwell-96-well-cell-culture-treated-flat-bottom-microplate/1256670#\n- Spec sheet info: https://documents.thermofisher.com/TFS-Assets/LCD/Schematics-%26-Diagrams/1653xx_0713.pdf"
+}

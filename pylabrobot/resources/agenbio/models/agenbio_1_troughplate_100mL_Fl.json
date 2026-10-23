@@ -1,0 +1,65 @@
+{
+  "name": "agenbio_1_troughplate_100mL_Fl",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "agenbio_1_troughplate_100mL_Fl",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 31.4
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 1,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 107.2,
+                "y": 70.9,
+                "z": 25.52
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 100000.0,
+                "materialZThickness": 1.0,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 24.52,
+                    "volume": 186363.7696
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.8,
+            "y": 7.6,
+            "z": 5.88
+          }
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "AGenBio single-well reagent reservoir, 100 mL, flat-bottom (ANSI/SLAS footprint).\n\ncat. no.: RES-100-F\nMaterial: polypropylene"
+}

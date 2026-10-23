@@ -1,0 +1,71 @@
+{
+  "transport": {
+    "human_readable_device_name": "Keyence Barcode Scanner",
+    "port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "bytesize": 7,
+    "parity": "E",
+    "stopbits": 1,
+    "write_timeout": 1,
+    "timeout": 1,
+    "rtscts": false
+  },
+  "steps": [
+    {
+      "call": "setup()  # motor off",
+      "error": "KeyenceBarcodeScannerError: Failed to initialize Keyence barcode scanner: Timeout waiting for motor to turn on.",
+      "sent": [
+        "setup",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r"
+      ],
+      "waits": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "setup()  # no reply",
+      "error": "KeyenceBarcodeScannerError: Failed to initialize Keyence barcode scanner: Timeout waiting for motor to turn on.",
+      "sent": [
+        "setup",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r",
+        "write RMOTOR\r"
+      ],
+      "waits": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ]
+    }
+  ]
+}

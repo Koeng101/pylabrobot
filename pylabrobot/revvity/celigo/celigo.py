@@ -36,7 +36,7 @@ from functools import cached_property, partial
 from typing import Any, Awaitable, Callable, Dict, List, Literal, Optional, Sequence, Tuple, cast
 
 from pylabrobot.io.ftdi import FTDI
-from pylabrobot.resources.plate import Plate
+from pylabrobot.resources.store import handles
 from pylabrobot.revvity.celigo.camera import CameraFrame, CeligoCamera, LumeneraCamera
 from pylabrobot.revvity.celigo.config import (
   AxisConfig,
@@ -346,7 +346,7 @@ class Celigo:
     self.reply_timeout = reply_timeout
     self.move_timeout = move_timeout
     self.config = config
-    self._plate: Optional[Plate] = None
+    self._plate: Optional[handles.Plate] = None
     self.camera: CeligoCamera = LumeneraCamera(sdk_library=lucam_sdk)
     self.galvo = Galvo(self)
     self.laser = Laser(self, enabled=allow_laser)
@@ -1020,13 +1020,13 @@ class Celigo:
 
   # -- drawer (stage eject / load) -------------------------------------------
 
-  def set_plate(self, plate: Plate) -> None:
+  def set_plate(self, plate: handles.Plate) -> None:
     """Set the plate used by drawer loading, well navigation, and acquisition."""
-    if not isinstance(plate, Plate):
+    if not isinstance(plate, handles.Plate):
       raise TypeError(f"plate must be a Plate, got {type(plate).__name__}")
     self._plate = plate
 
-  def _require_plate(self) -> Plate:
+  def _require_plate(self) -> handles.Plate:
     if self._plate is None:
       raise CeligoError("Set a plate with set_plate() before navigating to a well")
     return self._plate
@@ -1096,7 +1096,7 @@ class Celigo:
 
   async def close_drawer(self, well: str) -> None:
     """Move the stage under the optics using calibrated plate/well coordinates."""
-    sample_x_mm, sample_y_mm = well_to_sample_mm(self._require_plate(), well)
+    sample_x_mm, sample_y_mm = await well_to_sample_mm(self._require_plate(), well)
     await self.close_drawer_to_sample_mm(sample_x_mm, sample_y_mm)
 
   async def close_drawer_to_sample_mm(self, x_mm: float, y_mm: float) -> None:
@@ -1114,12 +1114,12 @@ class Celigo:
     await self.x_axis.move_to(targets.x_park_mm)
     await self.y_axis.move_to(targets.y_park_mm)
 
-  def well_position_mm(self, well: str) -> Tuple[float, float]:
+  async def well_position_mm(self, well: str) -> Tuple[float, float]:
     """Return the calibrated X/Y stage position for a named well."""
     coordinates = CoordinateSystems.from_config(
       self.config.calibration, self.config.hardware_defaults
     )
-    return well_to_stage_mm(self._require_plate(), well, coordinates)
+    return await well_to_stage_mm(self._require_plate(), well, coordinates)
 
   async def move_to_well(
     self,
@@ -1128,7 +1128,7 @@ class Celigo:
     safe_z_mm: Optional[float] = None,
   ) -> Tuple[float, float]:
     """Move the stage to a calibrated well center and return settled X/Y millimeters."""
-    x_mm, y_mm = self.well_position_mm(well)
+    x_mm, y_mm = await self.well_position_mm(well)
     if retract_z:
       if safe_z_mm is None:
         safe_z_mm = self.z_axis.config.min_position
@@ -1906,7 +1906,7 @@ class Celigo:
 
   async def scan_wells(
     self,
-    plate: Plate,
+    plate: handles.Plate,
     wells: Sequence[str],
     *,
     channel: str,
@@ -1917,7 +1917,7 @@ class Celigo:
     estimate_model: Optional[ScanEstimateModel] = None,
   ) -> ScanResult:
     """Scan named wells with one capture per planned position."""
-    spec = ScanSpec.wells(
+    spec = await ScanSpec.wells(
       plate,
       wells,
       block_shape=block_shape,

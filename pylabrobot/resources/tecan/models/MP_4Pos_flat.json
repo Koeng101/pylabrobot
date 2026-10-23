@@ -1,0 +1,113 @@
+{
+  "name": "MP_4Pos_flat",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TecanPlateCarrier",
+      "model": "MP_4Pos_flat",
+      "category": "tecan_plate_carrier",
+      "size": {
+        "x": 149.0,
+        "y": 380.0,
+        "z": 6.9
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 10.0,
+            "y": 3.5,
+            "z": 6.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 10.0,
+            "y": 99.5,
+            "z": 6.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 10.0,
+            "y": 195.5,
+            "z": 6.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 10.0,
+            "y": 291.5,
+            "z": 6.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Tecan part no. 30013061"
+}

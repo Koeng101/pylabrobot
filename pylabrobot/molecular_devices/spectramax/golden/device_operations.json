@@ -1,0 +1,134 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        "!\r"
+      ]
+    },
+    {
+      "call": "open()",
+      "result": null,
+      "sent": [
+        "!OPEN\r"
+      ]
+    },
+    {
+      "call": "close()",
+      "result": null,
+      "sent": [
+        "!CLOSE\r"
+      ]
+    },
+    {
+      "call": "request_status()",
+      "result": [
+        "0",
+        "IDLE",
+        "0",
+        "0"
+      ],
+      "sent": [
+        "!STATUS\r"
+      ]
+    },
+    {
+      "call": "read_error_log()",
+      "result": [
+        "201",
+        "0",
+        "0"
+      ],
+      "sent": [
+        "!ERROR\r"
+      ]
+    },
+    {
+      "call": "clear_error_log()",
+      "result": null,
+      "sent": [
+        "!CLEAR ERROR\r"
+      ]
+    },
+    {
+      "call": "request_firmware_version()",
+      "result": [
+        "M5",
+        "2.13"
+      ],
+      "sent": [
+        "!OPTION\r"
+      ]
+    },
+    {
+      "call": "start_shake()",
+      "result": null,
+      "sent": [
+        "!SHAKE NOW\r"
+      ]
+    },
+    {
+      "call": "stop_shake()",
+      "result": null,
+      "sent": [
+        "!SHAKE STOP\r"
+      ]
+    },
+    {
+      "call": "request_temperature()",
+      "result": [
+        36.8,
+        37.0
+      ],
+      "sent": [
+        "!TEMP\r"
+      ]
+    },
+    {
+      "call": "request_current_temperature()",
+      "result": 36.8,
+      "sent": [
+        "!TEMP\r"
+      ]
+    },
+    {
+      "call": "set_temperature(37)",
+      "result": null,
+      "sent": [
+        "!TEMP 37\r"
+      ]
+    },
+    {
+      "call": "set_temperature(50)",
+      "raised": "ValueError: Temperature must be between 0 and 45\u00b0C.",
+      "sent": []
+    },
+    {
+      "call": "deactivate()",
+      "result": null,
+      "sent": [
+        "!TEMP 0\r"
+      ]
+    },
+    {
+      "call": "wait_for_idle()",
+      "result": null,
+      "sent": [
+        "!STATUS\r"
+      ]
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": []
+    }
+  ],
+  "resources": [
+    {
+      "name": "m5_loading_tray",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    }
+  ]
+}

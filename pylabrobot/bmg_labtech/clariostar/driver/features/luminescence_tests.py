@@ -15,7 +15,7 @@ from pylabrobot.bmg_labtech.clariostar.driver.features.absorbance_tests import (
   STATUS_MEASURED,
   STATUS_MEASURING,
 )
-from pylabrobot.bmg_labtech.clariostar.driver.features.drawer_tests import make_plate_holder
+from pylabrobot.bmg_labtech.clariostar.driver.features.drawer_tests import hold, stored
 from pylabrobot.bmg_labtech.clariostar.driver.features.fluorescence_tests import (
   TEMPERATURE_37_DATA_REPLY,
 )
@@ -23,6 +23,7 @@ from pylabrobot.bmg_labtech.clariostar.driver.features.luminescence import Lumin
 from pylabrobot.bmg_labtech.clariostar.driver.features.measurement import (
   Measurement,
   MeasurementSettings,
+  read_plate,
 )
 from pylabrobot.bmg_labtech.clariostar.driver.framing import ftdi_extract_payload
 from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
@@ -30,7 +31,6 @@ from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
   FakeFTDI,
   make_driver,
 )
-from pylabrobot.resources import Plate, cor_96_wellplate_360uL_Fb
 
 # The ground truth: every well, 580-80 nm, gain 3500, focal height 8.5 mm, settling 0.0 s,
 # normalization 1.00 s, measurement interval 0.80 s.
@@ -67,27 +67,25 @@ LUMINESCENCE_GROUND_TRUTH = [
 ]
 
 
-def plate() -> Plate:
-  """The plate the tests read: a Corning 96 360 uL flat-bottom."""
-  return cor_96_wellplate_360uL_Fb("plate")
+# The plate the tests read: a Corning 96 360 uL flat-bottom.
+PLATE = "cor_96_wellplate_360uL_Fb"
 
 
-def make_luminescence(io: FakeFTDI, plate: Plate) -> Luminescence:
-  """A luminescence feature whose drawer holds `plate` in its plate holder."""
+async def make_luminescence(io: FakeFTDI, plate: str = PLATE) -> Luminescence:
+  """A luminescence feature whose drawer holds a `plate` (a model) in its plate holder."""
   driver = make_driver(io)
   driver.configuration = decoded()
-  driver.drawer.plate_holder = make_plate_holder()
-  driver.drawer.plate_holder.assign_child_resource(plate)
+  await hold(driver, plate)
   return Luminescence(driver)
 
 
-def with_fields(ground_truth: bytes, fields: Dict[int, int]) -> bytes:
-  """`ground_truth`'s payload on `plate()`: its plate geometry, and each u16 in `fields` replaced.
+async def with_fields(ground_truth: bytes, fields: Dict[int, int]) -> bytes:
+  """`ground_truth`'s payload on `PLATE`: its plate geometry, and each u16 in `fields` replaced.
 
   `fields` maps payload offsets to values.
   """
   payload = bytearray(ftdi_extract_payload(ground_truth))
-  payload[1:13] = Measurement._encode_plate_geometry(plate())[:12]
+  payload[1:13] = Measurement._encode_plate_geometry(await read_plate(await stored(PLATE)))[:12]
   for offset, value in fields.items():
     payload[offset : offset + 2] = value.to_bytes(2, "big")
   return bytes(payload)
@@ -112,7 +110,7 @@ NOMINAL_EDGES = {EMISSION_EDGES: 6200, EMISSION_EDGES + 2: 5400}
 async def read(io: FakeFTDI, **arguments):
   """A read of the whole plate answered by the ground truth's reply; the result."""
   io.replies = [STATUS_IDLE, RUN_REPLY, STATUS_MEASURING, STATUS_MEASURED, LUMINESCENCE_DATA_REPLY]
-  return await make_luminescence(io, plate()).measure(
+  return await (await make_luminescence(io)).measure(
     **{"focal_height": GROUND_TRUTH_FOCAL_HEIGHT, **arguments}
   )
 
@@ -123,7 +121,7 @@ class LuminescenceTests(unittest.IsolatedAsyncioTestCase):
     io = FakeFTDI()
     await read(io)
     self.assertEqual(
-      ftdi_extract_payload(io.written[1]), with_fields(LUMINESCENCE_RUN_FRAME, NOMINAL_EDGES)
+      ftdi_extract_payload(io.written[1]), await with_fields(LUMINESCENCE_RUN_FRAME, NOMINAL_EDGES)
     )
 
   async def test_each_field_is_sent_where_the_ground_truth_has_it(self):
@@ -148,7 +146,7 @@ class LuminescenceTests(unittest.IsolatedAsyncioTestCase):
       MEASUREMENT_INTERVAL: 20,
     }
     self.assertEqual(
-      ftdi_extract_payload(io.written[1]), with_fields(LUMINESCENCE_RUN_FRAME, fields)
+      ftdi_extract_payload(io.written[1]), await with_fields(LUMINESCENCE_RUN_FRAME, fields)
     )
 
   async def test_none_reads_a_quarter_up_the_well(self):
@@ -158,7 +156,7 @@ class LuminescenceTests(unittest.IsolatedAsyncioTestCase):
       io = FakeFTDI()
       io.replies = [STATUS_IDLE, RUN_REPLY, STATUS_MEASURING, STATUS_MEASURED]
       io.replies.append(LUMINESCENCE_DATA_REPLY)
-      feature = make_luminescence(io, cor_96_wellplate_360uL_Fb("plate"))
+      feature = await make_luminescence(io)
       await feature.measure(focal_height=focal_height)
       runs.append(io.written[1])
     self.assertEqual(runs[0], runs[1])
@@ -175,13 +173,13 @@ class LuminescenceTests(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(result.data, expected)
     self.assertIsNone(result.temperature)
     with self.assertRaises(ValueError):  # fluorescence's layout
-      make_luminescence(FakeFTDI(), plate())._decode_data_reply(
+      (await make_luminescence(FakeFTDI()))._decode_data_reply(
         ftdi_extract_payload(TEMPERATURE_37_DATA_REPLY), 96
       )
 
   async def test_what_luminescence_cannot_read_sends_nothing(self):
     io = FakeFTDI()
-    feature = make_luminescence(io, plate())
+    feature = await make_luminescence(io)
     refused: List[Dict[str, Any]] = [
       dict(measurement_settings=MeasurementSettings(well_scan="orbital")),
       dict(measurement_settings=MeasurementSettings(pause_before_reading=5)),
@@ -195,7 +193,7 @@ class LuminescenceTests(unittest.IsolatedAsyncioTestCase):
   async def test_without_a_monochromator_nothing_is_sent(self):
     """Not a reader's configuration: linear variable filters reported absent."""
     io = FakeFTDI()
-    feature = make_luminescence(io, plate())
+    feature = await make_luminescence(io)
     feature._driver.configuration.linear_variable_filters = False
     with self.assertRaisesRegex(ValueError, "no monochromator"):
       await feature.measure(focal_height=GROUND_TRUTH_FOCAL_HEIGHT)

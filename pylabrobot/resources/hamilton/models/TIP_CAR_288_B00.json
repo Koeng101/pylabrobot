@@ -1,0 +1,87 @@
+{
+  "name": "TIP_CAR_288_B00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TipCarrier",
+      "model": "TIP_CAR_288_B00",
+      "category": "tip_carrier",
+      "size": {
+        "x": 112.5,
+        "y": 497.0,
+        "z": 130.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+          "typeName": "EmbeddedTipRackHolder",
+          "category": "embedded_tip_rack_holder",
+          "size": {
+            "x": 74.0,
+            "y": 114.5
+          },
+          "location": {
+            "x": 21.4,
+            "y": 40.2,
+            "z": 115.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+          "typeName": "EmbeddedTipRackHolder",
+          "category": "embedded_tip_rack_holder",
+          "size": {
+            "x": 74.0,
+            "y": 114.5
+          },
+          "location": {
+            "x": 21.4,
+            "y": 186.2,
+            "z": 115.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+          "typeName": "EmbeddedTipRackHolder",
+          "category": "embedded_tip_rack_holder",
+          "size": {
+            "x": 74.0,
+            "y": 114.5
+          },
+          "location": {
+            "x": 21.4,
+            "y": 332.2,
+            "z": 115.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Carrier for 3 Racks with 96 Tips portrait [revision B00]"
+}

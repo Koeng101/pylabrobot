@@ -10,8 +10,9 @@ from pylabrobot.hamilton.prep.driver.features.calibration import Calibration
 from pylabrobot.hamilton.prep.driver.features.pipettes import PipetteChannel, Pipettes
 from pylabrobot.hamilton.prep.driver.features.x_arm import XArm
 from pylabrobot.hamilton.transport.tcp.packets import Address
-from pylabrobot.resources import Container
-from pylabrobot.resources.hamilton import PrepDeck
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store import build
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
 class TestRoundedReadbacks(unittest.IsolatedAsyncioTestCase):
@@ -19,7 +20,7 @@ class TestRoundedReadbacks(unittest.IsolatedAsyncioTestCase):
 
   async def asyncSetUp(self) -> None:
     """Construct an offline driver; every command is mocked."""
-    self.driver = PrepSimulationDriver(deck=PrepDeck())
+    self.driver = PrepSimulationDriver()
     await self.driver.setup()
     self.send = AsyncMock()
     self.driver.send_command = self.send  # type: ignore[method-assign]
@@ -98,13 +99,25 @@ class TestRoundedReadbacks(unittest.IsolatedAsyncioTestCase):
     self.pipettes.request_held_tip_length = AsyncMock(return_value=0.2)  # type: ignore[method-assign]
     self.pipettes.sense_tip_presence = AsyncMock(return_value=[True, False])  # type: ignore[method-assign]
     self.assertEqual(await self.pipettes.request_stop_disc_z_position(0), 0.3)
-    self.pipettes.probe_liquid_heights = AsyncMock(return_value=[1.23])  # type: ignore[method-assign]
-    container = Container(
+    self.pipettes._probe_liquid_heights = AsyncMock(return_value=[1.23])  # type: ignore[method-assign]
+    # Volume is 1.234 uL per mm of height.
+    container = await self.driver.store.create(
+      build.resource(
+        "container",
+        Coordinate(1, 1, 10),
+        kind=pb.RESOURCE_KIND_CONTAINER,
+        container=pb.ContainerSpec(
+          max_volume=12.34,
+          material_z_thickness=0.0,
+          height_volume_data=[
+            pb.HeightVolumePoint(height=0.0, volume=0.0),
+            pb.HeightVolumePoint(height=10.0, volume=12.34),
+          ],
+        ),
+        state=pb.ResourceState(volume=pb.VolumeState(tracking_enabled=True)),
+      ),
       name="container",
-      size_x=1,
-      size_y=1,
-      size_z=10,
-      compute_volume_from_height=lambda height: height * 1.234,
-      compute_height_from_volume=lambda volume: volume / 1.234,
+      parent=self.driver.deck,
+      location=Coordinate(10, 10, 0),
     )
     self.assertEqual(await self.pipettes.probe_liquid_volumes([container]), [1.52])

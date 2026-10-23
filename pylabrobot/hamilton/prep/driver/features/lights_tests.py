@@ -10,7 +10,6 @@ import pytest
 from pylabrobot.hamilton.prep import PrepDriver, PrepSimulationDriver
 from pylabrobot.hamilton.prep.driver import prep_commands as PrepCmd
 from pylabrobot.hamilton.prep.driver.features.lights import as_wrgb, mix
-from pylabrobot.resources.hamilton import PrepDeck
 
 
 def _record_send(prep: PrepDriver) -> List[Any]:
@@ -32,7 +31,7 @@ def _colors(captured: List[Any]) -> List[Any]:
 
 
 async def _prep() -> PrepSimulationDriver:
-  p = PrepSimulationDriver(deck=PrepDeck())
+  p = PrepSimulationDriver()
   await p.setup()
   return p
 
@@ -260,7 +259,7 @@ def test_setup_says_the_device_is_working_and_then_that_it_is_ready():
   """Turquoise for as long as setup takes, then green, then the deck as setup found it: dark."""
 
   async def run():
-    p = PrepSimulationDriver(deck=PrepDeck())
+    p = PrepSimulationDriver()
     assert p.lights is not None
     assert p.lights.default_ready_seconds == 0.0  # nobody is looking at a simulated deck
     p.lights.default_ready_seconds = 0.2

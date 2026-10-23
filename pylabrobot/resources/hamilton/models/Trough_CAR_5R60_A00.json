@@ -1,0 +1,109 @@
+{
+  "name": "Trough_CAR_5R60_A00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "TroughCarrier",
+      "model": "Trough_CAR_5R60_A00",
+      "category": "trough_carrier",
+      "size": {
+        "x": 22.5,
+        "y": 497.0,
+        "z": 104.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 19.0,
+            "y": 90.0
+          },
+          "location": {
+            "x": 1.5,
+            "y": 7.0,
+            "z": 63.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 19.0,
+            "y": 90.0
+          },
+          "location": {
+            "x": 1.5,
+            "y": 103.0,
+            "z": 63.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 19.0,
+            "y": 90.0
+          },
+          "location": {
+            "x": 1.5,
+            "y": 199.0,
+            "z": 63.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "typeName": "ResourceHolder",
+          "category": "resource_holder",
+          "size": {
+            "x": 19.0,
+            "y": 90.0
+          },
+          "location": {
+            "x": 1.5,
+            "y": 302.0,
+            "z": 63.5
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Hamilton cat. no.: 53646-01\nHamilton name: 'RGT_CAR5X60'.\nTrough carrier for 5x 60ml troughs. 1 tracks(T) wide.\nCarries hamilton_1_trough_60mL_Vb"
+}

@@ -4,12 +4,13 @@ import logging
 import os
 import random
 from datetime import datetime
-from typing import Callable, Dict, List, Literal, Optional, Sequence, TypeVar, Union
+from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, TypeVar, Union
 
 from pylabrobot.io.ftdi import FTDI
 from pylabrobot.io.usb import USB
 from pylabrobot.lib.absorbance.results import AbsorbanceResult, AbsorbanceSpectrumResult
-from pylabrobot.resources import Plate, Well
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import handles
 
 from .configuration import configuration_from_json, read_configuration
 from .features.absorbance import (
@@ -22,7 +23,9 @@ from .features.absorbance import (
 from .features.drawer import Drawer
 from .features.measurement import (
   MeasurementSettings,
+  PlateFacts,
   ShakeSettings,
+  WellFacts,
   _get_measured_identifiers,
   _get_readings_by_well,
 )
@@ -60,31 +63,31 @@ class CLARIOstarSimulationDrawer(Drawer):
     super().__init__(driver)
     self._last_move_open = False
 
-  def _get_open(self) -> bool:
-    """Whether the drawer is out, read from the resource model."""
-    if self.plate_holder is None or self.location_in is None or self.location_out is None:
-      return self._last_move_open
-    return self.plate_holder.location == self.location_out
-
-  def _get_plate_present(self) -> bool:
-    """Whether a plate is in the reader: the drawer is in and a plate is in the plate holder."""
-    return (
-      self.plate_holder is not None
-      and self.plate_holder.resource is not None
-      and (not self._get_open())
-    )
+  async def _get_state(self) -> Tuple[bool, bool]:
+    """Whether the drawer is out, and whether a plate is in the reader (the drawer in and a plate
+    in the plate holder), read from the resource store in one call."""
+    holder = self.plate_holder
+    if holder is None:
+      return self._last_move_open, False
+    node = await holder.node()
+    if self.location_in is None or self.location_out is None:
+      drawer_open = self._last_move_open
+    else:
+      location = node.attributes.location
+      drawer_open = Coordinate(location.x, location.y, location.z) == self.location_out
+    return drawer_open, bool(node.child_ids) and not drawer_open
 
   async def _unchecked_fw_open(self) -> None:
     """Put the plate holder where the drawer is out."""
     logger.debug("%s write: drawer open", SIMULATED_LINK)
     self._last_move_open = True
-    self._update_location(True)
+    await self._update_location(True)
 
   async def _unchecked_fw_close(self) -> None:
     """Put the plate holder where the drawer is in."""
     logger.debug("%s write: drawer close", SIMULATED_LINK)
     self._last_move_open = False
-    self._update_location(False)
+    await self._update_location(False)
 
 
 class CLARIOstarSimulationTemperatureController(TemperatureController):
@@ -121,7 +124,7 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
 
   @staticmethod
   def _get_measured_values(
-    plate: Plate, wells: List[Well], values: Dict[str, float], what: str
+    plate: PlateFacts, wells: List[WellFacts], values: Dict[str, float], what: str
   ) -> Dict[str, float]:
     """The values of the measured wells in `values`, keyed by well identifier, row by row.
 
@@ -137,7 +140,7 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
   async def measure(
     self,
     *,
-    wells: Optional[List[Well]] = None,
+    wells: Optional[Sequence[handles.Resource]] = None,
     wavelengths: Sequence[int],
     measurement_settings: Optional[MeasurementSettings] = None,
     shake_settings: Optional[ShakeSettings] = None,
@@ -166,14 +169,14 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
         calibration.
     """
     measurement = MeasurementSettings() if measurement_settings is None else measurement_settings
-    plate, wells, _ = self._get_run_parameters(
+    plate, targets, _ = await self._get_run_parameters(
       wavelengths, report, measurement, shake_settings, wells, timeout
     )
     wavelengths = list(wavelengths)
     logger.info(
       "absorbance: %s nm, %d of %d wells of %s, %s scan, %s",
       ", ".join(str(wavelength) for wavelength in wavelengths),
-      len(wells),
+      len(targets),
       plate.num_items,
       plate.name,
       measurement.well_scan,
@@ -185,7 +188,7 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
     if simulated_data is None:
       if report == "raw":
         raise NotImplementedError("raw counts are not simulated; give simulated_data")
-      measured = len({id(well) for well in wells})
+      measured = len({well.id for well in targets})
       logger.debug("%s read: simulation: random optical densities", SIMULATED_LINK)
       for wavelength in wavelengths:
         densities = [
@@ -194,7 +197,7 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
         ]
         results.append(
           AbsorbanceResult(
-            data=_get_readings_by_well(plate, wells, densities),
+            data=_get_readings_by_well(plate, targets, densities),
             wavelength=wavelength,
             temperature=temperature,
             start_timestamp=timestamp,
@@ -209,12 +212,12 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
     logger.debug("%s read: simulation: simulated_data", SIMULATED_LINK)
     for result in simulated_data:
       what = f"simulated_data at {result.wavelength} nm"
-      data = self._get_measured_values(plate, wells, result.data, what)
+      data = self._get_measured_values(plate, targets, result.data, what)
       if isinstance(result, CLARIOstarAbsorbanceResult):
         if result.references is None:
           raise ValueError(f"{what} is raw but holds no references")
         references = self._get_measured_values(
-          plate, wells, result.references, what + " references"
+          plate, targets, result.references, what + " references"
         )
         results.append(
           CLARIOstarAbsorbanceResult(
@@ -243,7 +246,7 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
   async def measure_spectrum(
     self,
     *,
-    wells: Optional[List[Well]] = None,
+    wells: Optional[Sequence[handles.Resource]] = None,
     start_wavelength: int,
     end_wavelength: int,
     step_size: int,
@@ -271,7 +274,7 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
         calibration.
     """
     measurement = MeasurementSettings() if measurement_settings is None else measurement_settings
-    plate, wells, _ = self._get_spectrum_run_parameters(
+    plate, targets, _ = await self._get_spectrum_run_parameters(
       start_wavelength,
       end_wavelength,
       step_size,
@@ -282,7 +285,7 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
       timeout,
     )
     wavelengths = _get_spectrum_wavelengths(start_wavelength, end_wavelength, step_size)
-    identifiers = _get_measured_identifiers(plate, wells)
+    identifiers = _get_measured_identifiers(plate, targets)
     logger.info(
       "absorbance spectrum: %d to %d nm in %d nm steps, %d of %d wells of %s, %s scan, %s",
       start_wavelength,
@@ -333,7 +336,7 @@ class CLARIOstarSimulationAbsorbance(Absorbance):
       if simulated_data.references is None or simulated_data.calibration is None:
         raise ValueError("simulated_data is raw but holds no references or calibration")
       references = self._get_measured_values(
-        plate, wells, simulated_data.references, "simulated_data references"
+        plate, targets, simulated_data.references, "simulated_data references"
       )
       return CLARIOstarAbsorbanceSpectrumResult(
         data=data,
@@ -391,10 +394,11 @@ class CLARIOstarSimulationDriver(CLARIOstarDriver):
       if self.temperature_controller is not None
       else None
     )
+    drawer_open, plate_detected = await self._simulation_drawer._get_state()
     return CLARIOstarStatus(
       busy=False,
-      plate_detected=self._simulation_drawer._get_plate_present(),
-      drawer_open=self._simulation_drawer._get_open(),
+      plate_detected=plate_detected,
+      drawer_open=drawer_open,
       motors_enabled=self.initialized,
       temperature_bottom=temperature,
       temperature_top=temperature,

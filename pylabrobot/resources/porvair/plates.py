@@ -1,9 +1,5 @@
 from typing import Optional
 
-from pylabrobot.resources.height_volume_functions import (
-  calculate_liquid_height_in_container_2segments_square_vbottom,
-  calculate_liquid_volume_container_2segments_square_vbottom,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -13,31 +9,6 @@ from pylabrobot.resources.well import (
 )
 
 # # # # # # # # # # Porvair_6_reservoir_47ml_Vb # # # # # # # # # #
-
-
-def _compute_volume_from_height_Porvair_6_reservoir_47ml_Vb(h: float):
-  if h > 42.5:
-    raise ValueError(f"Height {h} is too large for Porvair_6_reservoir_47ml_Vb")
-  return calculate_liquid_volume_container_2segments_square_vbottom(
-    x=17, y=70.8, h_pyramid=5, h_cube=37.5, liquid_height=h
-  )
-
-
-def _compute_height_from_volume_Porvair_6_reservoir_47ml_Vb(
-  liquid_volume: float,
-):
-  if liquid_volume > 49_350.0:  # 5% tolerance
-    raise ValueError(f"Volume {liquid_volume} is too large for Porvair_6_reservoir_47ml_Vb")
-  return round(
-    calculate_liquid_height_in_container_2segments_square_vbottom(
-      x=17,
-      y=70.8,
-      h_pyramid=5,
-      h_cube=37.5,
-      liquid_volume=liquid_volume,
-    ),
-    3,
-  )
 
 
 def Porvair_6_reservoir_47ml_Vb_Lid(name: str) -> Lid:
@@ -54,6 +25,143 @@ def Porvair_6_reservoir_47ml_Vb_Lid(name: str) -> Lid:
 
 
 #: Porvair_6_reservoir_47ml_Vb
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_Porvair_6_reservoir_47ml_Vb_height_volume_data = {
+  0.0: 0.0,
+  0.02: 0.000128,
+  0.06: 0.003466,
+  0.12: 0.027731,
+  0.2: 0.128384,
+  0.3: 0.433296,
+  0.4: 1.027072,
+  0.49: 1.888031,
+  0.57: 2.971977,
+  0.65: 4.407182,
+  0.72: 5.989884,
+  0.79: 7.91229,
+  0.86: 10.207427,
+  0.92: 12.496385,
+  0.98: 15.104249,
+  1.04: 18.051817,
+  1.1: 21.359888,
+  1.16: 25.049259,
+  1.21: 28.430011,
+  1.26: 32.102034,
+  1.31: 36.077364,
+  1.36: 40.368038,
+  1.41: 44.986091,
+  1.46: 49.943559,
+  1.51: 55.252478,
+  1.56: 60.924884,
+  1.61: 66.972813,
+  1.66: 73.408302,
+  1.71: 80.243386,
+  1.75: 86.00725,
+  1.79: 92.04072,
+  1.83: 98.349959,
+  1.87: 104.94113,
+  1.91: 111.820394,
+  1.95: 118.993914,
+  1.99: 126.467853,
+  2.03: 134.248372,
+  2.07: 142.341636,
+  2.11: 150.753805,
+  2.15: 159.491042,
+  2.19: 168.55951,
+  2.23: 177.965371,
+  2.27: 187.714788,
+  2.31: 197.813923,
+  2.35: 208.268938,
+  2.39: 219.085996,
+  2.43: 230.27126,
+  2.47: 241.830891,
+  2.51: 253.771052,
+  2.55: 266.097906,
+  2.59: 278.817615,
+  2.62: 288.618915,
+  2.65: 298.647262,
+  2.68: 308.905256,
+  2.71: 319.395497,
+  2.74: 330.120584,
+  2.77: 341.083117,
+  2.8: 352.285696,
+  2.83: 363.730921,
+  2.86: 375.421391,
+  2.89: 387.359707,
+  2.92: 399.548468,
+  2.95: 411.990274,
+  2.98: 424.687724,
+  3.01: 437.643419,
+  3.04: 450.859958,
+  3.07: 464.339941,
+  3.1: 478.085968,
+  3.13: 492.100638,
+  3.16: 506.386552,
+  3.19: 520.946308,
+  3.22: 535.782508,
+  3.25: 550.89775,
+  3.28: 566.294634,
+  3.31: 581.975761,
+  3.34: 597.94373,
+  3.37: 614.20114,
+  3.4: 630.750592,
+  3.43: 647.594685,
+  3.46: 664.736019,
+  3.49: 682.177194,
+  3.52: 699.92081,
+  3.55: 717.969466,
+  3.58: 736.325762,
+  3.61: 754.992298,
+  3.64: 773.971674,
+  3.67: 793.266489,
+  3.7: 812.879344,
+  3.73: 832.812838,
+  3.76: 853.06957,
+  3.79: 873.652141,
+  3.82: 894.56315,
+  3.85: 915.805198,
+  3.88: 937.380883,
+  3.91: 959.292807,
+  3.94: 981.543567,
+  3.97: 1004.135765,
+  4.0: 1027.072,
+  4.03: 1050.354872,
+  4.06: 1073.98698,
+  4.09: 1097.970925,
+  4.12: 1122.309305,
+  4.15: 1147.004722,
+  4.18: 1172.059774,
+  4.21: 1197.477062,
+  4.24: 1223.259185,
+  4.27: 1249.408743,
+  4.3: 1275.928336,
+  4.33: 1302.820563,
+  4.36: 1330.088025,
+  4.39: 1357.733321,
+  4.42: 1385.759051,
+  4.45: 1414.167814,
+  4.48: 1442.962211,
+  4.51: 1472.144841,
+  4.54: 1501.718304,
+  4.57: 1531.6852,
+  4.6: 1562.048128,
+  4.63: 1592.809689,
+  4.66: 1623.972481,
+  4.69: 1655.539106,
+  4.72: 1687.512162,
+  4.75: 1719.89425,
+  4.78: 1752.687969,
+  4.81: 1785.895919,
+  4.84: 1819.520699,
+  4.87: 1853.564911,
+  4.9: 1888.031152,
+  4.93: 1922.922024,
+  4.96: 1958.240125,
+  4.99: 1993.988056,
+  41.1: 45455.96,
+}
+
+
 def Porvair_6_reservoir_47ml_Vb(name: str, with_lid: bool = False) -> Plate:
   """Porvair cat. no.: 390015.
   - Material: Polypropylene
@@ -88,11 +196,114 @@ def Porvair_6_reservoir_47ml_Vb(name: str, with_lid: bool = False) -> Plate:
       material_z_thickness=1.4,
       bottom_type=WellBottomType.V,
       cross_section_type=CrossSectionType.RECTANGLE,
-      compute_volume_from_height=_compute_volume_from_height_Porvair_6_reservoir_47ml_Vb,
-      compute_height_from_volume=_compute_height_from_volume_Porvair_6_reservoir_47ml_Vb,
+      height_volume_data=_Porvair_6_reservoir_47ml_Vb_height_volume_data,
+      max_volume=47141.0,
       name_prefix=name,
     ),
   )
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_Porvair_24_wellplate_Vb_height_volume_data = {
+  0.0: 0.0,
+  0.02: 6e-06,
+  0.06: 0.000149,
+  0.12: 0.001188,
+  0.2: 0.005501,
+  0.3: 0.018567,
+  0.42: 0.050949,
+  0.56: 0.120767,
+  0.72: 0.256674,
+  0.9: 0.501317,
+  1.1: 0.915299,
+  1.32: 1.581637,
+  1.56: 2.610711,
+  1.8: 4.010536,
+  2.02: 5.66812,
+  2.23: 7.626048,
+  2.43: 9.867423,
+  2.62: 12.367696,
+  2.8: 15.0959,
+  2.98: 18.198421,
+  3.15: 21.493967,
+  3.32: 25.16513,
+  3.48: 28.98162,
+  3.64: 33.165693,
+  3.8: 37.734249,
+  3.95: 42.381489,
+  4.1: 47.395433,
+  4.25: 52.790007,
+  4.4: 58.579135,
+  4.54: 64.350583,
+  4.68: 70.489184,
+  4.82: 77.006262,
+  4.96: 83.913137,
+  5.09: 90.685588,
+  5.22: 97.812967,
+  5.35: 105.30434,
+  5.48: 113.168771,
+  5.61: 121.415326,
+  5.74: 130.053068,
+  5.86: 138.381417,
+  5.98: 147.05794,
+  6.1: 156.089766,
+  6.22: 165.484027,
+  6.34: 175.24785,
+  6.46: 185.388367,
+  6.58: 195.912708,
+  6.7: 206.828001,
+  6.81: 217.183217,
+  6.92: 227.878425,
+  7.03: 238.919117,
+  7.14: 250.310784,
+  7.25: 262.058919,
+  7.36: 274.169013,
+  7.47: 286.646558,
+  7.58: 299.497046,
+  7.69: 312.725968,
+  7.8: 326.338816,
+  7.91: 340.341083,
+  8.02: 354.738259,
+  8.13: 369.535838,
+  8.23: 383.340259,
+  8.33: 397.484255,
+  8.43: 411.971952,
+  8.53: 426.807477,
+  8.63: 441.994956,
+  8.73: 457.538514,
+  8.83: 473.442277,
+  8.93: 489.710372,
+  9.03: 506.346925,
+  9.13: 523.356061,
+  9.23: 540.741908,
+  9.33: 558.50859,
+  9.43: 576.660234,
+  9.53: 595.200967,
+  9.63: 614.134913,
+  9.73: 633.466199,
+  9.82: 651.207493,
+  9.91: 669.276983,
+  10.0: 687.677676,
+  10.09: 706.41258,
+  10.18: 725.484703,
+  10.27: 744.897054,
+  10.36: 764.65264,
+  10.45: 784.754468,
+  10.54: 805.205548,
+  10.63: 826.008886,
+  10.72: 847.167491,
+  10.81: 868.684371,
+  10.9: 890.562533,
+  10.99: 912.804985,
+  11.08: 935.414736,
+  11.17: 958.394792,
+  11.26: 981.748163,
+  11.35: 1005.477856,
+  11.44: 1029.586879,
+  11.53: 1054.078239,
+  11.62: 1078.954946,
+  12.3: 1269.333333,
+}
 
 
 def Porvair_24_wellplate_Vb(name: str, lid: Optional[Lid] = None) -> Plate:
@@ -101,10 +312,6 @@ def Porvair_24_wellplate_Vb(name: str, lid: Optional[Lid] = None) -> Plate:
   - Material: Polypropylene
   - Tissue culture treated: No
   """
-  WELL_SIZE_X = 8.0
-  WELL_SIZE_Y = 35.0
-  WELL_HEIGHT_OF_PYRAMID = 11.65
-  WELL_HEIGHT_OF_CUBE = 1.65
 
   well_kwargs = {
     "size_x": 8.0,
@@ -112,24 +319,7 @@ def Porvair_24_wellplate_Vb(name: str, lid: Optional[Lid] = None) -> Plate:
     "size_z": 13.30,
     # reality: multifaceted pyramid, v bottom pyramid is a good approximation
     "bottom_type": WellBottomType.V,
-    "compute_volume_from_height": lambda liquid_height: (
-      calculate_liquid_volume_container_2segments_square_vbottom(
-        WELL_SIZE_X,
-        WELL_SIZE_Y,
-        WELL_HEIGHT_OF_PYRAMID,
-        WELL_HEIGHT_OF_CUBE,
-        liquid_height,
-      )
-    ),
-    "compute_height_from_volume": lambda liquid_volume: (
-      calculate_liquid_height_in_container_2segments_square_vbottom(
-        WELL_SIZE_X,
-        WELL_SIZE_Y,
-        WELL_HEIGHT_OF_PYRAMID,
-        WELL_HEIGHT_OF_CUBE,
-        liquid_volume,
-      )
-    ),
+    "height_volume_data": _Porvair_24_wellplate_Vb_height_volume_data,
     "material_z_thickness": 1.0,  # measured
     "cross_section_type": CrossSectionType.RECTANGLE,
     "max_volume": 3500,  # according to porvair spec

@@ -1,0 +1,56 @@
+{
+  "name": "HalfDeepWell_384_Well",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "TecanPlate",
+      "model": "HalfDeepWell_384_Well",
+      "category": "tecan_plate",
+      "size": {
+        "x": 127.7,
+        "y": 85.5,
+        "z": 18.8
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 24,
+        "numItemsY": 16,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 4.5,
+                "y": 4.5,
+                "z": 18.8
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 299.00108080540855,
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.85,
+            "y": 6.75
+          },
+          "itemDx": 4.5,
+          "itemDy": 4.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  }
+}

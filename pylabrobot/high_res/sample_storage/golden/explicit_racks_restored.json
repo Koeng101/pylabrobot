@@ -1,0 +1,1595 @@
+{
+  "steps": [
+    {
+      "call": "setup() of AmbiStore.deserialize(serialize())",
+      "sent": [
+        "<setup>",
+        "version",
+        "neststatus"
+      ],
+      "events": [],
+      "result": null,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "fetch_plate_to_loading_tray('plate', 1)",
+      "sent": [
+        "neststatus",
+        "pick 7 1 2"
+      ],
+      "events": [
+        {
+          "name": "incubator.fetch_plate.started",
+          "context": {
+            "operation": "incubator.fetch_plate",
+            "operation_id": "op1",
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "spot_7",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "out_of_order",
+                    "type": "PlateCarrier"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "spot_7",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "out_of_order",
+                  "type": "PlateCarrier"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "spot_7",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "out_of_order",
+                    "type": "PlateCarrier"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "spot_7",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "out_of_order",
+                  "type": "PlateCarrier"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "context": {
+            "operation": "incubator.fetch_plate",
+            "operation_id": "op1",
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "spot_7",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "out_of_order",
+                    "type": "PlateCarrier"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "spot_7",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "out_of_order",
+                  "type": "PlateCarrier"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          },
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "spot_7",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "out_of_order",
+                  "type": "PlateCarrier"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {
+            "operation": "incubator.fetch_plate",
+            "operation_id": "op1",
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "spot_7",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "out_of_order",
+                    "type": "PlateCarrier"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "spot_7",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "out_of_order",
+                  "type": "PlateCarrier"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          },
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_nest_2",
+                  "type": "PlateHolder"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "incubator.fetch_plate.completed",
+          "context": {
+            "operation": "incubator.fetch_plate",
+            "operation_id": "op1",
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "spot_7",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "out_of_order",
+                    "type": "PlateCarrier"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "spot_7",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "out_of_order",
+                  "type": "PlateCarrier"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "spot_7",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "out_of_order",
+                    "type": "PlateCarrier"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "spot_7",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "out_of_order",
+                  "type": "PlateCarrier"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": "plate",
+      "unresolved_transfer": null,
+      "resources": [
+        {
+          "name": "store",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "store_nest_1",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER"
+        },
+        {
+          "name": "store_nest_2",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER"
+        },
+        {
+          "name": "plate",
+          "parent": "store_nest_2",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_A1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            10.0,
+            2.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "stacker",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "stacker_slot_1",
+          "parent": "stacker",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            0.0
+          ]
+        },
+        {
+          "name": "stacker_slot_2",
+          "parent": "stacker",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            22.867
+          ]
+        },
+        {
+          "name": "out_of_order",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "spot_7",
+          "parent": "out_of_order",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            140.0
+          ]
+        },
+        {
+          "name": "spot_2",
+          "parent": "out_of_order",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            40.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "store_plate(plate, stacker_slot_2, 1)",
+      "sent": [
+        "neststatus",
+        "place 1 2 2"
+      ],
+      "events": [
+        {
+          "name": "incubator.take_in_plate.started",
+          "context": {
+            "operation": "incubator.take_in_plate",
+            "operation_id": "op2",
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "store_nest_2",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "stacker_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "stacker",
+                  "type": "PlateCarrier",
+                  "model": "high_res_stacker"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "store_nest_2",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "stacker_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "stacker",
+                  "type": "PlateCarrier",
+                  "model": "high_res_stacker"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "context": {
+            "operation": "incubator.take_in_plate",
+            "operation_id": "op2",
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "store_nest_2",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "stacker_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "stacker",
+                  "type": "PlateCarrier",
+                  "model": "high_res_stacker"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          },
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {
+            "operation": "incubator.take_in_plate",
+            "operation_id": "op2",
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "store_nest_2",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "stacker_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "stacker",
+                  "type": "PlateCarrier",
+                  "model": "high_res_stacker"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          },
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "stacker_slot_2",
+                  "type": "PlateHolder"
+                },
+                {
+                  "name": "stacker",
+                  "type": "PlateCarrier",
+                  "model": "high_res_stacker"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "stacker_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "stacker",
+                  "type": "PlateCarrier",
+                  "model": "high_res_stacker"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "incubator.take_in_plate.completed",
+          "context": {
+            "operation": "incubator.take_in_plate",
+            "operation_id": "op2",
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "store_nest_2",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "stacker_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "stacker",
+                  "type": "PlateCarrier",
+                  "model": "high_res_stacker"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "store_nest_2",
+                    "type": "PlateHolder"
+                  },
+                  {
+                    "name": "store",
+                    "type": "AmbiStore",
+                    "model": "AmbiStore"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "destination": {
+              "name": "stacker_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "stacker",
+                  "type": "PlateCarrier",
+                  "model": "high_res_stacker"
+                },
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null,
+      "resources": [
+        {
+          "name": "store",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "store_nest_1",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER"
+        },
+        {
+          "name": "store_nest_2",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER"
+        },
+        {
+          "name": "stacker",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "stacker_slot_1",
+          "parent": "stacker",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            0.0
+          ]
+        },
+        {
+          "name": "stacker_slot_2",
+          "parent": "stacker",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            22.867
+          ]
+        },
+        {
+          "name": "plate",
+          "parent": "stacker_slot_2",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate_A1",
+          "parent": "plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            10.0,
+            2.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "out_of_order",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "spot_7",
+          "parent": "out_of_order",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            140.0
+          ]
+        },
+        {
+          "name": "spot_2",
+          "parent": "out_of_order",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            0.0,
+            0.0,
+            40.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "serialize()",
+      "sent": [],
+      "events": [],
+      "result": {
+        "name": "store",
+        "type": "AmbiStore",
+        "size_x": 0,
+        "size_y": 0,
+        "size_z": 0,
+        "category": "plate_store",
+        "model": "AmbiStore",
+        "host": "10.253.253.253",
+        "port": 1000,
+        "read_timeout": 30.0,
+        "motion_timeout": 240.0,
+        "racks": {
+          "1": {
+            "name": "stacker",
+            "type": "PlateCarrier",
+            "size_x": 112.3,
+            "size_y": 146.6,
+            "size_z": 45.734,
+            "category": "plate_carrier",
+            "model": "high_res_stacker",
+            "metadata": {
+              "zero_offset": 0,
+              "slot_height": 22.867,
+              "slot_count": 2
+            },
+            "children": [
+              {
+                "name": "stacker_slot_1",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 22.867,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "stacker",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              },
+              {
+                "name": "stacker_slot_2",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 22.867,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 22.867,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "children": [
+                  {
+                    "name": "plate",
+                    "type": "Plate",
+                    "size_x": 127.76,
+                    "size_y": 85.48,
+                    "size_z": 14,
+                    "location": {
+                      "x": 0,
+                      "y": 0,
+                      "z": 0,
+                      "type": "Coordinate"
+                    },
+                    "category": "plate",
+                    "children": [
+                      {
+                        "name": "plate_A1",
+                        "type": "Well",
+                        "size_x": 8,
+                        "size_y": 8,
+                        "size_z": 10,
+                        "location": {
+                          "x": 10,
+                          "y": 10,
+                          "z": 2,
+                          "type": "Coordinate"
+                        },
+                        "category": "well",
+                        "parent_name": "plate",
+                        "max_volume": 502.654825,
+                        "material_z_thickness": null,
+                        "compute_volume_from_height": null,
+                        "compute_height_from_volume": null,
+                        "height_volume_data": null,
+                        "no_go_zones": [],
+                        "bottom_type": "unknown",
+                        "cross_section_type": "circle"
+                      }
+                    ],
+                    "parent_name": "stacker_slot_2",
+                    "ordering": {
+                      "A1": "plate_A1"
+                    }
+                  }
+                ],
+                "parent_name": "stacker",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              }
+            ],
+            "parent_name": "store"
+          },
+          "7": {
+            "name": "out_of_order",
+            "type": "PlateCarrier",
+            "size_x": 130,
+            "size_y": 90,
+            "size_z": 100,
+            "category": "plate_carrier",
+            "children": [
+              {
+                "name": "spot_7",
+                "type": "PlateHolder",
+                "size_x": 127.76,
+                "size_y": 85.48,
+                "size_z": 20,
+                "location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 140,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "out_of_order",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              },
+              {
+                "name": "spot_2",
+                "type": "PlateHolder",
+                "size_x": 127.76,
+                "size_y": 85.48,
+                "size_z": 20,
+                "location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 40,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "out_of_order",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              }
+            ],
+            "parent_name": "store"
+          }
+        },
+        "nests": [
+          {
+            "name": "store_nest_1",
+            "type": "PlateHolder",
+            "size_x": 127.76,
+            "size_y": 85.48,
+            "size_z": 0,
+            "category": "plate_holder",
+            "parent_name": "store",
+            "child_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            },
+            "pedestal_size_z": 0
+          },
+          {
+            "name": "store_nest_2",
+            "type": "PlateHolder",
+            "size_x": 127.76,
+            "size_y": 85.48,
+            "size_z": 0,
+            "category": "plate_holder",
+            "parent_name": "store",
+            "child_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            },
+            "pedestal_size_z": 0
+          }
+        ]
+      },
+      "unresolved_transfer": null
+    }
+  ],
+  "resources": [
+    {
+      "name": "store",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "store_nest_1",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    },
+    {
+      "name": "store_nest_2",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    },
+    {
+      "name": "stacker",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_CARRIER"
+    },
+    {
+      "name": "stacker_slot_1",
+      "parent": "stacker",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        0.0
+      ]
+    },
+    {
+      "name": "stacker_slot_2",
+      "parent": "stacker",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        22.867
+      ]
+    },
+    {
+      "name": "plate",
+      "parent": "stacker_slot_2",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate_A1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        10.0,
+        2.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "out_of_order",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_CARRIER"
+    },
+    {
+      "name": "spot_7",
+      "parent": "out_of_order",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        140.0
+      ]
+    },
+    {
+      "name": "spot_2",
+      "parent": "out_of_order",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        40.0
+      ]
+    }
+  ]
+}

@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, create_autospec, patch
 from pylabrobot.io.http import HTTP
 from pylabrobot.opentrons import OT2, OpentronsError, OT2_8ChannelPipette, OT2SingleChannelPipette
 from pylabrobot.opentrons.api import OpentronsAPI
+from pylabrobot.opentrons.decks import create_ot2_deck, get_slot_holder
 from pylabrobot.opentrons.labware import LabwareRegistry
+from pylabrobot.opentrons.model import TipFacts, read
 from pylabrobot.opentrons.run import OpentronsRun
 from pylabrobot.opentrons.types import (
   LabwareIdentity,
@@ -13,8 +15,11 @@ from pylabrobot.opentrons.types import (
   RobotInfo,
   RunInfo,
 )
-from pylabrobot.resources import Coordinate
-from pylabrobot.resources.opentrons import opentrons_96_filtertiprack_20ul
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store import library
+from pylabrobot.resources.store.client import ResourceStore
+
+_TIPS = "opentrons_96_filtertiprack_20ul"
 
 
 class OT2LifecycleTests(unittest.IsolatedAsyncioTestCase):
@@ -235,20 +240,31 @@ class OT2LifecycleTests(unittest.IsolatedAsyncioTestCase):
 
 
 class OT2LabwareTests(unittest.IsolatedAsyncioTestCase):
-  def setUp(self) -> None:
+  async def asyncSetUp(self) -> None:
     """Exercise deck-to-registry binding without run execution."""
-    self.robot = OT2("ot2.local", io=AsyncMock(spec_set=HTTP))
+    self.deck = await create_ot2_deck(ResourceStore.in_memory())
+    self.robot = OT2("ot2.local", io=AsyncMock(spec_set=HTTP), deck=self.deck)
     self.protocol_run = create_autospec(OpentronsRun, instance=True, spec_set=True)
     self.protocol_run.active = True
     self.robot._run = self.protocol_run
     self.registry = create_autospec(LabwareRegistry, instance=True, spec_set=True)
     self.registry.is_loaded.return_value = False
     self.robot._labware = self.registry
-    self.rack = opentrons_96_filtertiprack_20ul("tips")
-    self.robot.deck.assign_child_at_slot(self.rack, 1)
+    self.holder = await get_slot_holder(self.deck, 1)
+    self.rack = await self.deck.store.create(_TIPS, name="tips", parent=self.holder)
+
+  async def _a1_tip(self) -> TipFacts:
+    tree = await read(self.deck.store, [self.rack], depth=2)
+    a1 = next(c for c in tree.children(tree.node(self.rack)) if c.attributes.identifier == "A1")
+    tool = tree.tool(a1)
+    assert tool is not None
+    return TipFacts.of(tool)
+
+  async def _tree(self):
+    return await read(self.deck.store, [self.rack], ancestors=True)
 
   async def test_official_rack_uses_builtin_definition_for_calibration(self) -> None:
-    await self.robot._load_tip_rack(self.rack, self.rack.get_item("A1").get_tip())
+    await self.robot._load_tip_rack(self.rack, await self._a1_tip(), await self._tree())
 
     self.registry.load.assert_awaited_once_with(
       self.rack, "1", LabwareIdentity("opentrons", "opentrons_96_filtertiprack_20ul", 1)
@@ -256,18 +272,21 @@ class OT2LabwareTests(unittest.IsolatedAsyncioTestCase):
     self.registry.define.assert_not_awaited()
 
   async def test_custom_rack_passes_its_geometry_to_the_registry(self) -> None:
-    self.rack.model = None
-    tip = self.rack.get_item("A1").get_tip()
+    await self.rack.delete()
+    definition = library.get_model(_TIPS).definition
+    definition.attributes.model = ""
+    self.rack = await self.deck.store.create(definition, name="tips", parent=self.holder)
+    tip = await self._a1_tip()
     identity = LabwareIdentity("pylabrobot", "uploaded", 1)
     self.registry.define.return_value = identity
 
-    await self.robot._load_tip_rack(self.rack, tip)
+    await self.robot._load_tip_rack(self.rack, tip, await self._tree())
 
     self.registry.define.assert_awaited_once()
     rack, definition = self.registry.define.await_args.args
-    self.assertIs(rack, self.rack)
+    self.assertEqual(rack.id, self.rack.id)
     self.assertRegex(definition["parameters"]["loadName"], r"^[0-9a-f]{32}$")
-    self.assertEqual(definition["parameters"]["tipLength"], tip.get_size_z())
+    self.assertEqual(definition["parameters"]["tipLength"], tip.size.z)
     self.assertEqual(definition["metadata"]["displayName"], self.rack.name)
     self.registry.load.assert_awaited_once_with(self.rack, "1", identity)
 

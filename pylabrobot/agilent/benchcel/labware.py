@@ -9,9 +9,10 @@ to conflate:
   from the bottom of the plate.
 
 This module does not bundle per-catalog BenchCel XML profiles. Instead, it
-calculates a conservative BenchCel geometry profile from a PLR plate resource and
-allows explicit overrides for values that cannot be inferred from dimensions
-alone, such as optical sensor thresholds.
+calculates a conservative BenchCel geometry profile from a plate in a resource
+store and allows explicit overrides for values that cannot be inferred from
+dimensions alone, such as optical sensor thresholds. Plates are handles; each
+function reads a plate in one call to its store.
 """
 
 from __future__ import annotations
@@ -22,7 +23,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional, Union
 
-from pylabrobot.resources import Coordinate, Plate
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.tree import to_coordinate
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 DEVICE_PAYLOAD_LENGTH = 77
 DEFAULT_NESTING_OVERLAP = 1.5
@@ -32,6 +37,33 @@ DEFAULT_MIN_PICKUP_DISTANCE_FROM_TOP = 5.4
 DEFAULT_LOW_PROFILE_HEIGHT_CUTOFF = 11.5
 DEFAULT_TALL_PLATE_HEIGHT_CUTOFF = 30.0
 DEFAULT_ADDITIONAL_RELEASE_HEIGHT = 2.0
+
+
+@dataclasses.dataclass(frozen=True)
+class _PlateFacts:
+  """What the BenchCel's labware settings read of a plate."""
+
+  name: str
+  model: str
+  size: Coordinate
+  has_lid: bool
+
+
+async def _plate_facts(plate: handles.Plate) -> _PlateFacts:
+  """A plate's name, model, size along its own axes, and whether it has a lid, in one read."""
+  response = await plate.store.commands.get_resources(
+    spb.GetResourcesRequest(resources=[plate.ref], depth=1)
+  )
+  node = response.nodes[0]
+  return _PlateFacts(
+    name=node.attributes.name,
+    model=node.attributes.model,
+    size=to_coordinate(node.attributes.size),
+    has_lid=any(
+      child.parent_id == node.id and child.attributes.kind == pb.RESOURCE_KIND_LID
+      for child in response.nodes[1:]
+    ),
+  )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -98,9 +130,9 @@ class BenchCelLabwareSettings:
   source: Optional[str] = None
 
   @classmethod
-  def from_plate(cls, plate: Plate, **kwargs) -> "BenchCelLabwareSettings":
-    """Calculate BenchCel settings from a PLR plate resource."""
-    return calculate_benchcel_labware_settings(plate, **kwargs)
+  async def from_plate(cls, plate: handles.Plate, **kwargs) -> "BenchCelLabwareSettings":
+    """Calculate BenchCel settings from a plate in a resource store."""
+    return await calculate_benchcel_labware_settings(plate, **kwargs)
 
   @classmethod
   def from_xml_file(
@@ -262,51 +294,59 @@ class BenchCelLabwareSettings:
     """Return PLR ``pickup_distance_from_top`` implied by ``RobotGripperOffset``."""
     return self.effective_plate_height(sealed=sealed, lidded=lidded) - self.robot_gripper_offset
 
-  def preferred_pickup_location(self, plate: Plate) -> Coordinate:
-    """Return a PLR preferred pickup location using the BenchCel robot offset."""
-    return Coordinate(
-      x=plate.get_size_x() / 2,
-      y=plate.get_size_y() / 2,
-      z=self.robot_gripper_offset,
-    )
+  def _pickup_location(self, facts: _PlateFacts) -> Coordinate:
+    return Coordinate(x=facts.size.x / 2, y=facts.size.y / 2, z=self.robot_gripper_offset)
 
-  def dimension_differences(self, plate: Plate) -> dict[str, float]:
-    """Return profile minus plate-resource dimensions for each axis."""
+  def _dimension_differences(self, facts: _PlateFacts) -> dict[str, float]:
     return {
-      "x": self.plate_size_x - plate.get_size_x(),
-      "y": self.plate_size_y - plate.get_size_y(),
-      "z": self.plate_size_z - plate.get_size_z(),
+      "x": self.plate_size_x - facts.size.x,
+      "y": self.plate_size_y - facts.size.y,
+      "z": self.plate_size_z - facts.size.z,
     }
 
-  def validate_plate_dimensions(self, plate: Plate, *, tolerance_mm: float = 0.25) -> None:
-    """Raise if a PLR plate resource differs too far from this BenchCel profile."""
-    differences = self.dimension_differences(plate)
+  def _validate(self, facts: _PlateFacts, tolerance_mm: float) -> None:
+    differences = self._dimension_differences(facts)
     failures = [
       f"{axis}: expected {expected:.3f} mm, got {actual:.3f} mm"
       for axis, expected, actual in (
-        ("x", self.plate_size_x, plate.get_size_x()),
-        ("y", self.plate_size_y, plate.get_size_y()),
-        ("z", self.plate_size_z, plate.get_size_z()),
+        ("x", self.plate_size_x, facts.size.x),
+        ("y", self.plate_size_y, facts.size.y),
+        ("z", self.plate_size_z, facts.size.z),
       )
       if abs(differences[axis]) > tolerance_mm
     ]
     if failures:
       raise ValueError(
-        f"Plate {plate.name!r} does not match BenchCel labware {self.name!r}: "
+        f"Plate {facts.name!r} does not match BenchCel labware {self.name!r}: "
         + "; ".join(failures)
       )
 
-  def apply_to_plate(
+  async def preferred_pickup_location(self, plate: handles.Plate) -> Coordinate:
+    """Return a PLR preferred pickup location using the BenchCel robot offset."""
+    return self._pickup_location(await _plate_facts(plate))
+
+  async def dimension_differences(self, plate: handles.Plate) -> dict[str, float]:
+    """Return profile minus plate-resource dimensions for each axis."""
+    return self._dimension_differences(await _plate_facts(plate))
+
+  async def validate_plate_dimensions(
+    self, plate: handles.Plate, *, tolerance_mm: float = 0.25
+  ) -> None:
+    """Raise if a plate differs too far from this BenchCel profile."""
+    self._validate(await _plate_facts(plate), tolerance_mm)
+
+  async def apply_to_plate(
     self,
-    plate: Plate,
+    plate: handles.Plate,
     *,
     validate_dimensions: bool = True,
     tolerance_mm: float = 0.25,
-  ) -> Plate:
-    """Set PLR pickup metadata on ``plate`` using this BenchCel profile."""
+  ) -> handles.Plate:
+    """Set the plate's preferred pickup location in its store from this BenchCel profile."""
+    facts = await _plate_facts(plate)
     if validate_dimensions:
-      self.validate_plate_dimensions(plate, tolerance_mm=tolerance_mm)
-    plate.preferred_pickup_location = self.preferred_pickup_location(plate)
+      self._validate(facts, tolerance_mm)
+    await plate.set_preferred_pickup_location(self._pickup_location(facts))
     return plate
 
   def to_device_payload(self) -> bytes:
@@ -468,8 +508,8 @@ def calculate_sensor_offset(
   return 8.0
 
 
-def calculate_benchcel_labware_settings(
-  plate: Plate,
+async def calculate_benchcel_labware_settings(
+  plate: handles.Plate,
   *,
   name: Optional[str] = None,
   identifier: Optional[str] = None,
@@ -491,13 +531,14 @@ def calculate_benchcel_labware_settings(
   sealed_plate_thickness: Optional[float] = None,
   notch_settings: Optional[PlateNotchSettings] = None,
 ) -> BenchCelLabwareSettings:
-  """Calculate BenchCel labware settings from a PLR plate resource.
+  """Calculate BenchCel labware settings from a plate in a resource store.
 
   Geometry fields are calculated from ``plate``. Optical sensor thresholds and
   notch options cannot be reliably inferred from dimensions, so they are exposed
   as optional overrides with conservative defaults.
   """
-  height = plate.get_size_z()
+  facts = await _plate_facts(plate)
+  height = facts.size.z
   robot_offset = robot_gripper_offset
   if robot_offset is None:
     robot_offset = calculate_robot_gripper_offset(height)
@@ -519,9 +560,9 @@ def calculate_benchcel_labware_settings(
 
   return BenchCelLabwareSettings(
     identifier=identifier,
-    name=name or plate.model or plate.name,
-    plate_size_x=plate.get_size_x(),
-    plate_size_y=plate.get_size_y(),
+    name=name or facts.model or facts.name,
+    plate_size_x=facts.size.x,
+    plate_size_y=facts.size.y,
     plate_size_z=height,
     stacking_thickness=resolved_stacking_thickness,
     robot_gripper_offset=robot_offset,
@@ -534,7 +575,7 @@ def calculate_benchcel_labware_settings(
     plate_presence_threshold=plate_presence_threshold,
     sensor_intensity=sensor_intensity,
     error_correction_offset=error_correction_offset,
-    can_be_lidded=plate.has_lid() if can_be_lidded is None else can_be_lidded,
+    can_be_lidded=facts.has_lid if can_be_lidded is None else can_be_lidded,
     can_be_sealed=can_be_sealed,
     sealed_plate_stacking_thickness=sealed_plate_stacking_thickness,
     sealed_plate_thickness=sealed_plate_thickness,
@@ -543,14 +584,14 @@ def calculate_benchcel_labware_settings(
   )
 
 
-def resolve_benchcel_labware_settings(
-  labware: Union[Plate, BenchCelLabwareSettings, dict],
+async def resolve_benchcel_labware_settings(
+  labware: Union[handles.Plate, BenchCelLabwareSettings, dict],
 ) -> BenchCelLabwareSettings:
-  """Resolve a PLR plate, settings object, or serialized settings dict."""
+  """Resolve a plate in a resource store, settings object, or serialized settings dict."""
   if isinstance(labware, BenchCelLabwareSettings):
     return labware
-  if isinstance(labware, Plate):
-    return calculate_benchcel_labware_settings(labware)
+  if isinstance(labware, handles.Plate):
+    return await calculate_benchcel_labware_settings(labware)
   if isinstance(labware, dict):
     return BenchCelLabwareSettings.from_dict(labware)
   raise TypeError(
@@ -559,8 +600,8 @@ def resolve_benchcel_labware_settings(
   )
 
 
-def apply_benchcel_labware_settings(
-  plate: Plate,
+async def apply_benchcel_labware_settings(
+  plate: handles.Plate,
   labware: Optional[Union[BenchCelLabwareSettings, dict]] = None,
   *,
   validate_dimensions: bool = True,
@@ -569,15 +610,15 @@ def apply_benchcel_labware_settings(
 ) -> BenchCelLabwareSettings:
   """Apply BenchCel pickup metadata to ``plate`` and return the settings used.
 
-  If ``labware`` is omitted, settings are calculated from the PLR plate
-  dimensions using :func:`calculate_benchcel_labware_settings`.
+  If ``labware`` is omitted, settings are calculated from the plate's dimensions
+  using :func:`calculate_benchcel_labware_settings`.
   """
   settings = (
-    calculate_benchcel_labware_settings(plate, **calculation_kwargs)
+    await calculate_benchcel_labware_settings(plate, **calculation_kwargs)
     if labware is None
-    else resolve_benchcel_labware_settings(labware)
+    else await resolve_benchcel_labware_settings(labware)
   )
-  settings.apply_to_plate(
+  await settings.apply_to_plate(
     plate,
     validate_dimensions=validate_dimensions,
     tolerance_mm=tolerance_mm,

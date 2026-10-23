@@ -7,23 +7,23 @@ traversal plane replaces the hardcoded magic number.
 """
 
 import unittest
-from typing import List, Tuple
+from typing import List, Tuple, cast
 from unittest.mock import AsyncMock, _Call
 
+from pylabrobot.opentrons.decks import get_trash_area
 from pylabrobot.opentrons.flex.checks import traversal_z
 from pylabrobot.opentrons.flex.envelope import FLEX_ENVELOPE
 from pylabrobot.opentrons.flex.flex import Flex
 from pylabrobot.opentrons.flex.flex_head import FlexHead8
-from pylabrobot.opentrons.flex.tests.mock_utils import make_api, make_flex
-from pylabrobot.resources import cor_96_wellplate_360uL_Fb
-from pylabrobot.resources.opentrons.flex_deck import FlexDeck
+from pylabrobot.opentrons.flex.tests.mock_utils import make_api, make_deck, make_flex, place
+from pylabrobot.resources.store import handles
 
 
 async def _flex_head8(
   test_case: unittest.IsolatedAsyncioTestCase,
 ) -> Tuple[Flex, AsyncMock, FlexHead8]:
   api = make_api(pipettes=[("p50_multi_flex", 8, 1.0, 50.0, "left")])
-  flex = make_flex(deck=FlexDeck(), host="localhost", api=api)
+  flex = make_flex(deck=await make_deck(), host="localhost", api=api)
   test_case.addAsyncCleanup(flex.disconnect)
   await flex.setup()
   head = flex.left
@@ -48,19 +48,19 @@ class TestRearCapGroundedTo881(unittest.TestCase):
     self.assertAlmostEqual(FLEX_ENVELOPE.rear_cap_y, 324.38)
 
 
-class TestUnconditionalTiprackFloor(unittest.TestCase):
+class TestUnconditionalTiprackFloor(unittest.IsolatedAsyncioTestCase):
   """The travel plane never drops below a tip rack (99 + 10 margin = 109), even on
   a deck the model shows as empty or holding only short labware -- a rack that is
   present but unmodeled must still be cleared."""
 
-  def test_empty_deck_still_clears_a_tiprack(self):
-    self.assertAlmostEqual(traversal_z(FlexDeck()), 109.0)
+  async def test_empty_deck_still_clears_a_tiprack(self):
+    self.assertAlmostEqual(await traversal_z(await make_deck()), 109.0)
 
-  def test_short_labware_does_not_lower_the_floor(self):
-    deck = FlexDeck()
-    plate = cor_96_wellplate_360uL_Fb(name="plate")  # ~14 mm tall, well below a rack
-    deck.assign_child_at_slot(plate, "C2")
-    self.assertAlmostEqual(traversal_z(deck), 109.0)
+  async def test_short_labware_does_not_lower_the_floor(self):
+    deck = await make_deck()
+    # ~14 mm tall, well below a rack
+    await place(deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
+    self.assertAlmostEqual(await traversal_z(deck), 109.0)
 
 
 class TestComputedTraversalPlane(unittest.IsolatedAsyncioTestCase):
@@ -69,10 +69,9 @@ class TestComputedTraversalPlane(unittest.IsolatedAsyncioTestCase):
 
   async def test_move_to_uses_computed_traversal_not_120(self):
     flex, api, head = await _flex_head8(self)
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    flex.deck.assign_child_at_slot(plate, "C2")
+    await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
 
-    expected = traversal_z(flex.deck)
+    expected = await traversal_z(flex.deck)
     self.assertNotAlmostEqual(expected, 120.0, msg="test needs labware whose plane != 120")
 
     await head.move_to_position(x=100.0, y=100.0, z=50.0)
@@ -88,15 +87,10 @@ class TestTrashDropArcsHighEnough(unittest.IsolatedAsyncioTestCase):
   labware the robot was never told about."""
 
   async def test_discard_tips_move_carries_computed_minimum_z_height(self):
-    from pylabrobot.resources import cor_96_wellplate_360uL_Fb
-    from pylabrobot.resources.opentrons.flex_tip_racks import flex_96_tiprack_50ul
-
     flex, api, head = await _flex_head8(self)
-    rack = flex_96_tiprack_50ul(name="rack")
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    flex.deck.assign_child_at_slot(rack, "C1")
-    flex.deck.assign_child_at_slot(plate, "C2")
-    trash = flex.deck.get_trash_area()
+    rack = cast(handles.TipRack, await place(flex.deck, "flex_96_tiprack_50ul", "rack", "C1"))
+    await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
+    trash = await get_trash_area(flex.deck)
 
     await head.pick_up_tips(rack, column=0)
     await head.discard_tips(trash)
@@ -106,36 +100,22 @@ class TestTrashDropArcsHighEnough(unittest.IsolatedAsyncioTestCase):
       for c in api.submit_command.await_args_list
       if c.args[1] == "moveToAddressableAreaForDropTip"
     )
-    self.assertAlmostEqual(move.args[2]["minimumZHeight"], traversal_z(flex.deck))
+    self.assertAlmostEqual(move.args[2]["minimumZHeight"], await traversal_z(flex.deck))
 
 
 class TestBetweenSlotArcGuard(unittest.IsolatedAsyncioTestCase):
   """A pipetting move that crosses to a different slot is prefixed with a safe
   coordinate move (>= the tip-rack floor), including moves within a plate."""
 
-  def setUp(self):
-    from pylabrobot.resources import set_tip_tracking, set_volume_tracking
-
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    from pylabrobot.resources import set_tip_tracking, set_volume_tracking
-
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def asyncSetUp(self):
-    from pylabrobot.resources import cor_96_wellplate_360uL_Fb
-    from pylabrobot.resources.opentrons.flex_tip_racks import flex_96_tiprack_50ul
-
     self.flex, self.api, self.head = await _flex_head8(self)
-    self.rack = flex_96_tiprack_50ul(name="rack")
-    self.plate = cor_96_wellplate_360uL_Fb(name="plate")
-    self.flex.deck.assign_child_at_slot(self.rack, "C1")
-    self.flex.deck.assign_child_at_slot(self.plate, "C2")
-    for w in self.plate.get_all_items():
-      w.tracker.set_volume(100.0)
+    self.rack = cast(
+      handles.TipRack, await place(self.flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
+    )
+    self.plate = cast(
+      handles.Plate, await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
+    )
+    await self.plate.set_well_volumes(100.0)
 
   def _coordinate_moves(self, api):
     return [c for c in api.submit_command.await_args_list if c.args[1] == "moveToCoordinates"]
@@ -143,22 +123,22 @@ class TestBetweenSlotArcGuard(unittest.IsolatedAsyncioTestCase):
   async def test_crossing_to_a_new_slot_arcs_high_first(self):
     await self.head.pick_up_tips(self.rack, column=0)  # over the rack (C1)
     before = len(self._coordinate_moves(self.api))
-    await self.head.aspirate(self.plate.column(0), volume=50)  # -> plate (C2), a new slot
+    await self.head.aspirate(self.plate["A1:H1"], volume=50)  # -> plate (C2), a new slot
 
     moves = self._coordinate_moves(self.api)
     self.assertEqual(
       len(moves), before + 2, "safe travel and vertical descent should precede aspiration"
     )
-    self.assertAlmostEqual(moves[-2].args[2]["minimumZHeight"], traversal_z(self.flex.deck))
+    self.assertAlmostEqual(moves[-2].args[2]["minimumZHeight"], await traversal_z(self.flex.deck))
     # Vertical descent immediately precedes aspiration.
     types = [c.args[1] for c in self.api.submit_command.await_args_list]
     self.assertEqual(types[types.index("aspirateInPlace") - 1], "moveToCoordinates")
 
   async def test_moving_within_the_same_labware_also_arcs_high(self):
     await self.head.pick_up_tips(self.rack, column=0)
-    await self.head.aspirate(self.plate.column(0), volume=50)  # cross-slot -> one safe move
+    await self.head.aspirate(self.plate["A1:H1"], volume=50)  # cross-slot -> one safe move
     n = len(self._coordinate_moves(self.api))
-    await self.head.dispense(self.plate.column(1), volume=50)  # same plate -> safe coordinate move
+    await self.head.dispense(self.plate["A2:H2"], volume=50)  # same plate -> safe coordinate move
     self.assertEqual(
       len(self._coordinate_moves(self.api)), n + 2, "within-slot move must also arc high"
     )

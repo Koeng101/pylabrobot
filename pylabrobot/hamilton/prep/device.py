@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Optional
 
+from pylabrobot.hamilton.prep.deck import PREP_DECK_SIZE, PrepDeckParts, prep_deck, read_prep_deck
 from pylabrobot.hamilton.prep.driver.features.calibration import Calibration
 from pylabrobot.hamilton.prep.driver.features.core_grippers import CoreGrippers
 from pylabrobot.hamilton.prep.driver.features.head8 import Head8
@@ -13,10 +14,15 @@ from pylabrobot.hamilton.prep.driver.features.method import MethodLifecycle
 from pylabrobot.hamilton.prep.driver.features.pipettes import Pipettes
 from pylabrobot.hamilton.prep.driver.features.x_arm import XArm
 from pylabrobot.hamilton.prep.driver.master import PrepDriver
+from pylabrobot.hamilton.prep.driver.model import get_nodes, ref
 from pylabrobot.hamilton.prep.driver.simulator import PrepSimulationDriver
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.hamilton import PrepDeck
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.tree import to_coordinate
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +40,11 @@ PREP_DECK_LOCATION = Coordinate(29.20, 88.02, 50.0)
 PREP_HEATER_SHAKER_MODEL = "Prep_heater_shaker"
 
 
-class PrepDevice(Resource):
+class PrepDevice:
   """The complete modelling and control interface for a Hamilton Prep.
 
-  The device is itself a resource and its deck is its child, so everything on the deck is a
-  descendant of the device carrying it: one tree, rooted here.
+  The device's body is a resource in a resource store, and its deck is the body's child, so
+  everything on the deck is a descendant of the device carrying it: one tree, rooted at the body.
 
   Two tiers over one driver. `prep.driver` speaks to the device in its own terms and stays reachable
   whatever is built on top of it. The device adds what the driver cannot know: where things are.
@@ -46,7 +52,7 @@ class PrepDevice(Resource):
 
   def __init__(
     self,
-    deck: PrepDeck,
+    deck: Optional[handles.Deck],
     driver: PrepDriver,
     name: str = "Generic Prep Device",
     size_x: Optional[float] = None,
@@ -54,11 +60,13 @@ class PrepDevice(Resource):
     size_z: Optional[float] = None,
     deck_location: Optional[Coordinate] = None,
     model: Optional[str] = None,
+    store: Optional[ResourceStore] = None,
   ):
     """
     Args:
-      deck: the deck this device carries. It becomes a child of the device, so everything assigned
-        to it is a descendant of this device.
+      deck: the deck this device carries, in its store. It becomes a child of the device's body,
+        so everything assigned to it is a descendant of this device. None builds a Prep deck,
+        whose parts' names start with `name`.
       driver: the driver to drive the device through.
       name: what to call this device in the resource tree.
       size_x: how wide the device is, in mm. Defaults to the deck's own width.
@@ -66,24 +74,86 @@ class PrepDevice(Resource):
       size_z: how tall it is, in mm. Defaults to the deck's own height.
       deck_location: where the deck sits inside it. Defaults to the device's own origin.
       model: which device this is. Defaults to the class name, which says only that it is a Prep.
+      store: the resource store to model the device in: `deck`'s when a deck is given, a new
+        in-memory one when neither is.
     """
-    super().__init__(
-      name=name,
-      size_x=deck.get_absolute_size_x() if size_x is None else size_x,
-      size_y=deck.get_absolute_size_y() if size_y is None else size_y,
-      size_z=deck.get_absolute_size_z() if size_z is None else size_z,
-      category="device",
-      model=model if model is not None else self.__class__.__name__,
-    )
-
-    self.deck = deck
+    self.name = name
     self.driver = driver
-    if self.driver.deck is not deck:
+    self.model = model if model is not None else self.__class__.__name__
+    self._size = (size_x, size_y, size_z)
+    self._deck_location = deck_location if deck_location is not None else Coordinate(0, 0, 0)
+    self._deck: Optional[handles.Deck] = deck
+    if deck is not None:
+      store = deck.store
+    self.store = store if store is not None else ResourceStore.in_memory()
+    # The device's body in the store; found or made by `create_resources`.
+    self.body: Optional[handles.Resource] = None
+
+  @property
+  def deck(self) -> handles.Deck:
+    """The deck this device carries.
+
+    Raises:
+      RuntimeError: If it has not been made yet: `create_resources` or `setup` makes it.
+    """
+    if self._deck is None:
+      raise RuntimeError("the deck is made at setup; call `await prep.create_resources()` first")
+    return self._deck
+
+  async def create_resources(self) -> None:
+    """Find the device's body and deck in its store, or make them; the driver models into the deck.
+
+    A body already in the store by this device's name is this device, as one reconnecting finds it.
+    Repeatable: once found, nothing more is read.
+    """
+    if self.body is not None:
+      return
+    try:
+      body: Optional[handles.Resource] = await self.store.get(self.name)
+    except StoreError as error:
+      if error.problem != pb.PROBLEM_NOT_FOUND:
+        raise
+      body = None
+    if body is None:
+      deck_size = PREP_DECK_SIZE if self._deck is None else await self._deck.get_absolute_size()
+      size_x, size_y, size_z = self._size
+      children = []
+      if self._deck is None:
+        deck = prep_deck(f"{self.name}_deck", name_prefix=self.name)
+        deck.attributes.location.CopyFrom(build.vec3(self._deck_location))
+        children.append(deck)
+      body = await self.store.create(
+        build.resource(
+          self.name,
+          Coordinate(
+            deck_size.x if size_x is None else size_x,
+            deck_size.y if size_y is None else size_y,
+            deck_size.z if size_z is None else size_z,
+          ),
+          type_name="PrepDevice",
+          category="device",
+          model=self.model,
+          children=children,
+        ),
+        name=self.name,
+      )
+      if self._deck is not None:
+        await body.assign_child_resource(self._deck, location=self._deck_location)
+    if self._deck is None:
+      found = await body.find_resources(kinds=[pb.RESOURCE_KIND_DECK])
+      deck_found = found[0] if found else None
+      if not isinstance(deck_found, handles.Deck):
+        raise RuntimeError(f"'{self.name}' carries no deck")
+      self._deck = deck_found
+    self.body = body
+    if self.driver.deck is not None and self.driver.deck != self._deck:
       logger.warning("the driver was given another deck; modelling into this device's instead")
-      self.driver.deck = deck
-    self.assign_child_resource(
-      deck, location=deck_location if deck_location is not None else Coordinate(0, 0, 0)
-    )
+    self.driver.deck = self._deck
+
+  async def deck_parts(self) -> PrepDeckParts:
+    """The deck's parts, as they stand in the store now: spots, waste block, waste positions."""
+    await self.create_resources()
+    return await read_prep_deck(self.deck)
 
   async def setup(
     self,
@@ -107,6 +177,7 @@ class PrepDevice(Resource):
       deck_components_offset: shift every labware spot by this, as `update_deck_components` does.
         None leaves them where they are.
     """
+    await self.create_resources()
     await self.driver.setup(
       smart=smart,
       force_initialize=force_initialize,
@@ -115,10 +186,12 @@ class PrepDevice(Resource):
       use_v1_aspirate_dispense=use_v1_aspirate_dispense,
       enable_safe_speeds=enable_safe_speeds,
     )
-    if self.driver.hs is not None:
+    if self.driver.hs is not None and self.body is not None:
       self.model = PREP_HEATER_SHAKER_MODEL
+      # The viewer draws the device from its model; the store keeps the one a heater shaker needs.
+      await self.body.set_metadata({"model": PREP_HEATER_SHAKER_MODEL})
     if deck_components_offset is not None:
-      self.update_deck_components(deck_components_offset)
+      await self.update_deck_components(deck_components_offset)
 
   async def stop(self, skip_raise_to_z_safety: bool = False):
     """Put the device down.
@@ -129,15 +202,31 @@ class PrepDevice(Resource):
     """
     await self.driver.stop(skip_raise_to_z_safety=skip_raise_to_z_safety)
 
-  def update_deck_components(self, offset: Coordinate) -> None:
+  async def update_deck_components(self, offset: Coordinate) -> None:
     """Shift every labware spot by `offset`, in software only: nothing is written to the device.
+
+    Each keeps its place among the deck's children.
 
     Args:
       offset: how far to move each spot, in mm on the deck.
     """
-    for spot in self.deck.spots:
-      if spot.location is not None:
-        spot.location = spot.location + offset
+    parts = await self.deck_parts()
+    spots = [ref(spot.id) for spot in parts.spots]
+    nodes = await get_nodes(self.store, spots)
+    assignments = [
+      pb.AssignChild(
+        child=ref(node.id),
+        parent=ref(node.parent_id),
+        location=build.vec3(to_coordinate(node.attributes.location) + offset),
+        index=node.index,
+      )
+      for node in nodes
+      if node.attributes.HasField("location") and node.parent_id
+    ]
+    if assignments:
+      await self.store.commands.assign_resources(
+        spb.AssignResourcesRequest(lock_tokens=self.store.lock_tokens, assignments=assignments)
+      )
 
   # -- what the device carries ------------------------------------------------------------
   # Read through: they do not exist until setup has run.
@@ -217,7 +306,7 @@ class PrepDevice(Resource):
 
 
 def Prep(
-  deck: Optional[PrepDeck] = None,
+  deck: Optional[handles.Deck] = None,
   simulation: bool = False,
   host: Optional[str] = None,
   port: int = 2000,
@@ -230,12 +319,13 @@ def Prep(
   size_z: float = PREP_SIZE_Z,
   simulate_motion_time: bool = False,
   motion_time_scale: float = 0.25,
+  store: Optional[ResourceStore] = None,
 ) -> PrepDevice:
   """A Prep, on a Prep deck.
 
   Args:
-    deck: the deck. If omitted, builds a deck and components prefixed with `name`.
-      A supplied deck keeps its existing resource names.
+    deck: the deck, in its resource store. If omitted, `setup` builds a Prep deck in `store`,
+      its parts' names prefixed with `name`. A supplied deck keeps its existing resource names.
     simulation: whether to build a simulated device, which answers without one being connected.
     host: the address the Prep answers on. Required unless simulating or given a driver.
     port: the port it answers on.
@@ -253,12 +343,12 @@ def Prep(
       shows every step. Ignored for a real device.
     motion_time_scale: the share of the real device's time a simulated move then takes, a quarter
       by default. 1.0 keeps the real time. Ignored for a real device.
+    store: the resource store to model the device in when no deck is given. A new in-memory one
+      when None.
 
   Returns:
     The device, on a Prep deck.
   """
-  if deck is None:
-    deck = PrepDeck(name=f"{name}_deck", name_prefix=name)
   if driver is None:
     if simulation:
       driver = PrepSimulationDriver(
@@ -284,4 +374,5 @@ def Prep(
     size_z=size_z,
     deck_location=PREP_DECK_LOCATION,
     model=Prep.__name__,
+    store=store,
   )

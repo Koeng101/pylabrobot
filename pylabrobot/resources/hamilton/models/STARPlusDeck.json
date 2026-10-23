@@ -1,0 +1,918 @@
+{
+  "name": "STARPlusDeck",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_DECK",
+      "typeName": "HamiltonSTARDeck",
+      "model": "starplus_deck_front_top_cover",
+      "category": "deck",
+      "size": {
+        "x": 2040.0,
+        "y": 653.5,
+        "z": 334.7
+      },
+      "location": {},
+      "rotation": {},
+      "deck": {
+        "hamilton": {
+          "numTracks": 76,
+          "trackOrigin": {
+            "x": 100.0,
+            "y": 63.0,
+            "z": 100.0
+          },
+          "trackPitch": 22.5
+        }
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}_trash_core96",
+          "kind": "RESOURCE_KIND_TRASH",
+          "typeName": "Trash",
+          "category": "trash",
+          "size": {
+            "x": 122.4,
+            "y": 82.6
+          },
+          "location": {
+            "x": -58.2,
+            "y": 106.0,
+            "z": 216.4
+          },
+          "rotation": {},
+          "container": {
+            "maxVolume": "Infinity",
+            "materialZThickness": 0.0
+          }
+        },
+        "initialState": {
+          "volume": {
+            "trackingEnabled": true
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_waste_block",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "typeName": "Resource",
+          "category": "waste_block",
+          "size": {
+            "x": 30.0,
+            "y": 445.2,
+            "z": 100.0
+          },
+          "location": {
+            "x": 1810.0,
+            "y": 115.0,
+            "z": 100.0
+          },
+          "rotation": {}
+        },
+        "children": [
+          {
+            "attributes": {
+              "name": "{name}_teaching_tip_rack",
+              "kind": "RESOURCE_KIND_TIP_RACK",
+              "typeName": "TipRack",
+              "model": "hamilton_teaching_needle_rack",
+              "category": "tip_rack",
+              "size": {
+                "x": 9.0,
+                "y": 72.0,
+                "z": 50.4
+              },
+              "location": {
+                "x": 6.75,
+                "y": 346.5
+              },
+              "rotation": {},
+              "itemized": {
+                "numItemsX": 1,
+                "numItemsY": 8
+              },
+              "tipRack": {}
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "{name}_teaching_tip_rack_tip_spot_0",
+                  "kind": "RESOURCE_KIND_TIP_SPOT",
+                  "typeName": "TipSpot",
+                  "category": "tip_spot",
+                  "size": {
+                    "x": 9.0,
+                    "y": 9.0
+                  },
+                  "location": {
+                    "y": 63.0,
+                    "z": 75.0
+                  },
+                  "rotation": {},
+                  "identifier": "A1",
+                  "tipSpot": {
+                    "prototypeTip": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_0#0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "location": {
+                        "x": 0.4,
+                        "y": 0.4,
+                        "z": -51.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    },
+                    "initialState": {
+                      "volume": {
+                        "trackingEnabled": true
+                      }
+                    }
+                  }
+                ],
+                "initialState": {
+                  "tipTrackingEnabled": true,
+                  "tipsMade": 1
+                }
+              },
+              {
+                "attributes": {
+                  "name": "{name}_teaching_tip_rack_tip_spot_1",
+                  "kind": "RESOURCE_KIND_TIP_SPOT",
+                  "typeName": "TipSpot",
+                  "category": "tip_spot",
+                  "size": {
+                    "x": 9.0,
+                    "y": 9.0
+                  },
+                  "location": {
+                    "y": 54.0,
+                    "z": 75.0
+                  },
+                  "rotation": {},
+                  "identifier": "B1",
+                  "tipSpot": {
+                    "prototypeTip": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_1",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_1#0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "location": {
+                        "x": 0.4,
+                        "y": 0.4,
+                        "z": -51.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    },
+                    "initialState": {
+                      "volume": {
+                        "trackingEnabled": true
+                      }
+                    }
+                  }
+                ],
+                "initialState": {
+                  "tipTrackingEnabled": true,
+                  "tipsMade": 1
+                }
+              },
+              {
+                "attributes": {
+                  "name": "{name}_teaching_tip_rack_tip_spot_2",
+                  "kind": "RESOURCE_KIND_TIP_SPOT",
+                  "typeName": "TipSpot",
+                  "category": "tip_spot",
+                  "size": {
+                    "x": 9.0,
+                    "y": 9.0
+                  },
+                  "location": {
+                    "y": 45.0,
+                    "z": 75.0
+                  },
+                  "rotation": {},
+                  "identifier": "C1",
+                  "tipSpot": {
+                    "prototypeTip": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_2",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_2#0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "location": {
+                        "x": 0.4,
+                        "y": 0.4,
+                        "z": -51.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    },
+                    "initialState": {
+                      "volume": {
+                        "trackingEnabled": true
+                      }
+                    }
+                  }
+                ],
+                "initialState": {
+                  "tipTrackingEnabled": true,
+                  "tipsMade": 1
+                }
+              },
+              {
+                "attributes": {
+                  "name": "{name}_teaching_tip_rack_tip_spot_3",
+                  "kind": "RESOURCE_KIND_TIP_SPOT",
+                  "typeName": "TipSpot",
+                  "category": "tip_spot",
+                  "size": {
+                    "x": 9.0,
+                    "y": 9.0
+                  },
+                  "location": {
+                    "y": 36.0,
+                    "z": 75.0
+                  },
+                  "rotation": {},
+                  "identifier": "D1",
+                  "tipSpot": {
+                    "prototypeTip": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_3",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_3#0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "location": {
+                        "x": 0.4,
+                        "y": 0.4,
+                        "z": -51.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    },
+                    "initialState": {
+                      "volume": {
+                        "trackingEnabled": true
+                      }
+                    }
+                  }
+                ],
+                "initialState": {
+                  "tipTrackingEnabled": true,
+                  "tipsMade": 1
+                }
+              },
+              {
+                "attributes": {
+                  "name": "{name}_teaching_tip_rack_tip_spot_4",
+                  "kind": "RESOURCE_KIND_TIP_SPOT",
+                  "typeName": "TipSpot",
+                  "category": "tip_spot",
+                  "size": {
+                    "x": 9.0,
+                    "y": 9.0
+                  },
+                  "location": {
+                    "y": 27.0,
+                    "z": 75.0
+                  },
+                  "rotation": {},
+                  "identifier": "E1",
+                  "tipSpot": {
+                    "prototypeTip": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_4",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_4#0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "location": {
+                        "x": 0.4,
+                        "y": 0.4,
+                        "z": -51.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    },
+                    "initialState": {
+                      "volume": {
+                        "trackingEnabled": true
+                      }
+                    }
+                  }
+                ],
+                "initialState": {
+                  "tipTrackingEnabled": true,
+                  "tipsMade": 1
+                }
+              },
+              {
+                "attributes": {
+                  "name": "{name}_teaching_tip_rack_tip_spot_5",
+                  "kind": "RESOURCE_KIND_TIP_SPOT",
+                  "typeName": "TipSpot",
+                  "category": "tip_spot",
+                  "size": {
+                    "x": 9.0,
+                    "y": 9.0
+                  },
+                  "location": {
+                    "y": 18.0,
+                    "z": 75.0
+                  },
+                  "rotation": {},
+                  "identifier": "F1",
+                  "tipSpot": {
+                    "prototypeTip": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_5",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_5#0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "location": {
+                        "x": 0.4,
+                        "y": 0.4,
+                        "z": -51.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    },
+                    "initialState": {
+                      "volume": {
+                        "trackingEnabled": true
+                      }
+                    }
+                  }
+                ],
+                "initialState": {
+                  "tipTrackingEnabled": true,
+                  "tipsMade": 1
+                }
+              },
+              {
+                "attributes": {
+                  "name": "{name}_teaching_tip_rack_tip_spot_6",
+                  "kind": "RESOURCE_KIND_TIP_SPOT",
+                  "typeName": "TipSpot",
+                  "category": "tip_spot",
+                  "size": {
+                    "x": 9.0,
+                    "y": 9.0
+                  },
+                  "location": {
+                    "y": 9.0,
+                    "z": 75.0
+                  },
+                  "rotation": {},
+                  "identifier": "G1",
+                  "tipSpot": {
+                    "prototypeTip": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_6",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_6#0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "location": {
+                        "x": 0.4,
+                        "y": 0.4,
+                        "z": -51.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    },
+                    "initialState": {
+                      "volume": {
+                        "trackingEnabled": true
+                      }
+                    }
+                  }
+                ],
+                "initialState": {
+                  "tipTrackingEnabled": true,
+                  "tipsMade": 1
+                }
+              },
+              {
+                "attributes": {
+                  "name": "{name}_teaching_tip_rack_tip_spot_7",
+                  "kind": "RESOURCE_KIND_TIP_SPOT",
+                  "typeName": "TipSpot",
+                  "category": "tip_spot",
+                  "size": {
+                    "x": 9.0,
+                    "y": 9.0
+                  },
+                  "location": {
+                    "z": 75.0
+                  },
+                  "rotation": {},
+                  "identifier": "H1",
+                  "tipSpot": {
+                    "prototypeTip": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_7",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "name": "{name}_teaching_tip_rack_tip_spot_7#0",
+                      "kind": "RESOURCE_KIND_TIP",
+                      "typeName": "HamiltonTip",
+                      "model": "hamilton_teaching_needle_300uL",
+                      "category": "tip",
+                      "size": {
+                        "x": 8.2,
+                        "y": 8.2,
+                        "z": 59.9
+                      },
+                      "location": {
+                        "x": 0.4,
+                        "y": 0.4,
+                        "z": -51.9
+                      },
+                      "rotation": {},
+                      "headTool": {
+                        "fittingDepth": 8.0,
+                        "isConductive": true
+                      },
+                      "tip": {
+                        "diameter": 8.2,
+                        "collarHeight": 8.0,
+                        "hamilton": {
+                          "tipSize": "STANDARD_VOLUME",
+                          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                        }
+                      }
+                    },
+                    "initialState": {
+                      "volume": {
+                        "trackingEnabled": true
+                      }
+                    }
+                  }
+                ],
+                "initialState": {
+                  "tipTrackingEnabled": true,
+                  "tipsMade": 1
+                }
+              }
+            ]
+          },
+          {
+            "attributes": {
+              "name": "{name}_core_grippers",
+              "kind": "RESOURCE_KIND_RESOURCE",
+              "typeName": "HamiltonCoreGrippers",
+              "model": "hamilton_core_gripper_1000ul_5ml_on_waste",
+              "category": "core_grippers",
+              "size": {
+                "x": 39.0,
+                "y": 61.0,
+                "z": 19.5
+              },
+              "location": {
+                "x": -1032.0,
+                "y": -29.5,
+                "z": 100.5
+              },
+              "rotation": {}
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "{name}_core_grippers_front",
+                  "kind": "RESOURCE_KIND_HEAD_TOOL",
+                  "typeName": "HamiltonCoreGripperTool",
+                  "model": "hamilton_core_gripper_tool",
+                  "category": "core_gripper_tool",
+                  "size": {
+                    "x": 36.0,
+                    "y": 8.346,
+                    "z": 32.0
+                  },
+                  "location": {
+                    "x": 1.5,
+                    "y": 17.25,
+                    "z": 2.5
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 8.0,
+                    "isConductive": true,
+                    "pickUpLocation": {
+                      "x": 18.0,
+                      "y": 4.25,
+                      "z": 32.0
+                    }
+                  }
+                }
+              },
+              {
+                "attributes": {
+                  "name": "{name}_core_grippers_back",
+                  "kind": "RESOURCE_KIND_HEAD_TOOL",
+                  "typeName": "HamiltonCoreGripperTool",
+                  "model": "hamilton_core_gripper_tool",
+                  "category": "core_gripper_tool",
+                  "size": {
+                    "x": 36.0,
+                    "y": 8.346,
+                    "z": 32.0
+                  },
+                  "location": {
+                    "x": 37.5,
+                    "y": 43.75,
+                    "z": 2.5
+                  },
+                  "rotation": {
+                    "z": 180.0
+                  },
+                  "headTool": {
+                    "fittingDepth": 8.0,
+                    "isConductive": true,
+                    "pickUpLocation": {
+                      "x": 18.0,
+                      "y": 4.25,
+                      "z": 32.0
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "attributes": {
+          "name": "{name}_trash",
+          "kind": "RESOURCE_KIND_TRASH",
+          "typeName": "Trash",
+          "category": "trash",
+          "size": {
+            "y": 241.2
+          },
+          "location": {
+            "x": 1835.0,
+            "y": 190.6,
+            "z": 137.1
+          },
+          "rotation": {},
+          "container": {
+            "maxVolume": "Infinity",
+            "materialZThickness": 0.0
+          }
+        },
+        "initialState": {
+          "volume": {
+            "trackingEnabled": true
+          }
+        }
+      }
+    ]
+  },
+  "description": "Create a new STARplus deck.\n\nSizes derived from the STARlet and STAR decks and the manufacturer's machine widths."
+}

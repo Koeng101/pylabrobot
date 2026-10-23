@@ -1,0 +1,195 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        {
+          "rpc": "/sila2.org.silastandard.core.lockcontroller.v1.LockController/UnlockServer",
+          "timeout": 30.0,
+          "request": "0a0c0a0a70796c6162726f626f74"
+        },
+        {
+          "rpc": "/sila2.org.silastandard.core.lockcontroller.v1.LockController/LockServer",
+          "timeout": 30.0,
+          "request": "0a0c0a0a70796c6162726f626f74120308901c"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/Get_InstalledObjectives",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/GetAvailableObjectivesForPosition",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a0e0a0c7b22496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a2a0a287b224964223a2022504c20464c554f5441522034782f302e3133222c2022496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/GetAvailableObjectivesForPosition",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a0e0a0c7b22496e646578223a20317d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a2b0a297b224964223a2022504c20464c554f544152203130782f302e3330222c2022496e646578223a20317d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_InstalledFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_CompatibleFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a1c0a1a7b224964223a202244415049222c2022496e646578223a20307d"
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/Get_CompatibleFilterCubes",
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.filtercubescontroller.v1.FilterCubesController/ChangeHardware",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a1c0a1a7b224964223a202246495443222c2022496e646578223a20317d"
+        }
+      ]
+    },
+    {
+      "call": "request_configuration()",
+      "result": {
+        "SerialNumber": "0000"
+      },
+      "sent": [
+        {
+          "rpc": "/sila2.moldev.com.instruments.instrumentcontroller.v1.InstrumentController/Get_InstrumentConfiguration",
+          "timeout": 30.0,
+          "request": ""
+        }
+      ]
+    },
+    {
+      "call": "open_door()",
+      "result": null,
+      "sent": [
+        {
+          "rpc": "/sila2.moldev.com.instruments.instrumentcontroller.v1.InstrumentController/Initialize",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.hardwarecontroller.v1.HardwareController/OpenPlateDrawer",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        }
+      ]
+    },
+    {
+      "call": "close_door()",
+      "result": null,
+      "sent": [
+        {
+          "rpc": "/sila2.moldev.com.instruments.instrumentcontroller.v1.InstrumentController/Initialize",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.hardwarecontroller.v1.HardwareController/ClosePlateDrawer",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        }
+      ]
+    },
+    {
+      "call": "enter_objective_maintenance(1)",
+      "result": null,
+      "sent": [
+        {
+          "rpc": "/sila2.moldev.com.instruments.instrumentcontroller.v1.InstrumentController/Initialize",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        },
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/EnterObjectiveMaintenance",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": "0a0e0a0c7b22496e646578223a20317d"
+        }
+      ]
+    },
+    {
+      "call": "exit_objective_maintenance()",
+      "result": null,
+      "sent": [
+        {
+          "rpc": "/sila2.moldev.com.instruments.objectivescontroller.v1.ObjectivesController/ExitObjectiveMaintenance",
+          "lock": [
+            "0a0c0a0a70796c6162726f626f74"
+          ],
+          "timeout": 30.0,
+          "request": ""
+        }
+      ]
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        {
+          "rpc": "/sila2.org.silastandard.core.lockcontroller.v1.LockController/UnlockServer",
+          "timeout": 30.0,
+          "request": "0a0c0a0a70796c6162726f626f74"
+        },
+        {
+          "rpc": "close"
+        }
+      ]
+    }
+  ]
+}

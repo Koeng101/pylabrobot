@@ -1,0 +1,37 @@
+{
+  "name": "imcs_tip_1000uL",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "typeName": "HamiltonTip",
+      "model": "imcs_tip_1000uL",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 81.1
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "hasFilter": true,
+        "maximalVolume": 1065.0,
+        "nominalVolume": 1065.0,
+        "hamilton": {
+          "tipSize": "HIGH_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "IMCS tip. Same as \"Hamilton High volume (1000 \u00b5L) tip without a filter\", but tips are 14mm shorter."
+}

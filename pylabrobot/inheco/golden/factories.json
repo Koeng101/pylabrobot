@@ -1,0 +1,52 @@
+{
+  "inheco_thermoshake": {
+    "model": "inheco_thermoshake",
+    "category": "heating_shaking",
+    "size": [
+      147,
+      104,
+      118
+    ],
+    "child_location": [
+      9.62,
+      9.22,
+      109.9
+    ],
+    "index": 1,
+    "supports_active_cooling": true,
+    "resources": [
+      {
+        "name": "thermoshake",
+        "parent": "",
+        "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+      }
+    ]
+  },
+  "inheco_cpac_ultraflat": {
+    "model": "inheco_cpac_ultraflat",
+    "category": "temperature_controller",
+    "size": [
+      113,
+      89,
+      129
+    ],
+    "child_location": [
+      8,
+      11,
+      77
+    ],
+    "index": 6,
+    "supports_active_cooling": true,
+    "resources": [
+      {
+        "name": "cpac",
+        "parent": "",
+        "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+      }
+    ]
+  },
+  "inheco_thermoshake_ac": "NotImplementedError: Inheco ThermoShake AC is missing child_location.",
+  "inheco_thermoshake_rm": "NotImplementedError: Inheco Thermoshake RM is missing child_location",
+  "index 0": "ValueError: Index must be between 1 and 6 (inclusive)",
+  "index 7": "ValueError: Index must be between 1 and 6 (inclusive)"
+}

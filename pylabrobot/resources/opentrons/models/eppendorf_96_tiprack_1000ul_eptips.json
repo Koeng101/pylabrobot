@@ -1,0 +1,105 @@
+{
+  "name": "eppendorf_96_tiprack_1000ul_eptips",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP_RACK",
+      "typeName": "StandingTipRack",
+      "model": "Eppendorf epT.I.P.S. 96 Tip Rack 1000 \u00b5L",
+      "category": "tip_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 121.9
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_TIP_SPOT",
+              "typeName": "TipSpot",
+              "category": "tip_spot",
+              "size": {
+                "x": 6.223,
+                "y": 6.223
+              },
+              "rotation": {},
+              "tipSpot": {
+                "prototypeTip": {
+                  "name": "{name}_{identifier}",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "typeName": "Tip",
+                  "model": "eppendorf_96_tiprack_1000ul_eptips",
+                  "category": "tip",
+                  "size": {
+                    "x": 8.8,
+                    "y": 8.8,
+                    "z": 70.7
+                  },
+                  "rotation": {},
+                  "headTool": {},
+                  "tip": {
+                    "diameter": 8.8,
+                    "maximalVolume": 1000.0,
+                    "nominalVolume": 1000.0
+                  }
+                }
+              }
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "{name}_{identifier}#0",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "typeName": "Tip",
+                  "model": "eppendorf_96_tiprack_1000ul_eptips",
+                  "category": "tip",
+                  "size": {
+                    "x": 8.8,
+                    "y": 8.8,
+                    "z": 70.7
+                  },
+                  "location": {
+                    "x": -1.2885,
+                    "y": -1.2885,
+                    "z": -70.7
+                  },
+                  "rotation": {},
+                  "headTool": {},
+                  "tip": {
+                    "diameter": 8.8,
+                    "maximalVolume": 1000.0,
+                    "nominalVolume": 1000.0
+                  }
+                },
+                "initialState": {
+                  "volume": {
+                    "trackingEnabled": true
+                  }
+                }
+              }
+            ],
+            "initialState": {
+              "tipTrackingEnabled": true,
+              "tipsMade": 1
+            }
+          },
+          "offset": {
+            "x": 11.2685,
+            "y": 8.1285,
+            "z": 56.9
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "tipRack": {
+        "style": "TIP_RACK_STYLE_STANDING"
+      }
+    }
+  }
+}

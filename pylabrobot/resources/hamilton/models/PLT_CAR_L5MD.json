@@ -1,0 +1,135 @@
+{
+  "name": "PLT_CAR_L5MD",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "typeName": "PlateCarrier",
+      "model": "PLT_CAR_L5MD",
+      "category": "plate_carrier",
+      "size": {
+        "x": 135.0,
+        "y": 497.0,
+        "z": 130.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 86.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 8.5,
+            "z": 111.75
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 6.55,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 86.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 104.5,
+            "z": 111.75
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 6.55,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 86.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 200.5,
+            "z": 111.75
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 6.55,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 86.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 296.5,
+            "z": 111.75
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 6.55,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-4",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "typeName": "PlateHolder",
+          "category": "plate_holder",
+          "size": {
+            "x": 127.0,
+            "y": 86.0
+          },
+          "location": {
+            "x": 4.0,
+            "y": 392.5,
+            "z": 111.75
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 6.55,
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  }
+}

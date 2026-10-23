@@ -46,9 +46,10 @@ from pylabrobot.hamilton.transport.tcp.session import SessionState, TCPSession
 from pylabrobot.hamilton.transport.tcp.tcp import HamiltonTCPClient
 from pylabrobot.hamilton.transport.tcp.wire_types import U32, PaddedBool, Str, Struct, wire_type_of
 from pylabrobot.io.socket import Socket
-from pylabrobot.resources import Coordinate, Resource
-from pylabrobot.resources.deck import Deck
-from pylabrobot.resources.tip import Tip
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.tree import to_coordinate
+from pylabrobot.resources.store.v1 import store_pb2 as spb
 
 from . import prep_commands as PrepCmd
 from .configuration import DeviceConfiguration
@@ -60,6 +61,7 @@ from .features.lights import Lights
 from .features.pipettes import HEAD8_CLEARANCE_Y, Pipettes, PipettesConfiguration
 from .features.x_arm import XArm
 from .master import PrepDriver, _ResolvedPrepCommand
+from .model import ArmModel, get_nodes, read_arm, ref, tool_length
 from .prep_commands import (
   HEATER_OBJECT_PATH,
   HEATER_SHAKER_CPU_OBJECT_PATH,
@@ -447,7 +449,7 @@ def _first_contact_along(
   across: float,
   bottom_z: float,
   axis: int,
-  boxes: List[Tuple[Resource, Coordinate, Coordinate]],
+  boxes: List[Tuple[str, Coordinate, Coordinate]],
   radius: float,
 ) -> Optional[float]:
   """Where a channel moving along one horizontal axis first touches a box.
@@ -488,7 +490,7 @@ def _first_contact_below(
   floor_z: float,
   x: float,
   y: float,
-  boxes: List[Tuple[Resource, Coordinate, Coordinate]],
+  boxes: List[Tuple[str, Coordinate, Coordinate]],
   radius: float,
 ) -> Optional[float]:
   """Where a channel's lowest point, moving down, first touches the top of a box.
@@ -536,38 +538,52 @@ class SimulatedPipettes(_Simulated, Pipettes):
     self._grip: Optional[Tuple[float, float]] = None
     self._tools_from: Optional[Tuple[float, float, float]] = None
 
-  def _touchable(self) -> List[Tuple[Resource, Coordinate, Coordinate]]:
+  async def _touchable(self) -> List[Tuple[str, Coordinate, Coordinate]]:
     """The deck's resources a channel can touch.
 
-    Everything with a volume, apart from the arm and what it carries.
+    Everything with a volume, apart from the arm and what it carries. Two reads of the store.
 
     Returns:
-      Each resource with its lower and upper corner on the deck.
+      Each resource's name with its lower and upper corner on the deck.
     """
     deck = self.device.deck
     if deck is None:
       return []
     arm = self.device.x_arm.resource if self.device.x_arm is not None else None
-    carried: Set[int] = set()
-    for held in ([arm] if arm is not None else []) + list(self.resources):
-      carried.add(id(held))
-      carried.update(id(child) for child in held.get_all_children())
-    boxes = []
-    for resource in deck.get_all_children():
-      if id(resource) in carried or resource.location is None:
-        continue
-      size = Coordinate(
-        resource.get_absolute_size_x(),
-        resource.get_absolute_size_y(),
-        resource.get_absolute_size_z(),
+    nodes = await get_nodes(deck.store, [ref(deck.id)], depth=-1)
+    carried = set() if arm is None else {arm.id}
+    for held in self.resources:
+      carried.add(held.id)
+    by_parent: Dict[bytes, List[bytes]] = {}
+    for node in nodes:
+      by_parent.setdefault(node.parent_id, []).append(node.id)
+    pending = list(carried)
+    while pending:
+      children = by_parent.get(pending.pop(), [])
+      carried.update(children)
+      pending.extend(children)
+    candidates = [
+      node for node in nodes[1:] if node.id not in carried and node.attributes.HasField("location")
+    ]
+    if not candidates:
+      return []
+    response = await deck.store.commands.resolve_geometry(
+      spb.ResolveGeometryRequest(
+        queries=[spb.GeometryQuery(resource=ref(n.id), frame=ref(deck.id)) for n in candidates]
       )
+    )
+    boxes = []
+    for node, geometry in zip(candidates, response.results):
+      if geometry.HasField("issue"):
+        continue
+      size = to_coordinate(geometry.absolute_size)
       if min(size.x, size.y, size.z) <= 0:
         continue
-      low = resource.get_location_wrt(deck)
-      boxes.append((resource, low, low + size))
+      low = to_coordinate(geometry.locations[0])
+      boxes.append((node.attributes.name, low, low + size))
     return boxes
 
-  def _bottom_offset(self, channel: int) -> float:
+  async def _bottom_offset(self, channel: int) -> float:
     """How far a channel's lowest modelled point is below its reference point.
 
     Args:
@@ -576,22 +592,19 @@ class SimulatedPipettes(_Simulated, Pipettes):
     Returns:
       The offset in mm, 0 or negative.
     """
-    deck = self.device.deck
-    point = self.get_reference_point_location(channel)
-    if deck is None or point is None or channel >= len(self.resources):
+    arm = self.device.x_arm.resource if self.device.x_arm is not None else None
+    if arm is None or channel >= len(self.resources):
       return 0.0
-    held = self.resources[channel]
-    lowest = min(
-      (
-        part.get_location_wrt(deck).z
-        for part in [held, *held.get_all_children()]
-        if part.location is not None
-      ),
-      default=point.z,
-    )
+    model = await read_arm(arm.store, arm.id, depth=-1)
+    point = self._reference_point_in(model, channel)
+    if point is None:
+      return 0.0
+    lowest = model.lowest(self.resources[channel].id)
+    if lowest is None:
+      return 0.0
     return min(lowest - point.z, 0.0)
 
-  def _touched_along(
+  async def _touched_along(
     self, channel: int, axis: int, start: float, end: float, across: float, z: float
   ) -> Optional[float]:
     """Where a channel searching along X or Y first touches a resource.
@@ -611,13 +624,13 @@ class SimulatedPipettes(_Simulated, Pipettes):
       start,
       end,
       across,
-      z + self._bottom_offset(channel),
+      z + await self._bottom_offset(channel),
       axis,
-      self._touchable(),
+      await self._touchable(),
       SIMULATED_CLLD_PROBE_DIAMETER / 2,
     )
 
-  def sensed_x_move(self, x_from: float, x_to: float) -> float:
+  async def sensed_x_move(self, x_from: float, x_to: float) -> float:
     """Where an X move ends when a channel with detection on touches a resource.
 
     The detection is recorded on that channel.
@@ -632,8 +645,8 @@ class SimulatedPipettes(_Simulated, Pipettes):
     for channel in sorted(self._clld_on):
       if self._clld_detected.get(channel):
         continue
-      _, y, z = self._modelled_location(channel)
-      touched = self._touched_along(channel, 0, x_from, x_to, y, z)
+      _, y, z = await self._modelled_location(channel)
+      touched = await self._touched_along(channel, 0, x_from, x_to, y, z)
       if touched is not None:
         self._clld_detected[channel] = True
         x_to = touched
@@ -662,8 +675,8 @@ class SimulatedPipettes(_Simulated, Pipettes):
     arm = self._driver.x_arm
     if arm is None:
       raise RuntimeError("no X arm to move; have you called `prep.setup()`?")
-    _, y, z = self._modelled_location(channel_idx)
-    touched = self._touched_along(channel_idx, 0, here, end, y, z)
+    _, y, z = await self._modelled_location(channel_idx)
+    touched = await self._touched_along(channel_idx, 0, here, end, y, z)
     await arm.move_to_x_position(
       end if touched is None else touched, minimum_traverse_height_start=z
     )
@@ -673,10 +686,11 @@ class SimulatedPipettes(_Simulated, Pipettes):
     """What this device was told its channels are."""
     return self.device.simulated_pipettes or PipettesConfiguration()
 
-  def _modelled_location(self, channel: int) -> Tuple[float, float, float]:
-    """Where the model has one channel, as (x, y, z) in mm on the deck.
+  def _location_in(self, model: Optional[ArmModel], channel: int) -> Tuple[float, float, float]:
+    """Where the model has one channel, as (x, y, z) in mm on the deck, from a read of the arm.
 
     Args:
+      model: the arm as read, or None while nothing models it.
       channel: which channel, 0-indexed from the back.
 
     Returns:
@@ -684,17 +698,25 @@ class SimulatedPipettes(_Simulated, Pipettes):
       models it.
     """
     x, y, z = SIMULATED_INITIALIZED_POSITIONS[channel]
-    point = self.get_reference_point_location(channel)
+    point = None if model is None else self._reference_point_in(model, channel)
     if point is not None:
       y, z = point.y, point.z
-    return self.device.modelled_x(default=x), y, z
+    return self.device.modelled_x_in(model, default=x), y, z
 
-  def _move(self, channel: int, x: Optional[float], y: Optional[float], z: Optional[float]) -> None:
+  async def _modelled_location(self, channel: int) -> Tuple[float, float, float]:
+    """Where the model has one channel, as (x, y, z) in mm on the deck. See `_location_in`."""
+    return self._location_in(await self._read_arm(), channel)
+
+  async def _move(
+    self, channel: int, x: Optional[float], y: Optional[float], z: Optional[float]
+  ) -> None:
     """Record a move on the model: X on the arm, Y and Z on the channel."""
-    arm = self.device.x_arm
-    if x is not None and arm is not None:
-      arm.update_location_by_reference_point(x)
-    self.update_location_by_reference_point(channel, y=y, z=z)
+    await self._record_channel_positions({channel: y}, {channel: z}, x=x)
+
+  async def _channel_mounted_length(self, channel: int) -> float:
+    """How far below a channel's shaft what the model has on it reaches, in mm."""
+    model = await self._read_arm()
+    return 0.0 if model is None else self._mounted_length_in(model, channel)
 
   def _gripper_channels(self) -> Tuple[int, int]:
     """The back and front channels the CoRe gripper tools ride: the two front-most."""
@@ -714,12 +736,12 @@ class SimulatedPipettes(_Simulated, Pipettes):
       self._answer_drive_settings,
       self._answer_probes,
     ):
-      answered = answer(request, method)
+      answered = await answer(request, method)
       if answered is not None:
         return answered
     return None
 
-  def _answer_grippers(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
+  async def _answer_grippers(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
     """The plate-held latch, and where each CoRe gripper command leaves the two tool channels.
 
     Where the device reported them after each command; Z at the jaws once the tools are on.
@@ -736,8 +758,10 @@ class SimulatedPipettes(_Simulated, Pipettes):
         request.rear_channel_position_y,
         request.front_channel_position_y,
       )
-      self._move(back, request.tool_position_x, request.rear_channel_position_y, request.tool_seek)
-      self._move(front, None, request.front_channel_position_y, request.tool_seek)
+      await self._move(
+        back, request.tool_position_x, request.rear_channel_position_y, request.tool_seek
+      )
+      await self._move(front, None, request.front_channel_position_y, request.tool_seek)
     elif isinstance(request, PrepCmd.PrepDropTool):
       if self._plate_held:
         raise _DeviceRefuses(_TOOLS_HELD_BY_A_PLATE)
@@ -745,94 +769,100 @@ class SimulatedPipettes(_Simulated, Pipettes):
       height = self.device.simulated_default_minimum_traverse_height
       if self._tools_from is not None and height is not None:
         x, rear_y, front_y = self._tools_from
-        self._move(back, x, rear_y, height - self._mounted_length(back))
-        self._move(front, None, front_y, height - self._mounted_length(front))
+        await self._move(back, x, rear_y, height - await self._channel_mounted_length(back))
+        await self._move(front, None, front_y, height - await self._channel_mounted_length(front))
       self._tools_from = None
     elif isinstance(request, PrepCmd.PrepPickUpPlate):
       # Down to the grip height, jaws closed on the plate; the firmware does not lift it.
       plate_top = request.plate_top_center
       half = (request.plate.width + JAW_OPEN_EXTRA - 2 * request.grip_distance) / 2
       self._grip = (plate_top.z_position - request.grip_height, request.grip_distance)
-      self._move(back, plate_top.x_position, plate_top.y_position + half, request.grip_height)
-      self._move(front, None, plate_top.y_position - half, request.grip_height)
+      await self._move(back, plate_top.x_position, plate_top.y_position + half, request.grip_height)
+      await self._move(front, None, plate_top.y_position - half, request.grip_height)
       self._plate_held = True
     elif isinstance(request, (PrepCmd.PrepMovePlate, PrepCmd.PrepDropPlate)):
       # Both jaws to the top less the grip's offset, spacing kept; a drop then opens them by the
       # clearance and how far they closed.
       plate_top = request.plate_top_center
-      half = (self._modelled_location(back)[1] - self._modelled_location(front)[1]) / 2
+      half = (
+        (await self._modelled_location(back))[1] - (await self._modelled_location(front))[1]
+      ) / 2
       z = None if self._grip is None else plate_top.z_position - self._grip[0]
       if isinstance(request, PrepCmd.PrepDropPlate):
         half += request.clearance_y + (0.0 if self._grip is None else self._grip[1])
         self._grip = None
         self._plate_held = False
-      self._move(back, plate_top.x_position, plate_top.y_position + half, z)
-      self._move(front, None, plate_top.y_position - half, z)
+      await self._move(back, plate_top.x_position, plate_top.y_position + half, z)
+      await self._move(front, None, plate_top.y_position - half, z)
     elif isinstance(request, PrepCmd.PrepReleasePlate):
       # What the jaws do is unmeasured: they are left where they are.
       self._grip = None
       self._plate_held = False
     return None
 
-  def _answer_moves(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
+  async def _answer_moves(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
     """Where the channels are, and the moves that take them elsewhere."""
     if isinstance(request, PrepCmd.PrepGetPositions):
+      model = await self._read_arm()
       positions = []
-      for channel in range(self.device.simulated_configuration.num_channels or 0):
-        x, y, z = self._modelled_location(channel)
+      for index in range(self.device.simulated_configuration.num_channels or 0):
+        px, py, pz = self._location_in(model, index)
         positions.append(
           PrepCmd.ChannelXYZPositionParameters(
             default_values=False,
-            channel=PrepCmd.channel_order_legacy_prep[channel],
-            position_x=x,
-            position_y=y,
-            position_z=z,
+            channel=PrepCmd.channel_order_legacy_prep[index],
+            position_x=px,
+            position_y=py,
+            position_z=pz,
           )
         )
       if self.device.head8 is not None:
-        x, y, z = self.device.head8_location()
+        px, py, pz = self.device.head8_location_in(model)
         positions.append(
           PrepCmd.ChannelXYZPositionParameters(
             default_values=False,
             channel=PrepCmd.ChannelIndex.MPHChannel,
-            position_x=x,
-            position_y=y,
-            position_z=z,
+            position_x=px,
+            position_y=py,
+            position_z=pz,
           )
         )
       return PrepCmd.PrepGetPositions.Response(
         positions=positions
       ), "where the model has the channels"
+    ys: Dict[int, Optional[float]] = {}
+    zs: Dict[int, Optional[float]] = {}
+    x: Optional[float] = None
     if isinstance(request, (PrepCmd.PrepMoveToPosition, PrepCmd.PrepMoveToPositionViaLane)):
       move = request.move_parameters
       for target in move.axis_parameters:
-        self._move_channel(
-          target.channel, move.gantry_x_position, target.y_position, target.z_position
-        )
+        channel = _channel_index(target.channel)
+        if channel is not None:
+          x = move.gantry_x_position
+          ys[channel], zs[channel] = target.y_position, target.z_position
     elif isinstance(request, PrepCmd.PrepMoveYAbsolute):
       for y_target in request.channels:
-        self._move_channel(y_target.channel, None, y_target.y_position, None)
+        channel = _channel_index(y_target.channel)
+        if channel is not None:
+          ys[channel] = y_target.y_position
     elif isinstance(request, PrepCmd.PrepMoveZAbsolute):
       for z_target in request.channels:
-        self._move_channel(z_target.channel, None, None, z_target.z_position)
+        channel = _channel_index(z_target.channel)
+        if channel is not None:
+          zs[channel] = z_target.z_position
     elif isinstance(request, PrepCmd.PrepMoveZUpToSafe):
       # The shaft's end goes to the traverse height; what it carries reaches below that.
       height = self.device.simulated_default_minimum_traverse_height
+      model = await self._read_arm()
       for enum in request.channels:
         raised = _channel_index(enum)
-        if raised is not None and height is not None:
-          self._move(raised, None, None, height - self._mounted_length(raised))
+        if raised is not None and height is not None and model is not None:
+          zs[raised] = height - self._mounted_length_in(model, raised)
+    if ys or zs or x is not None:
+      await self._record_channel_positions(ys, zs, x=x)
     return None
 
-  def _move_channel(
-    self, enum: Any, x: Optional[float], y: Optional[float], z: Optional[float]
-  ) -> None:
-    """`_move` for the channel a firmware channel enum names; nothing for one this has not."""
-    channel = _channel_index(enum)
-    if channel is not None:
-      self._move(channel, x, y, z)
-
-  def _answer_seeks(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
+  async def _answer_seeks(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
     """The cLLD and obstacle searches, each stopping at the first resource in the way."""
     if isinstance(request, PrepCmd.PrepZSeekLldPosition):
       # Each channel seeks down toward its floor and ends at the higher of its final height and
@@ -843,19 +873,19 @@ class SimulatedPipettes(_Simulated, Pipettes):
         seeking = _channel_index(seek.channel)
         touched = None
         if seeking is not None:
-          self._move(seeking, seek.seek_position_x, seek.seek_position_y, seek.seek_height)
-          offset = self._bottom_offset(seeking)
+          await self._move(seeking, seek.seek_position_x, seek.seek_position_y, seek.seek_height)
+          offset = await self._bottom_offset(seeking)
           top = _first_contact_below(
             seek.seek_height + offset,
             seek.min_seek_height + offset,
             seek.seek_position_x,
             seek.seek_position_y,
-            self._touchable(),
+            await self._touchable(),
             SIMULATED_CLLD_PROBE_DIAMETER / 2,
           )
           touched = None if top is None else top - offset
           stopped = seek.min_seek_height if touched is None else touched
-          self._move(seeking, None, None, max(seek.final_position_z, stopped))
+          await self._move(seeking, None, None, max(seek.final_position_z, stopped))
         found = found or touched is not None
         results.append(
           PrepCmd.SeekResultParameters(
@@ -876,12 +906,12 @@ class SimulatedPipettes(_Simulated, Pipettes):
       offset = SIMULATED_Y_DRIVE_OFFSETS[owner]
       if isinstance(request, PrepCmd.PrepYDriveGetPosition):
         return PrepCmd.PrepYDriveGetPosition.Response(
-          position=self._modelled_location(owner)[1] + offset
+          position=(await self._modelled_location(owner))[1] + offset
         ), f"channel {owner}'s modelled Y in its drive frame"
-      x, y, z = self._modelled_location(owner)
+      x, y, z = await self._modelled_location(owner)
       end = request.position - offset
-      touched = self._touched_along(owner, 1, y, end, x, z)
-      self._move(owner, None, end if touched is None else touched, None)
+      touched = await self._touched_along(owner, 1, y, end, x, z)
+      await self._move(owner, None, end if touched is None else touched, None)
       return PrepCmd.PrepYAxisSeekCapacitiveLld.Response(
         lld_detected=touched is not None,
         detect_position=0.0 if touched is None else touched + offset,
@@ -899,36 +929,36 @@ class SimulatedPipettes(_Simulated, Pipettes):
       if owner is None or owner >= len(SIMULATED_Z_DRIVE_OFFSETS):
         return None
       offset = SIMULATED_Z_DRIVE_OFFSETS[owner]
-      x, y, z = self._modelled_location(owner)
+      x, y, z = await self._modelled_location(owner)
       if isinstance(request, PrepCmd.PrepZDriveGetPosition):
         return PrepCmd.PrepZDriveGetPosition.Response(
           position=z + offset
         ), f"channel {owner}'s modelled Z in its drive frame"
       if isinstance(request, PrepCmd.PrepZAxisSeekCapacitiveLld):
         # Down from where it stands to the first resource under it, and left there.
-        bottom = self._bottom_offset(owner)
+        bottom = await self._bottom_offset(owner)
         end = request.position - offset
         top = _first_contact_below(
-          z + bottom, end + bottom, x, y, self._touchable(), SIMULATED_CLLD_PROBE_DIAMETER / 2
+          z + bottom, end + bottom, x, y, await self._touchable(), SIMULATED_CLLD_PROBE_DIAMETER / 2
         )
         touched = None if top is None else top - bottom
-        self._move(owner, None, None, end if touched is None else touched)
+        await self._move(owner, None, None, end if touched is None else touched)
         return PrepCmd.PrepZAxisSeekCapacitiveLld.Response(
           lld_detected=touched is not None,
           detect_position=0.0 if touched is None else touched + offset,
         ), "the resource model" if touched is not None else "nothing in the way"
       # Down from its start to the first resource under it, then left at its final height.
-      bottom = self._bottom_offset(owner)
+      bottom = await self._bottom_offset(owner)
       top = _first_contact_below(
         request.start_position - offset + bottom,
         request.end_position - offset + bottom,
         x,
         y,
-        self._touchable(),
+        await self._touchable(),
         SIMULATED_CLLD_PROBE_DIAMETER / 2,
       )
       touched = None if top is None else top - bottom
-      self._move(owner, None, None, request.final_position - offset)
+      await self._move(owner, None, None, request.final_position - offset)
       return PrepCmd.PrepZAxisSeekObstacle.Response(
         obstacle_detected=touched is not None,
         position=0.0 if touched is None else touched + offset,
@@ -955,7 +985,9 @@ class SimulatedPipettes(_Simulated, Pipettes):
       ), "the resource model" if detected else "nothing in the way"
     return None
 
-  def _answer_drive_settings(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
+  async def _answer_drive_settings(
+    self, request: TCPCommand, method: str
+  ) -> Optional[Tuple[Any, str]]:
     """The channels' windows, and what their Z drives are set to."""
     if isinstance(request, PrepCmd.PrepGetChannelBounds):
       declared = self._declared().channels
@@ -967,7 +999,7 @@ class SimulatedPipettes(_Simulated, Pipettes):
         if c.x_range is None or c.y_range is None or c.z_range is None:
           continue
         # The Z window is for whatever is attached: it drops by what the channel carries.
-        below = self._mounted_length(channel)
+        below = await self._channel_mounted_length(channel)
         bounds.append(
           PrepCmd.ChannelBoundsParameters(
             channel=PrepCmd.channel_order_legacy_prep[channel],
@@ -994,7 +1026,7 @@ class SimulatedPipettes(_Simulated, Pipettes):
       ), "the declared Z drive acceleration"
     return None
 
-  def _answer_probes(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
+  async def _answer_probes(self, request: TCPCommand, method: str) -> Optional[Tuple[Any, str]]:
     """What the channels say they hold, their TADM reads, and their reads by name."""
     if isinstance(request, PrepCmd.PrepRetrieveTadmData):
       # Pressure is not modelled, so nothing is recorded.
@@ -1016,7 +1048,8 @@ class SimulatedPipettes(_Simulated, Pipettes):
     if isinstance(request, PrepCmd.PrepGetTipDefinitionHeld) or (
       isinstance(request, PrepCmd.PrepProbeRequest) and method == "GetTipDefinitionHeld"
     ):
-      return HoiParams().add(self._tip_definition_held(), Struct()), "the channels' mounting shafts"
+      held = await self._tip_definition_held()
+      return HoiParams().add(held, Struct()), "the channels' mounting shafts"
     if isinstance(request, PrepCmd.PrepProbeRequest):
       owner = self._owner(request)
       if owner is None:
@@ -1029,18 +1062,18 @@ class SimulatedPipettes(_Simulated, Pipettes):
         return HoiParams().add(version, Str), f"channel {owner}'s declared firmware"
       if method == "GetTipPresent":
         # The sleeve senses what sits in the collar, a tool as much as a tip.
-        shaft = self.shaft(owner)
-        present = shaft is not None and shaft.has_tip()
+        tools = await self._get_mounted_tools() if self.shafts else []
+        present = owner < len(tools) and tools[owner] is not None
         return HoiParams().add(int(present), U32), f"channel {owner}'s mounting shaft"
     return None
 
-  def _tip_definition_held(self) -> PrepCmd.TipDefinition:
+  async def _tip_definition_held(self) -> PrepCmd.TipDefinition:
     """What the first channel carrying something holds, as the definition it was picked up with.
 
     The id and label are the device's own answers, empty and holding.
     """
-    shafts = (self.shaft(channel) for channel in range(self.num_channels))
-    mounted = next((s.tip for s in shafts if s is not None and s.has_tip()), None)
+    tools = await self._get_mounted_tools() if self.shafts else []
+    mounted = next((tool for tool in tools if tool is not None), None)
     if mounted is None:
       return PrepCmd.TipDefinition(
         default_values=True,
@@ -1053,12 +1086,12 @@ class SimulatedPipettes(_Simulated, Pipettes):
         is_tool=False,
         label="No Tip",
       )
-    if isinstance(mounted, Tip):
+    if mounted.is_tip:
       return PrepCmd.TipDefinition(
         default_values=False,
         id=255,
         volume=mounted.maximal_volume,
-        length=mounted.get_size_z() - mounted.fitting_depth,
+        length=tool_length(mounted),
         tip_type=int(PrepCmd.TipTypes.StandardVolume),
         has_filter=mounted.has_filter,
         is_needle=mounted.maximal_volume == 0,
@@ -1084,7 +1117,7 @@ class SimulatedXArm(_Simulated, XArm):
   """The X-arm, answering for itself."""
 
   async def answer(self, request: TCPCommand, path: str, method: str) -> Optional[Tuple[Any, str]]:
-    x = self.device.modelled_x(default=SIMULATED_INITIALIZED_POSITIONS[0][0])
+    x = await self.device.modelled_x(default=SIMULATED_INITIALIZED_POSITIONS[0][0])
     if isinstance(request, PrepCmd.PrepXAxisGetCommandedPosition):
       # The simulated axis counts in its own frame, offset from the reported X.
       return PrepCmd.PrepXAxisGetCommandedPosition.Response(
@@ -1102,8 +1135,8 @@ class SimulatedXArm(_Simulated, XArm):
       pipettes = self.device.pipettes
       target = request.position + SIMULATED_X_AXIS_OFFSET
       if isinstance(pipettes, SimulatedPipettes):
-        target = pipettes.sensed_x_move(x, target)
-      self.update_location_by_reference_point(target)
+        target = await pipettes.sensed_x_move(x, target)
+      await self.update_location_by_reference_point(target)
       return None
     if isinstance(request, PrepCmd.PrepXAxisSeekToHomeFlag):
       # No flag is modelled: the seek trips where the arm stands, and nothing moves.
@@ -1207,13 +1240,13 @@ class SimulatedHead8(_Simulated, Head8):
     if path != MPH_OBJECT_PATH or not isinstance(pipettes, SimulatedPipettes):
       return None
     count = self.device.simulated_configuration.num_channels or 0
-    limit = self.device.head8_location()[1] - HEAD8_CLEARANCE_Y
+    limit = (await self.device.head8_location())[1] - HEAD8_CLEARANCE_Y
     for channel in range(count):
       if channel > 0:
         limit -= pipettes._min_spacing_between(channel - 1, channel)
-      y = pipettes._modelled_location(channel)[1]
+      y = (await pipettes._modelled_location(channel))[1]
       if y > limit:
-        pipettes._move(channel, None, limit, None)
+        await pipettes._move(channel, None, limit, None)
         y = limit
       limit = y
     return None  # moved the model; the device answers the command itself
@@ -1347,7 +1380,7 @@ class PrepSimulationDriver(PrepDriver):
 
   def __init__(
     self,
-    deck: Deck,
+    deck: Optional[handles.Deck] = None,
     declared_configuration_json: Optional[str] = None,
     firmware_tree_json: Optional[str] = None,
     initialized: bool = False,
@@ -1358,7 +1391,8 @@ class PrepSimulationDriver(PrepDriver):
   ):
     """
     Args:
-      deck: the deck to reflect this device into.
+      deck: the deck to reflect this device into, in its resource store. None makes an in-memory
+        store at setup, with a Prep deck in it.
       declared_configuration_json: path to a saved configuration, which this device then answers as.
         Defaults to `RECORDING_PREP_HEATER_SHAKER`.
       firmware_tree_json: path to a recorded firmware tree, whose objects and methods this device
@@ -1425,27 +1459,42 @@ class PrepSimulationDriver(PrepDriver):
       discovered: what this device answered, which is what it was told to answer.
     """
 
-  def modelled_x(self, default: float) -> float:
+  def modelled_x_in(self, model: Optional[ArmModel], default: float) -> float:
+    """Where the model has the arm along X, in mm on the deck, from a read of the arm.
+
+    Args:
+      model: the arm as read, or None while nothing models it.
+      default: what to answer when nothing models the arm yet.
+    """
+    arm = self.x_arm
+    at = None if model is None or model.arm is None else model.location(model.arm.id)
+    if arm is None or at is None:
+      return default
+    return at.x + arm.configuration.reference_point_from_left
+
+  async def modelled_x(self, default: float) -> float:
     """Where the model has the arm along X, in mm on the deck.
 
     Args:
       default: what to answer when nothing models the arm yet.
     """
-    arm = self.x_arm
-    if arm is None or arm.resource is None or arm.resource.location is None or self.deck is None:
-      return default
-    return arm.resource.get_location_wrt(self.deck).x + arm.configuration.reference_point_from_left
+    pipettes = self.pipettes
+    model = None if pipettes is None else await pipettes._read_arm()
+    return self.modelled_x_in(model, default)
 
-  def head8_location(self) -> Tuple[float, float, float]:
-    """Where the model has the head's probe 0, as (x, y, z) in mm on the deck.
-
-    Where the device reported it after initializing while nothing models it.
-    """
-    at = None if self.head8 is None else self.head8.get_reference_point_location()
+  def head8_location_in(self, model: Optional[ArmModel]) -> Tuple[float, float, float]:
+    """Where the model has the head's probe 0, as (x, y, z) in mm on the deck, from a read of the
+    arm. Where the device reported it after initializing while nothing models it."""
+    at = None if self.head8 is None or model is None else self.head8._reference_point_in(model)
     if at is not None:
       return at.x, at.y, at.z
-    x = self.modelled_x(default=SIMULATED_INITIALIZED_POSITIONS[0][0])
+    x = self.modelled_x_in(model, default=SIMULATED_INITIALIZED_POSITIONS[0][0])
     return (x + SIMULATED_HEAD8_X_PAST_CHANNELS, *SIMULATED_INITIALIZED_HEAD8_YZ)
+
+  async def head8_location(self) -> Tuple[float, float, float]:
+    """Where the model has the head's probe 0, as (x, y, z) in mm on the deck."""
+    pipettes = self.pipettes
+    return self.head8_location_in(None if pipettes is None else await pipettes._read_arm())
 
   async def _answer(self, request: TCPCommand, path: str, method: str) -> Optional[Tuple[Any, str]]:
     """What the device would answer, asked of the feature the command is about.
@@ -1454,7 +1503,7 @@ class PrepSimulationDriver(PrepDriver):
     who is asked, and answers what the device itself holds. Keeping time, a move is recorded first
     and then waited out, so whatever watches the model sees it for as long as the device takes.
     """
-    before = self._where_everything_is() if self.simulate_motion_time else None
+    before = await self._where_everything_is() if self.simulate_motion_time else None
     answered = None
     for feature in (self.head8, self.pipettes, self.x_arm, self.hs):
       if isinstance(feature, _Simulated):
@@ -1464,17 +1513,20 @@ class PrepSimulationDriver(PrepDriver):
     if answered is None:
       answered = self._answer_for_device(request, path, method)
     if before is not None:
-      seconds = self._motion_time(before, self._where_everything_is()) * self.motion_time_scale
+      seconds = (
+        self._motion_time(before, await self._where_everything_is()) * self.motion_time_scale
+      )
       if seconds > 0:
         await asyncio.sleep(seconds)
     return answered
 
-  def _where_everything_is(self) -> List[Tuple[float, float, float]]:
+  async def _where_everything_is(self) -> List[Tuple[float, float, float]]:
     """Where the model has each channel, as (x, y, z) in mm: x is the arm's."""
     if not isinstance(self.pipettes, SimulatedPipettes):
       return []
     count = self.simulated_configuration.num_channels or 0
-    return [self.pipettes._modelled_location(channel) for channel in range(count)]
+    model = await self.pipettes._read_arm()
+    return [self.pipettes._location_in(model, channel) for channel in range(count)]
 
   @staticmethod
   def _travel_time(distance: float, speed: float, acceleration: float) -> float:

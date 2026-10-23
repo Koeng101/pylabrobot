@@ -34,18 +34,32 @@ from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
   make_driver,
 )
 from pylabrobot.bmg_labtech.clariostar.driver.simulator_tests import decoded_with_parameters
-from pylabrobot.resources import Resource
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
 class DeviceTests(unittest.IsolatedAsyncioTestCase):
-  def test_two_readers_in_one_tree(self):
-    deck = Resource("deck", size_x=1000, size_y=1000, size_z=0)
+  async def test_two_readers_in_one_tree(self):
+    store = ResourceStore.in_memory()
+    deck = await store.create(
+      build.resource("deck", Coordinate(1000, 1000, 0), kind=pb.RESOURCE_KIND_DECK), "deck"
+    )
     for name in ("reader_1", "reader_2"):
-      deck.assign_child_resource(CLARIOstar(name, io=FakeFTDI()), location=deck.location)
+      body = await CLARIOstar(name, io=FakeFTDI(), store=store).create_body()
+      await deck.assign_child_resource(body, location=Coordinate.zero())
     self.assertEqual(
-      {r.name for r in deck.get_all_children()},
+      {r.name for r in await deck.find_resources()} - {"deck"},
       {"reader_1", "reader_1_plate_holder", "reader_2", "reader_2_plate_holder"},
     )
+
+  async def test_a_reader_already_in_the_store_is_found(self):
+    store = ResourceStore.in_memory()
+    body = await CLARIOstar("reader", io=FakeFTDI(), store=store).create_body()
+    again = CLARIOstar("reader", io=FakeFTDI(), store=store)
+    self.assertEqual(await again.create_body(), body)
+    self.assertEqual(again.plate_holder.handle.name, "reader_plate_holder")
 
   def test_the_setup_summary_names_the_reader(self):
     reader = CLARIOstar("reader_2", io=FakeFTDI())

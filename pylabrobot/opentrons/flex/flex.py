@@ -7,6 +7,13 @@ from urllib.parse import quote
 from pylabrobot.io.http import HTTP
 from pylabrobot.io.http_serial import HTTPSerial
 from pylabrobot.opentrons.api import HTTP_API_VERSION, OpentronsAPI
+from pylabrobot.opentrons.decks import (
+  FLEX_TRASH_SIZE,
+  DeckSlots,
+  create_flex_deck,
+  slot_in,
+  trash,
+)
 from pylabrobot.opentrons.flex.checks import traversal_z
 from pylabrobot.opentrons.flex.errors import OpentronsError
 from pylabrobot.opentrons.flex.flex_gripper import FlexGripper
@@ -16,13 +23,22 @@ from pylabrobot.opentrons.flex.flex_wire import (
   ROBOT_AXES,
   _require_robot_commands,
 )
+from pylabrobot.opentrons.heads import PipetteShafts
 from pylabrobot.opentrons.labware import (
   LabwareRegistry,
   build_container_definition,
   build_movable_labware_definition,
   build_plate_definition,
   build_tip_rack_definition,
-  official_tip_rack_identity,
+  official_identity_for_model,
+)
+from pylabrobot.opentrons.model import (
+  CONTAINER_KINDS,
+  Identified,
+  LabwareFacts,
+  Tree,
+  read,
+  read_labware,
 )
 from pylabrobot.opentrons.operations import OperationLock, serialized
 from pylabrobot.opentrons.run import COMMAND_POLL_HEADROOM, OpentronsRun
@@ -35,11 +51,13 @@ from pylabrobot.opentrons.types import (
   RobotInfo,
   RunInfo,
 )
-from pylabrobot.resources import Container, Plate, Resource, TipRack
-from pylabrobot.resources.opentrons.flex_deck import SLOT_DEPTH, SLOT_WIDTH, FlexDeck
-from pylabrobot.resources.trash import Trash
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 logger = logging.getLogger(__name__)
+
+K = pb.ResourceKind
 
 # Discovered pipette channel count -> matching head class.
 _CHANNELS_TO_HEAD: Dict[int, Type[_FlexHead]] = {
@@ -48,17 +66,20 @@ _CHANNELS_TO_HEAD: Dict[int, Type[_FlexHead]] = {
   96: FlexHead96,
 }
 
-
-def _has_pipettable_geometry(resource: Resource) -> bool:
-  """Whether a real, well-bearing definition can be built from this resource."""
-  return isinstance(resource, (Plate, TipRack, Container))
+# The kinds a real, well-bearing definition can be built from.
+_PIPETTABLE_KINDS = frozenset({K.RESOURCE_KIND_PLATE, K.RESOURCE_KIND_TIP_RACK}) | CONTAINER_KINDS
 
 
-def _not_pipettable_error(resource: Resource) -> OpentronsError:
+def _has_pipettable_geometry(kind: int) -> bool:
+  """Whether a real, well-bearing definition can be built from a resource of this kind."""
+  return kind in _PIPETTABLE_KINDS
+
+
+def _not_pipettable_error(name: str, type_name: str) -> OpentronsError:
   """The refusal for a resource no pipettable definition can be built from."""
   return OpentronsError(
     "Cannot build an Opentrons labware definition",
-    f"'{resource.name}' ({type(resource).__name__}) has no Opentrons load name, and a "
+    f"'{name}' ({type_name or 'Resource'}) has no Opentrons load name, and a "
     "definition can only be built from the geometry of a Plate, TipRack, or Container. "
     "The gripper can still "
     "move it -- only pipetting needs real well geometry.",
@@ -117,6 +138,11 @@ class Flex:
   Liquid-handling ops live on the heads, not here — see
   :mod:`pylabrobot.opentrons.flex.flex_head`.
 
+  The deck is a handle to a Flex deck in a resource store (see
+  :func:`pylabrobot.opentrons.decks.create_flex_deck`); everything the Flex knows of its labware,
+  tips and liquid it reads from and records in that store. Without one, ``connect()`` makes an
+  in-memory store and a Flex deck in it.
+
   ``connect()`` opens the transport for health/discovery queries; ``setup()``
   also creates a run, homes, and composes the heads. Use ``host="robot.local"``
   for Ethernet/Wi-Fi, or ``serial_port="/dev/cu.usbmodem1201"`` (``"COM3"``
@@ -128,7 +154,7 @@ class Flex:
     self,
     host: Optional[str] = None,
     port: int = 31950,
-    deck: Optional[FlexDeck] = None,
+    deck: Optional[handles.Deck] = None,
     io: Optional[HTTP] = None,
     command_timeout: float = 30.0,
     command_poll_interval: float = 0.05,
@@ -184,11 +210,11 @@ class Flex:
     self.api_version: Optional[str] = None
     self.robot_model: Optional[str] = None
 
-    self.deck = deck or FlexDeck()
+    self._deck = deck
     self._labware: Optional[LabwareRegistry] = None
-    # Names loaded under the non-pipettable movable stub. Tracked separately so
+    # Labware loaded under the non-pipettable movable stub, by id. Kept separately so
     # a pipetting op refuses them even on a load-cache hit.
-    self._stub_labware: Set[int] = set()
+    self._stub_labware: Set[bytes] = set()
     self.left: Optional[_FlexHead] = None
     self.right: Optional[_FlexHead] = None
     self.head96: Optional[_FlexHead] = None
@@ -196,13 +222,33 @@ class Flex:
     self._heads: List[_FlexHead] = []
 
   @property
-  def traversal_height(self) -> float:
+  def deck(self) -> handles.Deck:
+    """The deck, a handle into the resource store.
+
+    Raises:
+      RuntimeError: No deck was given and ``connect()`` has not made one yet.
+    """
+    if self._deck is None:
+      raise RuntimeError("The Flex has no deck yet: pass one, or call connect() or setup()")
+    return self._deck
+
+  @property
+  def store(self) -> ResourceStore:
+    """The resource store the deck is in."""
+    return self.deck.store
+
+  async def _ensure_deck(self) -> None:
+    """Make an in-memory store and a Flex deck in it when no deck was given."""
+    if self._deck is None:
+      self._deck = await create_flex_deck(ResourceStore.in_memory())
+
+  async def traversal_height(self) -> float:
     """Minimum tip/nozzle Z for travel, above the tallest modeled labware.
 
     Includes the deck's tip-rack clearance floor. Describe all physical
     obstacles in the deck model so taller labware raises this height.
     """
-    return traversal_z(self.deck)
+    return await traversal_z(self.deck)
 
   @property
   def software_version(self) -> Optional[str]:
@@ -224,36 +270,37 @@ class Flex:
     """Mounted pipettes in discovery order, including a 96-channel head."""
     return list(self._heads)
 
-  def attach_deck(self, deck: FlexDeck) -> None:
+  def attach_deck(self, deck: handles.Deck) -> None:
     """Replace the deck before setup or after stopping the active run."""
     if self._run is not None:
       raise RuntimeError("Stop the active run before replacing its deck")
-    self.deck = deck
+    self._deck = deck
     self._stub_labware.clear()
 
   async def _load_trash_configuration(self) -> None:
-    """Place the local trash resource at the first movable bin configured on the robot."""
+    """Place the deck's trash at the first movable bin configured on the robot."""
     fixtures = await self._api.get_deck_configuration()
     fixture = next((f for f in fixtures if f.fixture_id == "trashBinAdapter"), None)
     slot = fixture.cutout_id.removeprefix("cutout") if fixture is not None else None
     if slot is not None and slot not in MOVABLE_TRASH_SLOTS:
       raise OpentronsError(f"Invalid trash cutout reported by the robot: {fixture}")
-    try:
-      trash = self.deck.get_trash_area()
-    except ValueError:
-      trash = None
+    slots = await DeckSlots.read(self.deck)
+    found = slots.trash()
     if slot is not None:
-      occupant = self.deck.get_resource_at_slot(slot)
-      if occupant is not None and occupant is not trash:
+      occupant = slots.occupant(slot)
+      if occupant is not None and (found is None or occupant.id != found.id):
         raise OpentronsError(
-          f"Robot trash slot {slot} is occupied by '{occupant.name}' in the deck"
+          f"Robot trash slot {slot} is occupied by '{occupant.attributes.name}' in the deck"
         )
-    if trash is not None:
-      self.deck.unassign_child_resource(trash)
-    if slot is not None:
-      if trash is None:
-        trash = Trash(name="trash", size_x=SLOT_WIDTH, size_y=SLOT_DEPTH, size_z=82.0)
-      self.deck.assign_child_at_slot(trash, slot)
+    if slot is None:
+      if found is not None:
+        await self.store.handle_from_node(found, ()).unassign()
+      return
+    holder = self.store.handle_from_node(slots.holders[slot], ())
+    if found is None:
+      await self.store.create(trash("trash", FLEX_TRASH_SIZE), name="trash", parent=holder)
+    else:
+      await holder.assign_child_resource(self.store.handle_from_node(found, ()))
 
   # --- Lifecycle ---
 
@@ -281,9 +328,13 @@ class Flex:
 
   @serialized
   async def connect(self) -> None:
-    """Open the link and load the robot's trash location. Starts no run, moves nothing."""
+    """Open the link and load the robot's trash location. Starts no run, moves nothing.
+
+    Makes an in-memory store and a Flex deck in it, when no deck was given.
+    """
     if self._connected:
       return
+    await self._ensure_deck()
     await self.io.setup()
     try:
       health = await self._api.get_health()
@@ -334,7 +385,11 @@ class Flex:
 
   @serialized
   async def initialize(self) -> None:
-    """Discover what is mounted and compose the heads. Moves nothing."""
+    """Discover what is mounted and compose the heads. Moves nothing.
+
+    Each pipette's channels are made afresh in the store, as `<deck>_<mount>_pipette`, carrying
+    no tips.
+    """
     # Discover ALL mounted pipettes and compose the matching head per mount.
     # Discovery is re-runnable: drop whatever a previous setup composed rather
     # than stacking a second set of heads onto dead pipette ids.
@@ -362,7 +417,12 @@ class Flex:
           "Unsupported pipette channel count",
           f"{pip.channels} channels (mount '{pip.mount}') has no matching FlexHead.",
         )
-      head = head_cls(self, pip.mount, pipette_id, pip.channels, pip.pipette_model, pip.max_volume)
+      shafts = await PipetteShafts.create(
+        self.store, f"{self.deck.name}_{pip.mount}_pipette", pip.channels
+      )
+      head = head_cls(
+        self, pip.mount, pipette_id, pip.channels, pip.pipette_model, pip.max_volume, shafts
+      )
 
       if pip.channels == 96:
         self.head96 = head
@@ -428,18 +488,13 @@ class Flex:
     # Drop any mounted tips to the trash BEFORE parking/disconnecting, so the
     # robot is never left holding tips. A failure here must not block the
     # home/cancel/disconnect that follows.
-    try:
-      trash: Optional[Trash] = self.deck.get_trash_area()
-    except ValueError:
-      trash = None
-    if trash is not None:
+    found = (await DeckSlots.read(self.deck)).trash() if self._deck is not None else None
+    if found is not None:
+      trash_handle = cast(handles.Trash, self.store.handle_from_node(found, ()))
       for head in reversed(self._heads):
         try:
-          if (
-            any(tip is not None for tip in head.get_mounted_tips())
-            or await head.has_tip_on_hardware()
-          ):
-            await head.discard_tips(trash)
+          if (await head.shafts.mounted()).held or await head.has_tip_on_hardware():
+            await head.discard_tips(trash_handle)
         except Exception:
           logger.warning(
             "Dropping tips on stop failed for the %s head; continuing to disconnect.",
@@ -552,19 +607,34 @@ class Flex:
 
   async def _ensure_labware_loaded(
     self,
-    resource: Resource,
+    resource: Identified,
     allow_stub: bool = False,
     grip_distance_from_top: Optional[float] = None,
+    tree: Optional[Tree] = None,
   ) -> str:
-    """Resolve and bind a resource once per run, validating its current slot."""
+    """Resolve and bind a resource once per run, validating its current slot.
+
+    Args:
+      resource: The labware.
+      allow_stub: Whether a resource no pipettable definition is built from may load as the
+        movable stub.
+      grip_distance_from_top: The grip height of a definition uploaded for it.
+      tree: A read that has the resource and its ancestors; read afresh when not given.
+    """
     registry = self._require_labware()
     name = resource.name
-    if id(resource) in self._stub_labware and not allow_stub:
-      raise _not_pipettable_error(resource)
-    slot = self.deck.get_slot(resource)
+    if tree is None or resource.id not in tree:
+      tree = await read(self.store, [resource.id], ancestors=True)
+    node = tree.node(resource.id)
+    if resource.id in self._stub_labware and not allow_stub:
+      raise _not_pipettable_error(name, node.attributes.type_name)
+    slot = slot_in(self.deck, tree, node)
     if slot is None:
       raise OpentronsError("Resource not on deck", f"'{name}' is not on a deck slot.")
-    identity = official_tip_rack_identity(resource) if isinstance(resource, TipRack) else None
+    slot = str(slot)
+    identity: Optional[LabwareIdentity] = None
+    if node.attributes.kind == K.RESOURCE_KIND_TIP_RACK:
+      identity = official_identity_for_model(node.attributes.model)
     if registry.is_loaded(resource):
       binding = registry.get(resource)
       await registry.load(resource, slot, identity or binding.identity)
@@ -593,7 +663,7 @@ class Flex:
     return self._labware
 
   @serialized
-  async def sync_tips_to_robot(self, tip_rack: TipRack) -> None:
+  async def sync_tips_to_robot(self, tip_rack: handles.TipRack) -> None:
     """Make the robot's tip-rack model agree with PyLabRobot's.
 
     The robot keeps its own record of which spots in a tip rack still hold a
@@ -603,22 +673,26 @@ class Flex:
     leaves the two records disagreeing, with no symptom until the robot picks
     up from a spot it believes is full.
 
-    This pushes PyLabRobot's record onto the robot in one ``setTipState`` per
-    state, taking the resource tree as the truth. Set the tip layout first
+    This pushes the resource store's record onto the robot in one ``setTipState``
+    per state, taking the store as the truth. Set the tip layout first
     (``tip_rack.set_tip_state(...)``), then call this.
 
     There is no equivalent for liquid. ``loadLiquid`` is the robot's only way
     in, and it refuses any liquid the run did not already define, which a run
     created without a protocol never does. Well volumes therefore live only in
-    the resource tree.
+    the resource store.
     """
     labware_id = await self._ensure_labware_loaded(tip_rack)
+    tree = await read(self.store, [tip_rack], depth=2)
     # The robot grades a tip-rack well "clean"/"used"/"empty". PyLabRobot only
     # records whether a tip is there, so an occupied spot maps to "clean".
     occupied: List[str] = []
     empty: List[str] = []
-    for spot in tip_rack.get_all_items():
-      (occupied if spot.has_tip() else empty).append(tip_rack.get_child_identifier(spot))
+    for spot in tree.children(tree.node(tip_rack)):
+      if not spot.attributes.identifier:
+        continue
+      has_tip = tree.tool(spot) is not None
+      (occupied if has_tip else empty).append(spot.attributes.identifier)
 
     for well_names, state in ((occupied, "clean"), (empty, "empty")):
       if not well_names:
@@ -635,17 +709,17 @@ class Flex:
     )
 
   @serialized
-  async def labware_moved_off_deck(self, resource: Resource) -> None:
+  async def labware_moved_off_deck(self, resource: handles.Resource) -> None:
     """Tell the robot an EXTERNAL agent (human or lab transporter) removed labware.
 
     A logical move, not a gripper motion: ``moveLabware`` with strategy
     ``manualMoveWithoutPause`` drops the labware from the robot-server's deck
     model, freeing its slot. Without this the slot stays occupied server-side
     and a later load into it fails with ``LocationIsOccupiedError``. The
-    PLR-side deck slot is freed too. No wire command is sent for labware that
-    was never loaded into the run; a re-add later loads fresh at its new slot
-    and re-uploads its definition -- a different same-named resource must not
-    inherit the departed labware's geometry.
+    slot in the resource store is freed too: the labware becomes a root of its own.
+    No wire command is sent for labware that was never loaded into the run; a
+    re-add later loads fresh at its new slot and re-uploads its definition -- a
+    different same-named resource must not inherit the departed labware's geometry.
     """
     name = resource.name
     registry = self._require_labware()
@@ -659,14 +733,14 @@ class Flex:
         },
       )
     registry.remove(resource)
-    self._stub_labware.discard(id(resource))
-    slot = self.deck.get_slot(resource)
-    if slot is not None:
-      self.deck.unassign_child_at_slot(slot)
+    self._stub_labware.discard(resource.id)
+    tree = await read(self.store, [resource], ancestors=True)
+    if slot_in(self.deck, tree, tree.node(resource)) is not None:
+      await resource.unassign()
     logger.info("Labware '%s' marked moved off-deck", name)
 
   @serialized
-  async def reload_labware(self, resource: Resource) -> None:
+  async def reload_labware(self, resource: handles.Resource) -> None:
     """Re-read the labware's position after a human moved it in its own slot.
 
     For labware nudged or re-seated where it already sits: the robot re-applies
@@ -755,7 +829,7 @@ class Flex:
 
   async def _define_custom_labware(
     self,
-    resource: Resource,
+    resource: Identified,
     grip_distance_from_top: Optional[float] = None,
     allow_stub: bool = False,
   ) -> LabwareIdentity:
@@ -772,21 +846,22 @@ class Flex:
         resource.name, grip_distance_from_top, "its custom definition was already uploaded"
       )
       return identity
-    definition = self._build_labware_definition(resource, grip_distance_from_top, allow_stub)
+    facts = await read_labware(self.store, resource.id)
+    definition = self._build_labware_definition(facts, grip_distance_from_top, allow_stub)
     identity = await registry.define(resource, definition)
-    if not _has_pipettable_geometry(resource):
-      self._stub_labware.add(id(resource))
+    if not _has_pipettable_geometry(facts.kind):
+      self._stub_labware.add(resource.id)
     return identity
 
   @staticmethod
   def _build_labware_definition(
-    resource: Resource,
+    resource: LabwareFacts,
     grip_distance_from_top: Optional[float] = None,
     allow_stub: bool = False,
   ) -> dict:
-    """Build the definition matching the resource's type, or raise for unbuildable labware.
+    """Build the definition matching the resource's kind, or raise for unbuildable labware.
 
-    Pipettable types get real-geometry definitions. Any other resource (lid,
+    Pipettable kinds get real-geometry definitions. Any other resource (lid,
     adapter, tube rack, ...) has no wells the robot can pipette, so it builds
     only as the non-pipettable movable stub, which ``allow_stub`` opts into.
     Geometry an Opentrons definition cannot describe (a rotated plate, a
@@ -794,16 +869,16 @@ class Flex:
     wire command, rather than uploaded for the robot to act on.
     """
     try:
-      if isinstance(resource, Plate):
+      if resource.kind == K.RESOURCE_KIND_PLATE:
         return build_plate_definition(resource, grip_distance_from_top)
-      if isinstance(resource, TipRack):
+      if resource.kind == K.RESOURCE_KIND_TIP_RACK:
         return build_tip_rack_definition(
           resource, for_flex=True, grip_distance_from_top=grip_distance_from_top
         )
-      if isinstance(resource, Container):
+      if resource.kind in CONTAINER_KINDS:
         return build_container_definition(resource, grip_distance_from_top)
     except ValueError as e:
       raise OpentronsError("Cannot build an Opentrons labware definition", str(e)) from e
     if not allow_stub:
-      raise _not_pipettable_error(resource)
+      raise _not_pipettable_error(resource.name, resource.type_name)
     return build_movable_labware_definition(resource, grip_distance_from_top)

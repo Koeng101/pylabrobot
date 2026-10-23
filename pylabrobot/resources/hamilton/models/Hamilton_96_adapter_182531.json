@@ -1,0 +1,29 @@
+{
+  "name": "Hamilton_96_adapter_182531",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE_ADAPTER",
+      "typeName": "PlateAdapter",
+      "model": "Hamilton_96_adapter_182531",
+      "category": "plate_adapter",
+      "size": {
+        "x": 110.0,
+        "y": 75.0,
+        "z": 15.0
+      },
+      "rotation": {},
+      "plateAdapter": {
+        "dx": 1.634,
+        "dy": 2.134,
+        "dz": 1.951,
+        "adapterHoleSizeX": 7.732,
+        "adapterHoleSizeY": 7.732,
+        "adapterHoleSizeZ": 13.049,
+        "adapterHoleDx": 9.0,
+        "adapterHoleDy": 9.0
+      }
+    }
+  },
+  "description": "Hamilton 182531 PCR insert for the 182070 landscape carrier.\n\nGeometry is derived from the five ``182531_RNO`` meshes in Hamilton's 3D model.\nThe 12 x 8 hole grid has 9 mm spacing; H1 is 5.5/6.0 mm from the left/front edges.\nThe mesh's top opening diameter is approximately 7.732 mm, and its cavity bottom\nis 1.951 mm above the insert base, giving a 13.049 mm cavity depth.\n\n``dz`` represents the modeled cavity bottom. Automatic plate placement uses that\nreference; it does not model contact between a particular PCR plate and the tapered\ncavities. Supply an explicit plate location if its seating height differs.\n\nArgs:\n  name: The insert name."
+}

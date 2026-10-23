@@ -17,7 +17,7 @@ from pylabrobot.micronic.code_reader.driver import (
   iter_positions,
   rack_position,
 )
-from pylabrobot.resources.tube_rack import TubeRack
+from pylabrobot.resources.store.handles import TubeRack
 
 
 def _rack(num_items_x: int = 12, num_items_y: int = 8) -> TubeRack:

@@ -6,6 +6,7 @@ import unittest
 from pylabrobot.bmg_labtech.clariostar.device import (
   RECORDING_CLARIOSTAR_PLUS,
   CLARIOstar,
+  CLARIOstarDevice,
   CLARIOstarPlus,
 )
 from pylabrobot.bmg_labtech.clariostar.driver.configuration import (
@@ -16,6 +17,7 @@ from pylabrobot.bmg_labtech.clariostar.driver.configuration import (
   read_configuration,
 )
 from pylabrobot.bmg_labtech.clariostar.driver.configuration_tests import decoded
+from pylabrobot.bmg_labtech.clariostar.driver.features.drawer_tests import set_location, stored
 from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
   PARAMETERS_REPLY,
   STATUS_IDLE,
@@ -25,14 +27,15 @@ from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
   parse_status,
 )
 from pylabrobot.resources import Coordinate, Plate
-from pylabrobot.resources.biorad.plates import biorad_96_wellplate_200uL_Vb
+from pylabrobot.resources.store import handles
 
 LOCATION_IN = Coordinate(10, 20, 30)  # made up: the real ones are not measured yet
 LOCATION_OUT = Coordinate(10, -200, 30)
 
 
-def make_plate(name: str) -> Plate:
-  return biorad_96_wellplate_200uL_Vb(name)
+async def make_plate(reader: CLARIOstarDevice, name: str) -> handles.Plate:
+  """A Bio-Rad 96-well 200 uL plate in the reader's store."""
+  return await stored("biorad_96_wellplate_200uL_Vb", reader.store, name)
 
 
 async def decoded_with_parameters():
@@ -78,55 +81,62 @@ class SimulatorTests(unittest.IsolatedAsyncioTestCase):
   async def test_drawer_moves_the_plate_holder(self):
     await self.reader.drawer.open()
     self.assertTrue(await self.reader.drawer.sense_drawer_open())
-    self.assertEqual(self.reader.plate_holder.location, LOCATION_OUT)
+    self.assertEqual(await self.reader.plate_holder.handle.get_location(), LOCATION_OUT)
     await self.reader.drawer.close()
     self.assertFalse(await self.reader.drawer.sense_drawer_open())
-    self.assertEqual(self.reader.plate_holder.location, LOCATION_IN)
+    self.assertEqual(await self.reader.plate_holder.handle.get_location(), LOCATION_IN)
 
   async def test_drawer_position_is_read_from_the_resource_model(self):
-    self.reader.plate_holder.location = LOCATION_OUT
+    await set_location(self.reader.plate_holder.handle, LOCATION_OUT)
     self.assertTrue((await self.reader.driver.request_status()).drawer_open)
-    self.reader.plate_holder.location = LOCATION_IN
+    await set_location(self.reader.plate_holder.handle, LOCATION_IN)
     self.assertFalse((await self.reader.driver.request_status()).drawer_open)
 
   async def test_a_plate_goes_on_the_plate_holder_only(self):
     with self.assertRaises(RuntimeError):
-      self.reader.assign_child_resource(make_plate("plate"), location=Coordinate.zero())
-    self.assertEqual(self.reader.children, [self.reader.plate_holder])
+      await self.reader.assign_child_resource(
+        await make_plate(self.reader, "plate"), location=Coordinate.zero()
+      )
+    assert self.reader.body is not None
+    children = await self.reader.body.get_children()
+    self.assertEqual([child.name for child in children], [self.reader.plate_holder.name])
 
   async def test_a_plate_needs_the_drawer_sensed_open(self):
     holder = self.reader.plate_holder
+    plate = await make_plate(self.reader, "plate")
     with self.assertRaises(RuntimeError):  # not sensed yet
-      holder.assign_child_resource(make_plate("plate"))
+      await holder.assign_child_resource(plate)
     await self.reader.drawer.close()
     with self.assertRaises(RuntimeError):  # sensed closed
-      holder.assign_child_resource(make_plate("plate"))
+      await holder.assign_child_resource(plate)
     await self.reader.drawer.open()
-    plate = make_plate("plate")
-    holder.assign_child_resource(plate)
-    self.assertIs(holder.resource, plate)
+    await holder.assign_child_resource(plate)
+    self.assertEqual(await holder.get_resource_held(), plate)
 
   async def test_a_second_plate_is_refused(self):
     await self.reader.drawer.open()
-    self.reader.plate_holder.assign_child_resource(make_plate("first"))
+    holder = self.reader.plate_holder
+    await holder.assign_child_resource(await make_plate(self.reader, "first"))
     with self.assertRaises(RuntimeError):
-      self.reader.plate_holder.assign_child_resource(make_plate("second"))
-    self.assertEqual([c.name for c in self.reader.plate_holder.children], ["first"])
+      await holder.assign_child_resource(await make_plate(self.reader, "second"))
+    children = await holder.handle.get_children()
+    self.assertEqual([child.name for child in children], ["first"])
 
   async def test_a_plate_comes_off_only_with_the_drawer_open(self):
     await self.reader.drawer.open()
-    plate = make_plate("plate")
-    self.reader.plate_holder.assign_child_resource(plate)
+    plate = await make_plate(self.reader, "plate")
+    holder = self.reader.plate_holder
+    await holder.assign_child_resource(plate)
     await self.reader.drawer.close()
     with self.assertRaises(RuntimeError):
-      plate.unassign()
+      await holder.unassign_child_resource(plate)
     await self.reader.drawer.open()
-    plate.unassign()
-    self.assertIsNone(self.reader.plate_holder.resource)
+    await holder.unassign_child_resource(plate)
+    self.assertIsNone(await holder.get_resource_held())
 
   async def test_stop_with_a_plate_inside_opens_the_drawer_and_raises(self):
     await self.reader.drawer.open()
-    self.reader.plate_holder.assign_child_resource(make_plate("plate"))
+    await self.reader.plate_holder.assign_child_resource(await make_plate(self.reader, "plate"))
     await self.reader.drawer.close()
     with self.assertRaises(RuntimeError):
       await self.reader.stop()
@@ -145,9 +155,9 @@ class SimulatorTests(unittest.IsolatedAsyncioTestCase):
   async def test_plate_present_needs_a_plate_and_the_drawer_in(self):
     self.assertFalse(await self.reader.drawer.sense_plate_present())
     await self.reader.drawer.open()
-    self.reader.plate_holder.assign_child_resource(
-      Plate("plate", size_x=127.76, size_y=85.48, size_z=14.0, ordered_items={}),
-      location=Coordinate.zero(),
+    plate = Plate("plate", size_x=127.76, size_y=85.48, size_z=14.0, ordered_items={})
+    await self.reader.plate_holder.assign_child_resource(
+      await stored(plate, self.reader.store), location=Coordinate.zero()
     )
     simulated = await self.reader.driver.request_status()
     # As the reader answered with the plate on the plate holder and the drawer out.

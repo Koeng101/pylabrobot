@@ -2,8 +2,8 @@
 
 A resource is split into its model (what it is, shared by every resource that serializes the
 same way, sent once) and its instance (a name, a parent, six floats). The split is derived from
-`Resource.serialize()` by removing the fields that vary per instance, so no resource type is
-known here.
+the resource's serialization - what `Resource.serialize()` gives, built from what the store holds
+of it - by removing the fields that vary per instance, so no resource type is known here.
 """
 
 import base64
@@ -13,10 +13,13 @@ import json
 import struct
 from typing import Any, Dict, FrozenSet, List, Optional, Tuple
 
-from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.tree import to_coordinate, to_rotation
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.visualizer.mirror import TreeMirror
+from pylabrobot.visualizer.nodes import serialize_node, serialize_node_state
 
-from .grids import describe_bands, describe_grid
+from .grids import describe_bands, describe_grid, metadata_of
 
 # Fields of a serialized resource that describe this one resource rather than its kind. Everything
 # else is shared by every resource that serializes the same way, and so belongs to the model.
@@ -26,19 +29,16 @@ INSTANCE_FIELDS = frozenset({"name", "location", "rotation", "parent_name", "chi
 # a plate the names of its wells. Links, not kind.
 NAME_KEYS = frozenset({"name", "parent_name"})
 
-# Fields a resource may declare about itself that `serialize()` does not carry, read straight off
-# the resource.
+# Fields a resource may declare about itself that its serialization does not carry, read from
+# its metadata.
 DECLARED_FIELDS = ("reference_point", "window", "mesh", "reference_glb", "appearance")
 RESOURCE_LINK = "<resource>"
 
 
-def _declared(value: Any) -> Any:
-  """A declared field as JSON: anything with a `serialize` method is asked for it.
-
-  Read off the resource, so a field may be a live object such as a `Coordinate`.
-  """
-  serialize = getattr(value, "serialize", None)
-  return serialize() if callable(serialize) else value
+def declared_fields(node: pb.ResourceNode) -> Dict[str, Any]:
+  """The fields a resource declares about itself in its metadata, by name."""
+  metadata = metadata_of(node)
+  return {field: metadata[field] for field in DECLARED_FIELDS if metadata.get(field) is not None}
 
 
 def _model_of(data: Dict[str, Any], names: FrozenSet[str]) -> Dict[str, Any]:
@@ -128,21 +128,19 @@ class Scene:
     bucket.append(index)
     return index
 
-  def add_known(self, resource: Resource, parent: int, model: Dict[str, Any]) -> int:
+  def add_known(self, node: pb.ResourceNode, parent: int, model: Dict[str, Any]) -> int:
     """Add a resource whose model is already known, without serializing it again.
 
-    Its position is read off the resource.
+    Its position is read off its node.
     """
     index = len(self.names)
-    self.names.append(resource.name)
+    name = node.attributes.name
+    self.names.append(name)
     model_index = self._intern(model)
     self.model_of_instance.append(model_index)
-    self.derived[resource.name] = self.models[model_index]
+    self.derived[name] = self.models[model_index]
     self.parent_of_instance.append(parent)
-    location = resource.location or Coordinate.zero()
-    rotation = resource.rotation
-    self.transforms.extend((float(location.x), float(location.y), float(location.z)))
-    self.transforms.extend((float(rotation.x), float(rotation.y), float(rotation.z)))
+    self.transforms.extend(local_transform(node))
     return index
 
   def add(
@@ -204,32 +202,31 @@ class Scene:
     }
 
 
-def all_names(resource: Resource) -> List[str]:
-  """Every resource name in the tree, so a link to one can be recognised as a link."""
-  found = [resource.name]
-  for child in resource.children:
-    found.extend(all_names(child))
-  return found
-
-
-def _serialized_children(data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-  """A serialized resource's children by name. A parent may leave one out: a tip spot its tip."""
-  return {child["name"]: child for child in data.get("children", ())}
-
-
-def _legacy_shape(resource: Resource, data: Dict[str, Any]) -> Dict[str, Any]:
-  """One JSON node per resource, listing every child, including those `serialize()` leaves out."""
-  serialized = _serialized_children(data)
-  data["children"] = [
-    _legacy_shape(child, serialized.get(child.name) or child.serialize())
-    for child in resource.children
+def local_transform(node: pb.ResourceNode) -> List[float]:
+  """Where a resource is in its parent and how it is turned there: x, y, z, rx, ry, rz, as its
+  `Coordinate` and `Rotation` hold them."""
+  attributes = node.attributes
+  location = to_coordinate(attributes.location)
+  rotation = to_rotation(attributes.rotation)
+  return [
+    float(location.x),
+    float(location.y),
+    float(location.z),
+    float(rotation.x),
+    float(rotation.y),
+    float(rotation.z),
   ]
-  return data
 
 
-def legacy_size(root: Resource) -> int:
-  """The size of the tree serialized as one JSON node per resource."""
-  return len(json.dumps(_legacy_shape(root, root.serialize())))
+def legacy_size(tree: TreeMirror) -> int:
+  """The size of the tree serialized as one JSON node per resource, every child listed."""
+
+  def one_node(node: pb.ResourceNode) -> Dict[str, Any]:
+    data = serialize_node(node, tree)
+    data["children"] = [one_node(child) for child in tree.children(node)]
+    return data
+
+  return len(json.dumps(one_node(tree.node(tree.root_id))))
 
 
 def _links_to(model: Dict[str, Any], names: FrozenSet[str]) -> bool:
@@ -246,58 +243,49 @@ def _links_to(model: Dict[str, Any], names: FrozenSet[str]) -> bool:
 
 
 def build_scene(
-  root: Resource,
+  tree: TreeMirror,
   measure_legacy: bool = False,
   known: Optional[Dict[str, Dict[str, Any]]] = None,
   known_names: Optional[FrozenSet[str]] = None,
 ) -> Scene:
-  """Flatten `root` and every descendant into models and instances.
+  """Flatten the tree into models and instances.
 
-  Depth-first, parents before children, so world transforms resolve in one forward pass. A node
-  is serialized once and its nested children are handed down the walk.
+  Depth-first, parents before children, so world transforms resolve in one forward pass.
 
   Args:
-    root: the resource to flatten.
+    tree: the tree to flatten, from its root.
     measure_legacy: also measure the per-resource tree, for `Scene.legacy_bytes`.
     known: models derived by an earlier pass, by resource name, reused unless stale.
     known_names: the names that pass saw; a model that links to, or names, a resource that has
       since appeared or gone is derived again.
   """
-  names = frozenset(all_names(root))
+  names = frozenset(tree.names())
   scene = Scene(names=names)
   changed = names ^ (known_names or frozenset())
   models = {id(model): model for model in (known or {}).values()}
   stale = {i for i, model in models.items() if changed and _links_to(model, changed)}
   reuse = {name: model for name, model in (known or {}).items() if id(model) not in stale}
 
-  def walk(resource: Resource, parent: int, data: Optional[Dict[str, Any]] = None) -> None:
-    model = reuse.get(resource.name)
+  def walk(node: pb.ResourceNode, parent: int) -> None:
+    model = reuse.get(node.attributes.name)
     if model is not None:
-      index = scene.add_known(resource, parent, model)
-      for child in resource.children:
-        walk(child, index)
-      return
+      index = scene.add_known(node, parent, model)
+    else:
+      data = serialize_node(node, tree)
+      index = scene.add(
+        data,
+        parent,
+        handles.HANDLE_TYPES[node.attributes.kind],
+        describe_grid(node, tree),
+        describe_bands(node),
+        declared_fields(node),
+      )
+    for child in tree.children(node):
+      walk(child, index)
 
-    if data is None:
-      data = resource.serialize()
-    # Read off the resource, as `add_known` does: a tip's serialized data has no location.
-    if resource.location is not None:
-      data["location"] = resource.location.serialize()
-    declared = {
-      field: _declared(getattr(resource, field))
-      for field in DECLARED_FIELDS
-      if getattr(resource, field, None) is not None
-    }
-    index = scene.add(
-      data, parent, type(resource), describe_grid(resource), describe_bands(resource), declared
-    )
-    serialized = _serialized_children(data)
-    for child in resource.children:
-      walk(child, index, serialized.get(child.name))
-
-  walk(root, -1)
+  walk(tree.node(tree.root_id), -1)
   if measure_legacy:
-    scene.legacy_bytes = legacy_size(root)
+    scene.legacy_bytes = legacy_size(tree)
   return scene
 
 
@@ -380,20 +368,15 @@ def pack_state(states: Dict[str, Tuple[Dict[str, Any], str]], epoch: int = 0) ->
   return {"epoch": epoch, "states": table, "of": index, "locations": locations}
 
 
-def collect_state(root: Resource) -> Dict[str, Tuple[Dict[str, Any], str]]:
+def collect_state(tree: TreeMirror) -> Dict[str, Tuple[Dict[str, Any], str]]:
   """The cleaned state and key of every resource that publishes any, keyed by name.
 
   A resource whose state cleans down to nothing is left out; a rotation that is not the identity
   counts.
   """
   state: Dict[str, Tuple[Dict[str, Any], str]] = {}
-
-  def walk(resource: Resource) -> None:
-    cleaned, key = state_signature(resource.serialize_state())
+  for node in tree.walk():
+    cleaned, key = state_signature(serialize_node_state(node, tree))
     if cleaned:
-      state[resource.name] = (cleaned, key)
-    for child in resource.children:
-      walk(child)
-
-  walk(root)
+      state[node.attributes.name] = (cleaned, key)
   return state

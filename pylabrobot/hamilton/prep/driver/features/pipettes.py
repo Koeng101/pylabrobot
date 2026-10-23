@@ -58,44 +58,51 @@ from pylabrobot.hamilton.transport.tcp.hoi_error import HoiError
 from pylabrobot.hamilton.transport.tcp.messages import HoiParamsParser, parse_into_struct
 from pylabrobot.hamilton.transport.tcp.packets import Address
 from pylabrobot.legacy.liquid_handling.errors import ChannelizedError
-from pylabrobot.lib.liquid_handling.channel_positioning import (
-  compute_nonconsecutive_channel_offsets,
-)
-from pylabrobot.lib.liquid_handling.liquid_height import get_liquid_height_from_volume
+from pylabrobot.lib.liquid_handling.channel_positioning import nonconsecutive_channel_offsets
 from pylabrobot.lib.liquid_handling.mix import Mix
 from pylabrobot.lib.liquid_handling.pipette_batch_scheduling import (
   ChannelBatch,
-  plan_batches,
-  validate_channel_selections,
+  plan_target_batches,
 )
-from pylabrobot.lib.liquid_handling.tip_consolidation import plan_tip_consolidation
-from pylabrobot.resources import Container, Coordinate, Tip, TipRack, does_volume_tracking
+from pylabrobot.lib.liquid_handling.tip_consolidation import RackTips, plan_consolidation
+from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.errors import (
   HasTipError,
   NoTipError,
   TooLittleVolumeError,
 )
-from pylabrobot.resources.hamilton import HamiltonTip, PrepDeck, TipSize
-from pylabrobot.resources.hamilton.core_grippers import HamiltonCoreGrippers
-from pylabrobot.resources.n_channel_pipettes import TipMountingShaft
-from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.resource_state import (
-  VolumeTransferIntent,
-  all_channels_succeeded,
-  finalize_volume_ops,
-  queue_volume_transfers,
-  successes_from_failed_channels,
-)
-from pylabrobot.resources.tip_rack import TipSpot, check_tip_racks_available, tip_origin
-from pylabrobot.resources.trash import Trash
-from pylabrobot.resources.well import CrossSectionType, Well, WellBottomType
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from .. import prep_commands as PrepCmd
+from ..model import (
+  ArmModel,
+  ContainerFacts,
+  SpotFacts,
+  ToolFacts,
+  check_racks_available,
+  get_nodes,
+  heights_from_volumes,
+  locate,
+  position,
+  read_arm,
+  read_containers,
+  read_spots,
+  record_positions,
+  ref,
+  resolve,
+  store_problem,
+  tool_length,
+  tool_on,
+  volumes_from_heights,
+)
 from ..prep_commands import PIPETTOR_OBJECT_PATH
 from .x_arm import XArmConfiguration
 
 if TYPE_CHECKING:
-  from pylabrobot.resources.deck import Deck
+  from pylabrobot.resources.store.client import ResourceStore
 
   from ..configuration import DeviceConfiguration
   from ..master import PrepDriver
@@ -109,8 +116,8 @@ _T = TypeVar("_T")
 class _PipetteTransfer:
   """Private snapshot for aspirate/dispense resolution (not a public standard op)."""
 
-  resource: Container
-  tip: Tip
+  resource: ContainerFacts
+  tip: ToolFacts
   volume: float
   offset: Coordinate
   liquid_height: Optional[float] = None
@@ -377,16 +384,17 @@ def get_mix_parameters(
   return blocks
 
 
-def _effective_radius(resource) -> float:
+def _effective_radius(container: ContainerFacts) -> float:
   """Effective radius for PrepCmd.CommonParameters.tube_radius.
 
   For circular wells uses the actual radius; for rectangular wells computes the
   radius of a circle with equivalent area so tube_radius is meaningful to the
   firmware's conical liquid-following model.
   """
-  if isinstance(resource, Well) and resource.cross_section_type == CrossSectionType.RECTANGLE:
-    return float(math.sqrt(resource.get_size_x() * resource.get_size_y() / math.pi))
-  return float(resource.get_size_x() / 2)
+  size = container.placed.size
+  if container.is_well and container.spec.cross_section_type == pb.CROSS_SECTION_TYPE_RECTANGLE:
+    return float(math.sqrt(size.x * size.y / math.pi))
+  return float(size.x / 2)
 
 
 # Containers already warned about following a V- or U-bottom as a cylinder, by name.
@@ -432,15 +440,17 @@ def _merge_segments(
   return merged
 
 
-def _get_profile_segments(resource: object) -> list[PrepCmd.SegmentDescriptor]:
+_BOTTOM_NAMES = {pb.WELL_BOTTOM_TYPE_V: "V", pb.WELL_BOTTOM_TYPE_U: "U"}
+
+
+def _get_profile_segments(container: ContainerFacts) -> list[PrepCmd.SegmentDescriptor]:
   """A container's cross-section as firmware segments, bottom up from the cavity bottom.
 
-  One step per `height_volume_data` knot interval; else one per 0.5 mm of cavity depth from its
-  height-volume functions; else its footprint as one cylinder. Steps of one area are joined, and
-  the closest pairs, until `MAX_CONTAINER_SEGMENTS` are left.
+  One step per `height_volume_data` knot interval; else its footprint as one cylinder. Steps of one
+  area are joined, and the closest pairs, until `MAX_CONTAINER_SEGMENTS` are left.
 
   Args:
-    resource: the container.
+    container: the container.
 
   Returns:
     The segments, each of constant area (dV/dh, in mm2); [] for a shape it cannot tell.
@@ -448,36 +458,25 @@ def _get_profile_segments(resource: object) -> list[PrepCmd.SegmentDescriptor]:
   Raises:
     ValueError: If the volume does not rise with height.
   """
-  if not isinstance(resource, Container):
-    return []
-  try:
-    depth = resource.get_size_z() - resource.material_z_thickness
-  except NotImplementedError:
-    depth = resource.get_size_z()
-  if resource.height_volume_data:
-    knots = sorted(resource.height_volume_data.items())
-  elif resource.supports_compute_height_volume_functions():
-    steps = max(1, math.ceil(depth / 0.5))
-    heights = [depth * i / steps for i in range(steps + 1)]
-    knots = [(h, resource.compute_volume_from_height(h)) for h in heights]
-  else:
-    cross_section = resource.cross_section_type if isinstance(resource, Well) else None
-    if cross_section == CrossSectionType.CIRCLE:
-      area = math.pi * (resource.get_size_x() / 2) ** 2
-    elif cross_section == CrossSectionType.RECTANGLE:
-      area = resource.get_size_x() * resource.get_size_y()
+  size = container.placed.size
+  thickness = container.material_z_thickness
+  depth = size.z if thickness is None else size.z - thickness
+  knots = container.height_volume_data
+  if not knots:
+    cross_section = container.spec.cross_section_type if container.is_well else None
+    if cross_section == pb.CROSS_SECTION_TYPE_CIRCLE:
+      area = math.pi * (size.x / 2) ** 2
+    elif cross_section == pb.CROSS_SECTION_TYPE_RECTANGLE:
+      area = size.x * size.y
     else:
       return []
-    bottom = resource.bottom_type if isinstance(resource, Well) else None
-    if (
-      bottom in (WellBottomType.V, WellBottomType.U)
-      and resource.name not in _warned_cylinder_fallback
-    ):
-      _warned_cylinder_fallback.add(resource.name)
+    bottom = _BOTTOM_NAMES.get(container.spec.bottom_type) if container.is_well else None
+    if bottom is not None and container.name not in _warned_cylinder_fallback:
+      _warned_cylinder_fallback.add(container.name)
       logger.warning(
         "%s has a %s-bottom but no height-volume data, so the tip follows it as a cylinder",
-        resource.name,
-        bottom.value,
+        container.name,
+        bottom,
       )
     return [PrepCmd.SegmentDescriptor(area_top=area, area_bottom=area, height=depth)]
   segments = []
@@ -485,7 +484,7 @@ def _get_profile_segments(resource: object) -> list[PrepCmd.SegmentDescriptor]:
     if h1 <= h0:
       continue
     if v1 <= v0:
-      raise ValueError(f"{resource.name}: the volume does not rise between {h0} and {h1} mm")
+      raise ValueError(f"{container.name}: the volume does not rise between {h0} and {h1} mm")
     area = (v1 - v0) / (h1 - h0)
     segments.append(PrepCmd.SegmentDescriptor(area_top=area, area_bottom=area, height=h1 - h0))
   return _merge_segments(segments)
@@ -566,7 +565,7 @@ def _cut_profile(
 
 
 def _get_container_segments(
-  resource: object,
+  resource: ContainerFacts,
   liquid_height: Optional[float] = None,
   piston_volume: Optional[float] = None,
   surface_following_distance: Optional[float] = None,
@@ -624,8 +623,7 @@ class _WellGeometry(NamedTuple):
 
 
 def _absolute_z_from_well(
-  resource,
-  deck: "Deck",
+  container: ContainerFacts,
   liquid_height: Optional[float] = None,
   offset_z: float = 0.0,
   z_air_margin_mm: float = 2.0,
@@ -633,8 +631,7 @@ def _absolute_z_from_well(
   """Compute absolute Z values from well/container geometry for aspirate/dispense.
 
   Args:
-    resource: Well or Container with get_size_z().
-    deck: the deck the Z values are measured from, which is what the firmware counts from.
+    container: the container, located on the deck the firmware counts from.
     liquid_height: Distance from well bottom to liquid surface (mm). None = 0.
     offset_z: Additional Z applied to the bottom position (e.g. from op.offset.z).
     z_air_margin_mm: Clearance above well opening for z_air (approach/exit height).
@@ -642,15 +639,9 @@ def _absolute_z_from_well(
   Returns:
     _WellGeometry with well_bottom, liquid_surface, top_of_well, z_air.
   """
-  if not isinstance(resource, Container):
-    raise ValueError(
-      "Resource must have get_size_z() to derive absolute Z (e.g. a Well or Container). "
-      "Pass z_minimum, z_fluid, z_air explicitly for this operation."
-    )
-  loc = resource.get_location_wrt(deck, "c", "c", "cavity_bottom")
-  well_bottom_z = loc.z + offset_z
+  well_bottom_z = container.cavity_bottom.z + offset_z
   liquid_surface_z = well_bottom_z + (liquid_height or 0.0)
-  top_of_well_z = resource.get_location_wrt(deck, "c", "c", "t").z
+  top_of_well_z = container.placed.top.z
   z_air_z = top_of_well_z + z_air_margin_mm
   return _WellGeometry(well_bottom_z, liquid_surface_z, top_of_well_z, z_air_z)
 
@@ -1035,6 +1026,62 @@ def _build_pipettor_gantry_move_parameters(
 # How far a Hamilton standard channel tip sits on the stop disc, in mm.
 TIP_FITTING_DEPTH = 8.0
 
+# A tip mounting shaft: how wide it is, and how far it reaches below the channel carrying it, in mm.
+SHAFT_DIAMETER = 7.0
+SHAFT_LENGTH = 8.0
+
+
+def tip_mounting_shaft(
+  name: str, location: Coordinate, identifier: str = ""
+) -> pb.ResourceDefinition:
+  """A tip mounting shaft, where a channel mounts a tip: round, held by its CoRe."""
+  return build.resource(
+    name,
+    Coordinate(SHAFT_DIAMETER, SHAFT_DIAMETER, SHAFT_LENGTH),
+    kind=pb.RESOURCE_KIND_TIP_MOUNTING_SHAFT,
+    location=location,
+    type_name="TipMountingShaft",
+    category="tip_mounting_shaft",
+    identifier=identifier,
+    tip_mounting_shaft=pb.TipMountingShaftSpec(
+      tip_pickup_mode="core", cross_section_type=pb.CROSS_SECTION_TYPE_CIRCLE
+    ),
+  )
+
+
+_ANCHOR_FRACTIONS = {"l": 0.0, "c": 0.5, "r": 1.0}
+
+
+def pipette_channel(
+  name: str, configuration: PipettesConfiguration, reference_point_from_left: float
+) -> pb.ResourceDefinition:
+  """A pipetting channel as the X-arm carries it, its tip mounting shaft hanging below it.
+
+  As the STAR driver hangs one: the shaft its own length below the channel's bottom, centred on
+  the channel. The channel stands on the arm where its axis is on the arm's reference point.
+
+  Args:
+    name: what to call it; its shaft is called `<name>_tip_mounting_shaft`.
+    configuration: how wide and tall a channel is modelled, and which 3D model draws it.
+    reference_point_from_left: where the arm's x refers to, in mm from the arm's left edge.
+  """
+  width = configuration.channel_width
+  anchor_x = width * _ANCHOR_FRACTIONS[configuration.x_reference_anchor]
+  shaft = tip_mounting_shaft(
+    f"{name}_tip_mounting_shaft",
+    Coordinate((width - SHAFT_DIAMETER) / 2, (width - SHAFT_DIAMETER) / 2, -SHAFT_LENGTH),
+  )
+  return build.resource(
+    name,
+    Coordinate(width, width, configuration.channel_size_z),
+    location=Coordinate(reference_point_from_left - anchor_x, 0.0, 0.0),
+    type_name="Resource",
+    category="pipette_channel",
+    model=configuration.channel_model,
+    children=[shaft],
+  )
+
+
 # How far in front of the 8-channel head's probe 0 the device keeps the rear channel, in mm, as
 # measured: the head shares the channels' X, so Y keeps them apart.
 HEAD8_CLEARANCE_Y = 73.0
@@ -1216,11 +1263,12 @@ class Pipettes:
     # The firmware's ChannelIndex for each channel, back to front. Discovery sets it from the device.
     self.channel_order: Tuple[int, ...] = tuple(PrepCmd.channel_order_legacy_prep)
     # A channel carries its tip on its shaft. Only a deck that models no channels - one that is not
-    # a PrepDeck - leaves nowhere to put it, and then it is held here instead.
-    self._unmodelled_tips: Dict[int, Tip] = {}
-    # One per channel, hung from the X-arm's resource when the driver was given a deck. Setup puts
-    # them there; reads and moves keep them in step.
-    self.resources: List[Resource] = []
+    # a Prep deck - leaves nowhere to put it, and then what it is is held here instead.
+    self._unmodelled_tips: Dict[int, ToolFacts] = {}
+    # One per channel, hung from the X-arm's resource on a Prep deck, and each one's tip mounting
+    # shaft. Setup puts them there; reads and moves keep them in step.
+    self.resources: List[handles.Resource] = []
+    self.shafts: List[handles.Resource] = []
 
   async def _on_setup(self):
     """Read config and probe pipettor capabilities.
@@ -1307,28 +1355,28 @@ class Pipettes:
 
   @property
   def num_arms(self) -> int:
-    """Number of resource-handling arms. 1 when deck has core_grippers and 2 channels, else 0."""
-    if self.deck is None:
+    """Number of resource-handling arms. 1 when the deck has a CO-RE gripper holder and 2 channels,
+    else 0."""
+    parts = self._driver.parts
+    if parts is None or parts.core_gripper_holder is None:
       return 0
     try:
       cfg = self._configuration
     except RuntimeError:
       return 0
-    if cfg.num_channels != 2:
-      return 0
-    if self.deck is None:
-      return 0
-    holder = next(
-      (r for r in self.deck.get_all_children() if isinstance(r, HamiltonCoreGrippers)), None
-    )
-    return 1 if holder is not None else 0
+    return 1 if cfg.num_channels == 2 else 0
 
   # -- session / discovery -------------------------------------------------------------------------
 
   @property
-  def deck(self) -> Optional["Deck"]:
+  def deck(self) -> Optional[handles.Deck]:
     """The deck positions are measured from: the driver's."""
     return self._driver.deck
+
+  @property
+  def store(self) -> "ResourceStore":
+    """The resource store the deck is in."""
+    return self._driver.store
 
   @property
   def _configuration(self) -> "DeviceConfiguration":
@@ -1341,7 +1389,7 @@ class Pipettes:
       raise RuntimeError("no configuration read; have you called `prep.setup()`?")
     return self._driver.configuration
 
-  def _require_deck(self) -> "Deck":
+  def _require_deck(self) -> pb.ResourceRef:
     """The deck positions are measured from, which is what the firmware counts from.
 
     Raises:
@@ -1349,7 +1397,7 @@ class Pipettes:
     """
     if self.deck is None:
       raise RuntimeError("no deck to measure positions from; pass one to the driver")
-    return self.deck
+    return ref(self.deck.id)
 
   async def _record_where_they_stopped(self) -> None:
     """Read where the channels came to rest, and record it. For a move's `finally`.
@@ -1493,16 +1541,16 @@ class Pipettes:
       ordered = sorted(channels, key=lambda c: rank.get(c, len(rank) + c))
     return tuple(ordered)
 
-  def _get_head8_limit_y(self) -> Optional[float]:
+  async def _get_head8_limit_y(self) -> Optional[float]:
     """The furthest back the rear channel may stand beside the 8-channel head, in mm on the deck.
 
     None when there is no head, or nothing models where it is.
     """
     head8 = None if self._driver is None else self._driver.head8
-    at = None if head8 is None else head8.get_reference_point_location()
+    at = None if head8 is None else await head8.get_reference_point_location()
     return None if at is None else at.y - HEAD8_CLEARANCE_Y
 
-  def _check_head8_clearance(self, ys: Dict[int, float], make_space: bool) -> None:
+  async def _check_head8_clearance(self, ys: Dict[int, float], make_space: bool) -> None:
     """Refuse a rear channel sent too close to the 8-channel head, unless the head may move back.
 
     Args:
@@ -1512,8 +1560,10 @@ class Pipettes:
     Raises:
       ValueError: If the rear channel would stand too close to the head and it may not move.
     """
-    limit = self._get_head8_limit_y()
-    if make_space or limit is None or 0 not in ys or round(ys[0] * 1000) <= round(limit * 1000):
+    if make_space or 0 not in ys:
+      return
+    limit = await self._get_head8_limit_y()
+    if limit is None or 0 not in ys or round(ys[0] * 1000) <= round(limit * 1000):
       return
     raise ValueError(
       f"Channel 0 would be at y={ys[0]:.2f} mm, less than {HEAD8_CLEARANCE_Y} mm in front of the "
@@ -1530,13 +1580,13 @@ class Pipettes:
       rear_y: where the rear channel is going, in mm on the deck.
     """
     head8 = None if self._driver is None else self._driver.head8
-    at = None if head8 is None else head8.get_reference_point_location()
+    at = None if head8 is None else await head8.get_reference_point_location()
     if head8 is None or at is None or at.y - HEAD8_CLEARANCE_Y >= rear_y:
       return
     await head8.move_to_position(
       at.x,
       rear_y + HEAD8_CLEARANCE_Y,
-      head8.default_minimum_traverse_height - head8._mounted_length(),
+      head8.default_minimum_traverse_height - await head8._mounted_length(),
     )
 
   def _check_y_spacing(
@@ -1626,48 +1676,52 @@ class Pipettes:
 
   # -- where the channels are ----------------------------------------------------------------------
 
-  def _reference_anchor(self, resource: Resource) -> Coordinate:
+  def _reference_anchor(self) -> Coordinate:
     """Where on a channel's resource the reported positions refer to, from its left front bottom corner.
 
     The centre-centre-bottom of the tip mounting shaft, on all three axes: that is the point the Prep
-    reports and the one the arm's X marker stands on. A channel carrying a shaft states it as its
-    `reference_point`; one that carries none falls back to its own centre-centre-bottom.
-
-    Args:
-      resource: the resource modelling the channel.
-
-    Returns:
-      The offset from the resource's corner to the point the positions refer to.
+    reports and the one the arm's X marker stands on.
     """
-    stated = getattr(resource, "reference_point", None)
-    if isinstance(stated, Coordinate):
-      return stated
-    c = self.configuration
-    anchor = resource.get_anchor(
-      x=c.x_reference_anchor, y=c.y_reference_anchor, z=c.z_reference_anchor
-    )
-    shaft = next(
-      (child for child in resource.children if isinstance(child, TipMountingShaft)), None
-    )
-    if shaft is None or shaft.location is None:
-      return anchor
-    return Coordinate(anchor.x, anchor.y, shaft.location.z)
+    width = self.configuration.channel_width
+    return Coordinate(width / 2, width / 2, -SHAFT_LENGTH)
 
-  def _mounted_length(self, channel: int) -> float:
+  async def _read_arm(self) -> Optional[ArmModel]:
+    """The arm and everything on it, as the store has it now; None while nothing models it."""
+    arm = (
+      None if self._driver is None or self._driver.x_arm is None else self._driver.x_arm.resource
+    )
+    if arm is None:
+      return None
+    return await read_arm(arm.store, arm.id)
+
+  def _mounted_length_in(self, model: ArmModel, channel: int) -> float:
     """How far below the end of a channel's shaft what the model has on it reaches, in mm.
 
     The device reports and takes Z there: at a tip's bottom, at the gripper tools' jaws (the length
     they were picked up with), and at the shaft's end when nothing is on it.
     """
-    shaft = self.shaft(channel)
-    mounted = shaft.tip if shaft is not None and shaft.has_tip() else None
-    if isinstance(mounted, Tip):
-      return float(mounted.get_size_z() - mounted.fitting_depth)
-    if mounted is not None:
-      return float(PrepCmd.CO_RE_GRIPPER_TIP_PICKUP_PARAMETERS.length)
-    return 0.0
+    if channel >= len(self.shafts):
+      return tool_length(self._unmodelled_tips.get(channel))
+    return tool_length(model.tool(self.shafts[channel].id))
 
-  def get_reference_point_location(self, channel: int) -> Optional[Coordinate]:
+  def _reference_point_in(self, model: ArmModel, channel: int) -> Optional[Coordinate]:
+    """`get_reference_point_location`, from a read of the arm already made."""
+    if channel >= len(self.resources):
+      return None
+    resource = self.resources[channel]
+    here, arm = model.location(resource.id), model.arm
+    on_the_arm = None if arm is None else model.location(arm.id)
+    if here is None or on_the_arm is None:
+      return None
+    location = (
+      here
+      + on_the_arm
+      + self._reference_anchor()
+      - Coordinate(0, 0, self._mounted_length_in(model, channel))
+    )
+    return Coordinate(round(location.x, 2), round(location.y, 2), round(location.z, 2))
+
+  async def get_reference_point_location(self, channel: int) -> Optional[Coordinate]:
     """Where the model has a channel's reference point, in mm on the deck.
 
     The inverse of `update_location_by_reference_point`: Z is where the device reports it, the bottom
@@ -1679,27 +1733,37 @@ class Pipettes:
     Returns:
       Where the model has it, or None when there is nothing modelling it yet.
     """
-    if channel >= len(self.resources) or self.deck is None:
-      return None
-    resource = self.resources[channel]
-    if resource.location is None or resource.parent is None:
-      return None
-    location = (
-      resource.location
-      + resource.parent.get_location_wrt(self.deck)
-      + self._reference_anchor(resource)
-      - Coordinate(0, 0, self._mounted_length(channel))
-    )
-    return Coordinate(round(location.x, 2), round(location.y, 2), round(location.z, 2))
+    model = await self._read_arm()
+    return None if model is None else self._reference_point_in(model, channel)
 
-  def update_location_by_reference_point(
-    self, channel: int, y: Optional[float] = None, z: Optional[float] = None
-  ) -> None:
-    """Record where a channel is on the resource that models it.
+  def _position_by_reference_point(
+    self, model: ArmModel, channel: int, y: Optional[float] = None, z: Optional[float] = None
+  ) -> Optional[spb.DevicePosition]:
+    """Where a channel's resource is in the arm, from where its reference point is on the deck.
 
     Y and Z only: a channel rides the arm, so its resource is a child of the arm's and follows it in X.
     Positions are reported in the deck's frame and a resource is located in its parent's, so the arm's
-    position is taken out before either is recorded. Does nothing when nothing models the channel.
+    position is taken out. None when nothing models the channel.
+    """
+    if channel >= len(self.resources):
+      return None
+    resource = self.resources[channel]
+    arm = model.arm
+    on_the_arm = None if arm is None else model.location(arm.id)
+    if model.location(resource.id) is None or on_the_arm is None:
+      return None
+    anchor = self._reference_anchor()
+    shaft_z = None if z is None else z + self._mounted_length_in(model, channel)
+    return position(
+      resource.id,
+      y=None if y is None else y - on_the_arm.y - anchor.y,
+      z=None if shaft_z is None else shaft_z - on_the_arm.z - anchor.z,
+    )
+
+  async def update_location_by_reference_point(
+    self, channel: int, y: Optional[float] = None, z: Optional[float] = None
+  ) -> None:
+    """Record where a channel is on the resource that models it. Does nothing when nothing models it.
 
     Args:
       channel: which channel, 0-indexed from the back.
@@ -1707,67 +1771,67 @@ class Pipettes:
       z: where the device reports it now, in mm on the deck: the bottom of what the channel carries,
         the end of its shaft when it carries nothing. Left as it was when None.
     """
-    if channel >= len(self.resources) or self.deck is None:
-      return
-    resource = self.resources[channel]
-    if resource.location is None or resource.parent is None:
-      return
-    here, on_the_arm = resource.location, resource.parent.get_location_wrt(self.deck)
-    anchor = self._reference_anchor(resource)
-    shaft_z = None if z is None else z + self._mounted_length(channel)
-    resource.location = Coordinate(
-      here.x,
-      here.y if y is None else y - on_the_arm.y - anchor.y,
-      here.z if shaft_z is None else shaft_z - on_the_arm.z - anchor.z,
-    )
+    model = await self._read_arm()
+    where = None if model is None else self._position_by_reference_point(model, channel, y, z)
+    if where is not None:
+      await record_positions(self.store, [where])
 
-  @staticmethod
-  def add_tip_mounting_shaft(channel: Resource) -> None:
-    """Hang a tip mounting shaft off the lower end of a channel, and measure the channel from it.
-
-    As the STAR driver hangs one: its own length below the channel's bottom, centred on the channel. A
-    shaft already there is left alone, and repeated setups do not duplicate it.
+  async def _record_channel_positions(
+    self, ys: Dict[int, Optional[float]], zs: Dict[int, Optional[float]], x: Optional[float] = None
+  ) -> None:
+    """Record where channels are, and the arm's X when given, all at once.
 
     Args:
-      channel: the channel resource to hang it from.
+      ys: where each channel is along Y, keyed by channel; None leaves it.
+      zs: where each channel's reference point is along Z, keyed by channel; None leaves it.
+      x: where the arm's reference point is, in mm on the deck; None leaves it.
     """
-    name = f"{channel.name}_tip_mounting_shaft"
-    if any(child.name == name for child in channel.children):
+    model = await self._read_arm()
+    if model is None:
       return
-    shaft = TipMountingShaft(name=name, tip_pickup_mode="core")
-    channel.assign_child_resource(
-      shaft,
-      location=Coordinate(
-        (channel.get_size_x() - shaft.get_size_x()) / 2,
-        (channel.get_size_y() - shaft.get_size_y()) / 2,
-        -shaft.get_size_z(),
-      ),
-    )
-    channel.reference_point = Coordinate(  # type: ignore[attr-defined]
-      channel.get_size_x() / 2,
-      channel.get_size_y() / 2,
-      -shaft.get_size_z(),
-    )
+    arm = None if self._driver is None else self._driver.x_arm
+    positions = []
+    if x is not None and arm is not None:
+      at = arm.location_by_reference_point(x)
+      if at is not None:
+        positions.append(at)
+    for channel in sorted(set(ys) | set(zs)):
+      at = self._position_by_reference_point(model, channel, ys.get(channel), zs.get(channel))
+      if at is not None:
+        positions.append(at)
+    await record_positions(self.store, positions)
 
-  def _record_positions(
+  async def _record_positions(
     self, positions: List[Coordinate], head: Optional[Coordinate] = None
   ) -> None:
-    """Record reported positions on the arm, the channels and the 8-channel head.
+    """Record reported positions on the arm, the channels and the 8-channel head, all at once.
 
-    X on the arm, Y and Z on each channel. The head rides the arm, so it is recorded after it.
+    X on the arm, Y and Z on each channel. The head rides the arm, so it is placed after it.
 
     Args:
       positions: one per channel, 0-indexed from the back.
       head: where the 8-channel head's probe 0 is, or None when the device reported no head.
     """
-    arm = None if self._driver is None else self._driver.x_arm
+    model = await self._read_arm()
+    if model is None or self._driver is None:
+      return
+    arm, head8 = self._driver.x_arm, self._driver.head8
+    recorded = []
+    arm_x: Optional[float] = None
     if positions and arm is not None:
-      arm.update_location_by_reference_point(positions[0].x)
-    for channel, position in enumerate(positions):
-      self.update_location_by_reference_point(channel, y=position.y, z=position.z)
-    head8 = None if self._driver is None else self._driver.head8
+      at = arm.location_by_reference_point(positions[0].x)
+      if at is not None:
+        recorded.append(at)
+        arm_x = at.location.x
+    for channel, where in enumerate(positions):
+      at = self._position_by_reference_point(model, channel, where.y, where.z)
+      if at is not None:
+        recorded.append(at)
     if head is not None and head8 is not None:
-      head8.update_location_by_reference_point(x=head.x, y=head.y, z=head.z)
+      at = head8._position_by_reference_point(model, x=head.x, y=head.y, z=head.z, arm_x=arm_x)
+      if at is not None:
+        recorded.append(at)
+    await record_positions(self.store, recorded)
 
   # -- channel initialization ----------------------------------------------------------------------
 
@@ -1980,7 +2044,7 @@ class Pipettes:
     """
     positions, head = await self._unchecked_fw_request_positions_and_head()
     # The device is the authority on where the channels are, so what it answers is recorded.
-    self._record_positions(positions, head=head)
+    await self._record_positions(positions, head=head)
     return positions
 
   async def _unchecked_fw_request_positions(self) -> list[Coordinate]:
@@ -2165,9 +2229,15 @@ class Pipettes:
         await self._driver.send_command_on_second_session(command)
       else:
         await self._driver.send_command(command)
-    tip = self.get_mounted_tip(channel)
-    if tip is not None:
-      tip.tracker.set_volume(0.0)
+    tip = await self.get_mounted_tip(channel)
+    if tip is not None and tip.id:
+      # The liquid goes nowhere the model holds: the tip holds nothing now.
+      await self.store.commands.update_resources(
+        spb.UpdateResourcesRequest(
+          lock_tokens=self.store.lock_tokens,
+          updates=[spb.ResourceUpdate(volume=pb.SetVolume(resource=ref(tip.id), volume=0.0))],
+        )
+      )
 
   def _check_empty_tip_arguments(self, channel: int, position: float, flow_rate: float) -> None:
     """Refuse what `empty_tip` cannot do, before anything is sent."""
@@ -2341,8 +2411,7 @@ class Pipettes:
       The position of each channel in mm, back to front.
     """
     positions = [coord.y for coord in await self._unchecked_fw_request_positions()]
-    for channel, y in enumerate(positions):
-      self.update_location_by_reference_point(channel, y=y)
+    await self._record_channel_positions(dict(enumerate(positions)), {})
     return positions
 
   async def request_y_position(self, channel: int) -> float:
@@ -2429,7 +2498,7 @@ class Pipettes:
       if y != positions[channel].y:
         self._check_reachable(channel, "y", y)
     self._check_y_spacing(targets, named=ys, make_space_available=not make_space)
-    self._check_head8_clearance(targets, make_space)
+    await self._check_head8_clearance(targets, make_space)
 
     shoved = [
       channel for channel, y in targets.items() if channel not in ys and y != positions[channel].y
@@ -2469,8 +2538,7 @@ class Pipettes:
       The position of each channel in mm, back to front.
     """
     positions = [coord.z for coord in await self._unchecked_fw_request_positions()]
-    for channel, z in enumerate(positions):
-      self.update_location_by_reference_point(channel, z=z)
+    await self._record_channel_positions({}, dict(enumerate(positions)))
     return positions
 
   async def request_z_position(self, channel: int) -> float:
@@ -2513,7 +2581,7 @@ class Pipettes:
     # What comes back is each tip's bottom, but the model references the ends of the shafts, so those
     # are read for the model.
     for channel in bottoms:
-      self.update_location_by_reference_point(
+      await self.update_location_by_reference_point(
         channel, z=await self.request_stop_disc_z_position(channel)
       )
     return bottoms
@@ -2862,7 +2930,7 @@ class Pipettes:
       if final_y[channel] != standing[channel].y:
         self._check_reachable(channel, "y", final_y[channel])
     self._check_y_spacing(final_y, named=channels, make_space_available=not make_space)
-    self._check_head8_clearance(final_y, make_space)
+    await self._check_head8_clearance(final_y, make_space)
 
     arm = None if self._driver is None else self._driver.x_arm
     x_arm_configuration = arm.configuration if arm is not None else XArmConfiguration()
@@ -2903,10 +2971,9 @@ class Pipettes:
       heights = {channel: max(ceilings[channel], standing[channel].z) for channel in moving}
       # Where the move is going, recorded as it is sent: on the answer the model would already be a
       # whole move behind the device. The read below still has the last word.
-      if arm is not None:
-        arm.update_location_by_reference_point(x)
-      for channel in moving:
-        self.update_location_by_reference_point(channel, y=final_y[channel], z=heights[channel])
+      await self._record_channel_positions(
+        {channel: final_y[channel] for channel in moving}, dict(heights), x=x
+      )
       await self._unchecked_fw_move_to_position(
         x,
         moving,
@@ -3519,7 +3586,7 @@ class Pipettes:
     try:
       # The lowest the seek can leave the channel, recorded as it is sent: on the answer the model
       # would already be a whole move behind the device. The read below still has the last word.
-      self.update_location_by_reference_point(channel_idx, z=search_end_position)
+      await self.update_location_by_reference_point(channel_idx, z=search_end_position)
       results = await self._unchecked_fw_z_seek_lld_position([seek])
     finally:
       await self._record_where_they_stopped()
@@ -3608,7 +3675,7 @@ class Pipettes:
   async def _probe_batch_liquid_heights(
     self,
     batch: ChannelBatch,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     *,
     z_cavity_bottom: Sequence[float],
     z_start: Sequence[float],
@@ -3809,8 +3876,7 @@ class Pipettes:
 
   def _plan_batched(
     self,
-    deck: Resource,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     use_channels: Optional[List[int]],
     resource_offsets: Optional[List[Coordinate]],
     x_grouping_tolerance: Optional[float],
@@ -3822,7 +3888,6 @@ class Pipettes:
     planned into batches.
 
     Args:
-      deck: what the containers are placed on.
       containers: any number.
       use_channels: which channels, 0-indexed from the back. The first len(containers) when None,
         up to every channel.
@@ -3853,7 +3918,11 @@ class Pipettes:
     cycles = [list(containers[at : at + cycle]) for at in range(0, len(containers), cycle)]
     channels = [use_channels[job % cycle] for job in range(len(containers))]
     for dealt in cycles:
-      validate_channel_selections(dealt, self.num_channels, use_channels[: len(dealt)])
+      chosen = use_channels[: len(dealt)]
+      if not all(0 <= ch < self.num_channels for ch in chosen):
+        raise ValueError(
+          f"All use_channels must be integers in range [0, {self.num_channels - 1}], got {chosen}."
+        )
     if minimum_traverse_height_end is not None:
       for channel in use_channels:
         self._check_reachable(channel, "z", minimum_traverse_height_end)
@@ -3864,13 +3933,12 @@ class Pipettes:
     for number, dealt in enumerate(cycles):
       first = number * cycle
       offsets = None if resource_offsets is None else resource_offsets[first : first + len(dealt)]
-      for batch in plan_batches(
-        use_channels=use_channels[: len(dealt)],
-        containers=dealt,
-        channel_spacings=self.minimum_y_spacings,
-        wrt_resource=deck,
-        x_tolerance=tolerance,
-        resource_offsets=offsets,
+      for batch in plan_target_batches(
+        use_channels[: len(dealt)],
+        [container.target() for container in dealt],
+        self.minimum_y_spacings,
+        tolerance,
+        offsets,
       ):
         # The planner counts jobs within the cycle; the rest counts them over every container.
         batches.append(replace(batch, indices=[first + job for job in batch.indices]))
@@ -3907,8 +3975,7 @@ class Pipettes:
 
   async def _prepare_batched(
     self,
-    deck: Resource,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     use_channels: Optional[List[int]],
     resource_offsets: Optional[List[Coordinate]],
     x_grouping_tolerance: Optional[float],
@@ -3931,7 +3998,6 @@ class Pipettes:
       RuntimeError: If a channel used carries no tip.
     """
     channels, batches = self._plan_batched(
-      deck,
       containers,
       use_channels,
       resource_offsets,
@@ -3984,7 +4050,7 @@ class Pipettes:
     self,
     per_batch: Sequence[Dict[int, List[Optional[float]]]],
     channels: Sequence[int],
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     z_cavity_bottom: Sequence[float],
     minimum_traverse_height_end: Optional[float],
     what: str,
@@ -4039,7 +4105,7 @@ class Pipettes:
 
   async def probe_liquid_heights(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[handles.Resource],
     use_channels: Optional[List[int]] = None,
     resource_offsets: Optional[List[Coordinate]] = None,
     lld_mode: Union[Pipettes.LLDMode, Sequence[Pipettes.LLDMode], None] = None,
@@ -4084,6 +4150,35 @@ class Pipettes:
         others.
     """
     deck = self._require_deck()
+    facts = await read_containers(self.store, deck, containers)
+    return await self._probe_liquid_heights(
+      facts,
+      use_channels,
+      resource_offsets,
+      lld_mode,
+      search_speed,
+      n_replicates,
+      minimum_traverse_height_start=minimum_traverse_height_start,
+      minimum_traverse_height_during=minimum_traverse_height_during,
+      minimum_traverse_height_end=minimum_traverse_height_end,
+      x_grouping_tolerance=x_grouping_tolerance,
+    )
+
+  async def _probe_liquid_heights(
+    self,
+    containers: Sequence[ContainerFacts],
+    use_channels: Optional[List[int]],
+    resource_offsets: Optional[List[Coordinate]],
+    lld_mode: Union[Pipettes.LLDMode, Sequence[Pipettes.LLDMode], None],
+    search_speed: float,
+    n_replicates: int,
+    *,
+    minimum_traverse_height_start: Optional[float],
+    minimum_traverse_height_during: Optional[float],
+    minimum_traverse_height_end: Optional[float],
+    x_grouping_tolerance: Optional[float],
+  ) -> List[float]:
+    """`probe_liquid_heights`, the containers already read."""
     if n_replicates < 1:
       raise ValueError(f"n_replicates must be at least 1, is {n_replicates}")
     if lld_mode is None:
@@ -4099,7 +4194,6 @@ class Pipettes:
       raise ValueError(f"a liquid search is capacitive, not {unsupported[0]}: pressure has no seek")
 
     channels, batches = await self._prepare_batched(
-      deck,
       containers,
       use_channels,
       resource_offsets,
@@ -4107,8 +4201,8 @@ class Pipettes:
       minimum_traverse_height_start,
       minimum_traverse_height_end,
     )
-    z_cavity_bottom = [c.get_location_wrt(deck, "c", "c", "cavity_bottom").z for c in containers]
-    z_top = [c.get_location_wrt(deck, "c", "c", "t").z for c in containers]
+    z_cavity_bottom = [c.cavity_bottom.z for c in containers]
+    z_top = [c.placed.top.z for c in containers]
     per_batch = await self._execute_batched(
       lambda batch: self._probe_batch_liquid_heights(
         batch,
@@ -4130,7 +4224,7 @@ class Pipettes:
 
   async def probe_liquid_volumes(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[handles.Resource],
     use_channels: Optional[List[int]] = None,
     resource_offsets: Optional[List[Coordinate]] = None,
     lld_mode: Union[Pipettes.LLDMode, Sequence[Pipettes.LLDMode], None] = None,
@@ -4157,11 +4251,12 @@ class Pipettes:
       ValueError: If a container has no height-to-volume function, or as `probe_liquid_heights`.
       RuntimeError: As `probe_liquid_heights`.
     """
-    without = [c.name for c in containers if not c.supports_compute_height_volume_functions()]
+    facts = await read_containers(self.store, self._require_deck(), containers)
+    without = [c.name for c in facts if not c.converts_height_and_volume]
     if without:
       raise ValueError(f"no height-to-volume function for {without}")
-    heights = await self.probe_liquid_heights(
-      containers,
+    heights = await self._probe_liquid_heights(
+      facts,
       use_channels,
       resource_offsets,
       lld_mode,
@@ -4172,10 +4267,11 @@ class Pipettes:
       minimum_traverse_height_end=minimum_traverse_height_end,
       x_grouping_tolerance=x_grouping_tolerance,
     )
-    return [
-      round(container.compute_volume_from_height(height), 2)
-      for container, height in zip(containers, heights)
-    ]
+    volumes = await volumes_from_heights(self.store, list(zip(facts, heights)))
+    outside = [c.name for c, volume in zip(facts, volumes) if volume is None]
+    if outside:
+      raise ValueError(f"the liquid found lies outside the height-volume data of {outside}")
+    return [round(volume, 2) for volume in volumes if volume is not None]
 
   async def probe_z_using_ztouch(
     self,
@@ -4337,62 +4433,65 @@ class Pipettes:
   # Tip handling
   # ----------------------------------------
 
-  def shaft(self, channel: int) -> Optional[TipMountingShaft]:
+  def shaft(self, channel: int) -> Optional[handles.Resource]:
     """The mounting shaft modelling a channel, or None while nothing models it."""
-    if channel >= len(self.resources):
-      return None
-    return next(
-      (child for child in self.resources[channel].children if isinstance(child, TipMountingShaft)),
-      None,
-    )
+    return self.shafts[channel] if channel < len(self.shafts) else None
 
-  def get_mounted_tip(self, channel: int) -> Optional[Tip]:
+  async def get_mounted_tips(self) -> List[Optional[ToolFacts]]:
+    """The tip on each channel's shaft, back to front, ``None`` where there is none. One read."""
+    nodes = await get_nodes(self.store, [ref(s.id) for s in self.shafts], depth=1)
+    by_id = {node.id: node for node in nodes}
+    mounted: List[Optional[ToolFacts]] = []
+    for channel in range(self.num_channels):
+      shaft = self.shaft(channel)
+      if shaft is None:
+        mounted.append(self._unmodelled_tips.get(channel))
+        continue
+      tool = tool_on(by_id[shaft.id], by_id)
+      mounted.append(tool if tool is not None and tool.is_tip else None)
+    return mounted
+
+  async def get_mounted_tip(self, channel: int) -> Optional[ToolFacts]:
     """The tip the model has on a channel's shaft, or None if it carries none."""
+    mounted = await self.get_mounted_tips()
+    return mounted[channel] if channel < len(mounted) else None
+
+  async def _get_mounted_tools(self) -> List[Optional[ToolFacts]]:
+    """What each channel's shaft carries, a tip or a tool, back to front. One read."""
+    nodes = await get_nodes(self.store, [ref(s.id) for s in self.shafts], depth=1)
+    by_id = {node.id: node for node in nodes}
+    return [
+      self._unmodelled_tips.get(ch) if shaft is None else tool_on(by_id[shaft.id], by_id)
+      for ch, shaft in ((ch, self.shaft(ch)) for ch in range(self.num_channels))
+    ]
+
+  async def _adopt_tip(self, channel: int, definition: pb.ResourceDefinition) -> None:
+    """Put a tip the device already carries on a channel in the model, as it is defined."""
     shaft = self.shaft(channel)
     if shaft is None:
-      return self._unmodelled_tips.get(channel)
-    tip = shaft.tip
-    return tip if isinstance(tip, Tip) else None
-
-  def _mount_tip(self, channel: int, tip: Tip) -> None:
-    """Put a collected tip on a channel in the model."""
-    shaft = self.shaft(channel)
-    if shaft is not None:
-      shaft.mount_tip(tip)
+      self._unmodelled_tips[channel] = ToolFacts.from_attributes(definition.attributes)
       return
-    if tip.parent is not None:
-      tip.parent.unassign_child_resource(tip)
-    self._unmodelled_tips[channel] = tip
+    await self.store.create(definition, name=definition.attributes.name, parent=shaft)
 
-  def _release_tip(self, channel: int) -> Optional[Tip]:
-    """Take a channel's tip off it in the model, leaving it assigned to nothing."""
-    shaft = self.shaft(channel)
-    if shaft is None:
-      return self._unmodelled_tips.pop(channel, None)
-    return cast(Tip, shaft.release_tip()) if shaft.has_tip() else None
-
-  def get_mounted_tips(self) -> List[Optional[Tip]]:
-    """The tip on each channel's shaft, back to front, ``None`` where there is none."""
-    return [self.get_mounted_tip(i) for i in range(self.num_channels)]
-
-  def _require_mounted_tips(self, use_channels: List[int]) -> List[Tip]:
+  async def _require_mounted_tips(self, use_channels: List[int]) -> List[ToolFacts]:
     """The tip on each channel named.
 
     Raises:
       NoTipError: If any of them carries none, naming all of those.
     """
-    mounted = {ch: self.get_mounted_tip(ch) for ch in use_channels}
-    empty = [ch for ch, tip in mounted.items() if tip is None]
+    mounted = await self.get_mounted_tips()
+    empty = [ch for ch in use_channels if mounted[ch] is None]
     if empty:
       raise NoTipError(f"no tip is mounted on {channels_named(empty)}; call pick_up_tips first.")
-    return [tip for tip in mounted.values() if tip is not None]
+    return [tip for tip in (mounted[ch] for ch in use_channels) if tip is not None]
 
-  def _warn_ztouch_on_soft_tips(self, channels: Iterable[int]) -> None:
+  async def _warn_ztouch_on_soft_tips(self, channels: Iterable[int]) -> None:
     """Warn where a channel carries a 50 uL tip: it bends under the force a Z-touch presses with."""
+    mounted = await self.get_mounted_tips()
     soft = sorted(
       channel
       for channel in channels
-      if isinstance(tip := self.get_mounted_tip(channel), HamiltonTip) and tip.nominal_volume == 50
+      if (tip := mounted[channel]) is not None and tip.tip_size and tip.nominal_volume == 50
     )
     if soft:
       logger.warning(
@@ -4427,9 +4526,194 @@ class Pipettes:
         by_channel.setdefault(channel, exc)
     return by_channel
 
+  async def _stage_tip_pickup(
+    self, spots: Sequence[SpotFacts], use_channels: Sequence[int]
+  ) -> Optional[pb.Operation]:
+    """Stage each channel collecting its spot's tip, or a fresh one from an untracked spot.
+
+    None when no shafts model the channels: there is nothing to put the tips on.
+
+    Raises:
+      HasTipError, NoTipError: If the model disagrees: the store refuses rather than records.
+    """
+    shafts = [self.shaft(ch) for ch in use_channels]
+    if any(shaft is None for shaft in shafts):
+      return None
+    try:
+      response = await self.store.commands.begin_tool_pickup(
+        spb.BeginToolPickupRequest(
+          lock_tokens=self.store.lock_tokens,
+          frame=self._require_deck(),
+          items=[
+            spb.ToolPickupItem(source=spot.ref, shaft=ref(shaft.id))
+            for spot, shaft in zip(spots, shafts)
+            if shaft is not None
+          ],
+          on_tracking_problem=pb.ON_TRACKING_PROBLEM_REJECT,
+        )
+      )
+    except StoreError as e:
+      raise store_problem(e) from e
+    return response.operation
+
+  async def _hold_unmodelled(
+    self, spots: Sequence[SpotFacts], tips: Sequence[ToolFacts], use_channels: Sequence[int]
+  ) -> None:
+    """Hold collected tips where no shaft models the channels: a spot's own tip leaves it."""
+    taken = [ref(tip.id) for tip in tips if tip.id]
+    if taken:
+      await self.store.commands.unassign_resources(
+        spb.UnassignResourcesRequest(lock_tokens=self.store.lock_tokens, resources=taken)
+      )
+    for ch, tip in zip(use_channels, tips):
+      self._unmodelled_tips[ch] = tip
+
+  async def _pick_up_tips_at(
+    self,
+    spots: List[SpotFacts],
+    use_channels: List[int],
+    offsets_list: List[Coordinate],
+    minimum_traverse_height_start: Optional[float],
+    z_seek_offset: Optional[float],
+    seek_speed: float,
+    dispenser_volume: float,
+    dispenser_speed: float,
+    enable_tadm: bool,
+    minimum_traverse_height_end: Optional[float],
+  ) -> None:
+    """`_pick_up_tips_in_one_move`, the spots already read and the arguments checked."""
+    # What the model holds: every channel that carries one is named, not just the first
+    mounted = await self.get_mounted_tips()
+    carrying = {ch: tip for ch in use_channels if (tip := mounted[ch]) is not None}
+    if carrying:
+      raise HasTipError(
+        "already carrying a tip: "
+        + ", ".join(f"channel {ch} carries {tip.name}" for ch, tip in carrying.items())
+      )
+    # And asked of the device itself: the model says what was recorded, the sleeve sensors say what
+    # is on the channel, and a tip left on from another session is only in the second.
+    held = await self.sense_tip_presence()
+    sensed = [ch for ch in use_channels if ch < len(held) and held[ch]]
+    if sensed:
+      raise HasTipError(
+        f"{channels_named(sensed)} senses a tip on it, though the model holds none"
+        if len(sensed) == 1
+        else f"{channels_named(sensed)} sense a tip on them, though the model holds none"
+      )
+
+    if not spots:
+      return
+    tips = [spot.tip_for_pickup() for spot in spots]
+    resolved_end = self._resolve_traverse_height(minimum_traverse_height_end)
+
+    # Where each channel descends: the spot's top as the deck holds it, plus the offset
+    indexed = {
+      ch: (spot, tip, off) for ch, spot, tip, off in zip(use_channels, spots, tips, offsets_list)
+    }
+    tip_positions: List[PrepCmd.TipPositionParameters] = []
+    for ch in range(self.num_channels):
+      if ch not in indexed:
+        continue
+      spot, tip, off = indexed[ch]
+      tip_positions.append(
+        PrepCmd.TipPositionParameters.for_op(
+          self.channel_enum(ch), spot.placed.top + off, tip, z_seek_offset=z_seek_offset
+        )
+      )
+
+    # One tip type for the command: the firmware takes a single definition, not one each
+    tip0 = tips[0]
+    if any(
+      t.maximal_volume != tip0.maximal_volume
+      or t.has_filter != tip0.has_filter
+      or t.length != tip0.length
+      for t in tips
+    ):
+      raise ValueError("All tip spots must use the same tip type")
+    tip_definition = PrepCmd.TipPickupParameters(
+      default_values=False,
+      volume=tip0.maximal_volume,
+      length=tip0.length,
+      tip_type=PrepCmd.TipTypes.StandardVolume,
+      has_filter=tip0.has_filter,
+      is_needle=tip0.maximal_volume == 0,  # a needle is closed: it holds no liquid
+      is_tool=False,
+    )
+
+    # Over the spots first, so the pick-up itself is straight down
+    traverse_h = (
+      resolved_end if minimum_traverse_height_start is None else minimum_traverse_height_start
+    )
+    locs = [indexed[ch][0].placed.top + indexed[ch][2] for ch in use_channels]
+    await self.move_to_xy_positions(
+      locs[0].x,
+      {ch: loc.y for ch, loc in zip(use_channels, locs)},
+      make_space=True,
+      minimum_traverse_height_start=traverse_h,
+    )
+
+    # A tip is a resource: once the device has it, it leaves its spot for the channel's shaft
+    operation = await self._stage_tip_pickup(spots, use_channels)
+    picked_up = {ch: False for ch in use_channels}
+    try:
+      await self._driver.send_command(
+        PrepCmd.PrepPickUpTips(
+          tip_positions=tip_positions,
+          final_z=resolved_end,
+          seek_speed=seek_speed,
+          tip_definition=tip_definition,
+          enable_tadm=enable_tadm,
+          dispenser_volume=dispenser_volume,
+          dispenser_speed=dispenser_speed,
+        )
+      )
+      picked_up = {ch: True for ch in use_channels}
+    except ChannelizedError as e:
+      # It can fail on some channels and not others; the node of each entry says which
+      e.errors = self._get_pick_up_errors_by_channel(e)
+      picked_up = {ch: ch not in e.errors for ch in use_channels}
+      raise
+    finally:
+      if operation is not None:
+        await resolve(self.store, operation, [picked_up[ch] for ch in use_channels])
+      else:
+        taken = [(ch, spot, tip) for ch, spot, tip in zip(use_channels, spots, tips)]
+        await self._hold_unmodelled(
+          [s for ch, s, _ in taken if picked_up[ch]],
+          [t for ch, _, t in taken if picked_up[ch]],
+          [ch for ch, _, _ in taken if picked_up[ch]],
+        )
+      # What a channel carries moves its Z window, and the device answers the new one.
+      with suppress(Exception):  # in a finally: never mask what went wrong above
+        await self._record_channel_bounds()
+      # Read once the tips are on the model: Z is reported at their bottom.
+      await self._record_where_they_stopped()
+
+  def _check_tip_arguments(
+    self,
+    count: int,
+    use_channels: Optional[List[int]],
+    offsets: Optional[Sequence[Coordinate]],
+    what: str,
+  ) -> Tuple[List[int], List[Coordinate]]:
+    """The channels and offsets of a tip command, checked against how many spots it names.
+
+    Raises:
+      ValueError: If the counts do not match, or a channel does not exist.
+    """
+    use_channels = use_channels if use_channels is not None else list(range(count))
+    if count != len(use_channels):
+      raise ValueError(f"len({what}) must equal len(use_channels): {count} != {len(use_channels)}")
+    if use_channels and (max(use_channels) >= self.num_channels or min(use_channels) < 0):
+      raise ValueError(f"use_channels index out of range (valid: 0..{self.num_channels - 1})")
+    offsets_list = list(offsets) if offsets is not None else [Coordinate.zero()] * count
+    if len(offsets_list) != count:
+      raise ValueError(f"len(offsets) must equal len({what})")
+    return use_channels, offsets_list
+
   async def _pick_up_tips_in_one_move(
     self,
-    tip_spots: Sequence[TipSpot],
+    tip_spots: Sequence[handles.Resource],
     use_channels: Optional[List[int]] = None,
     offsets: Optional[Sequence[Coordinate]] = None,
     minimum_traverse_height_start: Optional[float] = None,
@@ -4462,8 +4746,6 @@ class Pipettes:
       dispenser_volume: air to hold in the dispenser while picking up, in ul.
       dispenser_speed: how fast to move that air, in ul/s.
       enable_tadm: whether to record the pressure through the pick-up.
-      minimum_traverse_height_start: the height to travel over the destinations at, in mm.
-        `minimum_traverse_height_end` when None.
       minimum_traverse_height_end: the height to leave the channels at, in mm.
         `default_minimum_traverse_height` when None.
 
@@ -4473,126 +4755,26 @@ class Pipettes:
       HasTipError: If a channel already carries a tip, in the model or on the sensors.
       NoTipError: If a spot holds none.
     """
-    # Arguments
-    tip_spots = list(tip_spots)
-    use_channels = use_channels if use_channels is not None else list(range(len(tip_spots)))
-    if len(tip_spots) != len(use_channels):
-      raise ValueError(
-        f"len(tip_spots) must equal len(use_channels): {len(tip_spots)} != {len(use_channels)}"
-      )
-    if use_channels and max(use_channels) >= self.num_channels:
-      raise ValueError(f"use_channels index out of range (valid: 0..{self.num_channels - 1})")
-    offsets_list = list(offsets) if offsets is not None else [Coordinate.zero()] * len(tip_spots)
-    if len(offsets_list) != len(tip_spots):
-      raise ValueError("len(offsets) must equal len(tip_spots)")
-
-    # What the model holds: every channel that carries one is named, not just the first
-    carrying = {ch: tip for ch in use_channels if (tip := self.get_mounted_tip(ch)) is not None}
-    if carrying:
-      raise HasTipError(
-        "already carrying a tip: "
-        + ", ".join(f"channel {ch} carries {tip.name}" for ch, tip in carrying.items())
-      )
-    # And asked of the device itself: the model says what was recorded, the sleeve sensors say what
-    # is on the channel, and a tip left on from another session is only in the second.
-    held = await self.sense_tip_presence()
-    sensed = [ch for ch in use_channels if ch < len(held) and held[ch]]
-    if sensed:
-      raise HasTipError(
-        f"{channels_named(sensed)} senses a tip on it, though the model holds none"
-        if len(sensed) == 1
-        else f"{channels_named(sensed)} sense a tip on them, though the model holds none"
-      )
-
-    if not tip_spots:
-      return
-    tips = [spot.tip_for_pickup() for spot in tip_spots]
-    resolved_end = self._resolve_traverse_height(minimum_traverse_height_end)
-
-    # Where each channel descends: the spot's top as the deck holds it, plus the offset
-    indexed = {
-      ch: (spot, tip, off)
-      for ch, spot, tip, off in zip(use_channels, tip_spots, tips, offsets_list)
-    }
-    tip_positions: List[PrepCmd.TipPositionParameters] = []
-    for ch in range(self.num_channels):
-      if ch not in indexed:
-        continue
-      spot, tip, off = indexed[ch]
-      loc = spot.get_location_wrt(self._require_deck(), "c", "c", "t") + off
-      tip_positions.append(
-        PrepCmd.TipPositionParameters.for_op(
-          self.channel_enum(ch), loc, tip, z_seek_offset=z_seek_offset
-        )
-      )
-
-    # One tip type for the command: the firmware takes a single definition, not one each
-    tip0 = tips[0]
-    if any(
-      t.maximal_volume != tip0.maximal_volume
-      or t.has_filter != tip0.has_filter
-      or (t.get_size_z() - t.fitting_depth) != (tip0.get_size_z() - tip0.fitting_depth)
-      for t in tips
-    ):
-      raise ValueError("All tip spots must use the same tip type")
-    tip_definition = PrepCmd.TipPickupParameters(
-      default_values=False,
-      volume=tip0.maximal_volume,
-      length=tip0.get_size_z() - tip0.fitting_depth,
-      tip_type=PrepCmd.TipTypes.StandardVolume,
-      has_filter=tip0.has_filter,
-      is_needle=tip0.maximal_volume == 0,  # a needle is closed: it holds no liquid
-      is_tool=False,
+    use_channels, offsets_list = self._check_tip_arguments(
+      len(tip_spots), use_channels, offsets, "tip_spots"
     )
-
-    # Over the spots first, so the pick-up itself is straight down
-    traverse_h = (
-      resolved_end if minimum_traverse_height_start is None else minimum_traverse_height_start
+    spots = await read_spots(self.store, self._require_deck(), list(tip_spots))
+    await self._pick_up_tips_at(
+      spots,
+      use_channels,
+      offsets_list,
+      minimum_traverse_height_start,
+      z_seek_offset,
+      seek_speed,
+      dispenser_volume,
+      dispenser_speed,
+      enable_tadm,
+      minimum_traverse_height_end,
     )
-    locs = [
-      indexed[ch][0].get_location_wrt(self._require_deck(), "c", "c", "t") + indexed[ch][2]
-      for ch in use_channels
-    ]
-    await self.move_to_xy_positions(
-      locs[0].x,
-      {ch: loc.y for ch, loc in zip(use_channels, locs)},
-      make_space=True,
-      minimum_traverse_height_start=traverse_h,
-    )
-
-    picked_up = {ch: False for ch in use_channels}
-    try:
-      await self._driver.send_command(
-        PrepCmd.PrepPickUpTips(
-          tip_positions=tip_positions,
-          final_z=resolved_end,
-          seek_speed=seek_speed,
-          tip_definition=tip_definition,
-          enable_tadm=enable_tadm,
-          dispenser_volume=dispenser_volume,
-          dispenser_speed=dispenser_speed,
-        )
-      )
-      picked_up = all_channels_succeeded(use_channels)
-    except ChannelizedError as e:
-      # It can fail on some channels and not others; the node of each entry says which
-      e.errors = self._get_pick_up_errors_by_channel(e)
-      picked_up = successes_from_failed_channels(use_channels, e.errors)
-      raise
-    finally:
-      # A tip is a resource: once the device has it, it leaves its spot for the channel's shaft
-      for ch, tip in zip(use_channels, tips):
-        if picked_up[ch]:
-          self._mount_tip(ch, tip)
-      # What a channel carries moves its Z window, and the device answers the new one.
-      with suppress(Exception):  # in a finally: never mask what went wrong above
-        await self._record_channel_bounds()
-      # Read once the tips are on the model: Z is reported at their bottom.
-      await self._record_where_they_stopped()
 
   async def pick_up_tips(
     self,
-    tip_spots: Sequence[TipSpot],
+    tip_spots: Sequence[handles.Resource],
     use_channels: Optional[List[int]] = None,
     offsets: Optional[Sequence[Coordinate]] = None,
     minimum_traverse_height_start: Optional[float] = None,
@@ -4635,32 +4817,21 @@ class Pipettes:
       HasTipError: If a channel already carries a tip, in the model or on the sensors.
       NoTipError: If a spot holds none.
     """
-    # Arguments
-    tip_spots = list(tip_spots)
     if not tip_spots:
       return
-    use_channels = use_channels if use_channels is not None else list(range(len(tip_spots)))
-    if len(tip_spots) != len(use_channels):
-      raise ValueError(
-        f"len(tip_spots) must equal len(use_channels): {len(tip_spots)} != {len(use_channels)}"
-      )
-    if max(use_channels) >= self.num_channels or min(use_channels) < 0:
-      raise ValueError(f"use_channels index out of range (valid: 0..{self.num_channels - 1})")
-    offsets_list = list(offsets) if offsets is not None else [Coordinate.zero()] * len(tip_spots)
-    if len(offsets_list) != len(tip_spots):
-      raise ValueError("len(offsets) must equal len(tip_spots)")
-    check_tip_racks_available(tip_spots, "pick up tips from")
+    use_channels, offsets_list = self._check_tip_arguments(
+      len(tip_spots), use_channels, offsets, "tip_spots"
+    )
+    spots = await read_spots(self.store, self._require_deck(), list(tip_spots))
+    check_racks_available(spots, "pick up tips from")
 
     # The fewest groups of spots the channels can reach without moving the gantry between them
-    batches = plan_batches(
-      use_channels=list(use_channels),
-      # Spots, not containers: the planner asks them where they are and whether anything is in the
-      # way, which a spot answers as a well does.
-      containers=cast(List[Container], list(tip_spots)),
-      channel_spacings=self.minimum_y_spacings,
-      wrt_resource=self._require_deck(),
-      x_tolerance=x_tolerance,
-      resource_offsets=offsets_list,
+    batches = plan_target_batches(
+      list(use_channels),
+      [spot.target() for spot in spots],
+      self.minimum_y_spacings,
+      x_tolerance,
+      offsets_list,
     )
     # The first group is approached from wherever the channels stand, at the starting height; every
     # group after it is reached from the group before, at the height in between.
@@ -4670,8 +4841,8 @@ class Pipettes:
       else (minimum_traverse_height_during)
     )
     for reached, batch in enumerate(batches):
-      await self._pick_up_tips_in_one_move(
-        [tip_spots[i] for i in batch.indices],
+      await self._pick_up_tips_at(
+        [spots[i] for i in batch.indices],
         list(batch.channels),
         [offsets_list[i] for i in batch.indices],
         minimum_traverse_height_start if reached == 0 else between,
@@ -4683,9 +4854,216 @@ class Pipettes:
         minimum_traverse_height_end,
       )
 
+  async def _stage_tip_drop(
+    self, destinations: Sequence[handles.Resource], use_channels: Sequence[int]
+  ) -> Optional[pb.Operation]:
+    """Stage each channel letting go of its tip into its spot, or out of the tree into a trash.
+
+    Recorded rather than refused: the checks a drop makes are the driver's own, and a tip still
+    holding liquid is dropped with a warning. None when no shafts model the channels.
+    """
+    shafts = [self.shaft(ch) for ch in use_channels]
+    if any(shaft is None for shaft in shafts):
+      return None
+    response = await self.store.commands.begin_tool_drop(
+      spb.BeginToolDropRequest(
+        lock_tokens=self.store.lock_tokens,
+        frame=self._require_deck(),
+        items=[
+          spb.ToolDropItem(shaft=ref(shaft.id), target=ref(destination.id))
+          for destination, shaft in zip(destinations, shafts)
+          if shaft is not None
+        ],
+        on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
+      )
+    )
+    return response.operation
+
+  async def _release_unmodelled(
+    self, destinations: Sequence[Tuple[int, handles.Resource, bool]]
+  ) -> None:
+    """Let go of tips no shaft models: into a tracked spot, which takes the tip back, or away.
+
+    Args:
+      destinations: each channel, where its tip goes, and whether that keeps it.
+    """
+    assignments, gone = [], []
+    for ch, destination, keeps in destinations:
+      tip = self._unmodelled_tips.pop(ch, None)
+      if tip is None or not tip.id:
+        continue
+      if keeps:
+        assignments.append(pb.AssignChild(child=ref(tip.id), parent=ref(destination.id)))
+      else:
+        gone.append(ref(tip.id))
+    if assignments:
+      await self.store.commands.assign_resources(
+        spb.AssignResourcesRequest(lock_tokens=self.store.lock_tokens, assignments=assignments)
+      )
+    if gone:
+      await self.store.commands.delete_resources(
+        spb.DeleteResourcesRequest(lock_tokens=self.store.lock_tokens, resources=gone)
+      )
+
+  async def _drop_tips_at(
+    self,
+    destinations: List[handles.Resource],
+    spots: Dict[bytes, SpotFacts],
+    use_channels: List[int],
+    offsets_list: List[Coordinate],
+    z_seek_offset: Optional[float],
+    seek_speed: float,
+    drop_type: PrepCmd.TipDropType,
+    tip_roll_off_distance: float,
+    minimum_traverse_height_start: Optional[float],
+    minimum_traverse_height_end: Optional[float],
+  ) -> None:
+    """`_drop_tips_in_one_move`, the spots already read and the arguments checked.
+
+    Args:
+      spots: the destinations that are tip spots, by id.
+    """
+    tips = await self._require_mounted_tips(use_channels)
+    # And asked of the device itself: the model says what was recorded, the sleeve sensors say what
+    # is on the channel, and a tip lost on the way is only in the second.
+    held = await self.sense_tip_presence()
+    empty = [ch for ch in use_channels if ch < len(held) and not held[ch]]
+    if empty:
+      raise NoTipError(
+        f"{channels_named(empty)} senses no tip on it, though the model holds one"
+        if len(empty) == 1
+        else f"{channels_named(empty)} sense no tip on them, though the model holds one"
+      )
+
+    # Waste and spots are dropped differently, so one command does one or the other
+    all_trash = all(isinstance(d, handles.Trash) for d in destinations)
+    all_tip_spots = all(d.id in spots for d in destinations)
+    if not (all_trash or all_tip_spots):
+      raise ValueError("Cannot mix waste (Trash) and tip spots in a single drop_tips call.")
+
+    resolved_end = self._resolve_traverse_height(minimum_traverse_height_end)
+    roll_off = 3.0 if (all_trash and tip_roll_off_distance == 0.0) else tip_roll_off_distance
+    resolved_drop_type = PrepCmd.TipDropType.Stall if all_trash else drop_type
+
+    # Where each channel lets go: its own waste position, or the spot as the deck holds it
+    indexed = {
+      ch: (dest, tip, off)
+      for ch, dest, tip, off in zip(use_channels, destinations, tips, offsets_list)
+    }
+    waste_tops: Dict[int, Coordinate] = {}
+    if all_trash:
+      parts = self._driver.parts
+      if self.deck is None:
+        raise ValueError(
+          "Cannot drop tips to waste: the driver has no deck (assign one before drop_tips)."
+        )
+      if parts is None:
+        raise ValueError("Cannot drop tips to waste: the driver requires a PrepDeck.")
+      wastes = {}
+      for ch in use_channels:
+        waste_name = _CHANNEL_TO_WASTE_NAME.get(ch, "waste_mph")
+        waste = parts.waste_positions.get(waste_name)
+        if waste is None:
+          raise ValueError(
+            f"Cannot drop tips to waste: deck has no waste position '{waste_name}'. "
+            "Use a deck with waste_rear, waste_front (and waste_mph if using MPH)."
+          )
+        wastes[ch] = waste
+      placed = await locate(self.store, self._require_deck(), [w.id for w in wastes.values()])
+      waste_tops = {ch: placed[waste.id].top for ch, waste in wastes.items()}
+    locations: Dict[int, Coordinate] = {}
+    for ch in range(self.num_channels):
+      if ch not in indexed:
+        continue
+      dest, tip, off = indexed[ch]
+      if all_trash:
+        loc = waste_tops[ch]
+        # The device's waste position is where the tip's end goes, down its chute, while a drop is
+        # sent the height the collar rests at - the tip's length above that end.
+        loc = Coordinate(loc.x, loc.y, loc.z + tip.size.z - tip.collar_height)
+      else:
+        loc = spots[dest.id].placed.top + off
+      locations[ch] = loc
+
+    # Over the destinations first, so the drop itself is straight down. Left to itself the gantry
+    # drives X, Y and Z at once, which arcs whatever is on the channels through the deck.
+    traverse_h = (
+      resolved_end if minimum_traverse_height_start is None else minimum_traverse_height_start
+    )
+    await self.move_to_xy_positions(
+      locations[use_channels[0]].x,
+      {ch: locations[ch].y for ch in use_channels},
+      make_space=True,
+      minimum_traverse_height_start=traverse_h,
+    )
+
+    tip_positions = [
+      PrepCmd.TipDropParameters.for_op(
+        self.channel_enum(ch),
+        locations[ch],
+        indexed[ch][1],
+        z_seek_offset=z_seek_offset,
+        drop_type=resolved_drop_type,
+      )
+      for ch in range(self.num_channels)
+      if ch in indexed
+    ]
+
+    # A tip holding liquid is dropped with a warning; two into one spot, or a taken spot, never
+    for ch, tip in zip(use_channels, tips):
+      if tip.tracks_volume and tip.volume > 1e-6:
+        logger.warning("dropping the tip on channel %d with %s uL in it", ch, tip.volume)
+    into = [spots[d.id] for d in destinations if d.id in spots]
+    if len({spot.id for spot in into}) != len(into):
+      raise ValueError("each tip must go into a spot of its own")
+    for spot in into:
+      if spot.tracks_tips and spot.tip is not None:
+        raise HasTipError(f"{spot.name} already holds a tip")
+
+    # Once the device has let go, a tip goes into its spot, or to nothing in the waste
+    operation = await self._stage_tip_drop(destinations, use_channels)
+    dropped = {ch: False for ch in use_channels}
+    try:
+      await self._driver.send_command(
+        PrepCmd.PrepDropTips(
+          tip_positions=tip_positions,
+          final_z=resolved_end,
+          seek_speed=seek_speed,
+          tip_roll_off_distance=roll_off,
+        )
+      )
+      dropped = {ch: True for ch in use_channels}
+    except ChannelizedError as e:
+      # It can fail on some channels and not others, and the device says which.
+      dropped = {ch: ch not in e.errors for ch in use_channels}
+      raise
+    finally:
+      if operation is not None:
+        await resolve(self.store, operation, [dropped[ch] for ch in use_channels])
+      else:
+        await self._release_unmodelled(
+          [
+            (ch, dest, dest.id in spots and spots[dest.id].tracks_tips)
+            for ch, dest in zip(use_channels, destinations)
+            if dropped[ch]
+          ]
+        )
+      # What a channel carries moves its Z window, and the device answers the new one.
+      with suppress(Exception):  # in a finally: never mask what went wrong above
+        await self._record_channel_bounds()
+      # Read once the tips are off the model: Z is reported at the shafts' ends again.
+      await self._record_where_they_stopped()
+
+  async def _read_destinations(
+    self, destinations: Sequence[handles.Resource]
+  ) -> Dict[bytes, SpotFacts]:
+    """The tip spots among drop destinations, read, by id."""
+    spots = [d for d in destinations if not isinstance(d, handles.Trash)]
+    return {s.id: s for s in await read_spots(self.store, self._require_deck(), spots)}
+
   async def _drop_tips_in_one_move(
     self,
-    destinations: Sequence[Union[TipSpot, Trash]],
+    destinations: Sequence[handles.Resource],
     use_channels: Optional[List[int]] = None,
     offsets: Optional[Sequence[Coordinate]] = None,
     z_seek_offset: Optional[float] = None,
@@ -4724,145 +5102,28 @@ class Pipettes:
       NoTipError: If a channel carries no tip, in the model or on the sensors.
       HasTipError: If a destination spot already holds one.
     """
-    # Arguments
     destinations = list(destinations)
     if not destinations:
       return
-    use_channels = use_channels if use_channels is not None else list(range(len(destinations)))
-    if len(destinations) != len(use_channels):
-      raise ValueError(
-        f"len(destinations) must equal len(use_channels): "
-        f"{len(destinations)} != {len(use_channels)}"
-      )
-    if use_channels and max(use_channels) >= self.num_channels:
-      raise ValueError(f"use_channels index out of range (valid: 0..{self.num_channels - 1})")
-    tips = self._require_mounted_tips(use_channels)
-    # And asked of the device itself: the model says what was recorded, the sleeve sensors say what
-    # is on the channel, and a tip lost on the way is only in the second.
-    held = await self.sense_tip_presence()
-    empty = [ch for ch in use_channels if ch < len(held) and not held[ch]]
-    if empty:
-      raise NoTipError(
-        f"{channels_named(empty)} senses no tip on it, though the model holds one"
-        if len(empty) == 1
-        else f"{channels_named(empty)} sense no tip on them, though the model holds one"
-      )
-    offsets_list = list(offsets) if offsets is not None else [Coordinate.zero()] * len(destinations)
-    if len(offsets_list) != len(destinations):
-      raise ValueError("len(offsets) must equal len(destinations)")
-
-    # Waste and spots are dropped differently, so one command does one or the other
-    all_trash = all(isinstance(d, Trash) for d in destinations)
-    all_tip_spots = all(isinstance(d, TipSpot) for d in destinations)
-    if not (all_trash or all_tip_spots):
-      raise ValueError("Cannot mix waste (Trash) and tip spots in a single drop_tips call.")
-
-    resolved_end = self._resolve_traverse_height(minimum_traverse_height_end)
-    roll_off = 3.0 if (all_trash and tip_roll_off_distance == 0.0) else tip_roll_off_distance
-    resolved_drop_type = PrepCmd.TipDropType.Stall if all_trash else drop_type
-
-    # Where each channel lets go: its own waste position, or the spot as the deck holds it
-    indexed = {
-      ch: (dest, tip, off)
-      for ch, dest, tip, off in zip(use_channels, destinations, tips, offsets_list)
-    }
-    locations: Dict[int, Coordinate] = {}
-    for ch in range(self.num_channels):
-      if ch not in indexed:
-        continue
-      dest, tip, off = indexed[ch]
-      if all_trash:
-        deck = self.deck
-        if deck is None:
-          raise ValueError(
-            "Cannot drop tips to waste: the driver has no deck (assign one before drop_tips)."
-          )
-        if not isinstance(deck, PrepDeck):
-          raise ValueError("Cannot drop tips to waste: the driver requires a PrepDeck.")
-        waste_name = _CHANNEL_TO_WASTE_NAME.get(ch, "waste_mph")
-        waste = deck.waste_positions.get(waste_name)
-        if waste is None:
-          raise ValueError(
-            f"Cannot drop tips to waste: deck has no waste position '{waste_name}'. "
-            "Use a deck with waste_rear, waste_front (and waste_mph if using MPH)."
-          )
-        loc = waste.get_location_wrt(deck, "c", "c", "t")
-        # The device's waste position is where the tip's end goes, down its chute, while a drop is
-        # sent the height the collar rests at - the tip's length above that end.
-        loc = Coordinate(loc.x, loc.y, loc.z + tip.get_size_z() - tip.collar_height)
-      else:
-        loc = dest.get_location_wrt(self._require_deck(), "c", "c", "t") + off
-      locations[ch] = loc
-
-    # Over the destinations first, so the drop itself is straight down. Left to itself the gantry
-    # drives X, Y and Z at once, which arcs whatever is on the channels through the deck.
-    traverse_h = (
-      resolved_end if minimum_traverse_height_start is None else minimum_traverse_height_start
+    use_channels, offsets_list = self._check_tip_arguments(
+      len(destinations), use_channels, offsets, "destinations"
     )
-    await self.move_to_xy_positions(
-      locations[use_channels[0]].x,
-      {ch: locations[ch].y for ch in use_channels},
-      make_space=True,
-      minimum_traverse_height_start=traverse_h,
+    await self._drop_tips_at(
+      destinations,
+      await self._read_destinations(destinations),
+      use_channels,
+      offsets_list,
+      z_seek_offset,
+      seek_speed,
+      drop_type,
+      tip_roll_off_distance,
+      minimum_traverse_height_start,
+      minimum_traverse_height_end,
     )
-
-    tip_positions = [
-      PrepCmd.TipDropParameters.for_op(
-        self.channel_enum(ch),
-        locations[ch],
-        indexed[ch][1],
-        z_seek_offset=z_seek_offset,
-        drop_type=resolved_drop_type,
-      )
-      for ch in range(self.num_channels)
-      if ch in indexed
-    ]
-
-    # A tip holding liquid is dropped with a warning; two into one spot, or a taken spot, never
-    for ch, tip in zip(use_channels, tips):
-      if not tip.tracker.is_disabled and tip.tracker.get_used_volume() > 1e-6:
-        logger.warning(
-          "dropping the tip on channel %d with %s uL in it", ch, tip.tracker.get_used_volume()
-        )
-    spots = [dest for dest in destinations if isinstance(dest, TipSpot)]
-    if len({id(spot) for spot in spots}) != len(spots):
-      raise ValueError("each tip must go into a spot of its own")
-    for spot in spots:
-      if spot.tracks_tips and spot.tip is not None:
-        raise HasTipError(f"{spot.name} already holds a tip")
-
-    dropped = {ch: False for ch in use_channels}
-    try:
-      await self._driver.send_command(
-        PrepCmd.PrepDropTips(
-          tip_positions=tip_positions,
-          final_z=resolved_end,
-          seek_speed=seek_speed,
-          tip_roll_off_distance=roll_off,
-        )
-      )
-      dropped = all_channels_succeeded(use_channels)
-    except ChannelizedError as e:
-      # It can fail on some channels and not others, and the device says which.
-      dropped = successes_from_failed_channels(use_channels, e.errors)
-      raise
-    finally:
-      # Once the device has let go, a tip goes into its spot, or to nothing in the waste
-      for ch, dest in zip(use_channels, destinations):
-        if not dropped[ch]:
-          continue
-        released = self._release_tip(ch)
-        if released is not None and isinstance(dest, TipSpot) and dest.tracks_tips:
-          dest.assign_tip(released)
-      # What a channel carries moves its Z window, and the device answers the new one.
-      with suppress(Exception):  # in a finally: never mask what went wrong above
-        await self._record_channel_bounds()
-      # Read once the tips are off the model: Z is reported at the shafts' ends again.
-      await self._record_where_they_stopped()
 
   async def drop_tips(
     self,
-    destinations: Sequence[Union[TipSpot, Trash]],
+    destinations: Sequence[handles.Resource],
     use_channels: Optional[List[int]] = None,
     offsets: Optional[Sequence[Coordinate]] = None,
     z_seek_offset: Optional[float] = None,
@@ -4905,29 +5166,19 @@ class Pipettes:
       NoTipError: If a channel carries no tip, in the model or on the sensors.
       HasTipError: If a destination spot already holds one.
     """
-    # Arguments
     destinations = list(destinations)
     if not destinations:
       return
-    use_channels = use_channels if use_channels is not None else list(range(len(destinations)))
-    if len(destinations) != len(use_channels):
-      raise ValueError(
-        f"len(destinations) must equal len(use_channels): "
-        f"{len(destinations)} != {len(use_channels)}"
-      )
-    if max(use_channels) >= self.num_channels or min(use_channels) < 0:
-      raise ValueError(f"use_channels index out of range (valid: 0..{self.num_channels - 1})")
-    offsets_list = list(offsets) if offsets is not None else [Coordinate.zero()] * len(destinations)
-    if len(offsets_list) != len(destinations):
-      raise ValueError("len(offsets) must equal len(destinations)")
-    check_tip_racks_available(
-      [destination for destination in destinations if isinstance(destination, TipSpot)],
-      "drop tips into",
+    use_channels, offsets_list = self._check_tip_arguments(
+      len(destinations), use_channels, offsets, "destinations"
     )
+    spots = await self._read_destinations(destinations)
+    check_racks_available(list(spots.values()), "drop tips into")
 
-    if all(isinstance(destination, Trash) for destination in destinations):
-      await self._drop_tips_in_one_move(
+    if all(isinstance(destination, handles.Trash) for destination in destinations):
+      await self._drop_tips_at(
         destinations,
+        spots,
         use_channels,
         offsets_list,
         z_seek_offset,
@@ -4940,13 +5191,14 @@ class Pipettes:
       return
 
     # The fewest groups of spots the channels can reach without moving the gantry between them
-    batches = plan_batches(
-      use_channels=list(use_channels),
-      containers=cast(List[Container], list(destinations)),
-      channel_spacings=self.minimum_y_spacings,
-      wrt_resource=self._require_deck(),
-      x_tolerance=x_tolerance,
-      resource_offsets=offsets_list,
+    if not all(d.id in spots for d in destinations):
+      raise ValueError("Cannot mix waste (Trash) and tip spots in a single drop_tips call.")
+    batches = plan_target_batches(
+      list(use_channels),
+      [spots[d.id].target() for d in destinations],
+      self.minimum_y_spacings,
+      x_tolerance,
+      offsets_list,
     )
     between = (
       minimum_traverse_height_start
@@ -4954,8 +5206,9 @@ class Pipettes:
       else minimum_traverse_height_during
     )
     for reached, batch in enumerate(batches):
-      await self._drop_tips_in_one_move(
+      await self._drop_tips_at(
         [destinations[i] for i in batch.indices],
+        spots,
         list(batch.channels),
         [offsets_list[i] for i in batch.indices],
         z_seek_offset,
@@ -4979,19 +5232,29 @@ class Pipettes:
     Raises:
       RuntimeError: If no channel carries a tip, or a tip's spot is not on the deck.
     """
-    deck = self._require_deck()
+    self._require_deck()
     channels = range(self.num_channels) if use_channels is None else use_channels
-    spots: List[TipSpot] = []
-    carrying: List[int] = []
-    for ch in sorted(channels):
-      tip = self.get_mounted_tip(ch)
-      if tip is None:
-        continue
-      spot = tip_origin(tip, deck)
+    mounted = await self.get_mounted_tips()
+    carrying = [ch for ch in sorted(channels) if mounted[ch] is not None]
+    tips = {ch: tip for ch in carrying if (tip := mounted[ch]) is not None}
+    names = {ch: tip.name.rpartition("#")[0] for ch, tip in tips.items()}
+    found = {
+      spot.name: spot
+      for spot in await self.store.find_resources(
+        scope=self.deck,
+        filter=spb.ResourceFilter(
+          names=[n for n in names.values() if n], kinds=[pb.RESOURCE_KIND_TIP_SPOT]
+        ),
+      )
+    }
+    spots: List[handles.Resource] = []
+    for ch in carrying:
+      spot = found.get(names[ch])
       if spot is None:
-        raise RuntimeError(f"the spot channel {ch}'s tip {tip.name} came from is not on the deck")
+        raise RuntimeError(
+          f"the spot channel {ch}'s tip {tips[ch].name} came from is not on the deck"
+        )
       spots.append(spot)
-      carrying.append(ch)
     if not spots:
       raise RuntimeError("No tips have been picked up.")
     await self.drop_tips(spots, use_channels=carrying, **kwargs)
@@ -5006,36 +5269,50 @@ class Pipettes:
     Raises:
       RuntimeError: If this deck was built without a waste block.
     """
-    deck = self._require_deck()
+    self._require_deck()
     if use_channels is None:
-      use_channels = [ch for ch in range(self.num_channels) if self.get_mounted_tip(ch) is not None]
+      mounted = await self.get_mounted_tips()
+      use_channels = [ch for ch in range(self.num_channels) if mounted[ch] is not None]
     if not use_channels:
       return
-    if not isinstance(deck, PrepDeck):
+    parts = self._driver.parts
+    if parts is None:
       raise RuntimeError("tips are discarded into a PrepDeck's waste block")
-    waste_name = deck.get_component_name("waste_block")
-    if not deck.has_resource(waste_name):
+    if parts.waste_block is None:
       raise RuntimeError("tips are discarded into the deck's waste block; this deck has none")
-    waste = deck.get_resource(waste_name)
-    if not isinstance(waste, Trash):
-      raise RuntimeError("tips are discarded into the deck's waste block; this deck has none")
-    await self.drop_tips([waste] * len(use_channels), use_channels=use_channels, **kwargs)
+    await self.drop_tips(
+      [parts.waste_block] * len(use_channels), use_channels=use_channels, **kwargs
+    )
 
   async def consolidate_tip_inventory(
-    self, tip_racks: List[TipRack], use_channels: Optional[List[int]] = None
+    self, tip_racks: List[handles.TipRack], use_channels: Optional[List[int]] = None
   ) -> None:
     """Move tips between partly filled racks of one tip model until they fill the fewest racks.
 
-    Planned by `plan_tip_consolidation` from the tracked tips; full and empty racks are left.
+    Planned by `plan_consolidation` from the tracked tips; full and empty racks are left.
 
     Args:
       tip_racks: the racks to consolidate.
       use_channels: which channels, 0-indexed from the back. Every channel when None.
     """
-    batches = plan_tip_consolidation(
-      tip_racks,
+    nodes = await get_nodes(self.store, [ref(rack.id) for rack in tip_racks], depth=2)
+    by_id = {node.id: node for node in nodes}
+    racks: List[RackTips[handles.TipSpot, ToolFacts]] = []
+    for rack in tip_racks:
+      spots = [item for item in rack.items if isinstance(item, handles.TipSpot)]
+      racks.append(
+        RackTips(
+          name=rack.name,
+          spots=spots,
+          xs=[by_id[spot.id].attributes.location.x for spot in spots],
+          tips=[tool_on(by_id[spot.id], by_id) for spot in spots],
+        )
+      )
+    batches = plan_consolidation(
+      racks,
       num_channels=self.num_channels,
-      can_pick_up_tip=lambda _channel, tip: isinstance(tip, HamiltonTip),
+      can_pick_up_tip=lambda _channel, tip: bool(tip.tip_size),
+      model_of=lambda tip: tip.model or None,
       use_channels=use_channels,
     )
     for batch in batches:
@@ -5070,6 +5347,19 @@ class Pipettes:
         )
     return at
 
+  async def _let_go(self, channel: int) -> None:
+    """Take whatever a channel carries off it in the model, to nothing: it fell where it stood."""
+    self._unmodelled_tips.pop(channel, None)
+    shaft = self.shaft(channel)
+    if shaft is None:
+      return
+    tools = await self._get_mounted_tools()
+    tool = tools[channel] if channel < len(tools) else None
+    if tool is not None:
+      await self.store.commands.delete_resources(
+        spb.DeleteResourcesRequest(lock_tokens=self.store.lock_tokens, resources=[ref(tool.id)])
+      )
+
   async def release_tips(self, channels: Optional[List[int]] = None) -> None:
     """Let go of whatever each channel holds, where it stands, with the squeeze drive alone.
 
@@ -5097,7 +5387,7 @@ class Pipettes:
             channel=self.channel_enum(ch),
           )
         )
-        self._release_tip(ch)
+        await self._let_go(ch)
     finally:
       # What a channel carries moves its Z window, and the device answers the new one.
       with suppress(Exception):  # in a finally: never mask what went wrong above
@@ -5125,9 +5415,10 @@ class Pipettes:
       RuntimeError: If the deck has no waste sites, or a move did not leave a channel where it should.
     """
     deck = self._require_deck()
-    if not isinstance(deck, PrepDeck):
+    parts = self._driver.parts
+    if parts is None:
       raise RuntimeError("the waste sites are placed on a PrepDeck; this driver has another deck")
-    sites = deck.waste_positions
+    sites = parts.waste_positions
     if not sites:
       raise RuntimeError("the deck has no waste sites")
     at = await self.request_locations()
@@ -5179,9 +5470,10 @@ class Pipettes:
         )
 
     # 3. X once, then Y per channel, the smaller target first so nobody passes the one ahead.
-    targets = {
-      ch: sites[_CHANNEL_TO_WASTE_NAME[ch]].get_location_wrt(deck, "c", "c", "t") for ch in carrying
-    }
+    placed = await locate(
+      self.store, deck, [sites[_CHANNEL_TO_WASTE_NAME[ch]].id for ch in carrying]
+    )
+    targets = {ch: placed[sites[_CHANNEL_TO_WASTE_NAME[ch]].id].top for ch in carrying}
     x = next(iter(targets.values())).x
     at = await self._move_relative_and_check(
       PrepCmd.PrepXAxisMoveRelative(distance=x - at[0].x),
@@ -5213,15 +5505,13 @@ class Pipettes:
           {ch: Coordinate(at[ch].x, at[ch].y, traverse)},
         )
 
-  def can_pick_up_tip(self, channel: int, tip: Tip) -> bool:
+  def can_pick_up_tip(self, channel: int, tip: ToolFacts) -> bool:
     """Check if the tip can be picked up by the specified channel.
 
     Uses the same logic as Nimbus/STAR: only Hamilton tips, no XL tips,
     and channel index must be valid.
     """
-    if not isinstance(tip, HamiltonTip):
-      return False
-    if tip.tip_size in {TipSize.XL}:
+    if not tip.tip_size or tip.tip_size == "XL":
       return False
     try:
       n = self._configuration.num_channels
@@ -5321,8 +5611,7 @@ class Pipettes:
     volumes = [float(op.volume) for op in ops]
 
     well_geometry = [
-      _absolute_z_from_well(op.resource, self._require_deck(), op.liquid_height, op.offset.z)
-      for op in ops
+      _absolute_z_from_well(op.resource, op.liquid_height, op.offset.z) for op in ops
     ]
     z_minimum = fill_in_defaults(z_minimum, [g.well_bottom for g in well_geometry])
     z_fluid = fill_in_defaults(z_fluid, [g.liquid_surface for g in well_geometry])
@@ -5617,8 +5906,8 @@ class Pipettes:
       z_finals = [minimum_traverse_height_end] * n
     else:
       traverse = self._resolve_traverse_height(None)
-      tips = self._require_mounted_tips(use_channels)
-      z_finals = [traverse - (tip.get_size_z() - tip.fitting_depth) for tip in tips]
+      tips = await self._require_mounted_tips(use_channels)
+      z_finals = [traverse - tip.length for tip in tips]
     if any(m is not None and m.auto_surface_following for m in pre_mixes or []):
       raise ValueError(
         "the Prep's mix follows no surface; give pre_mixes no auto_surface_following"
@@ -5881,8 +6170,8 @@ class Pipettes:
       z_finals = [minimum_traverse_height_end] * n
     else:
       traverse = self._resolve_traverse_height(None)
-      tips = self._require_mounted_tips(use_channels)
-      z_finals = [traverse - (tip.get_size_z() - tip.fitting_depth) for tip in tips]
+      tips = await self._require_mounted_tips(use_channels)
+      z_finals = [traverse - tip.length for tip in tips]
 
     kits: list[_DispenseChannelKit] = []
     for i in sorted(range(n), key=lambda j: use_channels[j]):
@@ -5935,11 +6224,48 @@ class Pipettes:
 
   # -- aspirate / dispense orchestrators -----------------------------------------------------------
 
+  async def _refresh_volumes(self, containers: Sequence[ContainerFacts]) -> List[ContainerFacts]:
+    """The containers with what each holds now, in one read."""
+    nodes = await get_nodes(self.store, [c.ref for c in containers])
+    by_id = {node.id: node for node in nodes}
+    return [replace(c, volume=by_id[c.id].state.volume.pending_volume) for c in containers]
+
+  async def _stage_transfer(
+    self,
+    direction: int,
+    containers: Sequence[ContainerFacts],
+    use_channels: Sequence[int],
+    volumes: Sequence[float],
+  ) -> Optional[pb.Operation]:
+    """Stage liquid moving between each container and the tip on its channel.
+
+    Recorded rather than refused: what a container or a tip cannot give or take is the driver's to
+    decide, and it already has. None when no shafts model the channels.
+    """
+    shafts = [self.shaft(ch) for ch in use_channels]
+    if any(shaft is None for shaft in shafts):
+      return None
+    response = await self.store.commands.begin_liquid_transfer(
+      spb.BeginLiquidTransferRequest(
+        lock_tokens=self.store.lock_tokens,
+        frame=self._require_deck(),
+        direction=direction,  # type: ignore[arg-type]
+        items=[
+          spb.TransferItem(container=c.ref, shaft=ref(shaft.id), volume=volume)
+          for c, shaft, volume in zip(containers, shafts, volumes)
+          if shaft is not None
+        ],
+        on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
+      )
+    )
+    return response.operation
+
   def _build_transfers(
     self,
-    resources: Sequence[Container],
+    resources: Sequence[ContainerFacts],
     vols: Sequence[float],
     use_channels: List[int],
+    tips: Sequence[ToolFacts],
     *,
     offsets: Optional[Sequence[Coordinate]] = None,
     liquid_height: Optional[Sequence[Optional[float]]] = None,
@@ -5950,7 +6276,6 @@ class Pipettes:
     vols = [float(v) for v in vols]
     if len(resources) != len(use_channels) or len(vols) != len(use_channels):
       raise ValueError("resources, vols, and use_channels must have the same length")
-    tips = self._require_mounted_tips(use_channels)
     n = len(use_channels)
     offs = list(offsets) if offsets is not None else [Coordinate.zero()] * n
     lhs = list(liquid_height) if liquid_height is not None else [None] * n
@@ -5977,9 +6302,9 @@ class Pipettes:
       for r, t, v, o, lh, fr, bav in zip(resources, tips, vols, offs, lhs, frs, bavs)
     ]
 
-  def _get_liquid_heights(
+  async def _get_liquid_heights(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     liquid_heights: Optional[Sequence[Optional[float]]],
     effective_lld: bool,
   ) -> List[Optional[float]]:
@@ -6000,21 +6325,23 @@ class Pipettes:
     heights = list(liquid_heights) if liquid_heights is not None else [None] * len(containers)
     if len(heights) != len(containers):
       raise ValueError(f"liquid_heights length must match containers ({len(containers)})")
-    tracking = does_volume_tracking()
-    resolved: List[Optional[float]] = []
-    for container, height in zip(containers, heights):
-      if height is None and not effective_lld:
-        if not tracking:
-          raise RuntimeError(
-            f"no liquid height given for {container.name}, volume tracking is off and no LLD "
-            "runs, so nothing knows where its liquid is"
-          )
-        height = get_liquid_height_from_volume(container, container.tracker.get_used_volume())
-      resolved.append(height)
+    wanted = [i for i, height in enumerate(heights) if height is None and not effective_lld]
+    for i in wanted:
+      if not containers[i].tracks_volume:
+        raise RuntimeError(
+          f"no liquid height given for {containers[i].name}, volume tracking is off and no LLD "
+          "runs, so nothing knows where its liquid is"
+        )
+    found = await heights_from_volumes(
+      self.store, [(containers[i], containers[i].volume) for i in wanted]
+    )
+    resolved: List[Optional[float]] = list(heights)
+    for i, height in zip(wanted, found):
+      resolved[i] = height
     return resolved
 
   def _get_resource_offsets(
-    self, containers: Sequence[Container], use_channels: List[int]
+    self, containers: Sequence[ContainerFacts], use_channels: List[int]
   ) -> List[Coordinate]:
     """Each channel's offset in its container: channels sharing one spread across it in Y.
 
@@ -6029,13 +6356,13 @@ class Pipettes:
       ValueError: If the channels sharing a container do not fit in it.
     """
     offsets = [Coordinate.zero()] * len(containers)
-    for container in {id(c): c for c in containers}.values():
-      jobs = [i for i, c in enumerate(containers) if c is container]
+    for container in {c.id: c for c in containers}.values():
+      jobs = [i for i, c in enumerate(containers) if c.id == container.id]
       if len(jobs) < 2:
         continue
       jobs.sort(key=lambda i: use_channels[i])
-      spread = compute_nonconsecutive_channel_offsets(
-        container, [use_channels[i] for i in jobs], self.minimum_y_spacings
+      spread = nonconsecutive_channel_offsets(
+        container.footprint(), [use_channels[i] for i in jobs], self.minimum_y_spacings
       )
       if spread is None:
         raise ValueError(
@@ -6048,7 +6375,7 @@ class Pipettes:
   async def _aspirate_batch(
     self,
     x_position: float,
-    containers: List[Container],
+    containers: List[ContainerFacts],
     drawn: List[float],
     use_channels: List[int],
     resource_offsets: List[Coordinate],
@@ -6102,12 +6429,16 @@ class Pipettes:
     Returns:
       The liquid volume each channel takes, in uL.
     """
+    if not check_only:
+      # What each holds now: an earlier batch may have drawn from it.
+      containers = await self._refresh_volumes(containers)
     ops = self._build_transfers(
       containers,
       drawn,
       use_channels,
+      await self._require_mounted_tips(use_channels),
       offsets=resource_offsets,
-      liquid_height=self._get_liquid_heights(
+      liquid_height=await self._get_liquid_heights(
         containers, liquid_heights, floor_touched or surface_found
       ),
       flow_rates=flow_rates,
@@ -6120,9 +6451,8 @@ class Pipettes:
       z_air=z_air,
       z_minimum=minimum_allowed_z_positions_during,
     )
-    deck = self._require_deck()
     # The firmware reads the profile at the tip's height, counted from z_minimum
-    bottoms = [op.resource.get_location_wrt(deck, "c", "c", "cavity_bottom").z for op in ops]
+    bottoms = [op.resource.cavity_bottom.z for op in ops]
     distances = [
       None if surface_following_distances is None else surface_following_distances[i]
       for i in range(len(ops))
@@ -6142,42 +6472,36 @@ class Pipettes:
     locations = [
       Coordinate(
         x_position,
-        op.resource.get_location_wrt(deck, "c", "c", "cavity_bottom").y + op.offset.y,
+        op.resource.cavity_bottom.y + op.offset.y,
         ctx.z_fluid[i],
       )
       for i, op in enumerate(ops)
     ]
     booked = list(liquid)
-    if not check_only and does_volume_tracking():
+    if not check_only:
       # A draw past what a container holds takes the rest as air, which is how a well is emptied
       # on purpose, so under ZTOUCH that is an info line.
-      held = {id(op.resource): op.resource.tracker.get_used_volume() for op in ops}
+      held = {op.resource.id: op.resource.volume for op in ops}
       for i, (ch, op) in enumerate(zip(use_channels, ops)):
-        if op.resource.tracker.is_disabled:
+        if not op.resource.tracks_volume:
           continue
-        booked[i] = min(liquid[i], max(held[id(op.resource)], 0.0))
+        booked[i] = min(liquid[i], max(held[op.resource.id], 0.0))
         if booked[i] < liquid[i]:
           (logger.info if floor_touched else logger.warning)(
             "channel %d draws %.1f uL from %s, which holds %.1f uL; the rest is air",
             ch,
             liquid[i],
             op.resource.name,
-            held[id(op.resource)],
+            held[op.resource.id],
           )
-        held[id(op.resource)] -= booked[i]
-    volume_intents = [
-      VolumeTransferIntent(
-        channel=ch,
-        container=op.resource,
-        tip=op.tip,
-        volume_ul=booked[i],
-        direction="aspirate",
-      )
-      for i, (ch, op) in enumerate(zip(use_channels, ops))
-    ]
-    if not check_only:
-      queue_volume_transfers(volume_intents)
+        held[op.resource.id] -= booked[i]
 
+    # What each channel takes is staged, and booked once the device has drawn it.
+    operation: Optional[pb.Operation] = None
+    if not check_only:
+      operation = await self._stage_transfer(
+        spb.TRANSFER_DIRECTION_ASPIRATE, [op.resource for op in ops], use_channels, booked
+      )
     aspirated = {ch: False for ch in use_channels}
     try:
       await self._aspirate_in_one_move(
@@ -6212,18 +6536,18 @@ class Pipettes:
         command_version=command_version,
         check_only=check_only,
       )
-      aspirated = all_channels_succeeded(use_channels)
+      aspirated = {ch: True for ch in use_channels}
     except ChannelizedError as e:
       # It can fail on some channels and not others, and the device says which.
-      aspirated = successes_from_failed_channels(use_channels, e.errors)
+      aspirated = {ch: ch not in e.errors for ch in use_channels}
       raise
     finally:
       # What each channel took is what its tip now holds, and the well no longer does
-      if not check_only:
-        finalize_volume_ops(volume_intents, aspirated)
+      if operation is not None:
+        await resolve(self.store, operation, [aspirated[ch] for ch in use_channels])
     return liquid
 
-  def _check_tips_have_room(self, tips: Sequence[Tip], volumes: Sequence[float]) -> None:
+  def _check_tips_have_room(self, tips: Sequence[ToolFacts], volumes: Sequence[float]) -> None:
     """Refuse more than a tip has room for.
 
     Args:
@@ -6233,16 +6557,14 @@ class Pipettes:
     Raises:
       TooLittleVolumeError: If a tip has less room than its job takes.
     """
-    if not does_volume_tracking():
-      return
     for tip, volume in zip(tips, volumes):
-      room = tip.tracker.get_free_volume()
-      if not tip.tracker.is_disabled and volume - room > 1e-6:
+      room = tip.free_volume
+      if tip.tracks_volume and volume - room > 1e-6:
         raise TooLittleVolumeError(f"a tip with room for {room} uL asked to take {volume} uL")
 
-  def _check_ztouch(
+  async def _check_ztouch(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     use_channels: Sequence[int],
     touched: Sequence[int],
     z_cavity_bottom: Sequence[float],
@@ -6270,12 +6592,12 @@ class Pipettes:
       raise ValueError(f"approach_speed must be between {low} and {high} mm/s, is {approach_speed}")
     for job in touched:
       self._get_floor_search_end(use_channels[job], z_cavity_bottom[job])
-    self._warn_ztouch_on_soft_tips(use_channels[job] for job in touched)
+    await self._warn_ztouch_on_soft_tips(use_channels[job] for job in touched)
 
   async def _touch_floors_of_batch(
     self,
     batch: ChannelBatch,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     *,
     z_cavity_bottom: Sequence[float],
     z_top: Sequence[float],
@@ -6344,7 +6666,7 @@ class Pipettes:
   async def _search_liquid_of_batch(
     self,
     batch: ChannelBatch,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     *,
     z_cavity_bottom: Sequence[float],
     z_top: Sequence[float],
@@ -6375,7 +6697,7 @@ class Pipettes:
       RuntimeError: No liquid found.
     """
     clearances = [
-      self.well_search_start_clearance if isinstance(c, Well) else self.search_start_clearance
+      self.well_search_start_clearance if c.is_well else self.search_start_clearance
       for c in containers
     ]
     ends = list(z_cavity_bottom)
@@ -6392,14 +6714,13 @@ class Pipettes:
       approach_speed=approach_speed,
       sensitivity=sensitivity,
     )
-    tracking = does_volume_tracking()
     surfaces = []
+    above: Dict[int, float] = {}
     for channel, job in zip(batch.channels, batch.indices):
       height = found[job][0]
       if height is None:
         raise RuntimeError(f"channel {channel} found no liquid in {containers[job].name}")
       surfaces.append(height)
-      container = containers[job]
       above_bottom = round(height - z_cavity_bottom[job], 2)
       if above_bottom < 0:
         # The plate sits lower than the model: the floor sent follows the surface found.
@@ -6407,25 +6728,33 @@ class Pipettes:
           "channel %d found the liquid of %s %.2f mm below its modelled cavity bottom; the floor "
           "sent is the surface found",
           channel,
-          container.name,
+          containers[job].name,
           -above_bottom,
         )
         continue
-      try:
-        measured = container.compute_volume_from_height(above_bottom)
-      except ValueError:
+      above[job] = above_bottom
+    jobs = list(above)
+    held = {c.id: c for c in await self._refresh_volumes([containers[job] for job in jobs])}
+    measured_volumes = await volumes_from_heights(
+      self.store, [(containers[job], above[job]) for job in jobs]
+    )
+    measurements: List[spb.Measurement] = []
+    for job, measured in zip(jobs, measured_volumes):
+      container = held[containers[job].id]
+      channel = batch.channels[batch.indices.index(job)]
+      if measured is None:
         # A plate seated off the model, or a fill past the data: the surface found still counts.
         logger.warning(
           "channel %d found the liquid of %s %.2f mm above its modelled cavity bottom, outside "
           "its height-volume data; the model keeps %.1f uL",
           channel,
           container.name,
-          above_bottom,
-          container.tracker.get_used_volume(),
+          above[job],
+          container.volume,
         )
         continue
-      if tracking:
-        expected = container.tracker.get_used_volume()
+      if container.tracks_volume:
+        expected = container.volume
         if abs(measured - expected) > 0.2 * expected:
           logger.warning(
             "channel %d measured %.1f uL in %s where the model had %.1f uL",
@@ -6434,12 +6763,17 @@ class Pipettes:
             container.name,
             expected,
           )
-        container.tracker.set_volume(measured)
+        held[container.id] = replace(container, volume=measured)
+        measurements.append(spb.Measurement(resource=container.ref, volume=measured))
+    if measurements:
+      await self.store.commands.record_measurements(
+        spb.RecordMeasurementsRequest(lock_tokens=self.store.lock_tokens, measurements=measurements)
+      )
     return surfaces
 
   def _get_lld_modes(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     lld_mode: Union[Pipettes.LLDMode, Sequence[Pipettes.LLDMode], None],
     auto_surface_following: bool,
     surface_following_distances: Optional[Sequence[float]],
@@ -6502,7 +6836,7 @@ class Pipettes:
 
   def _check_searches(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[ContainerFacts],
     liquid_heights: Optional[Sequence[Optional[float]]],
     modes: Sequence[Pipettes.LLDMode],
   ) -> None:
@@ -6530,8 +6864,7 @@ class Pipettes:
     lacking = [
       container.name
       for container, mode in zip(containers, modes)
-      if mode == self.LLDMode.CAPACITIVE
-      and not container.supports_compute_height_volume_functions()
+      if mode == self.LLDMode.CAPACITIVE and not container.converts_height_and_volume
     ]
     if lacking:
       raise RuntimeError(
@@ -6542,7 +6875,7 @@ class Pipettes:
 
   async def aspirate(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[handles.Resource],
     volumes: Optional[Sequence[float]] = None,
     use_channels: Optional[List[int]] = None,
     resource_offsets: Optional[List[Coordinate]] = None,
@@ -6676,7 +7009,6 @@ class Pipettes:
       TooLittleVolumeError: If a tip has less room than it is to take.
       NotImplementedError: If a mode is PRESSURE or DUAL.
     """
-    containers = list(containers)
     n = len(containers)
     use_channels = use_channels if use_channels is not None else list(range(n))
     check_volume_arguments(volumes, piston_volumes, hamilton_liquid_classes, "drawn")
@@ -6720,10 +7052,11 @@ class Pipettes:
       raise ValueError(
         "TADM is not verified on the Prep yet; give limit curve 0 and no storage level"
       )
+    facts = await read_containers(self.store, self._require_deck(), list(containers))
     liquid, drawn, classes = get_volumes_and_classes(
-      containers,
+      [fact.name for fact in facts],
       use_channels,
-      self._require_mounted_tips(use_channels),
+      cast(Any, await self._require_mounted_tips(use_channels)),
       volumes,
       piston_volumes,
       hamilton_liquid_classes,
@@ -6744,7 +7077,7 @@ class Pipettes:
     pre_wetting_volumes = by_class("pre_wetting_volumes", pre_wetting_volumes)
     clot_detection_heights = by_class("clot_detection_heights", clot_detection_heights)
     modes = self._get_lld_modes(
-      containers,
+      facts,
       lld_mode,
       auto_surface_following,
       surface_following_distances,
@@ -6765,20 +7098,14 @@ class Pipettes:
     offsets = (
       resource_offsets
       if resource_offsets is not None
-      else self._get_resource_offsets(containers, use_channels)
+      else self._get_resource_offsets(facts, use_channels)
     )
-    deck = self._require_deck()
-    z_cavity_bottom = [
-      round(c.get_location_wrt(deck, "c", "c", "cavity_bottom").z + o.z, 2)
-      for c, o in zip(containers, offsets)
-    ]
-    z_top = [
-      round(c.get_location_wrt(deck, "c", "c", "t").z + o.z, 2) for c, o in zip(containers, offsets)
-    ]
-    self._check_searches(containers, liquid_heights, modes)
+    z_cavity_bottom = [round(c.cavity_bottom.z + o.z, 2) for c, o in zip(facts, offsets)]
+    z_top = [round(c.placed.top.z + o.z, 2) for c, o in zip(facts, offsets)]
+    self._check_searches(facts, liquid_heights, modes)
     if touched:
-      self._check_ztouch(
-        containers,
+      await self._check_ztouch(
+        facts,
         use_channels,
         touched,
         z_cavity_bottom,
@@ -6788,15 +7115,14 @@ class Pipettes:
       logger.warning(
         "channels %s aspirate on Z touch: from the floor of %s, air where no liquid is",
         sorted({use_channels[job] for job in touched}),
-        [containers[job].name for job in touched],
+        [facts[job].name for job in touched],
       )
     # One command carries one LLD category, so each mode is planned on its own.
     groups = [[job for job in range(n) if modes[job] == mode] for mode in dict.fromkeys(modes)]
     batches: List[ChannelBatch] = []
     for group in groups:
       _, planned = self._plan_batched(
-        deck,
-        [containers[job] for job in group],
+        [facts[job] for job in group],
         [use_channels[job] for job in group],
         [offsets[job] for job in group],
         x_grouping_tolerance,
@@ -6825,7 +7151,7 @@ class Pipettes:
           if check_only
           else await self._search_liquid_of_batch(
             batch,
-            containers,
+            facts,
             z_cavity_bottom=z_cavity_bottom,
             z_top=z_top,
             search_speed=search_speed,
@@ -6845,7 +7171,7 @@ class Pipettes:
           if check_only
           else await self._touch_floors_of_batch(
             batch,
-            containers,
+            facts,
             z_cavity_bottom=z_cavity_bottom,
             z_top=z_top,
             search_speed=search_speed,
@@ -6857,7 +7183,7 @@ class Pipettes:
         batch_modes = [self.LLDMode.OFF] * len(batch.indices)
       return await self._aspirate_batch(
         batch.x_position,
-        [containers[job] for job in batch.indices],
+        [facts[job] for job in batch.indices],
         [drawn[job] for job in batch.indices],
         batch.channels,
         [offsets[job] for job in batch.indices],
@@ -6896,14 +7222,14 @@ class Pipettes:
     for batch in batches:
       for job, volume in zip(batch.indices, await aspirate_batch(batch, check_only=True)):
         taken[job] = volume
-    self._check_tips_have_room(self._require_mounted_tips(use_channels), taken)
+    self._check_tips_have_room(await self._require_mounted_tips(use_channels), taken)
     await self._check_tips_and_raise(use_channels, minimum_traverse_height_start)
     await self._execute_batched(aspirate_batch, batches, minimum_traverse_height_during)
 
   async def _dispense_batch(
     self,
     x_position: float,
-    containers: List[Container],
+    containers: List[ContainerFacts],
     pushed: List[float],
     use_channels: List[int],
     resource_offsets: List[Coordinate],
@@ -6956,6 +7282,7 @@ class Pipettes:
       containers,
       pushed,
       use_channels,
+      await self._require_mounted_tips(use_channels),
       offsets=resource_offsets,
       liquid_height=liquid_heights,
       flow_rates=flow_rates,
@@ -6968,8 +7295,7 @@ class Pipettes:
       z_air=z_air,
       z_minimum=minimum_allowed_z_positions_during,
     )
-    deck = self._require_deck()
-    bottoms = [op.resource.get_location_wrt(deck, "c", "c", "cavity_bottom").z for op in ops]
+    bottoms = [op.resource.cavity_bottom.z for op in ops]
     # A surface raised by d from h is the one a draw of the same volume lowers from h + d.
     segments = [
       container_segments[i]
@@ -6986,7 +7312,7 @@ class Pipettes:
     locations = [
       Coordinate(
         x_position,
-        op.resource.get_location_wrt(deck, "c", "c", "cavity_bottom").y + op.offset.y,
+        op.resource.cavity_bottom.y + op.offset.y,
         ctx.z_fluid[i],
       )
       for i, op in enumerate(ops)
@@ -7026,45 +7352,37 @@ class Pipettes:
     if check_only:
       return liquid
     booked = list(liquid)
-    if does_volume_tracking():
-      for i, (ch, op) in enumerate(zip(use_channels, ops)):
-        held = op.tip.tracker.get_used_volume()
-        if not op.tip.tracker.is_disabled and held < liquid[i]:
-          booked[i] = max(held, 0.0)
-          logger.warning(
-            "channel %d dispenses %.1f uL into %s from a tip holding %.1f uL; the rest is air",
-            ch,
-            liquid[i],
-            op.resource.name,
-            held,
-          )
-    volume_intents = [
-      VolumeTransferIntent(
-        channel=ch,
-        container=op.resource,
-        tip=op.tip,
-        volume_ul=booked[i],
-        direction="dispense",
-      )
-      for i, (ch, op) in enumerate(zip(use_channels, ops))
-    ]
-    queue_volume_transfers(volume_intents)
-
+    for i, (ch, op) in enumerate(zip(use_channels, ops)):
+      held = op.tip.volume
+      if op.tip.tracks_volume and held < liquid[i]:
+        booked[i] = max(held, 0.0)
+        logger.warning(
+          "channel %d dispenses %.1f uL into %s from a tip holding %.1f uL; the rest is air",
+          ch,
+          liquid[i],
+          op.resource.name,
+          held,
+        )
+    # What each channel gives is staged, and booked once the device has put it down.
+    operation = await self._stage_transfer(
+      spb.TRANSFER_DIRECTION_DISPENSE, [op.resource for op in ops], use_channels, booked
+    )
     dispensed = {ch: False for ch in use_channels}
     try:
       await dispense_in_one_move(check_only=False)
-      dispensed = all_channels_succeeded(use_channels)
+      dispensed = {ch: True for ch in use_channels}
     except ChannelizedError as e:
       # It can fail on some channels and not others, and the device says which.
-      dispensed = successes_from_failed_channels(use_channels, e.errors)
+      dispensed = {ch: ch not in e.errors for ch in use_channels}
       raise
     finally:
       # What each channel put down is what the well now holds, and its tip no longer does
-      finalize_volume_ops(volume_intents, dispensed)
+      if operation is not None:
+        await resolve(self.store, operation, [dispensed[ch] for ch in use_channels])
     return liquid
 
   def _check_containers_have_room(
-    self, containers: Sequence[Container], volumes: Sequence[float]
+    self, containers: Sequence[ContainerFacts], volumes: Sequence[float]
   ) -> None:
     """Refuse more than a container has room for over all its jobs.
 
@@ -7075,21 +7393,19 @@ class Pipettes:
     Raises:
       TooLittleVolumeError: If a container has less room than all its jobs give.
     """
-    if not does_volume_tracking():
-      return
-    asked: Dict[int, float] = {}
+    asked: Dict[bytes, float] = {}
     for container, volume in zip(containers, volumes):
-      asked[id(container)] = asked.get(id(container), 0.0) + volume
-    for container in {id(c): c for c in containers}.values():
-      room = container.tracker.get_free_volume()
-      if not container.tracker.is_disabled and asked[id(container)] - room > 1e-6:
+      asked[container.id] = asked.get(container.id, 0.0) + volume
+    for container in {c.id: c for c in containers}.values():
+      room = container.free_volume
+      if container.tracks_volume and asked[container.id] - room > 1e-6:
         raise TooLittleVolumeError(
-          f"{container.name} has room for {room} uL, {asked[id(container)]} uL asked to go in"
+          f"{container.name} has room for {room} uL, {asked[container.id]} uL asked to go in"
         )
 
   async def dispense(
     self,
-    containers: Sequence[Container],
+    containers: Sequence[handles.Resource],
     volumes: Optional[Sequence[float]] = None,
     use_channels: Optional[List[int]] = None,
     resource_offsets: Optional[List[Coordinate]] = None,
@@ -7220,7 +7536,6 @@ class Pipettes:
         measured, or no floor is met where a channel touched.
       TooLittleVolumeError: If a container has less room than it is to take.
     """
-    containers = list(containers)
     n = len(containers)
     use_channels = use_channels if use_channels is not None else list(range(n))
     check_volume_arguments(volumes, piston_volumes, hamilton_liquid_classes, "pushed out")
@@ -7273,10 +7588,11 @@ class Pipettes:
       raise ValueError("post-mixing is not verified on the Prep yet; give no post_mixes")
     if any(index != 0 for index in limit_curve_indices or []):
       raise ValueError("TADM is not verified on the Prep yet; give limit curve 0")
+    facts = await read_containers(self.store, self._require_deck(), list(containers))
     liquid, pushed, classes = get_volumes_and_classes(
-      containers,
+      [fact.name for fact in facts],
       use_channels,
-      self._require_mounted_tips(use_channels),
+      cast(Any, await self._require_mounted_tips(use_channels)),
       volumes,
       piston_volumes,
       hamilton_liquid_classes,
@@ -7297,7 +7613,7 @@ class Pipettes:
     if cut_off_speeds is None and classes is not None:
       cut_off_speeds = [hlc.dispense_stop_flow_rate for hlc in classes]
     modes = self._get_lld_modes(
-      containers,
+      facts,
       lld_mode,
       auto_surface_following,
       surface_following_distances,
@@ -7312,20 +7628,14 @@ class Pipettes:
     offsets = (
       resource_offsets
       if resource_offsets is not None
-      else self._get_resource_offsets(containers, use_channels)
+      else self._get_resource_offsets(facts, use_channels)
     )
-    deck = self._require_deck()
-    z_cavity_bottom = [
-      round(c.get_location_wrt(deck, "c", "c", "cavity_bottom").z + o.z, 2)
-      for c, o in zip(containers, offsets)
-    ]
-    z_top = [
-      round(c.get_location_wrt(deck, "c", "c", "t").z + o.z, 2) for c, o in zip(containers, offsets)
-    ]
-    self._check_searches(containers, liquid_heights, modes)
+    z_cavity_bottom = [round(c.cavity_bottom.z + o.z, 2) for c, o in zip(facts, offsets)]
+    z_top = [round(c.placed.top.z + o.z, 2) for c, o in zip(facts, offsets)]
+    self._check_searches(facts, liquid_heights, modes)
     if touched:
-      self._check_ztouch(
-        containers,
+      await self._check_ztouch(
+        facts,
         use_channels,
         touched,
         z_cavity_bottom,
@@ -7335,15 +7645,14 @@ class Pipettes:
       logger.warning(
         "channels %s dispense on Z touch: onto the floor of %s",
         sorted({use_channels[job] for job in touched}),
-        [containers[job].name for job in touched],
+        [facts[job].name for job in touched],
       )
     # One command carries one LLD category, so each mode is planned on its own.
     groups = [[job for job in range(n) if modes[job] == mode] for mode in dict.fromkeys(modes)]
     batches: List[ChannelBatch] = []
     for group in groups:
       _, planned = self._plan_batched(
-        deck,
-        [containers[job] for job in group],
+        [facts[job] for job in group],
         [use_channels[job] for job in group],
         [offsets[job] for job in group],
         x_grouping_tolerance,
@@ -7370,7 +7679,7 @@ class Pipettes:
           if check_only
           else await self._search_liquid_of_batch(
             batch,
-            containers,
+            facts,
             z_cavity_bottom=z_cavity_bottom,
             z_top=z_top,
             search_speed=search_speed,
@@ -7383,13 +7692,15 @@ class Pipettes:
           lowest = [min(z_cavity_bottom[j], z) for j, z in zip(batch.indices, heights_z)]
         batch_modes = [self.LLDMode.OFF] * len(batch.indices)
         # The search may have found more liquid than the model had: the room is checked again.
-        for channel, job in zip(batch.channels, batch.indices):
-          room = containers[job].tracker.get_free_volume()
-          if not check_only and does_volume_tracking() and given[job] > room + 1e-6:
-            raise RuntimeError(
-              f"{containers[job].name} has room for {room:.1f} uL as measured, not the "
-              f"{given[job]:.1f} uL channel {channel} is to dispense"
-            )
+        if not check_only:
+          measured = await self._refresh_volumes([facts[job] for job in batch.indices])
+          for channel, container, job in zip(batch.channels, measured, batch.indices):
+            room = container.free_volume
+            if container.tracks_volume and given[job] > room + 1e-6:
+              raise RuntimeError(
+                f"{container.name} has room for {room:.1f} uL as measured, not the "
+                f"{given[job]:.1f} uL channel {channel} is to dispense"
+              )
       if batch_modes[0] == self.LLDMode.ZTOUCH:
         # The dispense goes without LLD, off the floor touched so the orifice is not sealed on
         # it; the check before any motion has the modelled floor.
@@ -7398,7 +7709,7 @@ class Pipettes:
           if check_only
           else await self._touch_floors_of_batch(
             batch,
-            containers,
+            facts,
             z_cavity_bottom=z_cavity_bottom,
             z_top=z_top,
             search_speed=search_speed,
@@ -7410,7 +7721,7 @@ class Pipettes:
         batch_modes = [self.LLDMode.OFF] * len(batch.indices)
       return await self._dispense_batch(
         batch.x_position,
-        [containers[job] for job in batch.indices],
+        [facts[job] for job in batch.indices],
         [pushed[job] for job in batch.indices],
         batch.channels,
         [offsets[job] for job in batch.indices],
@@ -7444,7 +7755,7 @@ class Pipettes:
     for batch in batches:
       for job, volume in zip(batch.indices, await dispense_batch(batch, check_only=True)):
         given[job] = volume
-    self._check_containers_have_room(containers, given)
+    self._check_containers_have_room(facts, given)
     await self._check_tips_and_raise(use_channels, minimum_traverse_height_start)
     await self._execute_batched(dispense_batch, batches, minimum_traverse_height_during)
 
@@ -7641,10 +7952,11 @@ class Pipettes:
     """
     if self.deck is None:
       raise RuntimeError("no deck to measure from; have you called `prep.setup()`?")
-    block = getattr(self.deck, "calibration_block", None)
+    parts = self._driver.parts
+    block = None if parts is None else parts.calibration_block
     if block is None:
       raise RuntimeError("this deck carries no calibration block")
-    modelled = block.get_location_wrt(self.deck, "c", "c", "t")
+    modelled = (await locate(self.store, self._require_deck(), [block.id]))[block.id].top
 
     await self.move_to_safe_z()
     await self.move_to_xy_positions(x=modelled.x, ys={channel_idx: modelled.y}, make_space=True)
@@ -7759,14 +8071,16 @@ class Pipettes:
     """
     if self.deck is None:
       raise RuntimeError("no deck to measure from; have you called `prep.setup()`?")
-    holders = getattr(self.deck, "spots", None)
+    parts = self._driver.parts
+    holders = [] if parts is None else parts.spots
     if not holders:
       raise RuntimeError("this deck carries no resource holders")
+    placed = await locate(self.store, self._require_deck(), [holder.id for holder in holders])
 
     x_offset, y_offset = hole_x / 2.4, hole_y / 3
     found: Dict[str, Dict[str, List[Optional[float]]]] = {}
     for holder in holders:
-      centre = holder.get_location_wrt(self.deck, "c", "c", "t")
+      centre = placed[holder.id].top
       await self.move_to_safe_z()
 
       edges: Dict[str, List[Optional[float]]] = {}

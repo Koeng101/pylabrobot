@@ -23,12 +23,14 @@ from typing import (
 )
 
 from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_date
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.errors import NoElementError, STARFirmwareError
-from pylabrobot.hamilton.star.resource_model import iSWAPHead
+from pylabrobot.hamilton.star.resource_model import ELBOW_DRIVE_ANGLE, WRIST_DRIVE_ANGLE
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.end_effector import MechanicalGripper
-from pylabrobot.resources.manipulator import LinkBody
 from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 if TYPE_CHECKING:
   from pylabrobot.hamilton.star.driver.features.x_arm import XArm
@@ -730,15 +732,15 @@ class iSWAP:
     """
     self._driver = driver
     self.configuration = configuration or iSWAPConfiguration()
-    self.resource: Optional[iSWAPHead] = None
+    self.resource: Optional[handles.Resource] = None
     self.gripped: Optional[bool] = None
     """Whether the arm is holding something, as it last reported.
 
     None until anything has asked. Set by `request_plate_gripped`, which is the only thing that
     knows: the arm reports it from the fingers themselves, so a plate is not something this driver
     can infer from the commands it sent."""
-    self.link_1: Optional[LinkBody] = None
-    self.gripper: Optional[MechanicalGripper] = None
+    self.link_1: Optional[handles.LinkBody] = None
+    self.gripper: Optional[handles.MechanicalGripper] = None
 
   @property
   def arm(self) -> "XArm":
@@ -948,7 +950,19 @@ class iSWAP:
 
   # -- where it is -----------------------------------------------------------
 
-  def elbow_drive_update_angle(self, angle: float) -> None:
+  async def _record_drive_angle(self, key: str, angle: float) -> None:
+    """Keep a rotation drive's angle on the head, in the drive's own terms, as it reported it."""
+    if self.resource is not None:
+      await self.resource.set_metadata({key: angle})
+
+  async def _get_drive_angle(self, key: str) -> Optional[float]:
+    """A rotation drive's angle as the head keeps it, or None while nothing has recorded one."""
+    if self.resource is None:
+      return None
+    angle = (await self.resource.get_metadata()).get(key)
+    return None if angle is None else float(angle)
+
+  async def elbow_drive_update_angle(self, angle: float) -> None:
     """Record which way the arm points on the resource that models it.
 
     The carriage is what the arm is mounted on, so the arm's angle is carried there and anything
@@ -963,13 +977,16 @@ class iSWAP:
     """
     if self.resource is None:
       return
-    self.resource.elbow_drive_angle = angle
+    await self._record_drive_angle(ELBOW_DRIVE_ANGLE, angle)
     if self.link_1 is not None:
       # The carriage does not turn; the arm mounted on it does. Link 1 leaves the drive at the
       # drive's own angle less ninety degrees, which is the deck angle it lies along.
-      self.link_1.rotate_to(z=angle - 90.0, pivot_coordinate=self.link_1.proximal_joint)
+      await model.record_positions(
+        self.link_1.store,
+        [model.turned_to(self.link_1, z=angle - 90.0, pivot=resource_model.LINK_1_JOINT)],
+      )
 
-  def elbow_get_reference_point_location(self) -> Optional[Coordinate]:
+  async def elbow_get_reference_point_location(self) -> Optional[Coordinate]:
     """Where the model has the elbow's reference point, in mm on the deck.
 
     The inverse of `update_location_by_reference_point`: it converts a reported position into a
@@ -980,26 +997,33 @@ class iSWAP:
       Where the model has it, or None when there is nothing modelling it yet.
     """
     deck = self._driver.deck
-    if self.resource is None or self.resource.location is None or deck is None:
+    if self.resource is None or deck is None:
       return None
-    arm = self.resource.parent
-    if arm is None:
+    (node,) = await model.get_nodes(deck.store, [self.resource])
+    here = model.location_of(node)
+    arm = self.arm.resource
+    if here is None or arm is None:
       return None
-    return self.resource.location + arm.get_location_wrt(deck) + self.resource.reference_point
+    return here + await model.arm_location(deck.store, arm) + self._reference_point
 
-  def wrist_drive_get_angle(self) -> Optional[float]:
+  @property
+  def _reference_point(self) -> Coordinate:
+    """The point the Y and Z drives report, from the head's left front bottom corner."""
+    return resource_model.iswap_head_reference_point(self.configuration.elbow_drive_diameter)
+
+  async def wrist_drive_get_angle(self) -> Optional[float]:
     """Which way the model has the wrist turned, as its drive reports it.
 
-    Read from what the drive last reported, as `elbow_drive_get_angle` is: link 2's own rotation is an
-    angle from link 1 about a different axis, so recovering a drive angle from it would be
+    Read from what the drive last reported, as `elbow_drive_get_angle` is: link 2's own rotation is
+    an angle from link 1 about a different axis, so recovering a drive angle from it would be
     inverting a rendering rather than reading a fact.
 
     Returns:
       The angle in degrees, or None while nothing has read it yet.
     """
-    return None if self.resource is None else self.resource.wrist_drive_angle
+    return await self._get_drive_angle(WRIST_DRIVE_ANGLE)
 
-  def elbow_drive_get_angle(self) -> Optional[float]:
+  async def elbow_drive_get_angle(self) -> Optional[float]:
     """Which way the model has the arm pointing, as the elbow drive reports it.
 
     Read from what the drive last reported, not converted back out of the resource's `rotation`:
@@ -1009,9 +1033,9 @@ class iSWAP:
     Returns:
       The angle in degrees, or None while nothing has read it yet.
     """
-    return None if self.resource is None else self.resource.elbow_drive_angle
+    return await self._get_drive_angle(ELBOW_DRIVE_ANGLE)
 
-  def wrist_drive_update_angle(self, angle: float) -> None:
+  async def wrist_drive_update_angle(self, angle: float) -> None:
     """Record which way the wrist is turned on the resource that models it.
 
     Link 2 turns on the wrist, which link 1 carries, so its angle is measured from link 1 rather
@@ -1025,15 +1049,27 @@ class iSWAP:
       angle: the wrist drive's angle, in degrees, as it reports it.
     """
     c = self.configuration
-    if self.resource is not None:
-      self.resource.wrist_drive_angle = angle
+    await self._record_drive_angle(WRIST_DRIVE_ANGLE, angle)
     if self.link_1 is None or self.gripper is None or c.wrist_drive_predefined_increments is None:
       return
     straight = c.wrist_increments_to_deg(c.wrist_drive_predefined_increments.straight)
     # The gripper is bolted to link 1's far end, which is link 1's length along its own span.
-    self.gripper.rotate_to(z=angle - straight, pivot_coordinate=self.gripper.proximal_joint)
+    await model.record_positions(
+      self.gripper.store,
+      [model.turned_to(self.gripper, z=angle - straight, pivot=resource_model.GRIPPER_JOINT)],
+    )
 
-  def gripper_update_width(self, width: float) -> None:
+  async def _gripper_spec(self) -> pb.MechanicalGripperSpec:
+    """What the model says the gripper is: its joints, its tool centre point and its jaws.
+
+    Raises:
+      RuntimeError: If the gripper is not modelled.
+    """
+    if self.gripper is None:
+      raise RuntimeError("the gripper is not modelled, so how far it reaches is unknown")
+    return (await self.gripper.attributes()).mechanical_gripper
+
+  async def gripper_update_width(self, width: float) -> None:
     """Record how far apart the jaws stand on the resource that models them.
 
     Does nothing until the gripper is modelled, and nothing when the width is outside what the
@@ -1046,7 +1082,8 @@ class iSWAP:
     gripper = self.gripper
     if gripper is None:
       return
-    low, high = gripper.jaw_range
+    spec = await self._gripper_spec()
+    low, high = spec.jaw_width_min, spec.jaw_width_max
     if not low <= width <= high:
       logger.warning(
         "the gripper reports its jaws %.1f mm apart, outside the %.1f to %.1f mm the model says "
@@ -1056,38 +1093,32 @@ class iSWAP:
         high,
       )
       return
-    gripper.jaw_width = width
+    await model.record_positions(gripper.store, [model.jaws_at(gripper, width)])
 
-  def update_location_by_reference_point(
+  async def update_location_by_reference_point(
     self, y: Optional[float] = None, z: Optional[float] = None
   ) -> None:
     """Record where the elbow is on the resource that models it.
 
     Y and Z only: the drive rides the arm, so its resource is a child of the arm's and follows it
-    in X without anything having to record that. The drives report the point the resource states as
-    its `reference_point`, and a resource is located by its left front bottom corner, so that point
-    is taken out before either value is recorded.
+    in X without anything having to record that. The drives report the head's reference point, and
+    a resource is located by its left front bottom corner, so that point is taken out before either
+    value is recorded.
 
     Both drives answer in the deck's frame, while a resource's location is measured from its
-    parent, which here is the arm. The arm's own position is taken out too. Does nothing when the
-    driver was given no deck, and so has nothing to model.
+    parent, which here is the arm. The store takes the arm's own position out too. Does nothing
+    when the driver was given no deck, and so has nothing to model.
 
     Args:
       y: where the drive is now, in mm on the deck. Left as it was when None.
       z: where its bottom is now, in mm on the deck. Left as it was when None.
     """
     deck = self._driver.deck
-    if self.resource is None or self.resource.location is None or deck is None:
+    if self.resource is None or deck is None or (y is None and z is None):
       return
-    arm = self.resource.parent
-    if arm is None:
-      return
-    here, on_the_arm = self.resource.location, arm.get_location_wrt(deck)
-    anchor = self.resource.reference_point
-    self.resource.location = Coordinate(
-      here.x,
-      here.y if y is None else y - on_the_arm.y - anchor.y,
-      here.z if z is None else z - on_the_arm.z - anchor.z,
+    await model.record_positions(
+      deck.store,
+      [model.position(self.resource, y=y, z=z, frame=deck, reference_point=self._reference_point)],
     )
 
   def _check_reachable(self, axis: Literal["x", "y", "z"], value: float) -> None:
@@ -1207,7 +1238,7 @@ class iSWAP:
     # once, by the conversion: rounding again here left a position coarser than the limits it is
     # compared against, and a carriage at its own back stop reading past it.
     y = self.configuration.y_increments_to_mm(cast(List[int], resp["ry"])[1])
-    self.update_location_by_reference_point(y=y)
+    await self.update_location_by_reference_point(y=y)
     return y
 
   async def _record_where_it_stopped(self, axis: Literal["y", "z", "gripper"]) -> None:
@@ -1319,11 +1350,11 @@ class iSWAP:
     # that stands clear here can reach behind the X-arm at the new Y. Checked at the angles the model
     # has, as a rotation is checked at the Y the model has. With no arm modelled - a driver given no
     # deck - there is nothing to check, and linear moves go ahead as they always have.
-    if self.elbow_get_reference_point_location() is not None and self.gripper is not None:
-      elbow, wrist = self.elbow_drive_get_angle(), self.wrist_drive_get_angle()
+    if await self.elbow_get_reference_point_location() is not None and self.gripper is not None:
+      elbow, wrist = await self.elbow_drive_get_angle(), await self.wrist_drive_get_angle()
       if elbow is None or wrist is None:
         raise RuntimeError("the arm's angles have not been read; have you called `star.setup()`?")
-      self._check_pose_reachable(elbow, wrist, y=y)
+      await self._check_pose_reachable(elbow, wrist, y=y)
 
     # Every argument is checked before this: making space moves the channels, and a move refused
     # afterwards would leave the deck rearranged for a command that never ran.
@@ -1332,7 +1363,7 @@ class iSWAP:
     try:
       # Where the move is going, recorded as it is sent: on the answer the model would already be a
       # whole move behind the device. The read below still has the last word.
-      self.update_location_by_reference_point(y=y)
+      await self.update_location_by_reference_point(y=y)
       resp = await self._unchecked_fw_elbow_move_to_y_position_increments(
         y_increments=c.y_mm_to_increments(y),
         speed_increments=speed_increments,
@@ -1466,7 +1497,7 @@ class iSWAP:
     resp = await self._driver.send_command(module="R0", command="RZ", fmt="rz##### (n)")
     finger_plane = self.configuration.z_increments_to_mm(cast(List[int], resp["rz"])[1])
     z = round(finger_plane + self.configuration.elbow_z_offset_above_finger, 3)
-    self.update_location_by_reference_point(z=z)
+    await self.update_location_by_reference_point(z=z)
     return z
 
   async def _unchecked_fw_elbow_move_to_z_position_increments(
@@ -1554,7 +1585,7 @@ class iSWAP:
     try:
       # Where the move is going, recorded as it is sent: on the answer the model would already be a
       # whole move behind the device. The read below still has the last word.
-      self.update_location_by_reference_point(z=z)
+      await self.update_location_by_reference_point(z=z)
       resp = await self._unchecked_fw_elbow_move_to_z_position_increments(
         z_increments=c.z_mm_to_increments(finger_plane),
         speed_increments=speed_increments,
@@ -1601,7 +1632,7 @@ class iSWAP:
     # The move read the drive back and recorded it on the way out, so the model holds where it
     # stopped. Asking again would be a second `RZ` for the same answer, on the one method every
     # lateral move goes through. Without a deck there is no model to hold it, and then it is read.
-    here = self.elbow_get_reference_point_location()
+    here = await self.elbow_get_reference_point_location()
     return here.z if here is not None else await self.elbow_request_z_position()
 
   # ----------------------------------------
@@ -1928,7 +1959,7 @@ class iSWAP:
     # An absolute angle is on the deck: with no deck, there is nothing to measure it against.
     if (
       elbow_absolute_angle is not None or gripper_absolute_angle is not None
-    ) and self.elbow_get_reference_point_location() is None:
+    ) and await self.elbow_get_reference_point_location() is None:
       raise RuntimeError(
         "absolute angles are on the deck, and the iSWAP's arm is not modelled: the driver was "
         "given no deck. Pass relative angles instead"
@@ -1997,7 +2028,7 @@ class iSWAP:
 
     # Check 1 - drive compliance: is the pose itself reachable? Says nothing about what else
     # stands on the deck.
-    self._check_pose_reachable(elbow_target, wrist_target)
+    await self._check_pose_reachable(elbow_target, wrist_target)
 
     if raise_features:
       arm = self.arm
@@ -2027,8 +2058,8 @@ class iSWAP:
     try:
       # Where the move is going, recorded as it is sent: on the answer the model would already be a
       # whole move behind the device. The read below still has the last word.
-      self.elbow_drive_update_angle(c.elbow_drive_increments_to_angle(elbow))
-      self.wrist_drive_update_angle(c.wrist_increments_to_deg(wrist))
+      await self.elbow_drive_update_angle(c.elbow_drive_increments_to_angle(elbow))
+      await self.wrist_drive_update_angle(c.wrist_increments_to_deg(wrist))
       resp = await self._unchecked_fw_joint_drives_rotate_increments(
         elbow_increments=elbow,
         wrist_increments=wrist,
@@ -2045,7 +2076,7 @@ class iSWAP:
       # way left the arm somewhere no target describes, and this is the only thing that finds it.
       await self._record_where_the_joints_stopped()
 
-  def _compute_pose_at_angles(
+  async def _compute_pose_at_angles(
     self, elbow_angle: float, gripper_relative_angle: float, y: Optional[float] = None
   ) -> iSWAPPose:
     """Where the arm would be with its joints at these angles. Nothing is read or moved.
@@ -2068,7 +2099,7 @@ class iSWAP:
     """
     c = self.configuration
     predefined_wrist_positions = c.wrist_drive_predefined_increments
-    drive = self.elbow_get_reference_point_location()
+    drive = await self.elbow_get_reference_point_location()
     gripper = self.gripper
     if drive is None:
       raise RuntimeError("the iSWAP's arm is not modelled; the driver was given no deck")
@@ -2087,12 +2118,12 @@ class iSWAP:
       link_1_length=c.link_1_length,
       # Asked of the tool, not taken off the arm: the gripper knows how far its grip centre sits
       # from the wrist, and a different end-effector would answer differently.
-      tool_center_point_distance=gripper.tool_center_point.x,
+      tool_center_point_distance=(await self._gripper_spec()).tool_center_point.x,
       wrist_straight_angle=c.wrist_increments_to_deg(predefined_wrist_positions.straight),
       elbow_z_offset_above_finger=c.elbow_z_offset_above_finger,
     )
 
-  def _check_pose_reachable(
+  async def _check_pose_reachable(
     self, elbow_angle: float, gripper_relative_angle: float, y: Optional[float] = None
   ) -> None:
     """Raise if the arm cannot put its gripper where these angles would.
@@ -2119,13 +2150,13 @@ class iSWAP:
         than the arm can carry it.
     """
     y_max = self.configuration.elbow_y_max
-    if y_max is None or self.elbow_get_reference_point_location() is None:
+    if y_max is None or await self.elbow_get_reference_point_location() is None:
       return
-    pose = self._compute_pose_at_angles(elbow_angle, gripper_relative_angle, y=y)
+    pose = await self._compute_pose_at_angles(elbow_angle, gripper_relative_angle, y=y)
     at = "" if y is None else f" and the drive at y {y:.1f} mm"
     # Known, or `_compute_pose_at_angles` would have refused to work the pose out at all.
     link_1 = cast(float, self.configuration.link_1_length)
-    tool = cast(MechanicalGripper, self.gripper).tool_center_point.x
+    tool = (await self._gripper_spec()).tool_center_point.x
     # Each joint against the window it can be carried through: back, the drive's own stop, which
     # both joints reach past by their own length; front, the stop the channels leave the drive,
     # less that same length. Both moving joints, not only the far one - link 1 alone is long enough
@@ -2173,7 +2204,7 @@ class iSWAP:
     angle = self.configuration.elbow_drive_increments_to_angle(
       await self._elbow_drive_request_increments()
     )
-    self.elbow_drive_update_angle(angle)
+    await self.elbow_drive_update_angle(angle)
     return angle
 
   async def _elbow_drive_request_increments(self) -> int:
@@ -2233,7 +2264,7 @@ class iSWAP:
       The angle in degrees.
     """
     angle = self.configuration.wrist_increments_to_deg(await self._wrist_drive_request_increments())
-    self.wrist_drive_update_angle(angle)
+    await self.wrist_drive_update_angle(angle)
     return angle
 
   async def _wrist_drive_request_increments(self) -> int:
@@ -2348,7 +2379,7 @@ class iSWAP:
     # that, and a caller who only ever asks how wide the jaws are would never be told.
     _, hardware = await self.gripper_request_counters()
     width = self.configuration.gripper_increments_to_mm(hardware)
-    self.gripper_update_width(width)
+    await self.gripper_update_width(width)
     return width
 
   async def request_plate_gripped(self) -> bool:
@@ -2495,7 +2526,7 @@ class iSWAP:
     try:
       # Where the move is going, recorded as it is sent: on the answer the model would already be a
       # whole move behind the device. The read below still has the last word.
-      self.gripper_update_width(width)
+      await self.gripper_update_width(width)
       resp = await self._unchecked_fw_gripper_move_to_jaw_position_increments(
         increments=width_increments,
         speed_increments=speed_increments,
@@ -3042,7 +3073,7 @@ class iSWAP:
     return self._forward_kinematics(
       joints=await self.request_joint_state(),
       link_1_length=c.link_1_length,
-      tool_center_point_distance=gripper.tool_center_point.x,
+      tool_center_point_distance=(await self._gripper_spec()).tool_center_point.x,
       wrist_straight_angle=c.wrist_increments_to_deg(c.wrist_drive_predefined_increments.straight),
       elbow_z_offset_above_finger=c.elbow_z_offset_above_finger,
     )

@@ -5,24 +5,50 @@ import time
 import unittest
 import unittest.mock
 import urllib.request
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import websockets
 
 from pylabrobot.__version__ import STANDARD_FORM_JSON_VERSION
-from pylabrobot.resources import (
-  Coordinate,
-  Resource,
-  cor_96_wellplate_360uL_Fb,
-)
-from pylabrobot.resources.hamilton import hamilton_96_tiprack_300uL
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.visualizer import Visualizer
+from pylabrobot.visualizer.mirror import TreeMirror
 from pylabrobot.visualizer.visualizer import (
   _build_method_registry,
   _sanitize_floats,
   _serialize_resource_tree,
   _state_of,
 )
+
+
+async def make_resource(
+  store: ResourceStore,
+  name: str,
+  parent: Optional[handles.Resource] = None,
+  metadata: Optional[Dict[str, Any]] = None,
+) -> handles.Resource:
+  """A plain 100 mm box, at the origin of `parent` when given."""
+  return await store.create(
+    build.resource(name, Coordinate(100, 100, 100), metadata=metadata),
+    name=name,
+    parent=parent,
+    location=Coordinate(0, 0, 0) if parent is not None else None,
+  )
+
+
+async def make_root(test: unittest.IsolatedAsyncioTestCase) -> handles.Resource:
+  """A root box in a store of its own, closed when the test ends."""
+  store = ResourceStore.in_memory()
+  test.addAsyncCleanup(store.close)
+  return await make_resource(store, "root")
+
+
+async def tree_of(resource: handles.Resource) -> TreeMirror:
+  tree = TreeMirror(resource)
+  await tree.load()
+  return tree
 
 
 class SanitizeFloatsTests(unittest.TestCase):
@@ -68,26 +94,26 @@ class SanitizeFloatsTests(unittest.TestCase):
     self.assertEqual(roundtripped["c"]["d"], "NaN")
 
 
-class VisualizerLiquidColorValidationTests(unittest.TestCase):
+class VisualizerLiquidColorValidationTests(unittest.IsolatedAsyncioTestCase):
   """Tests for liquid_color parameter validation."""
 
-  def test_valid_hex(self):
-    r = Resource(size_x=100, size_y=100, size_z=100, name="root")
+  async def test_valid_hex(self):
+    r = await make_root(self)
     vis = Visualizer(r, open_browser=False, liquid_color="5DADE2")
     self.assertEqual(vis._liquid_color, "5DADE2")
 
-  def test_valid_hex_with_hash(self):
-    r = Resource(size_x=100, size_y=100, size_z=100, name="root")
+  async def test_valid_hex_with_hash(self):
+    r = await make_root(self)
     vis = Visualizer(r, open_browser=False, liquid_color="#aabbcc")
     self.assertEqual(vis._liquid_color, "AABBCC")
 
-  def test_invalid_hex_raises(self):
-    r = Resource(size_x=100, size_y=100, size_z=100, name="root")
+  async def test_invalid_hex_raises(self):
+    r = await make_root(self)
     with self.assertRaises(ValueError):
       Visualizer(r, open_browser=False, liquid_color="nope")
 
-  def test_short_hex_raises(self):
-    r = Resource(size_x=100, size_y=100, size_z=100, name="root")
+  async def test_short_hex_raises(self):
+    r = await make_root(self)
     with self.assertRaises(ValueError):
       Visualizer(r, open_browser=False, liquid_color="FFF")
 
@@ -98,7 +124,7 @@ class VisualizerSetupStopTests(unittest.IsolatedAsyncioTestCase):
   async def test_setup_stop(self):
     """Test that the thread is started and stopped correctly."""
 
-    r = Resource(size_x=100, size_y=100, size_z=100, name="root")
+    r = await make_root(self)
     vis = Visualizer(r, ws_port=0, fs_port=0, open_browser=False)
 
     async def setup_stop_single():
@@ -116,7 +142,7 @@ class VisualizerSetupStopTests(unittest.IsolatedAsyncioTestCase):
   async def test_stop_waits_for_websocket_thread_with_connection(self):
     """Test that stop waits for the WebSocket thread when a browser is connected."""
 
-    resource = Resource(size_x=100, size_y=100, size_z=100, name="root")
+    resource = await make_root(self)
     vis = Visualizer(resource, ws_port=0, fs_port=0, open_browser=False)
     await vis.setup()
     client = await websockets.connect(f"ws://localhost:{vis.ws_port}")
@@ -135,8 +161,8 @@ class VisualizerSetupStopTests(unittest.IsolatedAsyncioTestCase):
 class VisualizerServerStartupFailureTests(unittest.IsolatedAsyncioTestCase):
   """Tests for failures while starting the visualizer servers."""
 
-  def setUp(self):
-    resource = Resource(size_x=100, size_y=100, size_z=100, name="root")
+  async def asyncSetUp(self):
+    resource = await make_root(self)
     self.vis = Visualizer(resource, open_browser=False)
 
   async def test_websocket_permission_error_is_propagated(self):
@@ -201,7 +227,7 @@ class VisualizerServerTests(unittest.IsolatedAsyncioTestCase):
 
   async def asyncSetUp(self):
     await super().asyncSetUp()
-    self.r = Resource(size_x=100, size_y=100, size_z=100, name="root")
+    self.r = await make_root(self)
     self.vis = Visualizer(self.r, ws_port=0, fs_port=0, open_browser=False)
     await self.vis.setup()
 
@@ -231,6 +257,8 @@ class VisualizerServerTests(unittest.IsolatedAsyncioTestCase):
     self.assertIn('value="F39C12"', html)
 
   async def test_connect(self):
+    tree = await tree_of(self.r)
+    root = tree.node(self.r.id)
     await self.client.send('{"event": "ready"}')
     response = await self.client.recv()
     response = json.loads(response)
@@ -239,8 +267,8 @@ class VisualizerServerTests(unittest.IsolatedAsyncioTestCase):
       {
         "event": "set_root_resource",
         "data": {
-          "resource": _serialize_resource_tree(self.r),
-          "method_registry": _build_method_registry(self.r),
+          "resource": _serialize_resource_tree(root, tree),
+          "method_registry": _build_method_registry(root, tree),
         },
         "id": "0001",
         "version": STANDARD_FORM_JSON_VERSION,
@@ -264,7 +292,7 @@ class VisualizerShowMachineToolsTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_show_machine_tools_at_start_false(self):
     """When show_machine_tools_at_start=False, the show_machine_tools event should not be sent."""
-    r = Resource(size_x=100, size_y=100, size_z=100, name="root")
+    r = await make_root(self)
     vis = Visualizer(r, ws_port=0, fs_port=0, open_browser=False, show_machine_tools_at_start=False)
     vis.send_command = unittest.mock.AsyncMock()  # type: ignore[method-assign]
     await vis.setup()
@@ -289,7 +317,8 @@ class VisualizerCommandTests(unittest.IsolatedAsyncioTestCase):
   async def asyncSetUp(self):
     await super().asyncSetUp()
     self.maxDiff = None
-    self.r = Resource(size_x=100, size_y=100, size_z=100, name="root")
+    self.r = await make_root(self)
+    self.store = self.r.store
     self.vis = Visualizer(self.r, ws_port=0, fs_port=0, open_browser=False)
 
     # mock the send_command method to catch the events
@@ -321,15 +350,18 @@ class VisualizerCommandTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_assign_child_resource(self):
     """Test that the assign_child_resource method sends the correct event."""
-    child = Resource(size_x=100, size_y=100, size_z=100, name="child")
-    self.r.assign_child_resource(child, location=Coordinate(0, 0, 0))
+    child = await make_resource(self.store, "child")
+    await self.r.assign_child_resource(child, location=Coordinate(0, 0, 0))
+    await self.vis.caught_up()
     await self._wait_for_event("resource_assigned")
+    tree = await tree_of(self.r)
+    node = tree.node(child.id)
     self.send_command_mock.assert_called_once_with(
       event="resource_assigned",
       data={
-        "resource": _serialize_resource_tree(child),
-        "method_registry": _build_method_registry(child),
-        "state": child.serialize_all_state(),
+        "resource": _serialize_resource_tree(node, tree),
+        "method_registry": _build_method_registry(node, tree),
+        "state": _state_of(node, tree),
         "parent_name": "root",
       },
       wait_for_response=False,
@@ -337,9 +369,10 @@ class VisualizerCommandTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_resource_unassigned(self):
     """Test that the unassign_child_resource method sends the correct event."""
-    child = Resource(size_x=100, size_y=100, size_z=100, name="child")
-    self.r.assign_child_resource(child, location=Coordinate(0, 0, 0))
-    self.r.unassign_child_resource(child)
+    child = await make_resource(self.store, "child")
+    await self.r.assign_child_resource(child, location=Coordinate(0, 0, 0))
+    await self.r.unassign_child_resource(child)
+    await self.vis.caught_up()
     await self._wait_for_event("resource_unassigned")
 
     self.send_command_mock.assert_called_with(
@@ -350,9 +383,13 @@ class VisualizerCommandTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_state_updated(self):
     """Test that the state_updated method sends the correct event."""
-    plate = cor_96_wellplate_360uL_Fb(name="plate_01")
-    self.r.assign_child_resource(plate, location=Coordinate(0, 0, 0))
-    plate.set_well_volumes([500] * 96)
+    plate = await self.store.create(
+      "cor_96_wellplate_360uL_Fb", name="plate_01", parent=self.r, location=Coordinate(0, 0, 0)
+    )
+    assert isinstance(plate, handles.Plate)
+    await self.vis.caught_up()
+    await plate.set_well_volumes([500] * 96)
+    await self.vis.caught_up()
     await self._wait_for_event("set_state", data_key="plate_01_well_H12")
     self.send_command_mock.assert_called()
     call_args = self.send_command_mock.call_args[1]
@@ -363,37 +400,42 @@ class VisualizerCommandTests(unittest.IsolatedAsyncioTestCase):
     )
 
 
-class VisualizerHeldToolTests(unittest.TestCase):
-  def test_a_racked_tip_is_its_spots_state_not_a_resource_in_the_tree(self):
+class VisualizerHeldToolTests(unittest.IsolatedAsyncioTestCase):
+  async def test_a_racked_tip_is_its_spots_state_not_a_resource_in_the_tree(self):
     """A tip serializes without a location, which the page cannot draw; its spot shows it."""
-    rack = hamilton_96_tiprack_300uL(name="rack", with_tips=True)
-    spot = rack.get_item("A1")
-    self.assertTrue(spot.children)
+    store = ResourceStore.in_memory()
+    self.addAsyncCleanup(store.close)
+    rack = await store.create("hamilton_96_tiprack_300uL", name="rack")
+    assert isinstance(rack, handles.TipRack)
+    spot = rack.get_tip_spot("A1")
+    tip = await spot.get_tip()
+    assert tip is not None
 
-    tree = _serialize_resource_tree(rack)
-    spot_data = next(child for child in tree["children"] if child["name"] == spot.name)
+    tree = await tree_of(rack)
+    serialized = _serialize_resource_tree(tree.node(rack.id), tree)
+    spot_data = next(child for child in serialized["children"] if child["name"] == spot.name)
     self.assertEqual(spot_data["children"], [])
-    self.assertNotIn(spot.get_tip().name, _state_of(rack))
-    self.assertIn(spot.name, _state_of(rack))
+    state = _state_of(tree.node(rack.id), tree)
+    self.assertNotIn(tip.name, state)
+    self.assertIn(spot.name, state)
 
 
-class TestVisualizerMetadataHandling(unittest.TestCase):
+class TestVisualizerMetadataHandling(unittest.IsolatedAsyncioTestCase):
   """Tests for visualizer metadata handling."""
 
-  def test_serialize_resource_tree_preserves_and_stringifies_metadata(self):
-    deck = Resource(
-      size_x=100,
-      size_y=100,
-      size_z=100,
-      name="deck",
-      metadata={"level": 0, "fn": lambda x: x},
+  async def test_serialize_resource_tree_preserves_and_stringifies_metadata(self):
+    store = ResourceStore.in_memory()
+    self.addAsyncCleanup(store.close)
+    deck = await make_resource(store, "deck", metadata={"level": 0, "fn": "lambda x: x"})
+    plate = await store.create(
+      "cor_96_wellplate_360uL_Fb", name="plate", parent=deck, location=Coordinate(0, 0, 0)
     )
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    plate.metadata = {"level": 1, "unserializable": object()}
-    plate.get_well("A1").metadata = {"level": 2, "sample_id": 123}
-    deck.assign_child_resource(plate, location=Coordinate(0, 0, 0))
+    assert isinstance(plate, handles.Plate)
+    await plate.set_metadata({"level": 1, "label": "source"})
+    await plate.get_well("A1").set_metadata({"level": 2, "sample_id": 123})
 
-    serialized = _serialize_resource_tree(deck)
+    tree = await tree_of(deck)
+    serialized = _serialize_resource_tree(tree.node(deck.id), tree)
     self.assertIn("metadata", serialized)
     self.assertEqual(serialized["metadata"]["level"], 0)
 
@@ -408,9 +450,7 @@ class TestVisualizerMetadataHandling(unittest.TestCase):
 
     # Ensure _assemble_command succeeds and round-trips via json.loads
     vis = Visualizer(deck, open_browser=False)
-    payload, _ = vis._assemble_command(
-      "set_root_resource", {"resource": _serialize_resource_tree(deck)}
-    )
+    payload, _ = vis._assemble_command("set_root_resource", {"resource": serialized})
     decoded = json.loads(payload)["data"]["resource"]
     self.assertEqual(decoded["name"], "deck")
     self.assertEqual(decoded["metadata"]["level"], 0)

@@ -1,0 +1,93 @@
+{
+  "name": "cor_axy_1_troughplate_rowVb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "cor_axy_1_troughplate_rowVb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 43.5
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 1,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 116.5,
+                "y": 70.5,
+                "z": 39.98
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 290000.0,
+                "materialZThickness": 2.0,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 4.95,
+                    "volume": 15000.0
+                  },
+                  {
+                    "height": 6.4,
+                    "volume": 30000.0
+                  },
+                  {
+                    "height": 10.19,
+                    "volume": 60000.0
+                  },
+                  {
+                    "height": 15.97,
+                    "volume": 100000.0
+                  },
+                  {
+                    "height": 22.07,
+                    "volume": 150000.0
+                  },
+                  {
+                    "height": 27.98,
+                    "volume": 200000.0
+                  },
+                  {
+                    "height": 34.74,
+                    "volume": 250000.0
+                  },
+                  {
+                    "height": 39.98,
+                    "volume": 290000.0
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 5.63,
+            "y": 7.49,
+            "z": 3.2
+          }
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Axygen single-well reservoir, 8 V-bottom trenches across the rows\n- Corning cat. no.: RES-SW8-HP-SI\n- brand: Axygen"
+}

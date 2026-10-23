@@ -1,0 +1,21 @@
+{
+  "name": "cellvis_96_wellplate_350uL_Fb_lid",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_LID",
+      "typeName": "Lid",
+      "model": "cellvis_96_wellplate_350uL_Fb_lid",
+      "category": "lid",
+      "size": {
+        "x": 127.6,
+        "y": 85.75,
+        "z": 10.0
+      },
+      "rotation": {},
+      "lid": {
+        "nestingZHeight": 7.799999999999999
+      }
+    }
+  }
+}

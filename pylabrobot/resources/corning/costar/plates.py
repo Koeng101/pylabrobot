@@ -3,10 +3,6 @@
 import warnings
 from typing import Optional
 
-from pylabrobot.resources.height_volume_functions import (
-  compute_height_from_volume_conical_frustum,
-  compute_volume_from_height_conical_frustum,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -16,6 +12,13 @@ from pylabrobot.resources.well import (
 )
 
 # # # # # # # # # # cor_cos_6_wellplate_16800uL_Fb # # # # # # # # # #
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_cos_6_wellplate_16800uL_Fb_height_volume_data = {
+  0.0: 0.0,
+  16.13: 15621.446413,
+}
 
 
 def cor_cos_6_wellplate_16800uL_Fb(name: str, lid: Optional[Lid] = None) -> Plate:
@@ -28,7 +31,6 @@ def cor_cos_6_wellplate_16800uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
   - tech_drawing: tech_drawings/Cor_Cos_6_wellplate_16800ul_Fb.pdf
   """
   BOTTOM_INNER_WELL_RADIUS = 35.43 / 2  # from Corning Product Description
-  TOP_INNER_WELL_RADIUS = 34.80 / 2  # from Corning Product Description
 
   well_kwargs = {
     "size_x": BOTTOM_INNER_WELL_RADIUS * 2,
@@ -37,12 +39,7 @@ def cor_cos_6_wellplate_16800uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
     "bottom_type": WellBottomType.FLAT,
     "max_volume": 16800,  # from Corning Product Description
     "cross_section_type": CrossSectionType.CIRCLE,
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_conical_frustum(
-      liquid_height, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_conical_frustum(
-      liquid_volume, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
+    "height_volume_data": _cor_cos_6_wellplate_16800uL_Fb_height_volume_data,
   }
 
   return Plate(
@@ -85,6 +82,13 @@ def cor_cos_6_wellplate_16800uL_Fb_lid(name: str) -> Lid:
 # # # # # # # # # # cor_cos_12_wellplate_6900uL_Fb # # # # # # # # # #
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_cos_12_wellplate_6900uL_Fb_height_volume_data = {
+  0.0: 0.0,
+  16.23: 6407.775588,
+}
+
+
 def cor_cos_12_wellplate_6900uL_Fb(name: str, lid: Optional[Lid] = None) -> Plate:
   """
   Corning cat. no.s: 3336, 3512, 3513
@@ -106,12 +110,7 @@ def cor_cos_12_wellplate_6900uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
     "bottom_type": WellBottomType.FLAT,
     "max_volume": 6900,  # from Corning Product Description
     "cross_section_type": CrossSectionType.CIRCLE,
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_conical_frustum(
-      liquid_height, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_conical_frustum(
-      liquid_volume, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
+    "height_volume_data": _cor_cos_12_wellplate_6900uL_Fb_height_volume_data,
   }
 
   return Plate(
@@ -140,6 +139,13 @@ def cor_cos_12_wellplate_6900uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
 # # # # # # # # # # cor_cos_24_wellplate_3470uL_Fb # # # # # # # # # #
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_cos_24_wellplate_3470uL_Fb_height_volume_data = {
+  0.0: 0.0,
+  16.13: 3219.283485,
+}
+
+
 def cor_cos_24_wellplate_3470uL_Fb(name: str, lid: Optional[Lid] = None) -> Plate:
   """
   Corning cat. no.s: 3337, 3524, 3526, 3527
@@ -159,12 +165,7 @@ def cor_cos_24_wellplate_3470uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
     "bottom_type": WellBottomType.FLAT,
     "max_volume": 3400,  # website
     "cross_section_type": CrossSectionType.CIRCLE,
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_conical_frustum(
-      liquid_height, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_conical_frustum(
-      liquid_volume, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
+    "height_volume_data": _cor_cos_24_wellplate_3470uL_Fb_height_volume_data,
   }
 
   return Plate(
@@ -193,6 +194,13 @@ def cor_cos_24_wellplate_3470uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
 # # # # # # # # # # cor_cos_48_wellplate_1620uL_Fb # # # # # # # # # #
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_cos_48_wellplate_1620uL_Fb_height_volume_data = {
+  0.0: 0.0,
+  16.13: 1619.343681,
+}
+
+
 def cor_cos_48_wellplate_1620uL_Fb(name: str, lid: Optional[Lid] = None) -> Plate:
   """
   Corning cat. no.s: 3548
@@ -216,12 +224,7 @@ def cor_cos_48_wellplate_1620uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
     "bottom_type": WellBottomType.FLAT,
     "max_volume": 1620,  # from Corning Product Description
     "cross_section_type": CrossSectionType.CIRCLE,
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_conical_frustum(
-      liquid_height, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_conical_frustum(
-      liquid_volume, BOTTOM_INNER_WELL_RADIUS, TOP_INNER_WELL_RADIUS
-    ),
+    "height_volume_data": _cor_cos_48_wellplate_1620uL_Fb_height_volume_data,
   }
 
   return Plate(

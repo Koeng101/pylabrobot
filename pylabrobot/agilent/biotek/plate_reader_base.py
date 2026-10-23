@@ -20,7 +20,9 @@ from pylabrobot.agilent.biotek.results import (
 from pylabrobot.agilent.biotek.results import (
   LuminescenceResult as LuminescenceResult,
 )
-from pylabrobot.resources import Plate, Well
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ class BioTekPlateReaderDriver(_BioTekReader, metaclass=ABCMeta):
   ) -> None:
     super().__init__(timeout, device_id, human_readable_device_name)
 
-    self._plate: Optional[Plate] = None
+    self._plate: Optional[handles.Plate] = None
     self._shaking = False
     self._shaking_task: Optional[asyncio.Task] = None
     self._slow_mode: Optional[bool] = None
@@ -163,7 +165,7 @@ class BioTekPlateReaderDriver(_BioTekReader, metaclass=ABCMeta):
       await self.set_slow_mode(slow)
       await super().open()
 
-  async def close(self, plate: Optional[Plate] = None, slow: bool = False):
+  async def close(self, plate: Optional[handles.Plate] = None, slow: bool = False):
     """Drive the loading tray in.
 
     Args:
@@ -237,32 +239,67 @@ class BioTekPlateReaderDriver(_BioTekReader, metaclass=ABCMeta):
       result[row_idx][col_idx] = value
     return result
 
-  async def set_plate(self, plate: Plate):
+  async def _read_plate_geometry(
+    self, plate: handles.Plate
+  ) -> Tuple[pb.ResourceAttributes, Optional[pb.ResourceAttributes], pb.Vec3, pb.Vec3]:
+    """What the reader is told of a plate, read from its store in two calls.
+
+    Returns:
+      The plate's attributes, its lid's (unset without one), and the centres of its first and last
+      wells in its own frame.
+    """
+    found = await plate.store.commands.find_resources(
+      spb.FindResourcesRequest(
+        scope=plate.ref,
+        filter=spb.ResourceFilter(kinds=[pb.RESOURCE_KIND_PLATE, pb.RESOURCE_KIND_LID]),
+      )
+    )
+    attributes = next(node.attributes for node in found.nodes if node.id == plate.id)
+    lid = next(
+      (
+        node.attributes
+        for node in found.nodes
+        if node.parent_id == plate.id and node.attributes.kind == pb.RESOURCE_KIND_LID
+      ),
+      None,
+    )
+    center = handles.anchor("c", "c", "b")
+    wells = [plate.get_item(0), plate.get_item(plate.num_items - 1)]
+    geometry = await plate.store.commands.resolve_geometry(
+      spb.ResolveGeometryRequest(
+        queries=[
+          spb.GeometryQuery(resource=well.ref, frame=plate.ref, anchors=[center]) for well in wells
+        ]
+      )
+    )
+    assert not any(result.HasField("issue") for result in geometry.results)
+    first, last = (result.locations[0] for result in geometry.results)
+    return attributes, lid, first, last
+
+  async def set_plate(self, plate: handles.Plate):
     async with self._operation():
-      if plate is self._plate:
+      if plate == self._plate:
         return
       await self._require_rdop22()
 
       rows = plate.num_items_y
       columns = plate.num_items_x
 
-      bottom_right_well = plate.get_item(plate.num_items - 1)
-      assert bottom_right_well.location is not None
-      bottom_right_well_center = bottom_right_well.location + bottom_right_well.get_anchor(
-        x="c", y="c"
-      )
-      top_left_well = plate.get_item(0)
-      assert top_left_well.location is not None
-      top_left_well_center = top_left_well.location + top_left_well.get_anchor(x="c", y="c")
+      (
+        attributes,
+        lid,
+        top_left_well_center,
+        bottom_right_well_center,
+      ) = await self._read_plate_geometry(plate)
 
-      plate_size_y = plate.get_size_y()
-      plate_size_x = plate.get_size_x()
-      plate_size_z = plate.get_size_z()
-      if plate.lid is not None:
-        plate_size_z += plate.lid.get_size_z() - plate.lid.nesting_z_height
+      plate_size_y = attributes.size.y
+      plate_size_x = attributes.size.x
+      plate_size_z = attributes.size.z
+      if lid is not None:
+        plate_size_z += lid.size.z - lid.lid.nesting_z_height
 
-      top_left_well_center_y = plate.get_size_y() - top_left_well_center.y
-      bottom_right_well_center_y = plate.get_size_y() - bottom_right_well_center.y
+      top_left_well_center_y = plate_size_y - top_left_well_center.y
+      bottom_right_well_center_y = plate_size_y - bottom_right_well_center.y
 
       cmd = (
         f"{rows:02}"
@@ -283,12 +320,17 @@ class BioTekPlateReaderDriver(_BioTekReader, metaclass=ABCMeta):
       return resp
 
   def _get_min_max_row_col_tuples(
-    self, wells: List[Well], plate: Plate
+    self, wells: List[handles.Well], plate: handles.Plate
   ) -> List[Tuple[int, int, int, int]]:
-    plates = set(well.parent for well in wells)
-    if len(plates) != 1 or plates.pop() != plate:
+    """The rectangles of (row, column) cells covering `wells`, found from the plate's items, which
+    are column-major."""
+    index = {item.id: i for i, item in enumerate(plate.items)}
+    if not wells or any(well.id not in index for well in wells):
       raise ValueError("All wells must be in the specified plate")
-    return self._non_overlapping_rectangles((well.get_row(), well.get_column()) for well in wells)
+    rows = plate.num_items_y
+    return self._non_overlapping_rectangles(
+      (index[well.id] % rows, index[well.id] // rows) for well in wells
+    )
 
   async def _temperature_after_read(self) -> Optional[float]:
     """Read optional result metadata, closing a timed-out stream before returning."""
@@ -300,8 +342,8 @@ class BioTekPlateReaderDriver(_BioTekReader, metaclass=ABCMeta):
 
   async def read_absorbance(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: handles.Plate,
+    wells: List[handles.Well],
     wavelength: int,
   ) -> List[AbsorbanceResult]:
     """Read endpoint absorbance using the reader's negotiated RDOP22 layout.
@@ -367,8 +409,8 @@ class BioTekPlateReaderDriver(_BioTekReader, metaclass=ABCMeta):
 
   async def read_luminescence(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: handles.Plate,
+    wells: List[handles.Well],
     focal_height: float,
     integration_time: float = 1,
   ) -> List[LuminescenceResult]:
@@ -440,8 +482,8 @@ class BioTekPlateReaderDriver(_BioTekReader, metaclass=ABCMeta):
 
   async def read_fluorescence(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: handles.Plate,
+    wells: List[handles.Well],
     excitation_wavelength: int,
     emission_wavelength: int,
     focal_height: float,

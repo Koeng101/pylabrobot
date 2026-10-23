@@ -1,0 +1,28 @@
+{
+  "name": "Eppendorf_DNA_LoBind_2ml_Ub",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE",
+      "typeName": "Tube",
+      "model": "Eppendorf_DNA_LoBind_2ml_Ub",
+      "category": "tube",
+      "size": {
+        "x": 10.33,
+        "y": 10.33,
+        "z": 41.0
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": 2000.0,
+        "materialZThickness": 0.8
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "2 mL round-bottom snap-cap Eppendorf tube. cat. no.: 022431048\n\n- bottom_type=TubeBottomType.U\n- snap-cap lid"
+}

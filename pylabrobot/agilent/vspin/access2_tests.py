@@ -15,7 +15,7 @@ from pylabrobot.agilent.vspin._state import (
 )
 from pylabrobot.agilent.vspin.access2 import Access2, Access2Driver
 from pylabrobot.agilent.vspin.vspin import VSpin
-from pylabrobot.events import EventBus, PLREvent, resource_reference, use_event_bus
+from pylabrobot.events import EventBus, PLREvent, handle_reference, use_event_bus
 from pylabrobot.io.binary import Writer
 
 _READY_FLAGS = protocol.STATUS_INITIALIZED | protocol.STATUS_HOMED
@@ -274,7 +274,7 @@ class Access2ScriptedFTDITests(unittest.IsolatedAsyncioTestCase):
           else [],
         )
         for event in events:
-          self.assertEqual(event.data, {"device": resource_reference(loader)})
+          self.assertEqual(event.data, {"device": await handle_reference(loader.body)})
 
   async def test_complete_home_ftdi_transcript(self):
     steps = [

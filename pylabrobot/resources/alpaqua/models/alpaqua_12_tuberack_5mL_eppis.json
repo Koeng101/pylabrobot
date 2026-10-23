@@ -1,0 +1,48 @@
+{
+  "name": "alpaqua_12_tuberack_5mL_eppis",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CONTAINER_RACK",
+      "typeName": "ContainerRack",
+      "category": "container_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 51.5
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 4,
+        "numItemsY": 3,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_resourceholder_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "typeName": "ResourceHolder",
+              "category": "resource_holder",
+              "size": {
+                "x": 16.7,
+                "y": 16.7
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 2.4,
+            "y": 10.2,
+            "z": 4.8
+          },
+          "itemDx": 31.0,
+          "itemDy": 20.0
+        }
+      }
+    }
+  },
+  "description": "Alpaqua Engineering LLC cat. no.: A000080\nSLAS-compliant tube rack for use on liquid handlers to\naccommodate 5 mL Eppendorf Tubes with snap cap lids\n\n- URL: https://www.alpaqua.com/product/12-position-eppendorf-rack/"
+}

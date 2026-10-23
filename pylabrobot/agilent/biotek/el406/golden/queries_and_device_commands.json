@@ -1,0 +1,218 @@
+{
+  "steps": [
+    {
+      "call": "request_instrument_settings()",
+      "result": {
+        "washer_manifold": "DEEP_PIN_96",
+        "syringe_manifold": "TUBE_32_LARGE_BORE",
+        "syringe_box": {
+          "box_type": 1,
+          "box_size": 8,
+          "installed": true
+        },
+        "peristaltic_pump_1": true,
+        "peristaltic_pump_2": true
+      },
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102d800010000000024ff",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102bb00010000000041ff",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102f600010000000006ff",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "010204010100000100f6ff",
+        "00",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "010204010100000100f5ff",
+        "01"
+      ]
+    },
+    {
+      "call": "request_serial_number()",
+      "result": "SN406X1",
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "010200010100000000fbff"
+      ]
+    },
+    {
+      "call": "request_sensor_enabled(VACUUM)",
+      "result": true,
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102d200010000010029ff",
+        "00"
+      ]
+    },
+    {
+      "call": "run_self_check()",
+      "result": {
+        "success": true,
+        "error_code": 0,
+        "message": "Self-check passed"
+      },
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "01029500010000000067ff"
+      ]
+    },
+    {
+      "call": "set_washer_manifold(TUBE_192)",
+      "result": null,
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102d900010000010021ff",
+        "01"
+      ]
+    },
+    {
+      "call": "home_motors(HOME_MOTOR, CARRIER_Y)",
+      "result": null,
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102c80001000002002eff",
+        "0301"
+      ]
+    },
+    {
+      "call": "pause()",
+      "result": null,
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "01028a00010000000072ff"
+      ]
+    },
+    {
+      "call": "resume()",
+      "result": null,
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "01028b00010000000071ff"
+      ]
+    },
+    {
+      "call": "abort(M_WASH)",
+      "result": null,
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102890001000001006cff",
+        "06"
+      ]
+    },
+    {
+      "call": "abort()",
+      "result": null,
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "01028900010000010072ff",
+        "00"
+      ]
+    },
+    {
+      "call": "reset()",
+      "result": null,
+      "sent": [
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_rx",
+        "purge_tx",
+        "0102700001000000008cff"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "el406_plate_holder",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    }
+  ]
+}

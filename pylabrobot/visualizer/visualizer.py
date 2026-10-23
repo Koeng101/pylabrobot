@@ -11,7 +11,7 @@ import os
 import re
 import threading
 import webbrowser
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 try:
   import websockets
@@ -24,8 +24,17 @@ except ImportError as e:
   _WEBSOCKETS_IMPORT_ERROR = e
 
 from pylabrobot.__version__ import STANDARD_FORM_JSON_VERSION
-from pylabrobot.resources import Resource
-from pylabrobot.resources.head_tool import HeadTool
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.visualizer.mirror import Change, ChangeKind, TreeMirror
+from pylabrobot.visualizer.nodes import (
+  TOOL_KINDS,
+  TipNames,
+  drawn_children,
+  serialize_node,
+  serialize_node_state,
+  type_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,45 +69,53 @@ def _get_public_methods(cls: type) -> list:
   return sorted(methods)
 
 
-def _drawn_children(resource: Resource) -> List[Resource]:
-  """The children the visualizer draws: all but a held tool, such as the tip in a tip spot, which
-  it shows as its holder's state."""
-  return [child for child in resource.children if not isinstance(child, HeadTool)]
+def _serialize_resource_tree(
+  node: pb.ResourceNode, tree: TreeMirror, tip_names: Optional[TipNames] = None
+) -> dict:
+  """Serialize a resource and the children the page draws, as `Resource.serialize` gives them.
 
+  Each level is serialized with everything under it, as `Resource.serialize` does, and its
+  children are then replaced by their own serializations: a tip spot describes the tip it would
+  make once per level above it, and names it by how many it has described.
 
-def _serialize_resource_tree(resource: Resource) -> dict:
-  """Serialize a resource and its children for the visualizer.
-
-  Method signatures are not embedded per node; identical for every instance of a class,
-  they are sent once per class via :func:`_build_method_registry` and attached by type in
-  the browser. On a full deck this avoids repeating the same signature list on every well.
+  Method signatures are not embedded per node; identical for every resource of a type, they are
+  sent once per type via :func:`_build_method_registry` and attached by type in the browser. On a
+  full deck this avoids repeating the same signature list on every well.
   """
-  data = resource.serialize()
-  data["children"] = [_serialize_resource_tree(child) for child in _drawn_children(resource)]
+  data = serialize_node(node, tree, tip_names, recursive=True)
+  data["children"] = [
+    _serialize_resource_tree(child, tree, tip_names) for child in drawn_children(node, tree)
+  ]
   return data
 
 
-def _state_of(resource: Resource) -> Dict[str, Any]:
+def _drawn_subtree(node: pb.ResourceNode, tree: TreeMirror) -> List[pb.ResourceNode]:
+  """A resource and every resource under it the page draws, parents first."""
+  found = [node]
+  for child in drawn_children(node, tree):
+    found.extend(_drawn_subtree(child, tree))
+  return found
+
+
+def _state_of(node: pb.ResourceNode, tree: TreeMirror) -> Dict[str, Any]:
   """The state of a resource and every child the visualizer draws, by name."""
-  state = {resource.name: resource.serialize_state()}
-  for child in _drawn_children(resource):
-    state.update(_state_of(child))
-  return state
+  return {
+    each.attributes.name: serialize_node_state(each, tree) for each in _drawn_subtree(node, tree)
+  }
 
 
-def _build_method_registry(resource: Resource, registry: Optional[dict] = None) -> dict:
-  """Map each resource class name in the tree to its public method signatures.
+def _build_method_registry(node: pb.ResourceNode, tree: TreeMirror) -> dict:
+  """Map each resource type in the tree to the public method signatures of its handle.
 
-  The serialized ``type`` of a resource is its class name, so the browser can look up a
-  node's methods by ``type`` instead of receiving the same list on every node.
+  A serialized resource's ``type`` is its type name, so the browser can look up a node's methods
+  by ``type`` instead of receiving the same list on every node.
   """
-  if registry is None:
-    registry = {}
-  type_name = type(resource).__name__
-  if type_name not in registry:
-    registry[type_name] = _get_public_methods(type(resource))  # type: ignore[arg-type]
-  for child in _drawn_children(resource):
-    _build_method_registry(child, registry)
+  registry: Dict[str, list] = {}
+  for each in _drawn_subtree(node, tree):
+    name = type_name(each.attributes)
+    if name not in registry:
+      handle_type = handles.HANDLE_TYPES[each.attributes.kind]
+      registry[name] = _get_public_methods(handle_type)  # type: ignore[arg-type]
   return registry
 
 
@@ -128,15 +145,18 @@ class Visualizer:
   resources or their states change. Note that tip and volume tracking need to be enabled to see
   these in the visualizer.
 
+  It follows the resource store the resource is in: every change made to the resource or anything
+  under it, by any client of the store, is drawn.
+
   Example:
     >>> from pylabrobot.visualizer import Visualizer
-    >>> visualizer = Visualizer(deck)
+    >>> visualizer = Visualizer(deck)  # a handle: `await store.get("deck")`
     >>> await visualizer.setup()
   """
 
   def __init__(
     self,
-    resource: Resource,
+    resource: handles.Resource,
     host: str = "127.0.0.1",
     ws_port: int = 2121,
     fs_port: int = 1337,
@@ -149,6 +169,7 @@ class Visualizer:
     """Create a new Visualizer. Use :meth:`.setup` to start the visualization.
 
     Args:
+      resource: A handle to the resource to draw, with everything under it: a deck, a device.
       host: The hostname of the file and websocket server.
       ws_port: The port of the websocket server. If this port is in use, the port will be
         incremented until a free port is found. Use `0` to let the operating system choose a port.
@@ -194,21 +215,14 @@ class Visualizer:
     else:
       self._favicon_path = os.path.join(os.path.dirname(__file__), "img", "logo.png")
 
-    # Hook into the resource (un)assigned callbacks so we can send the appropriate events to the
-    # browser.
+    # The tree as the store holds it, kept current by following the store.
     self._root_resource = resource
-    resource.register_did_assign_resource_callback(self._handle_resource_assigned_callback)
-    resource.register_did_unassign_resource_callback(self._handle_resource_unassigned_callback)
-
-    # register for callbacks
-    def register_state_update(resource):
-      resource.register_state_update_callback(
-        lambda _: self._handle_state_update_callback(resource)
-      )
-      for child in _drawn_children(resource):
-        register_state_update(child)
-
-    register_state_update(resource)
+    self._tree = TreeMirror(resource)
+    self._tip_names = TipNames()
+    # Resources whose state changes are sent: every resource drawn since the visualizer started,
+    # including any that have left the tree since.
+    self._subscribed: Set[bytes] = set()
+    self._unsubscribe_tree: Optional[Callable[[], None]] = None
 
     self.host = host
 
@@ -227,9 +241,6 @@ class Visualizer:
     self._loop: Optional[asyncio.AbstractEventLoop] = None
     self._t: Optional[threading.Thread] = None
     self._stop_: Optional[asyncio.Future] = None
-
-    self._pending_state_updates: Dict[str, dict] = {}
-    self._flush_scheduled = False
 
     self.received: List[dict] = []
     # Ids of commands whose responses a caller is actively awaiting. Only these
@@ -499,20 +510,48 @@ class Visualizer:
 
     return ""
 
+  async def follow(self) -> None:
+    """Read the tree, and follow every change the store makes to it after. :meth:`setup` does
+    this."""
+    if self._tree.following:
+      return
+    await self._tree.start()
+    self._subscribed = {
+      node.id for node in _drawn_subtree(self._tree.node(self._tree.root_id), self._tree)
+    }
+    self._unsubscribe_tree = self._tree.subscribe(self._on_changes)
+
+  async def caught_up(self, timeout: float = 5.0) -> None:
+    """Wait until every change the store has made by now has been handled, or `timeout` s pass."""
+    await self._tree.caught_up(timeout)
+
+  async def _stop_following(self) -> None:
+    if self._unsubscribe_tree is not None:
+      self._unsubscribe_tree()
+      self._unsubscribe_tree = None
+    await self._tree.stop()
+
   async def setup(self):
     """Start the visualizer.
 
-    Sets up the file and websocket servers. These will run in a separate thread.
+    Reads the tree from the store and follows it, and sets up the file and websocket servers.
+    These will run in a separate thread.
     """
 
     if self.setup_finished:
       raise RuntimeError("The visualizer has already been started.")
 
-    await self._run_ws_server()
+    await self.follow()
+    try:
+      await self._run_ws_server()
+    except BaseException:
+      await self._stop_following()
+      raise
     try:
       await self._run_file_server()
     except BaseException:
       await self._stop_ws_server(send_stop_event=False)
+      await self._stop_following()
       raise
     self.setup_finished = True
 
@@ -701,7 +740,10 @@ class Visualizer:
     self._fst = None
 
     # -- websocket --
-    await self._stop_ws_server(send_stop_event=True)
+    try:
+      await self._stop_ws_server(send_stop_event=True)
+    finally:
+      await self._stop_following()
 
     self.setup_finished = False
 
@@ -709,93 +751,56 @@ class Visualizer:
     """Private method for sending the resource and state to the browser. This is called after the
     browser has sent a "ready" event."""
 
+    tree = self._tree
+    root = tree.node(tree.root_id)
     # send the serialized root resource (including all children) to the browser
     await self.send_command(
       "set_root_resource",
       {
-        "resource": _serialize_resource_tree(self._root_resource),
-        "method_registry": _build_method_registry(self._root_resource),
+        "resource": _serialize_resource_tree(root, tree, self._tip_names),
+        "method_registry": _build_method_registry(root, tree),
       },
       wait_for_response=False,
     )
 
     # serialize the state and send it to the browser
-    # TODO: can we merge this with the code that already exists in Deck?
-    state: Dict[str, Any] = {}
-
-    def save_resource_state(resource: Resource):
-      """Recursively save the state of the resource and all child resources."""
-      resource_state = resource.serialize_state()
-      if resource_state is not None:
-        state[resource.name] = resource_state
-      for child in _drawn_children(resource):
-        save_resource_state(child)
-
-    save_resource_state(self._root_resource)
-    await self.send_command("set_state", state, wait_for_response=False)
+    await self.send_command("set_state", _state_of(root, tree), wait_for_response=False)
 
     if self._show_machine_tools_at_start:
       await self.send_command("show_machine_tools", {}, wait_for_response=False)
 
-  def _handle_resource_assigned_callback(self, resource: Resource) -> None:
-    """Called when a resource is assigned to a resource already in the tree starting from the
-    root resource. This method will send an event about the new resource"""
-
-    if isinstance(resource, HeadTool):
+  def _send_soon(self, event: str, data: Dict[str, Any]) -> None:
+    """Send an event from the loop the tree is followed on, on the websocket's loop."""
+    if self._loop is None:
       return
-
-    # TODO: unassign should deregister the callbacks
-    # register for callbacks
-    def register_state_update(resource: Resource):
-      resource.register_state_update_callback(
-        lambda _: self._handle_state_update_callback(resource)
-      )
-      for child in _drawn_children(resource):
-        register_state_update(child)
-
-    register_state_update(resource)
-
-    # Send a `resource_assigned` event to the browser.
-    data = {
-      "resource": _serialize_resource_tree(resource),
-      "method_registry": _build_method_registry(resource),
-      "state": _state_of(resource),
-      "parent_name": (resource.parent.name if resource.parent else None),
-    }
-    fut = self.send_command(event="resource_assigned", data=data, wait_for_response=False)
+    fut = self.send_command(event=event, data=data, wait_for_response=False)
     asyncio.run_coroutine_threadsafe(fut, self.loop)
 
-  def _handle_resource_unassigned_callback(self, resource: Resource) -> None:
-    """Called when a resource is unassigned from a resource already in the tree starting from the
-    root resource. This method will send an event about the removed resource"""
+  def _on_changes(self, changes: List[Change]) -> None:
+    """Send what one store revision did: resources assigned and unassigned, then one `set_state`
+    with every changed state, so a 96-channel operation is one message.
 
-    if isinstance(resource, HeadTool):
-      return
-
-    # Send a `resource_unassigned` event to the browser.
-    data = {"resource_name": resource.name}
-    fut = self.send_command(event="resource_unassigned", data=data, wait_for_response=False)
-    asyncio.run_coroutine_threadsafe(fut, self.loop)
-
-  def _handle_state_update_callback(self, resource: Resource) -> None:
-    """Called when the state of a resource is updated. Updates are batched so that
-    rapid successive changes (e.g. 96-channel pickup) are sent as a single message."""
-
-    state = resource.serialize_state()
-    self.loop.call_soon_threadsafe(self._enqueue_state_update, resource.name, state)
-
-  def _enqueue_state_update(self, name: str, state: dict) -> None:
-    """Enqueue a state update on the event loop thread and schedule a flush if needed."""
-    self._pending_state_updates[name] = state
-    if not self._flush_scheduled:
-      self._flush_scheduled = True
-      self.loop.call_soon(self._flush_state_updates)
-
-  def _flush_state_updates(self) -> None:
-    """Send all pending state updates as a single ``set_state`` event."""
-    data = self._pending_state_updates
-    self._pending_state_updates = {}
-    self._flush_scheduled = False
-    if data:
-      fut = self.send_command(event="set_state", data=data, wait_for_response=False)
-      asyncio.ensure_future(fut)
+    A held tool, such as the tip in a tip spot, is not drawn: its comings and goings send
+    nothing.
+    """
+    tree = self._tree
+    states: Dict[str, dict] = {}
+    for change in changes:
+      if change.resource_kind in TOOL_KINDS:
+        continue
+      if change.kind == ChangeKind.ASSIGNED:
+        node = tree.node(change.node_id)
+        self._subscribed.update(each.id for each in _drawn_subtree(node, tree))
+        data = {
+          "resource": _serialize_resource_tree(node, tree, self._tip_names),
+          "method_registry": _build_method_registry(node, tree),
+          "state": _state_of(node, tree),
+          "parent_name": tree.parent_name(node),
+        }
+        self._send_soon("resource_assigned", data)
+      elif change.kind == ChangeKind.UNASSIGNED:
+        self._send_soon("resource_unassigned", {"resource_name": change.name})
+      elif change.node_id in self._subscribed and change.node_id in tree.nodes:
+        states[change.name] = serialize_node_state(tree.node(change.node_id), tree)
+    if states:
+      self._send_soon("set_state", states)

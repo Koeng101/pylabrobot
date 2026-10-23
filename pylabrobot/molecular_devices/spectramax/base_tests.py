@@ -14,7 +14,16 @@ from pylabrobot.molecular_devices.spectramax.results import (
   LuminescenceResult,
 )
 from pylabrobot.molecular_devices.spectramax.spectramax_m5 import SpectraMaxM5
-from pylabrobot.resources.agenbio.plates import AGenBio_96_wellplate_Ub_2200ul
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
+
+
+async def make_plate() -> handles.Plate:
+  """A 96-well plate in a store of its own."""
+  store = ResourceStore.in_memory()
+  plate = await store.create("agenbio_96_wellplate_Ub_2200uL", name="test_plate")
+  assert isinstance(plate, handles.Plate)
+  return plate
 
 
 class TestMolecularDevicesPlateReader(unittest.IsolatedAsyncioTestCase):
@@ -122,7 +131,7 @@ class TestMolecularDevicesPlateReader(unittest.IsolatedAsyncioTestCase):
     self.send_command_mock.assert_called_once_with("!EMWAVELENGTH 590")
 
   async def test_set_plate_position(self):
-    plate = AGenBio_96_wellplate_Ub_2200ul("test_plate")
+    plate = await make_plate()
     settings = MolecularDevicesSettings(
       plate=plate,
       read_mode="absorbance",
@@ -141,7 +150,7 @@ class TestMolecularDevicesPlateReader(unittest.IsolatedAsyncioTestCase):
     )
 
   async def test_set_strip(self):
-    plate = AGenBio_96_wellplate_Ub_2200ul("test_plate")
+    plate = await make_plate()
     settings = MolecularDevicesSettings(
       plate=plate,
       read_mode="absorbance",
@@ -462,8 +471,8 @@ class TestMolecularDevicesPlateReader(unittest.IsolatedAsyncioTestCase):
         return_value=[{"data": [[0.1]], "wavelength": 500, "temperature": 25.0, "time": 12345.6}],
       ) as mock_transfer,
     ):
-      plate = AGenBio_96_wellplate_Ub_2200ul("test_plate")
-      results = await self.device.read_absorbance(plate, plate.get_wells(), 500)
+      plate = await make_plate()
+      results = await self.device.read_absorbance(plate, plate.get_wells(plate.identifiers), 500)
 
       self.assertIsInstance(results, list)
       self.assertEqual(len(results), 1)
@@ -534,9 +543,13 @@ class TestSpectraMaxM5(unittest.IsolatedAsyncioTestCase):
         ],
       ) as mock_transfer,
     ):
-      plate = AGenBio_96_wellplate_Ub_2200ul("test_plate")
+      plate = await make_plate()
       results = await self.device.read_fluorescence(
-        plate, plate.get_wells(), excitation_wavelength=485, emission_wavelength=520, focal_height=0
+        plate,
+        plate.get_wells(plate.identifiers),
+        excitation_wavelength=485,
+        emission_wavelength=520,
+        focal_height=0,
       )
 
       self.assertIsInstance(results, list)
@@ -585,10 +598,10 @@ class TestSpectraMaxM5(unittest.IsolatedAsyncioTestCase):
         ],
       ) as mock_transfer,
     ):
-      plate = AGenBio_96_wellplate_Ub_2200ul("test_plate")
+      plate = await make_plate()
       results = await self.device.read_luminescence(
         plate,
-        plate.get_wells(),
+        plate.get_wells(plate.identifiers),
         focal_height=0,
         emission_wavelengths=[590],
       )

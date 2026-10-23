@@ -1,0 +1,151 @@
+{
+  "transport": {
+    "human_readable_device_name": "Agilent PlateLoc Sealer",
+    "port": "/dev/ttyUSB0",
+    "vid": null,
+    "pid": null,
+    "baudrate": 19200,
+    "bytesize": 8,
+    "parity": "N",
+    "stopbits": 1,
+    "write_timeout": 1,
+    "timeout": 1,
+    "rtscts": false,
+    "dsrdtr": false,
+    "xonxoff": false
+  },
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        "setup"
+      ]
+    },
+    {
+      "call": "open()",
+      "result": "SOAK",
+      "sent": [
+        "reset_input_buffer",
+        "write SO 00\r"
+      ],
+      "waits": [
+        0.05,
+        6
+      ]
+    },
+    {
+      "call": "close()",
+      "result": "SIAK",
+      "sent": [
+        "reset_input_buffer",
+        "write SI 00\r"
+      ],
+      "waits": [
+        0.05,
+        6
+      ]
+    },
+    {
+      "call": "seal(temperature=175, duration=1.2)",
+      "result": "GOAK",
+      "sent": [
+        "reset_input_buffer",
+        "write ST 0.175\r",
+        "reset_input_buffer",
+        "write SS 0.12\r",
+        "reset_input_buffer",
+        "write GO 00\r",
+        "reset_input_buffer",
+        "write CC 00\r",
+        "reset_input_buffer",
+        "write CC 00\r",
+        "reset_input_buffer",
+        "write CC 00\r"
+      ],
+      "waits": [
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.5,
+        0.05,
+        0.5,
+        0.05
+      ]
+    },
+    {
+      "call": "request_status()",
+      "result": {
+        "port": "/dev/ttyUSB0",
+        "connected": true,
+        "target_temperature": 175.0,
+        "stage_position": "closed",
+        "cycle_complete": true
+      },
+      "sent": [
+        "reset_input_buffer",
+        "write CC 00\r"
+      ],
+      "waits": [
+        0.05
+      ]
+    },
+    {
+      "call": "seal(temperature=175, duration=20)",
+      "error": "ValueError: Duration out of range. Please enter a value between 0.5 and 12.0 s.",
+      "sent": []
+    },
+    {
+      "call": "set_sealing_temperature(300)",
+      "error": "ValueError: Temperature out of range. Please enter a value between 20 and 235 C.",
+      "sent": []
+    },
+    {
+      "call": "seal(temperature=170, duration=2)  # rejected",
+      "error": "PlateLocError: PlateLoc rejected 'GO': Door open",
+      "sent": [
+        "reset_input_buffer",
+        "write ST 0.170\r",
+        "reset_input_buffer",
+        "write SS 0.20\r",
+        "reset_input_buffer",
+        "write GO 00\r"
+      ],
+      "waits": [
+        0.05,
+        0.05,
+        0.05
+      ]
+    },
+    {
+      "call": "clear_error()  # wrong reply",
+      "error": "PlateLocError: PlateLoc replied with 'SI' to 'CL': 'SIAK'",
+      "sent": [
+        "reset_input_buffer",
+        "write CL 00\r"
+      ],
+      "waits": [
+        0.05
+      ]
+    },
+    {
+      "call": "stop_cycle()  # no reply",
+      "error": "PlateLocError: PlateLoc returned invalid response to 'AC': ''",
+      "sent": [
+        "reset_input_buffer",
+        "write AC 00\r"
+      ],
+      "waits": [
+        0.05
+      ]
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        "stop"
+      ]
+    }
+  ]
+}

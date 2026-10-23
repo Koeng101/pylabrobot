@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "call": "scan_barcode()",
+      "result": {
+        "data": "1234",
+        "symbology": "unknown",
+        "position_on_resource": "bottom"
+      },
+      "sent": [
+        "read 1",
+        "read 1",
+        "read 1",
+        "read 1"
+      ]
+    },
+    {
+      "call": "scan_barcode()  # the rest of the line",
+      "result": {
+        "data": "5",
+        "symbology": "unknown",
+        "position_on_resource": "bottom"
+      },
+      "sent": [
+        "read 1",
+        "read 1"
+      ]
+    }
+  ]
+}

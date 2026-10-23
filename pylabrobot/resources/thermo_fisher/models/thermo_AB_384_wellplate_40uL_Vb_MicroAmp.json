@@ -1,0 +1,59 @@
+{
+  "name": "thermo_AB_384_wellplate_40uL_Vb_MicroAmp",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "typeName": "Plate",
+      "model": "thermo_AB_384_wellplate_40uL_Vb_MicroAmp",
+      "category": "plate",
+      "size": {
+        "x": 127.8,
+        "y": 85.5,
+        "z": 9.7
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 24,
+        "numItemsY": 16,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "typeName": "Well",
+              "category": "well",
+              "size": {
+                "x": 3.17,
+                "y": 3.17,
+                "z": 9.09
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 71.74180332185638,
+                "materialZThickness": 0.61,
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.565,
+            "y": 7.415
+          },
+          "itemDx": 4.5,
+          "itemDy": 4.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Thermo Fisher Scientific cat. no.: 4309849, 4326270, 4343814 (with barcode), 4343370 (w/o barcode).\n\nhttps://documents.thermofisher.com/TFS-Assets/LSG/manuals/cms_042831.pdf\n\nThe wells sit flush with the plate's own base: section A-A of drawing 4310286 dimensions 9.70\nfrom the underside to the top face, and the 0.61 below the wells is the wall at their bottom, not\na standoff. So `dz` is zero because it was drawn that way, not because nobody measured it - and\non a holder with a pedestal this plate comes to rest on its wells rather than on its skirt."
+}

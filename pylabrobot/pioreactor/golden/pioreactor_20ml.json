@@ -1,0 +1,45 @@
+{
+  "pioreactor": {
+    "model": "pioreactor_20ml",
+    "category": "bioreactor",
+    "size": [
+      127.74,
+      85.4,
+      126.5
+    ]
+  },
+  "vessel": {
+    "model": null,
+    "category": "bioreactor_vessel",
+    "size": [
+      23.5,
+      23.5,
+      57.0
+    ],
+    "max_volume": 20000,
+    "material_z_thickness": 1.0,
+    "absolute_location": [
+      52.12,
+      30.95,
+      76.0
+    ]
+  },
+  "resources": [
+    {
+      "name": "pioreactor",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "pioreactor_vessel",
+      "parent": "pioreactor",
+      "kind": "RESOURCE_KIND_CONTAINER",
+      "location": [
+        52.12,
+        30.95,
+        76.0
+      ],
+      "volume": 0.0
+    }
+  ]
+}
