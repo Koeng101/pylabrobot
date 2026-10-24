@@ -45,7 +45,9 @@ cytation-microscopy = ["numpy>=1.26", "opencv-python", "PyGObject"]
 pico = ["PyLabRobot[sila]", "opencv-python", "numpy"]
 xarm = ["xarm-python-sdk"]
 odyssey = ["Pillow"]
-all = ["PyLabRobot[serial,usb,ftdi,hid,btx,modbus,websockets,visualizer,opentrons,sila,pico,xarm,odyssey]"]
+# Serving a resource store over the network: `uvicorn` runs `asgi_app(store)`.
+store-server = ["uvicorn>=0.30"]
+all = ["PyLabRobot[serial,usb,ftdi,hid,btx,modbus,websockets,visualizer,opentrons,sila,pico,xarm,odyssey,store-server]"]
 test = [
   "pytest",
   "pytest-xdist",
