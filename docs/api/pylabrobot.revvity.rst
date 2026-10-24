@@ -7,16 +7,19 @@ Celigo
 .. currentmodule:: pylabrobot.revvity.celigo
 
 Load the vendor configuration explicitly, construct the instrument, then assign the
-PyLabRobot plate used for well navigation:
+plate used for well navigation, a plate handle in a resource store:
 
 .. code-block:: python
 
    from pylabrobot.revvity import Celigo, CeligoConfig
-   from pylabrobot.resources.corning.plates import Cor_96_wellplate_360ul_Fb
+   from pylabrobot.resources.store import ResourceStore
+
+   store = ResourceStore.in_memory()
+   plate = await store.create("cor_96_wellplate_360uL_Fb", name="imaging_plate")
 
    config = CeligoConfig.from_install("/path/to/Celigo/ConfigFiles")
    celigo = Celigo(config=config)
-   celigo.set_plate(Cor_96_wellplate_360ul_Fb(name="imaging_plate"))
+   celigo.set_plate(plate)
 
 .. autosummary::
   :toctree: _autosummary

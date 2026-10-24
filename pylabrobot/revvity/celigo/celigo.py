@@ -1023,7 +1023,11 @@ class Celigo:
   def set_plate(self, plate: handles.Plate) -> None:
     """Set the plate used by drawer loading, well navigation, and acquisition."""
     if not isinstance(plate, handles.Plate):
-      raise TypeError(f"plate must be a Plate, got {type(plate).__name__}")
+      kind = type(plate)
+      raise TypeError(
+        "plate must be a plate handle in a resource store "
+        f"(pylabrobot.resources.store.handles.Plate), got {kind.__module__}.{kind.__qualname__}"
+      )
     self._plate = plate
 
   def _require_plate(self) -> handles.Plate:

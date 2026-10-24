@@ -4,6 +4,7 @@ import inspect
 import unittest
 from unittest.mock import patch
 
+from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
 from pylabrobot.revvity.celigo.celigo import Celigo, CeligoError
 from pylabrobot.revvity.celigo.config import (
   CeligoHardwareConfig,
@@ -368,6 +369,14 @@ class TestConfiguredDrawer(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(targets.x_park_mm, 6)
     self.assertEqual(targets.y_clearance_mm, 2)
     self.assertEqual(targets.y_park_mm, 8)
+
+  def test_set_plate_names_the_class_it_takes_and_the_one_it_got(self):
+    driver = make_celigo(hardware=_config())
+    with self.assertRaisesRegex(
+      TypeError,
+      r"pylabrobot\.resources\.store\.handles\.Plate\), got pylabrobot\.resources\.plate\.Plate",
+    ):
+      driver.set_plate(cor_96_wellplate_360uL_Fb("plate"))  # type: ignore[arg-type]
 
   async def test_close_to_well_requires_set_plate(self):
     driver = make_celigo(hardware=_config())
