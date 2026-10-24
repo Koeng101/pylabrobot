@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from typing import cast
+from typing import Dict, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pylabrobot.io.command_line import CommandLineResult, CommandLineTransport
@@ -15,9 +15,22 @@ from pylabrobot.micronic.code_reader.driver import (
   find_duplicate_ids,
   is_tube_id,
   iter_positions,
+  RackScanEntry,
+  RackScanResult,
   rack_position,
+  rack_scan_reads,
 )
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.barcode import Barcode
+from pylabrobot.resources.store import build
+from pylabrobot.resources.store.barcodes import (
+  BarcodeMismatchError,
+  barcodes_by_place,
+  initialize_barcodes,
+)
+from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.handles import TubeRack
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
 def _rack(num_items_x: int = 12, num_items_y: int = 8) -> TubeRack:
@@ -533,6 +546,99 @@ class TestDecodeHelpers(unittest.TestCase):
     ):
       with self.assertRaisesRegex(MicronicError, "Only 0 DataMatrix"):
         decode_image(Path("rack.bmp"))
+
+
+async def _stored_rack(store: ResourceStore, recorded: Dict[str, str]) -> TubeRack:
+  """An 8 x 12 rack of holders in `store`, a tube with a recorded barcode in each named place."""
+  holder = build.resource(
+    "rack_holder_{identifier}",
+    Coordinate(9, 9, 43),
+    kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
+    holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero()), capacity=1),
+  )
+  rack = await store.create(
+    build.resource(
+      "rack",
+      Coordinate(127.76, 85.48, 45.2),
+      kind=pb.RESOURCE_KIND_TUBE_RACK,
+      itemized=pb.ItemizedSpec(
+        num_items_x=12,
+        num_items_y=8,
+        grid=pb.ItemGrid(item=holder, offset=build.vec3(Coordinate.zero()), item_dx=9, item_dy=9),
+      ),
+    ),
+    name="rack",
+  )
+  assert isinstance(rack, TubeRack)
+  for position, tube_id in recorded.items():
+    tube = build.resource(
+      f"tube_{position}",
+      Coordinate(8.5, 8.5, 44.5),
+      kind=pb.RESOURCE_KIND_TUBE,
+      container=pb.ContainerSpec(max_volume=1400),
+      barcode=pb.Barcode(data=tube_id, symbology="DataMatrix", position_on_resource="bottom"),
+    )
+    await store.create(tube, name=tube.attributes.name, parent=rack.get_item(position))
+  return rack
+
+
+def _scan(rack_id: str, tubes: Dict[str, str]) -> RackScanResult:
+  return RackScanResult(
+    rack_id=rack_id,
+    entries=[
+      RackScanEntry(
+        position=position,
+        tube_id=tubes.get(position),
+        status="OK" if position in tubes else "NOREAD",
+        barcode=Barcode(tubes[position], "DataMatrix", "bottom") if position in tubes else None,
+      )
+      for position in iter_positions()
+    ],
+    rack_barcode=Barcode(rack_id, "Code 128 (Subset B and C)", "right"),
+  )
+
+
+class ScanAgainstTheStoreTests(unittest.IsolatedAsyncioTestCase):
+  def _reader(self, result: RackScanResult) -> MicronicRD235:
+    reader = MicronicRD235(scanner=_mock_scanner(), serial_port="/dev/ttyUSB0")
+    reader._scan_rack = AsyncMock(return_value=result)  # type: ignore[method-assign]
+    return reader
+
+  async def test_a_scan_that_agrees_passes_the_check_and_writes_nothing(self):
+    store = ResourceStore.in_memory()
+    rack = await _stored_rack(store, {"A1": "1000000001"})
+    reader = self._reader(_scan("9500017722", {"A1": "1000000001"}))
+    await reader.scan_rack(rack, check=True)
+    self.assertIsNone(await rack.get_barcode())
+
+  async def test_a_moved_tube_a_missing_one_and_an_unexpected_one_are_refused(self):
+    store = ResourceStore.in_memory()
+    rack = await _stored_rack(store, {"A1": "1000000001", "A2": "1000000002"})
+    reader = self._reader(_scan("9500017722", {"A1": "1000000002", "B1": "1000000013"}))
+    with self.assertRaises(BarcodeMismatchError) as caught:
+      await reader.scan_rack(rack, check=True)
+    self.assertEqual(
+      [(m.place, m.problem) for m in caught.exception.mismatches],
+      [
+        ("rack_holder_A1", "different"),
+        ("rack_holder_A2", "missing"),
+        ("rack_holder_B1", "unexpected"),
+      ],
+    )
+    result = await reader.scan_rack(rack)  # unchecked, it is returned as read
+    self.assertEqual(result.entries[0].tube_id, "1000000002")
+
+  async def test_a_scan_initializes_barcodes_once(self):
+    store = ResourceStore.in_memory()
+    rack = await _stored_rack(store, {})
+    tube = build.resource(
+      "tube", Coordinate(8.5, 8.5, 44.5), kind=pb.RESOURCE_KIND_TUBE, container=pb.ContainerSpec()
+    )
+    await store.create(tube, name="tube", parent=rack.get_item("A1"))
+    result = _scan("9500017722", {"A1": "1000000001"})
+    await initialize_barcodes(barcodes_by_place(rack_scan_reads(rack, result)))
+    self.assertEqual((await rack.get_barcode()).data, "9500017722")  # type: ignore[union-attr]
+    await self._reader(result).scan_rack(rack, check=True)
 
 
 if __name__ == "__main__":

@@ -19,11 +19,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Literal, Optional
+from typing import Any, Dict, Iterable, Iterator, Literal, Optional
 
 from pylabrobot.io.serial import Serial
 from pylabrobot.resources.barcode import Barcode
-from pylabrobot.resources.store.handles import TubeRack
+from pylabrobot.resources.store import barcodes
+from pylabrobot.resources.store.handles import Resource, TubeRack
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from .errors import MicronicError
 from .scanner import Scanner
@@ -79,6 +81,33 @@ class RackScanResult:
   rack_id: str
   entries: list[RackScanEntry]
   rack_barcode: Optional[Barcode] = None
+
+
+def _stored(barcode: Optional[Barcode]) -> Optional[pb.Barcode]:
+  if barcode is None:
+    return None
+  return pb.Barcode(
+    data=barcode.data,
+    symbology=barcode.symbology,
+    position_on_resource=barcode.position_on_resource,
+  )
+
+
+def rack_scan_reads(rack: TubeRack, result: RackScanResult) -> Dict[Resource, Optional[pb.Barcode]]:
+  """What a rack scan read, by place: the rack itself (its side code), and each position, which
+  stands for the tube it holds. Unread codes are None.
+
+  Pass it to `pylabrobot.resources.store.barcodes.check_barcodes` to check the scan against the
+  store, or, with `barcodes.barcodes_by_place`, to `barcodes.initialize_barcodes` to record the
+  codes on a rack and tubes that have none yet:
+
+    reads = rack_scan_reads(rack, result)
+    await barcodes.initialize_barcodes(barcodes.barcodes_by_place(reads))
+  """
+  reads: Dict[Resource, Optional[pb.Barcode]] = {rack: _stored(result.rack_barcode)}
+  for entry in result.entries:
+    reads[rack.get_item(entry.position)] = _stored(entry.barcode)
+  return reads
 
 
 class MicronicRD235:
@@ -224,13 +253,20 @@ class MicronicRD235:
         f"got {rack.num_items_y}x{rack.num_items_x}."
       )
 
-  async def scan_rack(self, rack: TubeRack, timeout: float = 90.0) -> RackScanResult:
+  async def scan_rack(
+    self, rack: TubeRack, timeout: float = 90.0, check: bool = False
+  ) -> RackScanResult:
     """Scan the rack ID and all tube positions in an 8x12 rack.
 
+    The codes read are returned, never written into the store: barcodes are printed on the rack
+    and tubes, and the store records them once (see `rack_scan_reads` to record them on a rack
+    and tubes that have none).
+
     Args:
-      rack: A tube rack in a resource store whose 96 positions correspond to the scanner layout;
-        only its grid size is read.
+      rack: A tube rack in a resource store whose 96 positions correspond to the scanner layout.
       timeout: Overall operation timeout in seconds.
+      check: Also check the codes read against those the store records for the rack and its
+        tubes (`pylabrobot.resources.store.barcodes.check_barcodes`).
 
     Returns:
       Rack and tube barcode results.
@@ -239,6 +275,8 @@ class MicronicRD235:
       MicronicError: If the rack shape is unsupported, a scan is already running, image
         acquisition fails, or decoding fails.
       asyncio.TimeoutError: If the operation exceeds ``timeout``.
+      BarcodeMismatchError: With `check`, if a code read differs from the one recorded, a tube
+        with a recorded code was not read, or a code was read where the store holds no tube.
     """
     logger.info("Starting Micronic rack scan")
     try:
@@ -251,6 +289,8 @@ class MicronicRD235:
       result.rack_id,
       sum(entry.status == "OK" for entry in result.entries),
     )
+    if check:
+      await barcodes.check_barcodes(rack_scan_reads(rack, result))
     return result
 
   async def scan_rack_id(self, timeout: float = 5.0) -> str:
