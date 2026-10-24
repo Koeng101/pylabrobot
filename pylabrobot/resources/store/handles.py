@@ -93,7 +93,7 @@ def anchor(x: str = "l", y: str = "f", z: str = "b") -> pb.Anchor:
 
 
 class Resource:
-  """A resource in a store.
+  """A resource in a store. Two handles are equal when they have the same id.
 
   Attributes:
     store: The store it is in.
@@ -115,7 +115,7 @@ class Resource:
     return pb.ResourceRef(id=self.id)
 
   def __eq__(self, other: object) -> bool:
-    return isinstance(other, Resource) and other.id == self.id and other.store is self.store
+    return isinstance(other, Resource) and other.id == self.id
 
   def __hash__(self) -> int:
     return hash(self.id)
