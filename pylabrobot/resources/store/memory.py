@@ -560,7 +560,6 @@ def _matches(node: Node, filter: spb.ResourceFilter) -> bool:
   a = node.attributes
   return (
     (not filter.kinds or a.kind in filter.kinds)
-    and (not filter.type_names or a.type_name in filter.type_names)
     and (not filter.models or a.model in filter.models)
     and (not filter.categories or a.category in filter.categories)
     and a.name.startswith(filter.name_prefix)

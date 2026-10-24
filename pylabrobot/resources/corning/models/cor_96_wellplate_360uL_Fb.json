@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE",
-      "typeName": "Plate",
       "model": "cor_96_wellplate_360uL_Fb",
       "category": "plate",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_well_{identifier}",
               "kind": "RESOURCE_KIND_WELL",
-              "typeName": "Well",
               "category": "well",
               "size": {
                 "x": 6.86,

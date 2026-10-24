@@ -1762,7 +1762,6 @@ class PrepDriver:
         name,
         Coordinate(size_x, size_y, HEATER_SHAKER_PLATE_Z),
         kind=pb.RESOURCE_KIND_PLATE_HOLDER,
-        type_name="PlateHolder",
         category="plate_holder",
         holder=pb.HolderSpec(
           child_location=build.vec3(Coordinate(plate_x, plate_y, HEATER_SHAKER_PLATE_Z)),
@@ -1850,7 +1849,6 @@ class PrepDriver:
         build.resource(
           arm_name,
           Coordinate(c.size_x, c.size_y, c.size_z),
-          type_name="Resource",
           category="x_arm",
           model=c.model,
           metadata=metadata,
@@ -1891,11 +1889,11 @@ class PrepDriver:
   # ----------------------------------------
 
   async def request_core_gripper_holder(self) -> Optional[handles.Resource]:
-    """The holder this Prep's deck parks its CO-RE grip tools in, found by its type, or None."""
+    """The holder this Prep's deck parks its CO-RE grip tools in, found by its category, or None."""
     if self.deck is None:
       return None
     found = await self.store.find_resources(
-      scope=self.deck, filter=spb.ResourceFilter(type_names=["HamiltonCoreGrippers"])
+      scope=self.deck, filter=spb.ResourceFilter(categories=["core_grippers"])
     )
     return found[0] if found else None
 

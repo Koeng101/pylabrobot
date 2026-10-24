@@ -130,7 +130,6 @@ class PrepDevice:
             deck_size.y if size_y is None else size_y,
             deck_size.z if size_z is None else size_z,
           ),
-          type_name="PrepDevice",
           category="device",
           model=self.model,
           children=children,

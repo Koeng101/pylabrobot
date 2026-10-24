@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TIP_RACK",
-      "typeName": "StandingTipRack",
       "model": "GEB 96 Tip Rack 10 \u00b5L",
       "category": "tip_rack",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_{identifier}",
               "kind": "RESOURCE_KIND_TIP_SPOT",
-              "typeName": "TipSpot",
               "category": "tip_spot",
               "size": {
                 "x": 2.447,
@@ -32,7 +30,6 @@
                 "prototypeTip": {
                   "name": "{name}_{identifier}",
                   "kind": "RESOURCE_KIND_TIP",
-                  "typeName": "Tip",
                   "model": "geb_96_tiprack_10ul",
                   "category": "tip",
                   "size": {
@@ -57,7 +54,6 @@
                 "attributes": {
                   "name": "{name}_{identifier}#0",
                   "kind": "RESOURCE_KIND_TIP",
-                  "typeName": "Tip",
                   "model": "geb_96_tiprack_10ul",
                   "category": "tip",
                   "size": {

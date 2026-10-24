@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE",
-      "typeName": "TecanPlate",
       "model": "Microplate_portrait_96_Well",
       "category": "tecan_plate",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_well_{identifier}",
               "kind": "RESOURCE_KIND_WELL",
-              "typeName": "Well",
               "category": "well",
               "size": {
                 "x": 9.0,

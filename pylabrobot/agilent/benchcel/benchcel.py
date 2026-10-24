@@ -701,7 +701,6 @@ class BenchCel4R:
       kind=pb.RESOURCE_KIND_PLATE_HOLDER,
       location=self.loading_tray_location,
       category="plate_holder",
-      type_name="PlateHolder",
       holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero()), pedestal_size_z=0),
     )
     return build.resource(
@@ -710,7 +709,6 @@ class BenchCel4R:
       rotation=self.rotation,
       category=self.category or "",
       model=self.model or "",
-      type_name="BenchCel4R",
       children=[tray, *self._stack_definitions],
     )
 

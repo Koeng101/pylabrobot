@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE_ADAPTER",
-      "typeName": "PlateAdapter",
       "model": "Hamilton_96_adapter_182531",
       "category": "plate_adapter",
       "size": {

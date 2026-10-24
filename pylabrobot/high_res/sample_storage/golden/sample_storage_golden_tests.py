@@ -34,7 +34,6 @@ async def make_plate(
       kind=pb.RESOURCE_KIND_WELL,
       location=Coordinate(10, 10, 2),
       category="well",
-      type_name="Well",
       identifier="A1",
       container=pb.ContainerSpec(
         max_volume=math.pi * 4 * 4 * 10,
@@ -51,7 +50,6 @@ async def make_plate(
         kind=pb.RESOURCE_KIND_LID,
         location=Coordinate(0, 0, size_z - 2),
         category="lid",
-        type_name="Lid",
         lid=pb.LidSpec(nesting_z_height=2),
       )
     )
@@ -60,7 +58,6 @@ async def make_plate(
     Coordinate(127.76, 85.48, size_z),
     kind=pb.RESOURCE_KIND_PLATE,
     category="plate",
-    type_name="Plate",
     itemized=pb.ItemizedSpec(num_items_x=1, num_items_y=1),
     plate=pb.PlateSpec(plate_type="skirted"),
     children=children,
@@ -422,7 +419,6 @@ class SampleStorageGoldenTests(unittest.IsolatedAsyncioTestCase):
       Coordinate(130, 90, 100),
       kind=pb.RESOURCE_KIND_CARRIER,
       category="plate_carrier",
-      type_name="PlateCarrier",
       children=[
         plate_holder(
           f"spot_{spot}", Coordinate(127.76, 85.48, 20), location=Coordinate(0, 0, spot * 20)

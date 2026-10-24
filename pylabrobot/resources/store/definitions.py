@@ -179,7 +179,6 @@ def _attributes(resource: Resource) -> pb.ResourceAttributes:
   attributes = pb.ResourceAttributes(
     name=resource.name,
     kind=kind,
-    type_name=type(resource).__name__,
     model=resource.model or "",
     category=resource.category or "",
     identifier=_identifier(resource),

@@ -109,7 +109,6 @@ def _holder(name: str, size: Coordinate, location: Coordinate) -> pb.ResourceDef
     kind=K.RESOURCE_KIND_RESOURCE_HOLDER,
     location=location,
     category="resource_holder",
-    type_name="ResourceHolder",
     holder=pb.HolderSpec(child_location=pb.Vec3(), capacity=1),
   )
 
@@ -124,7 +123,6 @@ def trash(
     kind=K.RESOURCE_KIND_TRASH,
     location=location,
     category="trash",
-    type_name="Trash",
     container=pb.ContainerSpec(max_volume=math.inf, material_z_thickness=0.0),
     state=pb.ResourceState(volume=pb.VolumeState(tracking_enabled=True)),
   )
@@ -144,7 +142,7 @@ def flex_deck(name: str = "flex_deck") -> pb.ResourceDefinition:
     kind=K.RESOURCE_KIND_DECK,
     location=Coordinate.zero(),
     category="deck",
-    type_name="FlexDeck",
+    model="FlexDeck",
     children=holders,
   )
 
@@ -169,7 +167,7 @@ def ot2_deck(name: str = "ot2_deck", with_trash: bool = True) -> pb.ResourceDefi
     kind=K.RESOURCE_KIND_DECK,
     location=Coordinate.zero(),
     category="deck",
-    type_name="OTDeck",
+    model="OTDeck",
     children=holders,
   )
 

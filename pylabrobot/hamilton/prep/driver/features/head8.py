@@ -163,7 +163,6 @@ def head8_pipette(
     name,
     Coordinate(SHAFT_DIAMETER, _SPAN_Y + SHAFT_DIAMETER, size_z),
     kind=pb.RESOURCE_KIND_N_CHANNEL_PIPETTE,
-    type_name="NChannelPipette",
     category="n_channel_pipette",
     model="hamilton_prep_8mph",
     itemized=pb.ItemizedSpec(num_items_x=1, num_items_y=NUM_PROBES),

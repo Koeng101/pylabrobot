@@ -634,7 +634,7 @@ class Flex:
       tree = await read(self.store, [resource.id], ancestors=True)
     node = tree.node(resource.id)
     if resource.id in self._stub_labware and not allow_stub:
-      raise _not_pipettable_error(name, node.attributes.type_name)
+      raise _not_pipettable_error(name, handles.HANDLE_TYPES[node.attributes.kind].__name__)
     slot = slot_in(self.deck, tree, node)
     if slot is None:
       raise OpentronsError("Resource not on deck", f"'{name}' is not on a deck slot.")

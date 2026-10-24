@@ -32,5 +32,4 @@ def facility(
     Coordinate(size_x, size_y, size_z),
     location=Coordinate.zero(),
     category="facility",
-    type_name="Facility",
   )

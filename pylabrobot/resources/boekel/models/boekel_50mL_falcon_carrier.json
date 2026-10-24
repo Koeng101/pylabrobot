@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_CARRIER",
-      "typeName": "TubeCarrier",
       "model": "Boekel Scientific Tube Carrier",
       "category": "tube_carrier",
       "size": {
@@ -19,7 +18,6 @@
         "attributes": {
           "name": "ResourceHolder_0",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 30.0,
@@ -41,7 +39,6 @@
         "attributes": {
           "name": "ResourceHolder_1",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 30.0,
@@ -63,7 +60,6 @@
         "attributes": {
           "name": "ResourceHolder_2",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 30.0,
@@ -85,7 +81,6 @@
         "attributes": {
           "name": "ResourceHolder_3",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 30.0,

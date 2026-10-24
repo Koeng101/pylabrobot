@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_CARRIER",
-      "typeName": "TecanTipCarrier",
       "model": "DiTi_Nest_3_Pos_LiHa_350",
       "category": "tecan_tip_carrier",
       "size": {
@@ -19,7 +18,6 @@
         "attributes": {
           "name": "{name}-0",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -41,7 +39,6 @@
         "attributes": {
           "name": "{name}-1",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -63,7 +60,6 @@
         "attributes": {
           "name": "{name}-2",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -85,7 +81,6 @@
         "attributes": {
           "name": "{name}-3",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -107,7 +102,6 @@
         "attributes": {
           "name": "{name}-4",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -129,7 +123,6 @@
         "attributes": {
           "name": "{name}-5",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -151,7 +144,6 @@
         "attributes": {
           "name": "{name}-6",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -173,7 +165,6 @@
         "attributes": {
           "name": "{name}-7",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -195,7 +186,6 @@
         "attributes": {
           "name": "{name}-8",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -217,7 +207,6 @@
         "attributes": {
           "name": "{name}-9",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -239,7 +228,6 @@
         "attributes": {
           "name": "{name}-10",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -261,7 +249,6 @@
         "attributes": {
           "name": "{name}-11",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -283,7 +270,6 @@
         "attributes": {
           "name": "{name}-12",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -305,7 +291,6 @@
         "attributes": {
           "name": "{name}-13",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -327,7 +312,6 @@
         "attributes": {
           "name": "{name}-14",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,

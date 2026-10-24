@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-      "typeName": "ResourceHolder",
       "model": "hamilton_prep_resourceholder",
       "category": "resource_holder",
       "size": {

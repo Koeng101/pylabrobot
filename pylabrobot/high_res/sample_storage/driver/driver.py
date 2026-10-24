@@ -284,7 +284,6 @@ class HighResSampleStorage:
       rotation=self._rotation,
       category=self._category or "",
       model=self.model,
-      type_name=type(self).__name__,
       metadata=self._metadata,
     ).attributes
     if self._barcode is not None:

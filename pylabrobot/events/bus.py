@@ -261,11 +261,12 @@ def resource_reference(resource: Optional["Resource"]) -> Optional[ResourceRefer
 async def handle_reference(handle: Optional["Handle"]) -> Optional[ResourceReference]:
   """`resource_reference` for a resource in a resource store, read in one call.
 
-  Its type is the PLR class it was defined as, or its handle's class when it names none.
+  Its type is its handle's class, which its kind decides.
   """
   if handle is None:
     return None
   # Imported here: the store's package imports PLR's resources, which emit events.
+  from pylabrobot.resources.store.handles import HANDLE_TYPES
   from pylabrobot.resources.store.v1 import store_pb2 as spb
 
   response = await handle.store.commands.get_resources(
@@ -276,7 +277,7 @@ async def handle_reference(handle: Optional["Handle"]) -> Optional[ResourceRefer
   attributes = node.attributes
   result: ResourceReference = {
     "name": attributes.name,
-    "type": attributes.type_name or type(handle).__name__,
+    "type": type(handle).__name__,
   }
   if attributes.model:
     result["model"] = attributes.model
@@ -291,7 +292,7 @@ async def handle_reference(handle: Optional["Handle"]) -> Optional[ResourceRefer
     parent = by_id[parent_id].attributes
     ancestor: ResourceAncestorReference = {
       "name": parent.name,
-      "type": parent.type_name or "Resource",
+      "type": HANDLE_TYPES[parent.kind].__name__,
     }
     if parent.model:
       ancestor["model"] = parent.model

@@ -198,8 +198,10 @@ message GetResourcesResponse {
 }
 
 message ResourceFilter {
+  reserved 2;
+  reserved "type_names";
+
   repeated ResourceKind kinds = 1;
-  repeated string type_names = 2;
   repeated string models = 3;
   repeated string categories = 4;
   string name_prefix = 5;

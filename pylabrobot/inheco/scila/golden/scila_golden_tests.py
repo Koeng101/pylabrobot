@@ -147,7 +147,6 @@ async def _plate(recorder: _Recorder, name: str) -> handles.Resource:
       name,
       Coordinate(127.76, 85.48, 14.2),
       kind=pb.RESOURCE_KIND_PLATE,
-      type_name="Plate",
       plate=pb.PlateSpec(plate_type="skirted"),
       itemized=pb.ItemizedSpec(),
     ),

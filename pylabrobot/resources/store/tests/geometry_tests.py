@@ -129,7 +129,7 @@ class GeometryTestCase(unittest.TestCase):
     frame = pair.resources[frame_name] if frame_name else None
     node_frame = pair.nodes[frame_name] if frame_name else None
     for resource, node in pair.pairs():
-      what = f"{node.name} ({node.attributes.type_name})"
+      what = f"{node.name} ({pb.ResourceKind.Name(node.kind)})"
       self.assertSize(
         g.size(node), (resource.get_size_x(), resource.get_size_y(), resource.get_size_z()), what
       )

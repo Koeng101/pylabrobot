@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE_HOLDER",
-      "typeName": "PlateHolder",
       "model": "MFX_DWP_module_flat",
       "category": "plate_holder",
       "size": {

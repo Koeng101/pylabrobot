@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TIP",
-      "typeName": "HamiltonTip",
       "model": "imcs_tip_1000uL",
       "category": "tip",
       "size": {

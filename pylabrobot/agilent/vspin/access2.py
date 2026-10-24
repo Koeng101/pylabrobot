@@ -1014,7 +1014,6 @@ class Access2:
       kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
       model="Agilent Access2",
       category="loader",
-      type_name="Access2",
       holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero())),
     )
 

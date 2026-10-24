@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_CARRIER",
-      "typeName": "TipCarrier",
       "model": "TIP_CAR_384BC_A00",
       "category": "tip_carrier",
       "size": {
@@ -19,7 +18,6 @@
         "attributes": {
           "name": "{name}-0",
           "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
-          "typeName": "EmbeddedTipRackHolder",
           "category": "embedded_tip_rack_holder",
           "size": {
             "x": 114.5,
@@ -41,7 +39,6 @@
         "attributes": {
           "name": "{name}-1",
           "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
-          "typeName": "EmbeddedTipRackHolder",
           "category": "embedded_tip_rack_holder",
           "size": {
             "x": 114.5,
@@ -63,7 +60,6 @@
         "attributes": {
           "name": "{name}-2",
           "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
-          "typeName": "EmbeddedTipRackHolder",
           "category": "embedded_tip_rack_holder",
           "size": {
             "x": 114.5,
@@ -85,7 +81,6 @@
         "attributes": {
           "name": "{name}-3",
           "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
-          "typeName": "EmbeddedTipRackHolder",
           "category": "embedded_tip_rack_holder",
           "size": {
             "x": 114.5,

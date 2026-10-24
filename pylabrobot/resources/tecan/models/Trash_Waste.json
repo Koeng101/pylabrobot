@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TRASH",
-      "typeName": "TecanTrash",
       "model": "Trash_Waste",
       "category": "tecan_trash",
       "size": {

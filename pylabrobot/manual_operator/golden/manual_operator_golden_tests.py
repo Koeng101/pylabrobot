@@ -123,7 +123,6 @@ def _holder(
     name,
     Coordinate(130, 90, 20),
     kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
-    type_name="ResourceHolder",
     category="resource_holder",
     location=location,
     holder=pb.HolderSpec(child_location=build.vec3(child_location), accepts=accepts),
@@ -139,12 +138,11 @@ async def _bench(nest_accepts: Sequence["pb.ResourceKind"] = ()) -> _Bench:
     build.resource(
       "deck",
       Coordinate(1000, 600, 10),
-      type_name="Resource",
       children=[
         _holder("plate_module", Coordinate(100, 100, 0), Coordinate.zero()),
         _holder("handover_nest", Coordinate(400, 100, 0), Coordinate(1.5, 2.5, 3), nest_accepts),
         build.resource(
-          "shelf", Coordinate(300, 100, 5), type_name="Resource", location=Coordinate(600, 300, 50)
+          "shelf", Coordinate(300, 100, 5), location=Coordinate(600, 300, 50)
         ),
       ],
     ),
@@ -168,7 +166,7 @@ async def _resource(
   """A plate-sized resource, a root in `store`."""
   return await store.create(
     build.resource(
-      name, Coordinate(127.76, 85.48, 14.2), kind=kind, type_name="Resource", rotation=rotation
+      name, Coordinate(127.76, 85.48, 14.2), kind=kind, rotation=rotation
     ),
     name=name,
   )

@@ -91,7 +91,7 @@ def device_body(name: str, size: Coordinate, model: str) -> pb.ResourceDefinitio
     size: how big it is, in mm.
     model: which device it is.
   """
-  return build.resource(name, size, category="device", model=model, type_name="STARDevice")
+  return build.resource(name, size, category="device", model=model)
 
 
 def side_part(
@@ -111,7 +111,6 @@ def side_part(
     location=location,
     category=category,
     model=f"hamilton_star_{category}",
-    type_name="Resource",
   )
 
 
@@ -138,7 +137,6 @@ def x_arm(
     location=location,
     category="x_arm",
     model=model,
-    type_name="Resource",
     metadata={"reference_point": {"x": reference_point_from_left}},
   )
 
@@ -161,7 +159,6 @@ def pipette_channel(name: str, width: float, size_z: float) -> pb.ResourceDefini
     kind=pb.RESOURCE_KIND_TIP_MOUNTING_SHAFT,
     location=Coordinate((width - SHAFT_DIAMETER) / 2, (width - SHAFT_DIAMETER) / 2, -SHAFT_LENGTH),
     category="tip_mounting_shaft",
-    type_name="TipMountingShaft",
     tip_mounting_shaft=shaft_spec(),
   )
   return build.resource(
@@ -169,7 +166,6 @@ def pipette_channel(name: str, width: float, size_z: float) -> pb.ResourceDefini
     Coordinate(width, width, size_z),
     category="pipette_channel",
     model="hamilton_star_pipette_channel",
-    type_name="Resource",
     children=[shaft],
   )
 
@@ -203,7 +199,6 @@ def autoload_sled(name: str, x: float, reference_point_from_left: float) -> pb.R
     ),
     category="autoload_sled",
     model="hamilton_star_autoload_sled",
-    type_name="Resource",
     metadata={"reference_point": {"x": reference_point_from_left}},
   )
 
@@ -238,7 +233,6 @@ def autoload_loading_tray(
     location=Coordinate(left, CARRIER_Y - TRAY_FRONT_AHEAD_Y, 0.0),
     category="autoload_loading_tray",
     model=f"hamilton_{frame}_autoload_loading_tray" if frame else "",
-    type_name="Resource",
     metadata={
       "position_grid": {
         "axis": "x",
@@ -303,7 +297,6 @@ def _rigid_head(
     Coordinate(SHAFT_DIAMETER, SHAFT_DIAMETER, SHAFT_LENGTH),
     kind=pb.RESOURCE_KIND_TIP_MOUNTING_SHAFT,
     category="tip_mounting_shaft",
-    type_name="TipMountingShaft",
     tip_mounting_shaft=shaft_spec(),
   )
   return build.resource(
@@ -312,7 +305,6 @@ def _rigid_head(
     kind=pb.RESOURCE_KIND_N_CHANNEL_PIPETTE,
     category=model,
     model=model,
-    type_name="NChannelPipette",
     # Where a tip is picked up: the axis of shaft A1, at the end of it. That end is a shaft's length
     # below the plane the body starts at, which is what the shafts hang from.
     n_channel_pipette=pb.NChannelPipetteSpec(
@@ -462,7 +454,6 @@ def iswap_head(name: str, diameter: float, size_z: float) -> pb.ResourceDefiniti
     Coordinate(diameter, diameter, size_z),
     category="iswap_head",
     model="hamilton_star_iswap_head",
-    type_name="iSWAPHead",
   )
 
 
@@ -485,7 +476,6 @@ def iswap_link_1(name: str, length: float, location: Coordinate) -> pb.ResourceD
     location=Coordinate.zero(),
     category="body",
     model=f"{model}_body",
-    type_name="Resource",
   )
   return build.resource(
     name,
@@ -494,7 +484,6 @@ def iswap_link_1(name: str, length: float, location: Coordinate) -> pb.ResourceD
     location=location,
     category="iswap_link",
     model=model,
-    type_name="LinkBody",
     link_body=pb.LinkBodySpec(
       proximal_joint=build.vec3(LINK_1_JOINT),
       # The arm reports the link joint to joint, and this member's frame starts at its corner.
@@ -544,7 +533,6 @@ def iswap_gripper(
       location=GRIPPER_PAD_LOCATION,
       category="pad",
       model=f"{model}_finger_pad",
-      type_name="Resource",
     )
     fingers.append(
       build.resource(
@@ -553,7 +541,6 @@ def iswap_gripper(
         location=Coordinate(GRIPPER_FINGER_LOCATION.x, corner, GRIPPER_FINGER_LOCATION.z),
         category="finger",
         model=f"{model}_finger",
-        type_name="Resource",
         children=[pad],
       )
     )
@@ -563,7 +550,6 @@ def iswap_gripper(
     location=Coordinate.zero(),
     category="body",
     model=f"{model}_body",
-    type_name="Resource",
   )
   return build.resource(
     name,
@@ -572,7 +558,6 @@ def iswap_gripper(
     location=location,
     category="mechanical_gripper",
     model=model,
-    type_name="MechanicalGripper",
     mechanical_gripper=pb.MechanicalGripperSpec(
       proximal_joint=build.vec3(GRIPPER_JOINT),
       # From the wrist joint, as the arm reports it and as a tool centre point is stated.

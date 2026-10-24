@@ -96,7 +96,6 @@ def container(
   material_z_thickness: Optional[float] = 1,
   max_volume: float = 10000,
   kind: int = pb.RESOURCE_KIND_CONTAINER,
-  type_name: str = "Container",
   bottom_type: int = pb.WELL_BOTTOM_TYPE_UNSPECIFIED,
 ) -> pb.ResourceDefinition:
   """A single-cavity container's definition, a trough by default, its volume tracked."""
@@ -107,7 +106,6 @@ def container(
     name,
     Coordinate(size_x, size_y, size_z),
     kind=kind,  # type: ignore[arg-type]
-    type_name=type_name,
     container=spec,
     state=pb.ResourceState(volume=pb.VolumeState(tracking_enabled=True)),
   )

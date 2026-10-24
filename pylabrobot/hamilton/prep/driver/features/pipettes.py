@@ -1040,7 +1040,6 @@ def tip_mounting_shaft(
     Coordinate(SHAFT_DIAMETER, SHAFT_DIAMETER, SHAFT_LENGTH),
     kind=pb.RESOURCE_KIND_TIP_MOUNTING_SHAFT,
     location=location,
-    type_name="TipMountingShaft",
     category="tip_mounting_shaft",
     identifier=identifier,
     tip_mounting_shaft=pb.TipMountingShaftSpec(
@@ -1075,7 +1074,6 @@ def pipette_channel(
     name,
     Coordinate(width, width, configuration.channel_size_z),
     location=Coordinate(reference_point_from_left - anchor_x, 0.0, 0.0),
-    type_name="Resource",
     category="pipette_channel",
     model=configuration.channel_model,
     children=[shaft],

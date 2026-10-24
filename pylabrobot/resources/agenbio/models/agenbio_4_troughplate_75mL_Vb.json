@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE",
-      "typeName": "Plate",
       "model": "agenbio_4_troughplate_75mL_Vb",
       "category": "plate",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_well_{identifier}",
               "kind": "RESOURCE_KIND_WELL",
-              "typeName": "Well",
               "category": "well",
               "size": {
                 "x": 26.0,

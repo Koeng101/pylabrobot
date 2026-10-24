@@ -215,7 +215,6 @@ async def _plate(recorder: _Recorder, name: str) -> handles.Resource:
     f"{name}_well_{{identifier}}",
     Coordinate(6.9, 6.9, 10),
     kind=pb.RESOURCE_KIND_WELL,
-    type_name="Well",
     category="well",
     container=pb.ContainerSpec(max_volume=360),
     state=pb.ResourceState(volume=pb.VolumeState()),
@@ -225,7 +224,6 @@ async def _plate(recorder: _Recorder, name: str) -> handles.Resource:
       name,
       Coordinate(127.76, 85.48, 14.2),
       kind=pb.RESOURCE_KIND_PLATE,
-      type_name="Plate",
       category="plate",
       plate=pb.PlateSpec(plate_type="skirted"),
       itemized=pb.ItemizedSpec(

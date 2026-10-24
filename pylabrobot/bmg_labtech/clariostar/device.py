@@ -47,7 +47,6 @@ def clariostar_definition(
     location=Coordinate.zero(),
     category="plate_holder",
     model="clariostar_plate_holder",
-    type_name="PlateHolder",
     holder=pb.HolderSpec(
       child_location=build.vec3(Coordinate.zero()), pedestal_size_z=0, capacity=1
     ),
@@ -57,7 +56,6 @@ def clariostar_definition(
     Coordinate(size_x, size_y, size_z),
     category="device",
     model=model,
-    type_name="CLARIOstarDevice",
     children=[plate_holder],
   )
 

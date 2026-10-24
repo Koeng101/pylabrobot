@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TUBE",
-      "typeName": "Tube",
       "model": "Eppendorf_DNA_LoBind_2ml_Ub",
       "category": "tube",
       "size": {

@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE_HOLDER",
-      "typeName": "PlateHolder",
       "model": "Opentrons 96 Deep Well Temperature Module Adapter",
       "category": "plate_holder",
       "size": {

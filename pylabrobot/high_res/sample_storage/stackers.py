@@ -26,7 +26,6 @@ def plate_holder(
     size,
     kind=pb.RESOURCE_KIND_PLATE_HOLDER,
     location=location,
-    type_name="PlateHolder",
     category="plate_holder",
     holder=pb.HolderSpec(
       child_location=build.vec3(Coordinate.zero()), pedestal_size_z=0, capacity=1
@@ -67,7 +66,6 @@ def high_res_stacker(
     name,
     Coordinate(_STACKER_SIZE_X, _STACKER_SIZE_Y, zero_offset + slot_height * slot_count),
     kind=pb.RESOURCE_KIND_CARRIER,
-    type_name="PlateCarrier",
     category="plate_carrier",
     model="high_res_stacker",
     metadata={

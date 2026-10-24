@@ -747,7 +747,7 @@ class Engine:
       return
     if child.kind in (K.RESOURCE_KIND_TRASH,) or child.attributes.category in _DECK_PARTS:
       return
-    if child.attributes.type_name == "HamiltonCoreGrippers":
+    if child.attributes.category == "core_grippers":
       return
 
     def footprint(node: Node) -> g.Size:

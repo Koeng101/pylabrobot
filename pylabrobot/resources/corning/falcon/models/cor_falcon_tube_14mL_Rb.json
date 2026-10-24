@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TUBE",
-      "typeName": "Tube",
       "model": "cor_falcon_tube_14mL_Rb",
       "category": "tube",
       "size": {

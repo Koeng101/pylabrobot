@@ -52,7 +52,6 @@ class SCILADrawerLoadingTray:
       location=location,
       category=self.category,
       model=self.model or "",
-      type_name="SCILADrawerLoadingTray",
       holder=pb.HolderSpec(child_location=build.vec3(self.child_location)),
     )
 
@@ -166,7 +165,6 @@ class SCILA:
       self.name,
       self.size,
       model="Inheco SCILA",
-      type_name="SCILA",
       children=[
         drawer.definition(location=Coordinate.zero())  # TODO: measure
         for drawer in self.drawers.values()

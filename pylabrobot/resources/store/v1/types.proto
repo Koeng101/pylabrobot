@@ -348,10 +348,13 @@ message DeckSpec {
 // What a resource is, without where it is in a tree or what state it is in. The same message
 // describes a stored model, an inline definition, and a stored resource.
 message ResourceAttributes {
+  reserved 3;
+  reserved "type_name";
+
   string name = 1;
+  // What it is: the one type a resource has. A client builds its handle by it; `model` and
+  // `category` name it more finely.
   ResourceKind kind = 2;
-  // The PLR class a client builds its handle as, "HamiltonSTARDeck". Not read by the store.
-  string type_name = 3;
   string model = 4;
   string category = 5;
   Vec3 size = 6;

@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_LID",
-      "typeName": "Lid",
       "model": "cellvis_96_wellplate_350uL_Fb_lid",
       "category": "lid",
       "size": {

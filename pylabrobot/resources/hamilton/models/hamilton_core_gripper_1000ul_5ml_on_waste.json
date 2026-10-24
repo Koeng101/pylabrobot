@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_RESOURCE",
-      "typeName": "HamiltonCoreGrippers",
       "model": "hamilton_core_gripper_1000ul_5ml_on_waste",
       "category": "core_grippers",
       "size": {
@@ -25,7 +24,6 @@
         "attributes": {
           "name": "{name}_front",
           "kind": "RESOURCE_KIND_HEAD_TOOL",
-          "typeName": "HamiltonCoreGripperTool",
           "model": "hamilton_core_gripper_tool",
           "category": "core_gripper_tool",
           "size": {
@@ -55,7 +53,6 @@
         "attributes": {
           "name": "{name}_back",
           "kind": "RESOURCE_KIND_HEAD_TOOL",
-          "typeName": "HamiltonCoreGripperTool",
           "model": "hamilton_core_gripper_tool",
           "category": "core_gripper_tool",
           "size": {

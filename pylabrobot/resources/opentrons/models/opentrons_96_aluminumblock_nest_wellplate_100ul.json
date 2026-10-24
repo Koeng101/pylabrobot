@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TUBE_RACK",
-      "typeName": "TubeRack",
       "model": "Opentrons 96 Well Aluminum Block with NEST Well Plate 100 \u00b5L",
       "category": "tube_rack",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_{identifier}",
               "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-              "typeName": "ResourceHolder",
               "category": "resource_holder",
               "size": {
                 "x": 3.776,

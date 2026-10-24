@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TUBE",
-      "typeName": "Tube",
       "model": "eppendorf_tube_5mL_Vb_snapcap",
       "category": "tube",
       "size": {

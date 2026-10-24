@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TIP",
-      "typeName": "HamiltonTip",
       "model": "hamilton_tip_1000uL_filter_ultrawide",
       "category": "tip",
       "size": {

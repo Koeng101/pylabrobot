@@ -2515,7 +2515,7 @@ class FlexHead8(_FlexHead):
     item = labware.get_item(well)
     tree = await read(labware.store, [labware], ancestors=True)
     ancestors = tree.ancestors(tree.node(labware))
-    deck = next((a for a in ancestors if a.attributes.type_name == "FlexDeck"), None)
+    deck = next((a for a in ancestors if a.attributes.model == "FlexDeck"), None)
     if deck is None:
       raise ValueError("Labware must be assigned to a Flex deck")
     (geometry,) = await locate(labware.store, [(item, [anchor(y="c")])], frame=deck.id)

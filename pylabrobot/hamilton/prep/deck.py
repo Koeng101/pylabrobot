@@ -122,7 +122,6 @@ def _trash(name: str, size: Coordinate, location: Coordinate, **kwargs) -> pb.Re
     size,
     kind=pb.RESOURCE_KIND_TRASH,
     location=location,
-    type_name="Trash",
     container=pb.ContainerSpec(max_volume=float("inf"), material_z_thickness=0.0),
     state=pb.ResourceState(volume=pb.VolumeState(tracking_enabled=True)),
     **kwargs,
@@ -153,7 +152,6 @@ def _teaching_needle_spot(name: str) -> pb.ResourceDefinition:
     spot_size,
     kind=pb.RESOURCE_KIND_TIP_SPOT,
     location=PREP_TEACHING_NEEDLE_LOCATION,
-    type_name="TipSpot",
     category="teaching_needle",
     tip_spot=pb.TipSpotSpec(prototype_tip=prototype),
     children=[tip],
@@ -177,7 +175,6 @@ def _waste_block(name_prefix: Optional[str], with_core_grippers: bool) -> pb.Res
     location=Coordinate(
       0.0, PREP_TIP_DROP_SIZE_Y, PREP_WASTE_BLOCK_SIZE.z - PREP_LIQUID_WASTE_SIZE_Z
     ),
-    type_name="Trough",
     category="trough",
     container=pb.ContainerSpec(
       max_volume=liquid_waste_size.x * liquid_waste_size.y * liquid_waste_size.z,
@@ -247,7 +244,6 @@ def prep_deck(
         component_name("calibration_block", name_prefix),
         Coordinate(6.0, 6.0, 22.0),
         location=PREP_CALIBRATION_BLOCK_LOCATION,
-        type_name="Resource",
         category="calibration_block",
         model="hamilton_prep_calibration_block",
       )
@@ -261,7 +257,6 @@ def prep_deck(
         component_name("waste_bin", name_prefix),
         PREP_WASTE_BIN_SIZE,
         location=PREP_WASTE_BIN_LOCATION,
-        type_name="Resource",
         category="waste_bin",
         model="hamilton_prep_waste_bin",
       )
@@ -280,7 +275,7 @@ def prep_deck(
     name,
     PREP_DECK_SIZE,
     kind=pb.RESOURCE_KIND_DECK,
-    type_name=PREP_DECK_TYPE,
+    model=PREP_DECK_TYPE,
     category="deck",
     metadata=None if name_prefix is None else {NAME_PREFIX: name_prefix},
     children=children,
@@ -322,8 +317,8 @@ class PrepDeckParts:
 
 
 def is_prep_deck(attributes: pb.ResourceAttributes) -> bool:
-  """Whether a deck is a Prep's, by the type it was made as."""
-  return attributes.type_name == PREP_DECK_TYPE
+  """Whether a deck is a Prep's, by its model."""
+  return attributes.model == PREP_DECK_TYPE
 
 
 def name_prefix_of(attributes: pb.ResourceAttributes) -> Optional[str]:

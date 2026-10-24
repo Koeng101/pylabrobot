@@ -47,7 +47,7 @@ async def _plate(flex: Flex, name: str = "plate", slot: Optional[str] = None) ->
 
 async def _lid(flex: Flex, slot: str) -> handles.Resource:
   """A bare resource with no pipettable geometry, in `slot`."""
-  definition = build.resource("lid stack", Coordinate(100.0, 90.0, 20.0), type_name="Resource")
+  definition = build.resource("lid stack", Coordinate(100.0, 90.0, 20.0))
   lid: handles.Resource = await place(flex.deck, definition, "lid stack", slot)
   return lid
 

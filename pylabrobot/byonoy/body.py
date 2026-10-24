@@ -30,7 +30,6 @@ def holder_definition(
     location=location,
     category="plate_holder" if plate else "resource_holder",
     model=model,
-    type_name="PlateHolder" if plate else "ResourceHolder",
     holder=holder,
   )
 

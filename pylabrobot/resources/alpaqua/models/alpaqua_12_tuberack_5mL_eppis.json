@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_CONTAINER_RACK",
-      "typeName": "ContainerRack",
       "category": "container_rack",
       "size": {
         "x": 127.76,
@@ -20,7 +19,6 @@
             "attributes": {
               "name": "{name}_resourceholder_{identifier}",
               "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-              "typeName": "ResourceHolder",
               "category": "resource_holder",
               "size": {
                 "x": 16.7,

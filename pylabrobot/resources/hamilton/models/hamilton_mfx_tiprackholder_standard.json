@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
-      "typeName": "EmbeddedTipRackHolder",
       "model": "hamilton_mfx_tiprackholder_standard",
       "category": "embedded_tip_rack_holder",
       "size": {

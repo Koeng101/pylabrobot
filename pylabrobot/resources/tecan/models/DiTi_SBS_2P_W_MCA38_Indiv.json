@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_CARRIER",
-      "typeName": "TecanTipCarrier",
       "model": "DiTi_SBS_2P_W_MCA38_Indiv",
       "category": "tecan_tip_carrier",
       "size": {
@@ -19,7 +18,6 @@
         "attributes": {
           "name": "{name}-0",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 155.0,
@@ -41,7 +39,6 @@
         "attributes": {
           "name": "{name}-1",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,
@@ -63,7 +60,6 @@
         "attributes": {
           "name": "{name}-2",
           "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-          "typeName": "ResourceHolder",
           "category": "resource_holder",
           "size": {
             "x": 127.0,

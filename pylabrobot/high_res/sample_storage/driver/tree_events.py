@@ -16,6 +16,7 @@ from pylabrobot.events import (
 )
 from pylabrobot.events.bus import ResourceAncestorReference
 from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store.handles import HANDLE_TYPES
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
@@ -24,7 +25,10 @@ def reference(
 ) -> ResourceReference:
   """What `handle_reference` gives for a resource with these attributes and ancestors, innermost
   first."""
-  result: ResourceReference = {"name": attributes.name, "type": attributes.type_name or "Resource"}
+  result: ResourceReference = {
+    "name": attributes.name,
+    "type": HANDLE_TYPES[attributes.kind].__name__,
+  }
   if attributes.model:
     result["model"] = attributes.model
   rotation = attributes.rotation
@@ -33,7 +37,7 @@ def reference(
   for ancestor in ancestors:
     entry: ResourceAncestorReference = {
       "name": ancestor.name,
-      "type": ancestor.type_name or "Resource",
+      "type": HANDLE_TYPES[ancestor.kind].__name__,
     }
     if ancestor.model:
       entry["model"] = ancestor.model

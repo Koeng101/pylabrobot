@@ -135,7 +135,6 @@ def plate_definition(name: str, wells: bool = True, lid: bool = False) -> pb.Res
         kind=pb.RESOURCE_KIND_WELL,
         location=Coordinate(10, 10, 2),
         category="well",
-        type_name="Well",
         identifier="A1",
         container=pb.ContainerSpec(max_volume=502.65),
         state=pb.ResourceState(volume=pb.VolumeState()),
@@ -149,7 +148,6 @@ def plate_definition(name: str, wells: bool = True, lid: bool = False) -> pb.Res
         kind=pb.RESOURCE_KIND_LID,
         location=Coordinate(0, 0, 12),
         category="lid",
-        type_name="Lid",
         lid=pb.LidSpec(nesting_z_height=2),
       )
     )
@@ -158,7 +156,6 @@ def plate_definition(name: str, wells: bool = True, lid: bool = False) -> pb.Res
     Coordinate(127.76, 85.48, 14),
     kind=pb.RESOURCE_KIND_PLATE,
     category="plate",
-    type_name="Plate",
     itemized=pb.ItemizedSpec(num_items_x=1 if wells else 0, num_items_y=1 if wells else 0),
     plate=pb.PlateSpec(plate_type="skirted"),
     children=children,
@@ -174,7 +171,6 @@ def rack_definition(
     Coordinate(130, 90, size_z),
     kind=pb.RESOURCE_KIND_CARRIER,
     category="plate_carrier",
-    type_name="PlateCarrier",
     children=[
       plate_holder(site, Coordinate(127.76, 85.48, height), location=Coordinate.zero())
       for site, height in sites.items()
@@ -1336,7 +1332,6 @@ class SerializationKindsTests(unittest.TestCase):
       Coordinate(8.5, 8.5, 44.5),
       kind=pb.RESOURCE_KIND_TUBE,
       location=Coordinate.zero(),
-      type_name="Tube",
       container=pb.ContainerSpec(max_volume=1400),
     )
     holder = build.resource(
@@ -1344,7 +1339,6 @@ class SerializationKindsTests(unittest.TestCase):
       Coordinate(9, 9, 43),
       kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
       location=Coordinate(10, 7, 2),
-      type_name="ResourceHolder",
       identifier="A1",
       holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero()), capacity=1),
       children=[tube],
@@ -1353,7 +1347,6 @@ class SerializationKindsTests(unittest.TestCase):
       "rack",
       Coordinate(127.76, 85.48, 45.2),
       kind=pb.RESOURCE_KIND_TUBE_RACK,
-      type_name="TubeRack",
       itemized=pb.ItemizedSpec(num_items_x=1, num_items_y=1),
       children=[holder],
     )
@@ -1368,14 +1361,12 @@ class SerializationKindsTests(unittest.TestCase):
       Coordinate(20, 80, 40),
       kind=pb.RESOURCE_KIND_TROUGH,
       location=Coordinate.zero(),
-      type_name="Trough",
       container=pb.ContainerSpec(max_volume=100_000, bottom_type=pb.WELL_BOTTOM_TYPE_V),
     )
     stack = build.resource(
       "stack",
       Coordinate(20, 80, 40),
       kind=pb.RESOURCE_KIND_RESOURCE_STACK,
-      type_name="ResourceStack",
       stack=pb.ResourceStackSpec(direction=pb.STACK_DIRECTION_Z),
       children=[trough],
     )

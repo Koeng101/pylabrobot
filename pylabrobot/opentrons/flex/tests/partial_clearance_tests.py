@@ -22,7 +22,6 @@ def _empty_rack(name: str) -> pb.ResourceDefinition:
     name,
     Coordinate(127.76, 85.48, 99),
     kind=pb.RESOURCE_KIND_TIP_RACK,
-    type_name="TipRack",
     itemized=pb.ItemizedSpec(),
   )
 

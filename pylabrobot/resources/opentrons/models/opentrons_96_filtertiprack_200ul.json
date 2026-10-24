@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TIP_RACK",
-      "typeName": "StandingTipRack",
       "model": "Opentrons OT-2 96 Filter Tip Rack 200 \u00b5L",
       "category": "tip_rack",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_{identifier}",
               "kind": "RESOURCE_KIND_TIP_SPOT",
-              "typeName": "TipSpot",
               "category": "tip_spot",
               "size": {
                 "x": 3.698,
@@ -32,7 +30,6 @@
                 "prototypeTip": {
                   "name": "{name}_{identifier}",
                   "kind": "RESOURCE_KIND_TIP",
-                  "typeName": "Tip",
                   "model": "opentrons_96_filtertiprack_200ul",
                   "category": "tip",
                   "size": {
@@ -58,7 +55,6 @@
                 "attributes": {
                   "name": "{name}_{identifier}#0",
                   "kind": "RESOURCE_KIND_TIP",
-                  "typeName": "Tip",
                   "model": "opentrons_96_filtertiprack_200ul",
                   "category": "tip",
                   "size": {

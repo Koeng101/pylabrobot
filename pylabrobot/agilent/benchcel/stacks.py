@@ -24,7 +24,6 @@ def benchcel_4r_stacks(name_prefix: str = "benchcel_stacker") -> List[pb.Resourc
       Coordinate.zero(),
       kind=pb.RESOURCE_KIND_RESOURCE_STACK,
       category="resource_stack",
-      type_name="ResourceStack",
       stack=pb.ResourceStackSpec(direction=pb.STACK_DIRECTION_Z),
     )
     for i in range(1, 5)

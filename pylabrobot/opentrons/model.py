@@ -325,7 +325,7 @@ class LabwareFacts:
     id: Its id in the store.
     name: Its name.
     kind: What it is.
-    type_name: The class it is built as.
+    type_name: The handle class its kind is read as, for messages.
     model: Its model.
     size: Its size along its own axes.
     absolute_size: Its size once turned, along its root's axes.
@@ -409,7 +409,7 @@ async def read_labware(store: ResourceStore, labware: Ref) -> LabwareFacts:
     id=node.id,
     name=attributes.name,
     kind=attributes.kind,
-    type_name=attributes.type_name,
+    type_name=handles.HANDLE_TYPES[attributes.kind].__name__,
     model=attributes.model,
     size=size_of(node),
     absolute_size=to_coordinate(geometries[0].absolute_size),

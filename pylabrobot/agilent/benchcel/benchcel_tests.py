@@ -94,7 +94,6 @@ async def _plate(
       name,
       Coordinate(127.76, size_y, size_z),
       kind=pb.RESOURCE_KIND_PLATE,
-      type_name="Plate",
       plate=pb.PlateSpec(plate_type="skirted"),
       itemized=pb.ItemizedSpec(),
     ),

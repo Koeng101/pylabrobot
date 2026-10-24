@@ -34,7 +34,6 @@ def resource(
   rotation: Optional[Rotation] = None,
   category: str = "",
   model: str = "",
-  type_name: str = "",
   identifier: str = "",
   metadata: Optional[Mapping[str, Any]] = None,
   children: Sequence[pb.ResourceDefinition] = (),
@@ -51,7 +50,6 @@ def resource(
     rotation: How it is turned in its parent.
     category: PLR's category, "plate_holder" say.
     model: The model it is.
-    type_name: The PLR class a client builds its handle as; the kind's when unset.
     identifier: Its identifier in an itemized parent, "A1".
     metadata: Anything else about it.
     children: What hangs from it, in order.
@@ -61,7 +59,6 @@ def resource(
   attributes = pb.ResourceAttributes(
     name=name,
     kind=kind,
-    type_name=type_name,
     model=model,
     category=category,
     size=to_vec3(size),

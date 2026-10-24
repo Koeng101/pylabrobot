@@ -164,7 +164,6 @@ def bucket_definition(name: str) -> pb.ResourceDefinition:
     Coordinate(127.76, 85.48, 0),
     kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
     category="resource_holder",
-    type_name="ResourceHolder",
     holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero())),
   )
 

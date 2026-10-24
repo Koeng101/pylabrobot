@@ -90,9 +90,27 @@ class TipNames:
     return f"{spot.attributes.name}#{spot.state.tips_made + serialized}"
 
 
+# Carriers the browser draws by what they carry, by their category.
+_CARRIER_TYPES = {
+  "tip_carrier": "TipCarrier",
+  "plate_carrier": "PlateCarrier",
+  "trough_carrier": "TroughCarrier",
+  "tube_carrier": "TubeCarrier",
+  "mfx_carrier": "MFXCarrier",
+}
+
+
 def type_name(attributes: pb.ResourceAttributes) -> str:
-  """The PLR class a resource was defined as, or its handle's class when it names none."""
-  return attributes.type_name or handles.HANDLE_TYPES[attributes.kind].__name__
+  """The class the browser draws a resource as: its handle's class, which its kind decides, made
+  finer by its model or category for the decks and carriers the browser draws apart."""
+  if attributes.kind == pb.RESOURCE_KIND_DECK:
+    if attributes.deck.HasField("hamilton"):
+      return "HamiltonSTARDeck"
+    if attributes.model == "OTDeck":
+      return "OTDeck"
+  if attributes.kind == pb.RESOURCE_KIND_CARRIER and attributes.category in _CARRIER_TYPES:
+    return _CARRIER_TYPES[attributes.category]
+  return handles.HANDLE_TYPES[attributes.kind].__name__
 
 
 def _container_fields(attributes: pb.ResourceAttributes) -> Dict[str, Any]:
@@ -162,7 +180,7 @@ def _deck_fields(attributes: pb.ResourceAttributes, data: Dict[str, Any]) -> Dic
   data["with_trash"] = False
   data["with_trash96"] = False
   data["core_grippers"] = None
-  if attributes.type_name == "HamiltonSTARDeck":
+  if type_name(attributes) == "HamiltonSTARDeck":
     data["with_waste_block"] = False
     data["with_teaching_needle_rack"] = False
   return data

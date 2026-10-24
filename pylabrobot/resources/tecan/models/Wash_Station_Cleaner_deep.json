@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TRASH",
-      "typeName": "Trash",
       "category": "trash",
       "size": {
         "x": 12.0,

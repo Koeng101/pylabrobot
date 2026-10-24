@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TROUGH",
-      "typeName": "Trough",
       "model": "hamilton_1_trough_120mL_Vb",
       "category": "trough",
       "size": {

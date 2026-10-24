@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_LID",
-      "typeName": "Lid",
       "model": "Thermo_TS_Nunc_96_assay_300uL_Fb_Lid",
       "category": "lid",
       "size": {

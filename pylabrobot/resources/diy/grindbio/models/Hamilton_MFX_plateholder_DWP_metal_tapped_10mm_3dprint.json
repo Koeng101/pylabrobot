@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE_HOLDER",
-      "typeName": "PlateHolder",
       "model": "Hamilton_MFX_plateholder_DWP_metal_tapped_10mm_3dprint",
       "category": "plate_holder",
       "size": {

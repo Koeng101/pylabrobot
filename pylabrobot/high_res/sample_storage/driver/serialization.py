@@ -37,6 +37,9 @@ _KINDS_BY_TYPE = {
   "TubeRack": K.RESOURCE_KIND_TUBE_RACK,
   "ResourceStack": K.RESOURCE_KIND_RESOURCE_STACK,
 }
+# The class `Resource.serialize` names for each kind; a carrier of plates is a `PlateCarrier`.
+_TYPES_BY_KIND = {kind: type_name for type_name, kind in _KINDS_BY_TYPE.items()}
+_TYPES_BY_KIND[K.RESOURCE_KIND_CARRIER] = "Carrier"
 _CONTAINER_KINDS = (
   K.RESOURCE_KIND_CONTAINER,
   K.RESOURCE_KIND_WELL,
@@ -120,7 +123,11 @@ def serialize_definition(
     )
   data: Dict[str, Any] = {
     "name": attributes.name,
-    "type": attributes.type_name,
+    "type": (
+      "PlateCarrier"
+      if kind == K.RESOURCE_KIND_CARRIER and attributes.category == "plate_carrier"
+      else _TYPES_BY_KIND[kind]
+    ),
     "size_x": _number(attributes.size.x),
     "size_y": _number(attributes.size.y),
     "size_z": _number(attributes.size.z),
@@ -281,7 +288,6 @@ def definition_from_serialized(data: Dict[str, Any]) -> pb.ResourceDefinition:
     rotation=Rotation(rotation["x"], rotation["y"], rotation["z"]) if rotation else None,
     category=data.get("category") or "",
     model=data.get("model") or "",
-    type_name=type_name,
     metadata=data.get("metadata"),
     children=children,
     state=state,

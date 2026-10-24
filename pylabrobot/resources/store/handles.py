@@ -846,7 +846,7 @@ def _reference(
   attributes = node.attributes
   reference: Dict[str, Any] = {
     "name": attributes.name,
-    "type": attributes.type_name or HANDLE_TYPES[attributes.kind].__name__,
+    "type": HANDLE_TYPES[attributes.kind].__name__,
   }
   if attributes.model:
     reference["model"] = attributes.model
@@ -857,7 +857,7 @@ def _reference(
     parent = by_id[parent_id]
     ancestor: Dict[str, Any] = {
       "name": parent.attributes.name,
-      "type": parent.attributes.type_name or "Resource",
+      "type": HANDLE_TYPES[parent.attributes.kind].__name__,
     }
     if parent.attributes.model:
       ancestor["model"] = parent.attributes.model

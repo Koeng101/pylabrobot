@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_CARRIER",
-      "typeName": "TecanPlateCarrier",
       "model": "MP_4Pos_flat",
       "category": "tecan_plate_carrier",
       "size": {
@@ -19,7 +18,6 @@
         "attributes": {
           "name": "{name}-0",
           "kind": "RESOURCE_KIND_PLATE_HOLDER",
-          "typeName": "PlateHolder",
           "category": "plate_holder",
           "size": {
             "x": 127.0,
@@ -42,7 +40,6 @@
         "attributes": {
           "name": "{name}-1",
           "kind": "RESOURCE_KIND_PLATE_HOLDER",
-          "typeName": "PlateHolder",
           "category": "plate_holder",
           "size": {
             "x": 127.0,
@@ -65,7 +62,6 @@
         "attributes": {
           "name": "{name}-2",
           "kind": "RESOURCE_KIND_PLATE_HOLDER",
-          "typeName": "PlateHolder",
           "category": "plate_holder",
           "size": {
             "x": 127.0,
@@ -88,7 +84,6 @@
         "attributes": {
           "name": "{name}-3",
           "kind": "RESOURCE_KIND_PLATE_HOLDER",
-          "typeName": "PlateHolder",
           "category": "plate_holder",
           "size": {
             "x": 127.0,

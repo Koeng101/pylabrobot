@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TIP_RACK",
-      "typeName": "StandingTipRack",
       "model": "TipOne 96 Tip Rack 200 \u00b5L",
       "category": "tip_rack",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_{identifier}",
               "kind": "RESOURCE_KIND_TIP_SPOT",
-              "typeName": "TipSpot",
               "category": "tip_spot",
               "size": {
                 "x": 4.525,
@@ -32,7 +30,6 @@
                 "prototypeTip": {
                   "name": "{name}_{identifier}",
                   "kind": "RESOURCE_KIND_TIP",
-                  "typeName": "Tip",
                   "model": "tipone_96_tiprack_200ul",
                   "category": "tip",
                   "size": {
@@ -57,7 +54,6 @@
                 "attributes": {
                   "name": "{name}_{identifier}#0",
                   "kind": "RESOURCE_KIND_TIP",
-                  "typeName": "Tip",
                   "model": "tipone_96_tiprack_200ul",
                   "category": "tip",
                   "size": {

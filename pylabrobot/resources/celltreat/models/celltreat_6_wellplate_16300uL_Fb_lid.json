@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_LID",
-      "typeName": "Lid",
       "model": "celltreat_6_wellplate_16300uL_Fb_lid",
       "category": "lid",
       "size": {

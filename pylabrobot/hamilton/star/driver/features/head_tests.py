@@ -88,7 +88,6 @@ async def frameless_rack(
     Coordinate(7.2, 7.2, 0),
     kind=pb.RESOURCE_KIND_TIP_SPOT,
     category="tip_spot",
-    type_name="TipSpot",
     tip_spot=pb.TipSpotSpec(prototype_tip=tip),
     state=pb.ResourceState(tip_tracking_enabled=True),
   )
@@ -98,7 +97,6 @@ async def frameless_rack(
     kind=pb.RESOURCE_KIND_TIP_RACK,
     category="tip_rack",
     model="hamilton_96_tiprack_raised_core_ii",
-    type_name="EmbeddedTipRack",
     tip_rack=pb.TipRackSpec(style=pb.TIP_RACK_STYLE_EMBEDDED, frame_height=0.0, sinking_depth=9.5),
     itemized=pb.ItemizedSpec(
       num_items_x=12,

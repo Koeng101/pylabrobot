@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE",
-      "typeName": "Plate",
       "model": "PerkinElmer_96_wellplate_400ul_Fb",
       "category": "plate",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_well_{identifier}",
               "kind": "RESOURCE_KIND_WELL",
-              "typeName": "Well",
               "category": "well",
               "size": {
                 "x": 7.15,
@@ -60,7 +58,6 @@
         "attributes": {
           "name": "lid",
           "kind": "RESOURCE_KIND_LID",
-          "typeName": "Lid",
           "category": "lid",
           "size": {
             "x": 127.0,

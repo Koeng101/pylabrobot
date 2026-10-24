@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TUBE_RACK",
-      "typeName": "TubeRack",
       "model": "opentrons_24_tuberack_generic_1point5ml_snapcap_short",
       "category": "tube_rack",
       "size": {
@@ -21,7 +20,6 @@
             "attributes": {
               "name": "{name}_resourceholder_{identifier}",
               "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
-              "typeName": "ResourceHolder",
               "category": "resource_holder",
               "size": {
                 "x": 9.2,

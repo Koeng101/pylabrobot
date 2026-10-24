@@ -543,10 +543,9 @@ class DeckSpec(_message.Message):
     def __init__(self, hamilton: _Optional[_Union[HamiltonDeckSpec, _Mapping]] = ...) -> None: ...
 
 class ResourceAttributes(_message.Message):
-    __slots__ = ("name", "kind", "type_name", "model", "category", "size", "location", "rotation", "identifier", "preferred_pickup_location", "barcode", "metadata", "container", "itemized", "plate", "tip_rack", "head_tool", "tip", "tip_spot", "lid", "holder", "stack", "plate_adapter", "pipette_channel", "tip_mounting_shaft", "n_channel_pipette", "link_body", "mechanical_gripper", "deck")
+    __slots__ = ("name", "kind", "model", "category", "size", "location", "rotation", "identifier", "preferred_pickup_location", "barcode", "metadata", "container", "itemized", "plate", "tip_rack", "head_tool", "tip", "tip_spot", "lid", "holder", "stack", "plate_adapter", "pipette_channel", "tip_mounting_shaft", "n_channel_pipette", "link_body", "mechanical_gripper", "deck")
     NAME_FIELD_NUMBER: _ClassVar[int]
     KIND_FIELD_NUMBER: _ClassVar[int]
-    TYPE_NAME_FIELD_NUMBER: _ClassVar[int]
     MODEL_FIELD_NUMBER: _ClassVar[int]
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
     SIZE_FIELD_NUMBER: _ClassVar[int]
@@ -575,7 +574,6 @@ class ResourceAttributes(_message.Message):
     DECK_FIELD_NUMBER: _ClassVar[int]
     name: str
     kind: ResourceKind
-    type_name: str
     model: str
     category: str
     size: Vec3
@@ -602,7 +600,7 @@ class ResourceAttributes(_message.Message):
     link_body: LinkBodySpec
     mechanical_gripper: MechanicalGripperSpec
     deck: DeckSpec
-    def __init__(self, name: _Optional[str] = ..., kind: _Optional[_Union[ResourceKind, str]] = ..., type_name: _Optional[str] = ..., model: _Optional[str] = ..., category: _Optional[str] = ..., size: _Optional[_Union[Vec3, _Mapping]] = ..., location: _Optional[_Union[Vec3, _Mapping]] = ..., rotation: _Optional[_Union[Rotation, _Mapping]] = ..., identifier: _Optional[str] = ..., preferred_pickup_location: _Optional[_Union[Vec3, _Mapping]] = ..., barcode: _Optional[_Union[Barcode, _Mapping]] = ..., metadata: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ..., container: _Optional[_Union[ContainerSpec, _Mapping]] = ..., itemized: _Optional[_Union[ItemizedSpec, _Mapping]] = ..., plate: _Optional[_Union[PlateSpec, _Mapping]] = ..., tip_rack: _Optional[_Union[TipRackSpec, _Mapping]] = ..., head_tool: _Optional[_Union[HeadToolSpec, _Mapping]] = ..., tip: _Optional[_Union[TipSpec, _Mapping]] = ..., tip_spot: _Optional[_Union[TipSpotSpec, _Mapping]] = ..., lid: _Optional[_Union[LidSpec, _Mapping]] = ..., holder: _Optional[_Union[HolderSpec, _Mapping]] = ..., stack: _Optional[_Union[ResourceStackSpec, _Mapping]] = ..., plate_adapter: _Optional[_Union[PlateAdapterSpec, _Mapping]] = ..., pipette_channel: _Optional[_Union[PipetteChannelSpec, _Mapping]] = ..., tip_mounting_shaft: _Optional[_Union[TipMountingShaftSpec, _Mapping]] = ..., n_channel_pipette: _Optional[_Union[NChannelPipetteSpec, _Mapping]] = ..., link_body: _Optional[_Union[LinkBodySpec, _Mapping]] = ..., mechanical_gripper: _Optional[_Union[MechanicalGripperSpec, _Mapping]] = ..., deck: _Optional[_Union[DeckSpec, _Mapping]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., kind: _Optional[_Union[ResourceKind, str]] = ..., model: _Optional[str] = ..., category: _Optional[str] = ..., size: _Optional[_Union[Vec3, _Mapping]] = ..., location: _Optional[_Union[Vec3, _Mapping]] = ..., rotation: _Optional[_Union[Rotation, _Mapping]] = ..., identifier: _Optional[str] = ..., preferred_pickup_location: _Optional[_Union[Vec3, _Mapping]] = ..., barcode: _Optional[_Union[Barcode, _Mapping]] = ..., metadata: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ..., container: _Optional[_Union[ContainerSpec, _Mapping]] = ..., itemized: _Optional[_Union[ItemizedSpec, _Mapping]] = ..., plate: _Optional[_Union[PlateSpec, _Mapping]] = ..., tip_rack: _Optional[_Union[TipRackSpec, _Mapping]] = ..., head_tool: _Optional[_Union[HeadToolSpec, _Mapping]] = ..., tip: _Optional[_Union[TipSpec, _Mapping]] = ..., tip_spot: _Optional[_Union[TipSpotSpec, _Mapping]] = ..., lid: _Optional[_Union[LidSpec, _Mapping]] = ..., holder: _Optional[_Union[HolderSpec, _Mapping]] = ..., stack: _Optional[_Union[ResourceStackSpec, _Mapping]] = ..., plate_adapter: _Optional[_Union[PlateAdapterSpec, _Mapping]] = ..., pipette_channel: _Optional[_Union[PipetteChannelSpec, _Mapping]] = ..., tip_mounting_shaft: _Optional[_Union[TipMountingShaftSpec, _Mapping]] = ..., n_channel_pipette: _Optional[_Union[NChannelPipetteSpec, _Mapping]] = ..., link_body: _Optional[_Union[LinkBodySpec, _Mapping]] = ..., mechanical_gripper: _Optional[_Union[MechanicalGripperSpec, _Mapping]] = ..., deck: _Optional[_Union[DeckSpec, _Mapping]] = ...) -> None: ...
 
 class ResourceDefinition(_message.Message):
     __slots__ = ("attributes", "children", "initial_state")

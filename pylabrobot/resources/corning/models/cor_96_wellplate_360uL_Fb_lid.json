@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_LID",
-      "typeName": "Lid",
       "model": "cor_96_wellplate_360uL_Fb_lid",
       "category": "lid",
       "size": {

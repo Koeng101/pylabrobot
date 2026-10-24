@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_PLATE_HOLDER",
-      "typeName": "PlateHolder",
       "model": "hamilton_mfx_plateholder_DWP_flat",
       "category": "plate_holder",
       "size": {

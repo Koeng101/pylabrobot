@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_HEAD_TOOL",
-      "typeName": "HamiltonCoreGripperTool",
       "model": "hamilton_core_gripper_tool",
       "category": "core_gripper_tool",
       "size": {

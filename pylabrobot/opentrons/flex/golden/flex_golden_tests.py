@@ -68,7 +68,6 @@ def _trough(name: str) -> pb.ResourceDefinition:
     name,
     Coordinate(127.76, 85.48, 31.4),
     kind=pb.RESOURCE_KIND_CONTAINER,
-    type_name="Container",
     container=pb.ContainerSpec(max_volume=10000, material_z_thickness=1),
     state=pb.ResourceState(volume=pb.VolumeState(tracking_enabled=True)),
   )
@@ -280,7 +279,7 @@ class FlexGoldenTests(unittest.IsolatedAsyncioTestCase):
     other = await self._place(flex, "cor_96_wellplate_360uL_Fb", "other_plate", "B2")
     riser = await self._place(
       flex,
-      build.resource("riser", Coordinate(127.76, 85.48, 20), type_name="Resource"),
+      build.resource("riser", Coordinate(127.76, 85.48, 20)),
       "riser",
       "D2",
     )

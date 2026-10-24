@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_CARRIER",
-      "typeName": "PlateCarrier",
       "model": "PLT_CAR_P3LI_A00",
       "category": "plate_carrier",
       "size": {
@@ -19,7 +18,6 @@
         "attributes": {
           "name": "{name}-0",
           "kind": "RESOURCE_KIND_PLATE_HOLDER",
-          "typeName": "PlateHolder",
           "category": "plate_holder",
           "size": {
             "x": 109.0,
@@ -42,7 +40,6 @@
         "attributes": {
           "name": "{name}-1",
           "kind": "RESOURCE_KIND_PLATE_HOLDER",
-          "typeName": "PlateHolder",
           "category": "plate_holder",
           "size": {
             "x": 109.0,
@@ -65,7 +62,6 @@
         "attributes": {
           "name": "{name}-2",
           "kind": "RESOURCE_KIND_PLATE_HOLDER",
-          "typeName": "PlateHolder",
           "category": "plate_holder",
           "size": {
             "x": 109.0,

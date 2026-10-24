@@ -419,7 +419,6 @@ def byonoy_sbs_adapter(name: str) -> pb.ResourceDefinition:
     kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
     category="resource_holder",
     model="byonoy_a96a_sbs_adapter",
-    type_name="ResourceHolder",
     holder=pb.HolderSpec(
       child_location=build.vec3(
         Coordinate(x=-(155.26 - 127.76) / 2, y=-(95.48 - 85.48) / 2, z=17.0)

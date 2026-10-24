@@ -4,7 +4,6 @@
     "attributes": {
       "name": "{name}",
       "kind": "RESOURCE_KIND_TROUGH",
-      "typeName": "Trough",
       "model": "VWR Reagent Reservoirs 25mL",
       "category": "trough",
       "size": {
