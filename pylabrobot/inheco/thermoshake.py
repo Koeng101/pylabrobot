@@ -6,7 +6,7 @@ from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store.client import ResourceStore
 
 from .control_box import InhecoTECControlBox
-from .holder import InhecoHolder
+from .holder import InhecoHolder, created
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class InhecoThermoShake(InhecoHolder):
       await self.stop_shaking()
 
 
-def inheco_thermoshake_ac(
+async def inheco_thermoshake_ac(
   name: str,
   control_box: InhecoTECControlBox,
   index: int,
@@ -99,20 +99,22 @@ def inheco_thermoshake_ac(
 
   raise NotImplementedError("Inheco ThermoShake AC is missing child_location.")
 
-  return InhecoThermoShake(
-    name=name,
-    control_box=control_box,
-    index=index,
-    size_x=147,  # from spec
-    size_y=104,  # from spec
-    size_z=115.9,  # from spec
-    child_location=Coordinate(x=0, y=0, z=109.9),  # TODO
-    model=inheco_thermoshake_ac.__name__,
-    store=store,
+  return await created(
+    InhecoThermoShake(
+      name=name,
+      control_box=control_box,
+      index=index,
+      size_x=147,  # from spec
+      size_y=104,  # from spec
+      size_z=115.9,  # from spec
+      child_location=Coordinate(x=0, y=0, z=109.9),  # TODO
+      model=inheco_thermoshake_ac.__name__,
+      store=store,
+    )
   )
 
 
-def inheco_thermoshake(
+async def inheco_thermoshake(
   name: str,
   control_box: InhecoTECControlBox,
   index: int,
@@ -123,21 +125,23 @@ def inheco_thermoshake(
   https://www.inheco.com/thermoshake-classic.html
   """
 
-  return InhecoThermoShake(
-    name=name,
-    control_box=control_box,
-    index=index,
-    size_x=147,  # from spec
-    size_y=104,  # from spec
-    size_z=118,  # from spec
-    child_location=Coordinate(x=9.62, y=9.22, z=109.9),  # measured
-    model=inheco_thermoshake.__name__,
-    store=store,
-    # pedestal_size_z=-4.2,  # measured
+  return await created(
+    InhecoThermoShake(
+      name=name,
+      control_box=control_box,
+      index=index,
+      size_x=147,  # from spec
+      size_y=104,  # from spec
+      size_z=118,  # from spec
+      child_location=Coordinate(x=9.62, y=9.22, z=109.9),  # measured
+      model=inheco_thermoshake.__name__,
+      store=store,
+      # pedestal_size_z=-4.2,  # measured
+    )
   )
 
 
-def inheco_thermoshake_rm(
+async def inheco_thermoshake_rm(
   name: str,
   control_box: InhecoTECControlBox,
   index: int,
@@ -150,14 +154,16 @@ def inheco_thermoshake_rm(
 
   raise NotImplementedError("Inheco Thermoshake RM is missing child_location")
 
-  return InhecoThermoShake(
-    name=name,
-    control_box=control_box,
-    index=index,
-    size_x=147,  # from spec
-    size_y=104,  # from spec
-    size_z=116,  # from spec
-    child_location=Coordinate(x=0, y=0, z=0),  # TODO
-    model=inheco_thermoshake_rm.__name__,
-    store=store,
+  return await created(
+    InhecoThermoShake(
+      name=name,
+      control_box=control_box,
+      index=index,
+      size_x=147,  # from spec
+      size_y=104,  # from spec
+      size_z=116,  # from spec
+      child_location=Coordinate(x=0, y=0, z=0),  # TODO
+      model=inheco_thermoshake_rm.__name__,
+      store=store,
+    )
   )

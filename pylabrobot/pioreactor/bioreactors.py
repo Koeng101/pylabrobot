@@ -1,10 +1,9 @@
 from typing import Optional
 
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store import build, devices, handles
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.errors import StoreError
-from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.errors import StoreError, plr_error
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 # What a Pioreactor holds as its vessel: any container.
@@ -22,13 +21,13 @@ class Pioreactor:
   """A Pioreactor bioreactor unit (https://pioreactor.com).
 
   Its body is a resource in a resource store holding the culture vessel, a single container:
-  `create_body` makes it there, or finds it by name. The store refuses a second vessel.
+  `create_resources` finds it there by name, or creates it when the store has none;
+  `get_resources` only finds it. The store refuses a second vessel.
 
   Attributes:
     name: Its body's name.
     definition: Its body and the vessel it is built with, as they are created in the store.
     store: The store its body is in.
-    body: Its body in the store, once created or found.
   """
 
   def __init__(
@@ -57,17 +56,36 @@ class Pioreactor:
       children=[] if vessel is None else [vessel],
     )
     self.store = store or ResourceStore.in_memory()
-    self.body: Optional[handles.Resource] = None
+    self._body: Optional[handles.Resource] = None
 
-  async def create_body(self) -> handles.Resource:
+  @property
+  def body(self) -> handles.Resource:
+    """Its body in the store.
+
+    Raises:
+      RuntimeError: It is not found or created yet: call `create_resources` first.
+    """
+    if self._body is None:
+      raise devices.not_in_store(self.name)
+    return self._body
+
+  async def _find_resources(self, create: bool) -> handles.Resource:
+    if self._body is None:
+      self._body = await devices.find_or_create(self.store, self.definition, create=create)
+    return self._body
+
+  async def create_resources(self) -> handles.Resource:
     """Its body in the store: the resource of its name if the store has one, else made from its
     definition as a root, to be placed by assigning it."""
-    if self.body is None:
-      found = await self.store.find_resources(
-        spb.ResourceFilter(kinds=[pb.RESOURCE_KIND_RESOURCE], names=[self.name])
-      )
-      self.body = found[0] if found else await self.store.create(self.definition, name=self.name)
-    return self.body
+    return await self._find_resources(create=True)
+
+  async def get_resources(self) -> handles.Resource:
+    """Its body, found in the store by name; never created.
+
+    Raises:
+      LookupError: The store has no resource of its name.
+    """
+    return await self._find_resources(create=False)
 
   async def assign_child_resource(
     self,
@@ -88,13 +106,13 @@ class Pioreactor:
     """
     if resource.kind not in VESSEL_KINDS:
       raise TypeError("Pioreactor can only hold a Container as a child.")
-    body = await self.create_body()
+    body = await self.create_resources()
     if not reassign and (await resource.node()).parent_id:
       raise ValueError(f"Will not assign resource '{resource.name}' that already has a parent.")
     try:
       await body.assign_child_resource(resource, location=location)
     except StoreError as error:
-      raise ValueError(str(error)) from error
+      raise plr_error(error, otherwise=ValueError) from error
 
   async def unassign_child_resource(self, resource: handles.Resource) -> None:
     """Take the vessel out of it.
@@ -102,16 +120,16 @@ class Pioreactor:
     Raises:
       ValueError: It does not hold `resource`.
     """
-    body = await self.create_body()
+    body = await self.create_resources()
     await body.unassign_child_resource(resource)
 
-  async def vessel(self) -> handles.Container:
+  async def get_vessel(self) -> handles.Container:
     """Its culture vessel.
 
     Raises:
       ValueError: It holds no vessel.
     """
-    body = await self.create_body()
+    body = await self.create_resources()
     children = await body.get_children()
     if not children:
       raise ValueError(f"Pioreactor '{self.name}' has no vessel assigned.")
@@ -120,8 +138,11 @@ class Pioreactor:
     return vessel
 
 
-def pioreactor_20ml(name: str, store: Optional[ResourceStore] = None) -> Pioreactor:
+async def pioreactor_20ml(name: str, store: Optional[ResourceStore] = None) -> Pioreactor:
   """Pioreactor 20mL Vessel: https://pioreactor.com/products/pioreactor-20ml
+
+  Builds it and finds its body in `store` by name, creating it there when the store has none (a
+  new store in memory when unset).
 
   Geometry (mm):
   - Outer footprint (on holder): 127.74 x 85.40
@@ -149,7 +170,7 @@ def pioreactor_20ml(name: str, store: Optional[ResourceStore] = None) -> Pioreac
     container=pb.ContainerSpec(max_volume=20_000, material_z_thickness=material_z_thickness),
     state=pb.ResourceState(volume=pb.VolumeState(tracking_enabled=True)),
   )
-  return Pioreactor(
+  pioreactor = Pioreactor(
     name=name,
     size_x=outer_x,
     size_y=outer_y,
@@ -159,3 +180,5 @@ def pioreactor_20ml(name: str, store: Optional[ResourceStore] = None) -> Pioreac
     vessel=vessel,
     store=store,
   )
+  await pioreactor.create_resources()
+  return pioreactor

@@ -58,6 +58,14 @@ class TestSCILA(_SCILATestCase):
     self.assertEqual(again.drawers[3].resource, self.scila.drawers[3].resource)
     self.assertEqual(len(await self.scila.store.roots()), 1)
 
+  async def test_get_resources_finds_but_never_makes(self):
+    with self.assertRaises(LookupError):
+      await self.scila.get_resources()
+    await self.scila.create_resources()
+    again = SCILA(name="scila", scila_ip="127.0.0.1", store=self.scila.store)
+    self.assertEqual(await again.get_resources(), self.scila.body)
+    self.assertEqual(again.drawers[1].resource, self.scila.drawers[1].resource)
+
   async def test_a_plate_put_in_a_drawer_is_held_there(self):
     await self.scila.setup()
     plate = await self.scila.store.create("cor_96_wellplate_360uL_Fb", name="plate")

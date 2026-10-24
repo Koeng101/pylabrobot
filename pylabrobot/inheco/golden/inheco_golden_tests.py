@@ -101,7 +101,7 @@ class Recorder(recording.Recorder):
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     assert self.device is not None
-    return await snapshot_store(self.device.store, await self.device.create_body())
+    return await snapshot_store(self.device.store, await self.device.create_resources())
 
   async def plate(self, model: str, name: str) -> handles.Plate:
     """A plate in the device's store, in nothing."""
@@ -116,7 +116,7 @@ class Recorder(recording.Recorder):
 
 async def describe(device: Union[InhecoThermoShake, InhecoCPAC]) -> Dict[str, Any]:
   """A holder's model, size, child location, index and tree."""
-  body = await device.create_body()
+  body = device.body
   attributes = await body.attributes()
   size, child_location = attributes.size, attributes.holder.child_location
   return {
@@ -136,21 +136,21 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
     box = InhecoTECControlBox()
     record: Dict[str, Any] = {
       "inheco_thermoshake": await describe(
-        inheco_thermoshake("thermoshake", control_box=box, index=1)
+        await inheco_thermoshake("thermoshake", control_box=box, index=1)
       ),
       "inheco_cpac_ultraflat": await describe(
-        inheco_cpac_ultraflat("cpac", control_box=box, index=6)
+        await inheco_cpac_ultraflat("cpac", control_box=box, index=6)
       ),
     }
     for factory in (inheco_thermoshake_ac, inheco_thermoshake_rm):
       try:
-        factory("thermoshake", box, 1)
+        await factory("thermoshake", box, 1)
         record[factory.__name__] = "built"
       except NotImplementedError as error:
         record[factory.__name__] = f"NotImplementedError: {error}"
     for index in (0, 7):
       try:
-        inheco_cpac_ultraflat("cpac", control_box=box, index=index)
+        await inheco_cpac_ultraflat("cpac", control_box=box, index=index)
         record[f"index {index}"] = "built"
       except ValueError as error:
         record[f"index {index}"] = f"ValueError: {error}"
@@ -159,7 +159,7 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_plates_on_the_thermoshake(self):
     """The ThermoShake holds any plate at its child location, one at a time."""
     rig = Recorder()
-    thermoshake = inheco_thermoshake("thermoshake", control_box=rig.box, index=1)
+    thermoshake = await inheco_thermoshake("thermoshake", control_box=rig.box, index=1)
     rig.device = thermoshake
     plate = await rig.plate("cor_96_wellplate_360uL_Fb", "plate")
     pcr = await rig.plate("Eppendorf_96_wellplate_250ul_Vb", "pcr_plate")
@@ -189,7 +189,7 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_thermoshake_heating_and_shaking(self):
     """Heat a plate, shake it in each way, read the temperature and stop."""
     rig = Recorder()
-    thermoshake = inheco_thermoshake("thermoshake", control_box=rig.box, index=2)
+    thermoshake = await inheco_thermoshake("thermoshake", control_box=rig.box, index=2)
     rig.device = thermoshake
     await thermoshake.assign_child_resource(await rig.plate("cor_96_wellplate_360uL_Fb", "plate"))
 
@@ -219,7 +219,7 @@ class InhecoGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_cpac_cooling_a_plate(self):
     """A plate on the CPAC, cooled, read and released."""
     rig = Recorder()
-    cpac = inheco_cpac_ultraflat("cpac", control_box=rig.box, index=1)
+    cpac = await inheco_cpac_ultraflat("cpac", control_box=rig.box, index=1)
     rig.device = cpac
     plate = await rig.plate("Eppendorf_96_wellplate_250ul_Vb", "pcr_plate")
 

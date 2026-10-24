@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import Optional, TypeVar
 
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store import build, devices, handles
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.errors import StoreError, plr_error
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
@@ -14,14 +14,14 @@ from .temperature_controller import InhecoTemperatureController
 class InhecoHolder(InhecoTemperatureController):
   """An Inheco device addressed by index on a control box whose body holds one plate.
 
-  Its body is a resource holder in a resource store: `create_body` makes it there, or finds it by
-  name. The store refuses a second plate while it holds one.
+  Its body is a resource holder in a resource store: `create_resources` finds it there by name, or
+  creates it when the store has none; `get_resources` only finds it. The store refuses a second
+  plate while it holds one.
 
   Attributes:
     name: Its body's name.
     definition: Its body, as it is created in the store.
     store: The store its body is in.
-    body: Its body in the store, once created or found.
   """
 
   def __init__(
@@ -48,19 +48,38 @@ class InhecoHolder(InhecoTemperatureController):
       holder=pb.HolderSpec(child_location=build.vec3(child_location), capacity=1),
     )
     self.store = store or ResourceStore.in_memory()
-    self.body: Optional[handles.ResourceHolder] = None
+    self._body: Optional[handles.ResourceHolder] = None
 
-  async def create_body(self) -> handles.ResourceHolder:
+  @property
+  def body(self) -> handles.ResourceHolder:
+    """Its body in the store.
+
+    Raises:
+      RuntimeError: It is not found or created yet: call `create_resources` first.
+    """
+    if self._body is None:
+      raise devices.not_in_store(self.name)
+    return self._body
+
+  async def _find_resources(self, create: bool) -> handles.ResourceHolder:
+    if self._body is None:
+      body = await devices.find_or_create(self.store, self.definition, create=create)
+      assert isinstance(body, handles.ResourceHolder)
+      self._body = body
+    return self._body
+
+  async def create_resources(self) -> handles.ResourceHolder:
     """Its body in the store: the resource holder of its name if the store has one, else made from
     its definition as a root, to be placed by assigning it."""
-    if self.body is None:
-      found = await self.store.find_resources(
-        spb.ResourceFilter(kinds=[pb.RESOURCE_KIND_RESOURCE_HOLDER], names=[self.name])
-      )
-      body = found[0] if found else await self.store.create(self.definition, name=self.name)
-      assert isinstance(body, handles.ResourceHolder)
-      self.body = body
-    return self.body
+    return await self._find_resources(create=True)
+
+  async def get_resources(self) -> handles.ResourceHolder:
+    """Its body, found in the store by name; never created.
+
+    Raises:
+      LookupError: The store has no resource holder of its name.
+    """
+    return await self._find_resources(create=False)
 
   async def assign_child_resource(
     self,
@@ -78,7 +97,7 @@ class InhecoHolder(InhecoTemperatureController):
     Raises:
       ValueError: It refuses the plate.
     """
-    body = await self.create_body()
+    body = await self.create_resources()
     if not reassign:
       response = await self.store.commands.get_resources(
         spb.GetResourcesRequest(resources=[body.ref, resource.ref], depth=0)
@@ -91,7 +110,7 @@ class InhecoHolder(InhecoTemperatureController):
     try:
       await body.assign_child_resource(resource, location=location)
     except StoreError as error:
-      raise ValueError(str(error)) from error
+      raise plr_error(error, otherwise=ValueError) from error
 
   async def unassign_child_resource(self, resource: handles.Resource) -> None:
     """Take a plate off it.
@@ -99,12 +118,12 @@ class InhecoHolder(InhecoTemperatureController):
     Raises:
       ValueError: It does not hold `resource`.
     """
-    body = await self.create_body()
+    body = await self.create_resources()
     await body.unassign_child_resource(resource)
 
   async def get_resource(self) -> Optional[handles.Resource]:
     """The plate it holds; unset when it holds none."""
-    body = await self.create_body()
+    body = await self.create_resources()
     return await body.get_resource_held()
 
   async def set_resource(self, resource: Optional[handles.Resource]) -> None:
@@ -115,3 +134,12 @@ class InhecoHolder(InhecoTemperatureController):
         await self.unassign_child_resource(held)
       return
     await self.assign_child_resource(resource, reassign=False)
+
+
+H = TypeVar("H", bound=InhecoHolder)
+
+
+async def created(holder: H) -> H:
+  """`holder`, once its body is found in its store, or created there."""
+  await holder.create_resources()
+  return holder

@@ -30,7 +30,7 @@ class Recorder(recording.Recorder):
     self.pioreactor = pioreactor
 
   async def snapshot(self) -> List[Dict[str, Any]]:
-    return await snapshot_store(self.pioreactor.store, await self.pioreactor.create_body())
+    return await snapshot_store(self.pioreactor.store, await self.pioreactor.create_resources())
 
   async def step(self, call: str, action: recording.Action) -> Any:  # type: ignore[override]
     """Run one step, recording what it returned or raised. The Pioreactor sends nothing."""
@@ -85,9 +85,9 @@ async def remove_liquid(vessel: handles.Container, volume: float) -> None:
 class PioreactorGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_pioreactor_20ml(self):
     """The 20 mL Pioreactor's tree and its vessel."""
-    pioreactor = pioreactor_20ml("pioreactor")
-    body = await pioreactor.create_body()
-    vessel = await pioreactor.vessel()
+    pioreactor = await pioreactor_20ml("pioreactor")
+    body = pioreactor.body
+    vessel = await pioreactor.get_vessel()
     spec = (await vessel.attributes()).container
     location = await vessel.get_absolute_location()
     record = {
@@ -112,9 +112,9 @@ class PioreactorGoldenTests(unittest.IsolatedAsyncioTestCase):
     block = await store.create(build.resource("block", Coordinate(10, 10, 10)), name="block")
 
     async def vessel_name() -> str:
-      return (await pioreactor.vessel()).name
+      return (await pioreactor.get_vessel()).name
 
-    await rig.step("pioreactor.vessel", vessel_name)
+    await rig.step("pioreactor.get_vessel()", vessel_name)
     await rig.step(
       "pioreactor.assign_child_resource(block, Coordinate(0, 0, 0))",
       lambda: pioreactor.assign_child_resource(block, Coordinate(0, 0, 0)),
@@ -123,7 +123,7 @@ class PioreactorGoldenTests(unittest.IsolatedAsyncioTestCase):
       "pioreactor.assign_child_resource(vessel, Coordinate(52.12, 30.95, 76))",
       lambda: pioreactor.assign_child_resource(vessel, Coordinate(52.12, 30.95, 76)),
     )
-    await rig.step("pioreactor.vessel", vessel_name)
+    await rig.step("pioreactor.get_vessel()", vessel_name)
     await rig.step(
       "pioreactor.assign_child_resource(tube, Coordinate(0, 0, 0))",
       lambda: pioreactor.assign_child_resource(tube, Coordinate(0, 0, 0)),
@@ -136,14 +136,14 @@ class PioreactorGoldenTests(unittest.IsolatedAsyncioTestCase):
       "pioreactor.assign_child_resource(tube, Coordinate(52.12, 30.95, 76))",
       lambda: pioreactor.assign_child_resource(tube, Coordinate(52.12, 30.95, 76)),
     )
-    await rig.step("pioreactor.vessel", vessel_name)
+    await rig.step("pioreactor.get_vessel()", vessel_name)
     check_golden(self, GOLDEN / "vessels_it_accepts.json", await rig.finish())
 
   async def test_culture_volume(self):
     """Medium added to and sampled from the vessel is kept on it in the store."""
-    pioreactor = pioreactor_20ml("pioreactor")
+    pioreactor = await pioreactor_20ml("pioreactor")
     rig = Recorder(pioreactor)
-    vessel = await pioreactor.vessel()
+    vessel = await pioreactor.get_vessel()
 
     await rig.step("vessel.tracker.add_liquid(15000)", lambda: add_liquid(vessel, 15_000))
     await rig.step("vessel.tracker.remove_liquid(1000)", lambda: remove_liquid(vessel, 1_000))

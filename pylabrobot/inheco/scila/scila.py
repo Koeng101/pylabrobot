@@ -3,7 +3,7 @@ from typing import Any, Dict, Literal, Optional
 
 from pylabrobot.inheco.transport.sila import InhecoSiLAInterface, get_params
 from pylabrobot.resources import Coordinate
-from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store import build, devices, handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -105,8 +105,8 @@ class SCILA:
   """Inheco SCILA incubator: four drawers and temperature control, over SiLA.
 
   Owns the SiLA HTTP/SOAP connection and exposes the device's operations directly. Its body and
-  its four drawers are resources in `store`; `setup` makes them there, or finds them when they
-  are already there.
+  its four drawers are resources in `store`: `create_resources` (which `setup` calls) finds them
+  there by name, or makes them when the store has none; `get_resources` only finds them.
 
   Example:
     >>> from pylabrobot.inheco.scila import SCILA
@@ -178,21 +178,14 @@ class SCILA:
     """The SCILA's body in the store.
 
     Raises:
-      RuntimeError: Its resources are not made yet: call `setup` first.
+      RuntimeError: Its resources are not found or created yet: call `setup` first.
     """
     if self._body is None:
-      raise RuntimeError(f"'{self.name}' is not in a store yet; call setup() first")
+      raise devices.not_in_store(self.name)
     return self._body
 
-  async def create_resources(self) -> handles.Resource:
-    """Make the SCILA's body and drawers in its store, or find them there by name.
-
-    Called by `setup`. Place the body on a deck by assigning it: `deck.assign_child_resource`.
-    """
-    found = await self.store.find_resources(
-      spb.ResourceFilter(names=[self.name], type_names=["SCILA"])
-    )
-    body = found[0] if found else await self.store.create(self.definition(), name=self.name)
+  async def _find_resources(self, create: bool) -> handles.Resource:
+    body = await devices.find_or_create(self.store, self.definition(), create=create)
     response = await self.store.commands.get_resources(
       spb.GetResourcesRequest(resources=[body.ref], depth=1)
     )
@@ -207,6 +200,21 @@ class SCILA:
       drawer._resource = holder
     self._body = body
     return body
+
+  async def create_resources(self) -> handles.Resource:
+    """Find the SCILA's body and drawers in its store by name, or make them there.
+
+    Called by `setup`. Place the body on a deck by assigning it: `deck.assign_child_resource`.
+    """
+    return await self._find_resources(create=True)
+
+  async def get_resources(self) -> handles.Resource:
+    """Find the SCILA's body and drawers in its store by name; never make them.
+
+    Raises:
+      LookupError: The store has no SCILA of its name.
+    """
+    return await self._find_resources(create=False)
 
   # -- lifecycle --
 

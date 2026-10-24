@@ -93,7 +93,7 @@ class Recorder(recording.Recorder):
     self.device: Optional[BioShake] = None
     self.serial: FakeSerial
 
-  def build(self, factory: Callable[..., BioShake]) -> BioShake:
+  async def build(self, factory: Callable[..., Awaitable[BioShake]]) -> BioShake:
     """Build a BioShake from `factory` on the fake transport."""
 
     def make_serial(**settings: Any) -> FakeSerial:
@@ -104,7 +104,7 @@ class Recorder(recording.Recorder):
       mock.patch.object(bioshake_module, "serial", SERIAL_CONSTANTS, create=True),
       mock.patch.object(bioshake_module, "Serial", make_serial),
     ):
-      self.device = factory("bioshake", "/dev/ttyUSB0")
+      self.device = await factory("bioshake", "/dev/ttyUSB0")
     return self.device
 
   async def step(  # type: ignore[override]
@@ -119,7 +119,7 @@ class Recorder(recording.Recorder):
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     assert self.device is not None
-    return await snapshot_store(self.device.store, await self.device.create_body())
+    return await snapshot_store(self.device.store, await self.device.create_resources())
 
   async def plate(self, model: str, name: str) -> handles.Plate:
     """A plate in the BioShake's store, in nothing."""
@@ -142,8 +142,8 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
     record: Dict[str, Any] = {}
     for factory in (BioShake3000, BioShake3000Elm, BioShake3000ElmDWP, BioShakeQ1):
       rig = Recorder()
-      device = rig.build(factory)
-      body = await device.create_body()
+      device = await rig.build(factory)
+      body = device.body
       attributes = await body.attributes()
       size, holder = attributes.size, attributes.holder
       record[factory.__name__] = {
@@ -174,7 +174,7 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
       ColdPlate,
     ):
       try:
-        missing("bioshake", "/dev/ttyUSB0")
+        await missing("bioshake", "/dev/ttyUSB0")
         record[missing.__name__] = "built"
       except NotImplementedError as error:
         record[missing.__name__] = f"NotImplementedError: {error}"
@@ -183,7 +183,7 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_plates_on_the_bioshake(self):
     """A skirted plate is placed at the child location; a non-skirted one is refused."""
     rig = Recorder()
-    bioshake = rig.build(BioShake3000Elm)
+    bioshake = await rig.build(BioShake3000Elm)
     plate = await rig.plate("cor_96_wellplate_360uL_Fb", "plate")
     other = await rig.plate("cor_96_wellplate_360uL_Fb", "other_plate")
     pcr = await rig.plate("Eppendorf_96_wellplate_250ul_Vb", "pcr_plate")
@@ -217,7 +217,7 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_shaking_with_a_locked_plate(self):
     """Setup homes the shaker; a plate is locked, shaken and released."""
     rig = Recorder()
-    bioshake = rig.build(BioShake3000Elm)
+    bioshake = await rig.build(BioShake3000Elm)
     await bioshake.assign_child_resource(await rig.plate("cor_96_wellplate_360uL_Fb", "plate"))
 
     await rig.step("setup()", lambda: bioshake.setup())
@@ -238,7 +238,7 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_refused_shaking(self):
     """Out-of-range and malformed speeds, and a firmware error."""
     rig = Recorder()
-    bioshake = rig.build(BioShake3000)
+    bioshake = await rig.build(BioShake3000)
 
     await rig.step("setup(skip_home=True)", lambda: bioshake.setup(skip_home=True))
     await rig.step("start_shaking(speed=5000)", lambda: bioshake.start_shaking(speed=5000))
@@ -265,7 +265,7 @@ class BioShakeGoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_temperature(self):
     """Q1 setup, heating, reading and switching off; out-of-range and sub-tenth targets."""
     rig = Recorder()
-    bioshake = rig.build(BioShakeQ1)
+    bioshake = await rig.build(BioShakeQ1)
 
     await rig.step("setup()", lambda: bioshake.setup())
     await rig.step("set_temperature(37)", lambda: bioshake.set_temperature(37))

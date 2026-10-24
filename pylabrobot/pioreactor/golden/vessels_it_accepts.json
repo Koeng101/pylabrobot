@@ -1,7 +1,7 @@
 {
   "steps": [
     {
-      "call": "pioreactor.vessel",
+      "call": "pioreactor.get_vessel()",
       "error": "ValueError: Pioreactor 'pioreactor' has no vessel assigned.",
       "resources": [
         {
@@ -45,7 +45,7 @@
       ]
     },
     {
-      "call": "pioreactor.vessel",
+      "call": "pioreactor.get_vessel()",
       "result": "vessel",
       "resources": [
         {
@@ -122,7 +122,7 @@
       ]
     },
     {
-      "call": "pioreactor.vessel",
+      "call": "pioreactor.get_vessel()",
       "result": "tube",
       "resources": [
         {

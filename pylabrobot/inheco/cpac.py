@@ -4,7 +4,7 @@ from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store.client import ResourceStore
 
 from .control_box import InhecoTECControlBox
-from .holder import InhecoHolder
+from .holder import InhecoHolder, created
 
 
 class InhecoCPAC(InhecoHolder):
@@ -39,7 +39,7 @@ class InhecoCPAC(InhecoHolder):
     )
 
 
-def inheco_cpac_ultraflat(
+async def inheco_cpac_ultraflat(
   name: str,
   control_box: InhecoTECControlBox,
   index: int,
@@ -53,20 +53,22 @@ def inheco_cpac_ultraflat(
   Example:
     >>> from pylabrobot.inheco import inheco_cpac_ultraflat
     >>> await box.setup()
-    >>> cpac = inheco_cpac_ultraflat("cpac", control_box=box, index=1)
+    >>> cpac = await inheco_cpac_ultraflat("cpac", control_box=box, index=1)
     >>> await cpac.set_temperature(37.0)
     >>> await cpac.request_current_temperature()
     37.0
   """
 
-  return InhecoCPAC(
-    name=name,
-    control_box=control_box,
-    index=index,
-    size_x=113,  # from spec
-    size_y=89,  # from spec
-    size_z=129,  # from spec
-    child_location=Coordinate(x=8, y=11, z=77),  # x from spec, y and z measured
-    model=inheco_cpac_ultraflat.__name__,
-    store=store,
+  return await created(
+    InhecoCPAC(
+      name=name,
+      control_box=control_box,
+      index=index,
+      size_x=113,  # from spec
+      size_y=89,  # from spec
+      size_z=129,  # from spec
+      child_location=Coordinate(x=8, y=11, z=77),  # x from spec, y and z measured
+      model=inheco_cpac_ultraflat.__name__,
+      store=store,
+    )
   )

@@ -44,3 +44,8 @@ async def find_or_create(
   if not create:
     raise LookupError(f"the store has no resource '{attributes.name}'")
   return await store.create(definition, name=attributes.name)
+
+
+def not_in_store(name: str) -> RuntimeError:
+  """What a device raises when its resources are asked for before it has found or created them."""
+  return RuntimeError(f"'{name}' is not in a store yet; call create_resources() or setup() first")
