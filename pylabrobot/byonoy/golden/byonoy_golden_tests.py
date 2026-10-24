@@ -177,7 +177,6 @@ class Absorbance96GoldenTests(unittest.IsolatedAsyncioTestCase):
     """A plate goes on only without the illumination unit on the base, the unit goes on only over
     a plate that clears it, and nothing goes on the base itself."""
     reader, illumination_unit = await byonoy_a96a("reader")
-    assert reader.body is not None
     recorder = await Recorder(reader.body).start()
     store = reader.store
     plate_ = await plate(store, "plate")
@@ -242,7 +241,6 @@ class Absorbance96GoldenTests(unittest.IsolatedAsyncioTestCase):
     plate_ = await plate(reader.store, "plate")
     await reader.plate_holder.assign_child_resource(plate_)
     await reader.illumination_unit_holder.assign_child_resource(illumination_unit)
-    assert reader.body is not None
     recorder = await Recorder(reader.body, reader).start()
     await recorder.step("setup()", reader.setup)
     await recorder.step(
@@ -267,9 +265,9 @@ class Absorbance96GoldenTests(unittest.IsolatedAsyncioTestCase):
     recorder = await Recorder(parts).start()
 
     async def build_parts() -> None:
-      await byonoy_a96a_parking_unit("parking_unit", store=store).create_body()
+      await byonoy_a96a_parking_unit("parking_unit", store=store)
       adapter = await store.create(byonoy_sbs_adapter("sbs_adapter"), "sbs_adapter")
-      await ByonoyAbsorbance96("detection_unit", store=store).create_body()
+      await ByonoyAbsorbance96("detection_unit", store=store).create_resources()
       for name in ("parking_unit", "sbs_adapter", "detection_unit"):
         part = adapter if name == "sbs_adapter" else await store.get(name)
         await assign_unlocated(parts, part)
@@ -285,7 +283,6 @@ class Luminescence96GoldenTests(unittest.IsolatedAsyncioTestCase):
     """A plate goes on only without the reader unit on the base, and nothing goes on the base
     itself."""
     base, reader = await byonoy_l96a("lum")
-    assert base.body is not None and reader.body is not None
     reader_body = reader.body
     recorder = await Recorder(base.body).start()
     plate_ = await plate(base.store, "plate")
@@ -330,7 +327,6 @@ class Luminescence96GoldenTests(unittest.IsolatedAsyncioTestCase):
     base, reader = await byonoy_l96a("lum", assign=False)
     plate_ = await plate(base.store, "plate")
     await base.plate_holder.assign_child_resource(plate_)
-    assert base.body is not None and reader.body is not None
     await base.reader_unit_holder.assign_child_resource(reader.body)
     recorder = await Recorder(base.body, reader).start()
     await recorder.step("setup()", reader.setup)
@@ -374,7 +370,6 @@ class Luminescence96GoldenTests(unittest.IsolatedAsyncioTestCase):
   async def test_l96_parts(self):
     """The L96 (not automate) base and reader unit, as built and assigned."""
     base, _ = await byonoy_l96("l96")
-    assert base.body is not None
     recorder = await Recorder(base.body).start()
     await recorder.check(self, "luminescence_96_l96_parts")
 

@@ -9,9 +9,12 @@ luminescence_96/led_bar
 ```
 
 Each unit keeps its body and holders in a resource store (`unit.store`, a new in-memory one unless
-one is given). A unit's body is created there at `setup` or `create_body`; the full-setup factories
-(`byonoy_a96a`, `byonoy_l96`, `byonoy_l96a`) are async and create every unit at once. Plates and
-units are handles in that store.
+one is given). `create_resources()` (which `setup` calls) finds a unit's body there by name, or
+creates it when the store has none; `get_resources()` only finds it, for a unit the store already
+holds. Every factory that takes a `store` is async and finds or creates its units there; the
+full-setup factories (`byonoy_a96a`, `byonoy_l96`, `byonoy_l96a`) do so for every unit at once.
+The factories that return definitions (`byonoy_a96a_illumination_unit`, `byonoy_sbs_adapter`) are
+plain functions, for `store.create`. Plates and units are handles in that store.
 
 ## Absorbance 96 models
 

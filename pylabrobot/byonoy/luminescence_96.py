@@ -80,7 +80,7 @@ class ByonoyLuminescence96(Unit, ByonoyDriver):
 
   async def setup(self) -> None:
     """Find or create the body in its store, and connect."""
-    await self.create_body()
+    await self.create_resources()
     await ByonoyDriver.setup(self)
 
   async def read_luminescence(
@@ -338,7 +338,7 @@ class ByonoyLuminescenceBaseUnit(Unit):
     self, resource: handles.Resource, location: Optional[Coordinate]
   ) -> None:
     """Put `resource` on the base itself, at `location`, or with no location when None."""
-    body = await self.create_body()
+    body = await self.create_resources()
     if location is None:
       await assign_unlocated(body, resource)
     else:
@@ -350,11 +350,12 @@ class ByonoyLuminescenceBaseUnit(Unit):
 # ---------------------------------------------------------------------------
 
 
-def byonoy_l96_reader_unit(
+async def byonoy_l96_reader_unit(
   name: str, store: Optional[ResourceStore] = None
 ) -> ByonoyLuminescence96:
-  """Create a Byonoy L96 reader unit (non-automate, no preferred pickup)."""
-  return ByonoyLuminescence96(
+  """A Byonoy L96 reader unit (non-automate, no preferred pickup), its body found in `store` by
+  name or created there (a new store in memory when None)."""
+  unit = ByonoyLuminescence96(
     name=name,
     size_x=139.7,
     size_y=97.5,
@@ -362,13 +363,16 @@ def byonoy_l96_reader_unit(
     preferred_pickup_location=None,
     store=store,
   )
+  await unit.create_resources()
+  return unit
 
 
-def byonoy_l96_base_unit(
+async def byonoy_l96_base_unit(
   name: str, store: Optional[ResourceStore] = None
 ) -> ByonoyLuminescenceBaseUnit:
-  """Create a Byonoy L96 base unit."""
-  return ByonoyLuminescenceBaseUnit(
+  """A Byonoy L96 base unit, its body found in `store` by name or created there
+  (a new store in memory when None)."""
+  unit = ByonoyLuminescenceBaseUnit(
     name=name,
     size_x=139.7,
     size_y=97.5,
@@ -377,14 +381,16 @@ def byonoy_l96_base_unit(
     reader_unit_holder_child_location=Coordinate(x=0, y=0, z=7.2),
     store=store,
   )
+  await unit.create_resources()
+  return unit
 
 
 async def _assemble(
   base_unit: ByonoyLuminescenceBaseUnit, reader_unit: ByonoyLuminescence96, assign: bool
 ) -> Tuple[ByonoyLuminescenceBaseUnit, ByonoyLuminescence96]:
   """Put both units in their store, the reader unit on the base when `assign`."""
-  await base_unit.create_body()
-  reader_body = await reader_unit.create_body()
+  await base_unit.create_resources()
+  reader_body = await reader_unit.create_resources()
   if assign:
     await base_unit.reader_unit_holder.assign_child_resource(reader_body)
   return base_unit, reader_unit
@@ -394,16 +400,17 @@ async def byonoy_l96(
   name: str, assign: bool = True, store: Optional[ResourceStore] = None
 ) -> Tuple[ByonoyLuminescenceBaseUnit, ByonoyLuminescence96]:
   """Create a full Byonoy L96 setup (base + reader) in `store` (a new one in memory when None)."""
-  base_unit = byonoy_l96_base_unit(name=name + "_base", store=store)
-  reader_unit = byonoy_l96_reader_unit(name=name + "_reader", store=base_unit.store)
+  base_unit = await byonoy_l96_base_unit(name=name + "_base", store=store)
+  reader_unit = await byonoy_l96_reader_unit(name=name + "_reader", store=base_unit.store)
   return await _assemble(base_unit, reader_unit, assign)
 
 
-def byonoy_l96a_reader_unit(
+async def byonoy_l96a_reader_unit(
   name: str, store: Optional[ResourceStore] = None
 ) -> ByonoyLuminescence96:
-  """Create a Byonoy L96A reader unit (automate, with preferred pickup)."""
-  return ByonoyLuminescence96(
+  """A Byonoy L96A reader unit (automate, with preferred pickup), its body found in `store` by
+  name or created there (a new store in memory when None)."""
+  unit = ByonoyLuminescence96(
     name=name,
     size_x=138,
     size_y=97.5,
@@ -411,13 +418,16 @@ def byonoy_l96a_reader_unit(
     preferred_pickup_location=Coordinate(x=69, y=48.75, z=33.2),
     store=store,
   )
+  await unit.create_resources()
+  return unit
 
 
-def byonoy_l96a_base_unit(
+async def byonoy_l96a_base_unit(
   name: str, store: Optional[ResourceStore] = None
 ) -> ByonoyLuminescenceBaseUnit:
-  """Create a Byonoy L96A base unit."""
-  return ByonoyLuminescenceBaseUnit(
+  """A Byonoy L96A base unit, its body found in `store` by name or created there
+  (a new store in memory when None)."""
+  unit = ByonoyLuminescenceBaseUnit(
     name=name,
     size_x=138,
     size_y=97.5,
@@ -426,12 +436,14 @@ def byonoy_l96a_base_unit(
     reader_unit_holder_child_location=Coordinate(x=0, y=0, z=6.3),
     store=store,
   )
+  await unit.create_resources()
+  return unit
 
 
 async def byonoy_l96a(
   name: str, assign: bool = True, store: Optional[ResourceStore] = None
 ) -> Tuple[ByonoyLuminescenceBaseUnit, ByonoyLuminescence96]:
   """Create a full Byonoy L96A setup (base + reader) in `store` (a new one in memory when None)."""
-  base_unit = byonoy_l96a_base_unit(name=name + "_base", store=store)
-  reader_unit = byonoy_l96a_reader_unit(name=name + "_reader", store=base_unit.store)
+  base_unit = await byonoy_l96a_base_unit(name=name + "_base", store=store)
+  reader_unit = await byonoy_l96a_reader_unit(name=name + "_reader", store=base_unit.store)
   return await _assemble(base_unit, reader_unit, assign)

@@ -142,7 +142,7 @@ class ByonoyAbsorbanceBaseUnit(Unit):
     self, resource: handles.Resource, location: Optional[Coordinate]
   ) -> None:
     """Put `resource` on the base itself, at `location`, or with no location when None."""
-    body = await self.create_body()
+    body = await self.create_resources()
     if location is None:
       await assign_unlocated(body, resource)
     else:
@@ -355,7 +355,7 @@ class ByonoyAbsorbance96(ByonoyAbsorbanceBaseUnit, ByonoyDriver):
     """
     if not isinstance(ignore_errors_in_calibration, bool):
       raise TypeError("ignore_errors_in_calibration must be a bool.")
-    await self.create_body()
+    await self.create_resources()
     await ByonoyDriver.setup(self)
     original_override = None
     if ignore_errors_in_calibration:
@@ -441,18 +441,24 @@ def byonoy_a96a_illumination_unit(name: str) -> pb.ResourceDefinition:
   )
 
 
-def byonoy_a96a_detection_unit(
+async def byonoy_a96a_detection_unit(
   name: str, store: Optional[ResourceStore] = None
 ) -> ByonoyAbsorbance96:
-  """Create a Byonoy A96A detection unit."""
-  return ByonoyAbsorbance96(name=name, store=store)
+  """A Byonoy A96A detection unit, its body found in `store` by name or created there (a new
+  store in memory when None)."""
+  unit = ByonoyAbsorbance96(name=name, store=store)
+  await unit.create_resources()
+  return unit
 
 
-def byonoy_a96a_parking_unit(
+async def byonoy_a96a_parking_unit(
   name: str, store: Optional[ResourceStore] = None
 ) -> ByonoyAbsorbanceBaseUnit:
-  """Create a Byonoy A96A detection unit holder (base only, no backend)."""
-  return ByonoyAbsorbanceBaseUnit(name=name, model="byonoy_a96a_parking_unit", store=store)
+  """A Byonoy A96A detection unit holder (base only, no backend), its body found in `store` by
+  name or created there (a new store in memory when None)."""
+  unit = ByonoyAbsorbanceBaseUnit(name=name, model="byonoy_a96a_parking_unit", store=store)
+  await unit.create_resources()
+  return unit
 
 
 async def byonoy_a96a(
@@ -460,8 +466,7 @@ async def byonoy_a96a(
 ) -> Tuple[ByonoyAbsorbance96, handles.Resource]:
   """Create a full Byonoy A96A setup (reader + illumination unit) in `store` (a new one in
   memory when None); the illumination unit goes on the reader when `assign`."""
-  reader = byonoy_a96a_detection_unit(name=name, store=store)
-  await reader.create_body()
+  reader = await byonoy_a96a_detection_unit(name=name, store=store)
   unit_name = name + "_illumination_unit"
   illumination_unit = await reader.store.create(byonoy_a96a_illumination_unit(unit_name), unit_name)
   if assign:

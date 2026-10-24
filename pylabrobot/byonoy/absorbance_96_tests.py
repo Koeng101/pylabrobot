@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from pylabrobot.byonoy import byonoy_a96a_illumination_unit, byonoy_a96a_parking_unit
-from pylabrobot.byonoy.absorbance_96 import ByonoyAbsorbance96
+from pylabrobot.byonoy.absorbance_96 import ByonoyAbsorbance96, ByonoyAbsorbanceBaseUnit
 from pylabrobot.io.binary import Writer
 from pylabrobot.io.hid import HID
 from pylabrobot.resources import Coordinate, Lid, Plate, Well
@@ -139,8 +139,7 @@ def _plate(size_z: float) -> Plate:
 
 class IlluminationUnitHeightCheckTests(unittest.IsolatedAsyncioTestCase):
   async def _check_with(self, plate: Plate) -> None:
-    base = byonoy_a96a_parking_unit(name="base")
-    await base.create_body()
+    base = await byonoy_a96a_parking_unit(name="base")
     stored = await base.store.create(definition_from_resource(plate), plate.name)
     await base.plate_holder.assign_child_resource(stored)
     unit = byonoy_a96a_illumination_unit(name="illumination_unit")
@@ -160,3 +159,24 @@ class IlluminationUnitHeightCheckTests(unittest.IsolatedAsyncioTestCase):
     )
     with self.assertRaises(RuntimeError):
       await self._check_with(plate)
+
+
+class BodyInTheStoreTests(unittest.IsolatedAsyncioTestCase):
+  async def test_body_is_found_again_and_only_found_by_get_resources(self) -> None:
+    base = await byonoy_a96a_parking_unit(name="base")
+    again = ByonoyAbsorbanceBaseUnit(
+      name="base", model="byonoy_a96a_parking_unit", store=base.store
+    )
+    with self.assertRaises(RuntimeError):
+      again.body  # noqa: B018
+    self.assertEqual(await again.get_resources(), base.body)
+    self.assertEqual(again.plate_holder.handle, base.plate_holder.handle)
+    missing = ByonoyAbsorbanceBaseUnit(name="other", store=base.store)
+    with self.assertRaises(LookupError):
+      await missing.get_resources()
+
+  async def test_an_unrelated_resource_of_its_name_is_not_taken_over(self) -> None:
+    unit = ByonoyAbsorbanceBaseUnit(name="base", model="byonoy_a96a_parking_unit")
+    await unit.store.create("cor_96_wellplate_360uL_Fb", name="base")
+    with self.assertRaisesRegex(ValueError, "the store's 'base' is a RESOURCE_KIND_PLATE"):
+      await unit.create_resources()

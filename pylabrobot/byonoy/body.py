@@ -4,7 +4,7 @@ that check a drop the way the units' holders do."""
 from typing import Any, Dict, Optional, Sequence
 
 from pylabrobot.resources import Coordinate, Rotation
-from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store import build, devices, handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -62,15 +62,6 @@ def body_definition(
   )
 
 
-async def find_or_create(
-  store: ResourceStore, definition: pb.ResourceDefinition
-) -> handles.Resource:
-  """The resource named as `definition` is in `store`, or one created from it as a root."""
-  name = definition.attributes.name
-  found = await store.find_resources(spb.ResourceFilter(names=[name]))
-  return found[0] if found else await store.create(definition, name)
-
-
 async def assign_unlocated(parent: handles.Resource, child: handles.Resource) -> None:
   """Put `child` in `parent` with no location, as `assign_child_resource(child, location=None)`
   does to a parent that seats nothing."""
@@ -83,18 +74,17 @@ async def assign_unlocated(parent: handles.Resource, child: handles.Resource) ->
 
 
 class Unit:
-  """A Byonoy unit: its body in a resource store, found there by name or created at
-  `create_body`, and its holders.
+  """A Byonoy unit: its body in a resource store, and its holders. `create_resources` finds the
+  body there by name, or creates it when the store has none; `get_resources` only finds it.
 
   Attributes:
     store: the resource store its body is in.
-    body: its body; None until `create_body`.
   """
 
   def __init__(self, name: str, store: Optional[ResourceStore]):
     self._name = name
     self.store = store if store is not None else ResourceStore.in_memory()
-    self.body: Optional[handles.Resource] = None
+    self._body: Optional[handles.Resource] = None
     self._parts: Dict[str, handles.Resource] = {}
 
   @property
@@ -103,19 +93,49 @@ class Unit:
     return self._name
 
   def definition(self) -> pb.ResourceDefinition:
-    """Its body and holders, as `create_body` creates them."""
+    """Its body and holders, as `create_resources` creates them."""
     raise NotImplementedError
 
-  async def create_body(self) -> handles.Resource:
+  @property
+  def body(self) -> handles.Resource:
+    """Its body in the store.
+
+    Raises:
+      RuntimeError: if its body is not found or created yet: call `create_resources` first.
+    """
+    if self._body is None:
+      raise devices.not_in_store(self.name)
+    return self._body
+
+  async def _find_resources(self, create: bool) -> handles.Resource:
+    if self._body is None:
+      body = await devices.find_or_create(self.store, self.definition(), create=create)
+      self._parts = {child.name: child for child in await body.get_children()}
+      self._body = body
+    return self._body
+
+  async def create_resources(self) -> handles.Resource:
     """Find its body in its store by name, or create it there as a root.
 
     Returns:
       the body.
+
+    Raises:
+      ValueError: the store's resource of its name is not this unit's kind and model.
     """
-    if self.body is None:
-      self.body = await find_or_create(self.store, self.definition())
-      self._parts = {child.name: child for child in await self.body.get_children()}
-    return self.body
+    return await self._find_resources(create=True)
+
+  async def get_resources(self) -> handles.Resource:
+    """Find its body in its store by name; never create it.
+
+    Returns:
+      the body.
+
+    Raises:
+      LookupError: the store has nothing of its name.
+      ValueError: the store's resource of its name is not this unit's kind and model.
+    """
+    return await self._find_resources(create=False)
 
   def part(self, name: str) -> handles.Resource:
     """One of its holders, by name.
@@ -123,8 +143,8 @@ class Unit:
     Raises:
       RuntimeError: if its body is not in its store yet.
     """
-    if self.body is None:
-      raise RuntimeError(f"{self.name} is not in its resource store yet; call create_body first")
+    if self._body is None:
+      raise devices.not_in_store(self.name)
     return self._parts[name]
 
 

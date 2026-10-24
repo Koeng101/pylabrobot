@@ -13,8 +13,13 @@ from pylabrobot.resources.errors import (
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
-class StoreError(Exception):
+class StoreError(ValueError):
   """A request the store cannot carry out, with the protocol's name for why.
+
+  It is a `ValueError`, the exception PLR's resource tree raises for most of what the store
+  refuses (a name taken, a holder already full, a plate not skirted), so a refusal reached through
+  a handle is caught as PLR's was. `plr_error` turns it into PLR's own exception where that is
+  another class.
 
   Attributes:
     problem: why, as `Issue.problem` carries it.
