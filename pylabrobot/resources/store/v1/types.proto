@@ -245,6 +245,9 @@ message HeadToolSpec {
   double fitting_depth = 1;
   optional bool is_conductive = 2;
   optional Vec3 pick_up_location = 3;
+  // A gripper tool's: how far the line it grips along - the axis through its pins - stands above
+  // its bottom. Unset on a tool that does not grip.
+  optional double grip_line_height = 4;
 }
 
 message TipSpec {
@@ -275,6 +278,9 @@ message HolderSpec {
   repeated ResourceKind accepts = 3;
   // How many children it takes at once; 0 is no limit.
   int32 capacity = 4;
+  // A holder tools are parked in, a CoRe gripper holder: where along its y, from its front edge,
+  // each channel stands to take its tool, back first.
+  repeated double channel_y_centers = 5;
 }
 
 message ResourceStackSpec {
@@ -416,6 +422,10 @@ message ResourceState {
   optional double jaw_width = 3;
   // Tip spots: how many tips it has made, which names the next one "<spot>#<tips_made>".
   optional uint32 tips_made = 4;
+  // Device parts with rotation drives: each drive's angle, by the drive's name, in degrees, as the
+  // drive last reported it. Kept in the drive's own terms; the parts it turns carry the same fact
+  // as their rotations, rendered for the deck.
+  map<string, double> drive_angles = 5;
 }
 
 // One resource as it is now. A spot's tip, a holder's resource, a plate's lid and a shaft's tool

@@ -329,6 +329,9 @@ message DevicePosition {
   optional RotationChange rotation = 5;
   // A gripper's jaws.
   optional double jaw_width = 6;
+  // Rotation drives the part carries, by name: each one's angle as it reports it, in degrees,
+  // merged into its `drive_angles`.
+  map<string, double> drive_angles = 7;
 }
 
 message RecordDevicePositionsRequest {

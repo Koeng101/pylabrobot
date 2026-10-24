@@ -395,14 +395,16 @@ class HamiltonTipSpec(_message.Message):
     def __init__(self, tip_size: _Optional[str] = ..., pickup_method: _Optional[_Union[TipPickupMethod, str]] = ...) -> None: ...
 
 class HeadToolSpec(_message.Message):
-    __slots__ = ("fitting_depth", "is_conductive", "pick_up_location")
+    __slots__ = ("fitting_depth", "is_conductive", "pick_up_location", "grip_line_height")
     FITTING_DEPTH_FIELD_NUMBER: _ClassVar[int]
     IS_CONDUCTIVE_FIELD_NUMBER: _ClassVar[int]
     PICK_UP_LOCATION_FIELD_NUMBER: _ClassVar[int]
+    GRIP_LINE_HEIGHT_FIELD_NUMBER: _ClassVar[int]
     fitting_depth: float
     is_conductive: bool
     pick_up_location: Vec3
-    def __init__(self, fitting_depth: _Optional[float] = ..., is_conductive: _Optional[bool] = ..., pick_up_location: _Optional[_Union[Vec3, _Mapping]] = ...) -> None: ...
+    grip_line_height: float
+    def __init__(self, fitting_depth: _Optional[float] = ..., is_conductive: _Optional[bool] = ..., pick_up_location: _Optional[_Union[Vec3, _Mapping]] = ..., grip_line_height: _Optional[float] = ...) -> None: ...
 
 class TipSpec(_message.Message):
     __slots__ = ("diameter", "has_filter", "maximal_volume", "nominal_volume", "collar_height", "hamilton")
@@ -433,16 +435,18 @@ class LidSpec(_message.Message):
     def __init__(self, nesting_z_height: _Optional[float] = ...) -> None: ...
 
 class HolderSpec(_message.Message):
-    __slots__ = ("child_location", "pedestal_size_z", "accepts", "capacity")
+    __slots__ = ("child_location", "pedestal_size_z", "accepts", "capacity", "channel_y_centers")
     CHILD_LOCATION_FIELD_NUMBER: _ClassVar[int]
     PEDESTAL_SIZE_Z_FIELD_NUMBER: _ClassVar[int]
     ACCEPTS_FIELD_NUMBER: _ClassVar[int]
     CAPACITY_FIELD_NUMBER: _ClassVar[int]
+    CHANNEL_Y_CENTERS_FIELD_NUMBER: _ClassVar[int]
     child_location: Vec3
     pedestal_size_z: float
     accepts: _containers.RepeatedScalarFieldContainer[ResourceKind]
     capacity: int
-    def __init__(self, child_location: _Optional[_Union[Vec3, _Mapping]] = ..., pedestal_size_z: _Optional[float] = ..., accepts: _Optional[_Iterable[_Union[ResourceKind, str]]] = ..., capacity: _Optional[int] = ...) -> None: ...
+    channel_y_centers: _containers.RepeatedScalarFieldContainer[float]
+    def __init__(self, child_location: _Optional[_Union[Vec3, _Mapping]] = ..., pedestal_size_z: _Optional[float] = ..., accepts: _Optional[_Iterable[_Union[ResourceKind, str]]] = ..., capacity: _Optional[int] = ..., channel_y_centers: _Optional[_Iterable[float]] = ...) -> None: ...
 
 class ResourceStackSpec(_message.Message):
     __slots__ = ("direction",)
@@ -631,16 +635,25 @@ class VolumeState(_message.Message):
     def __init__(self, volume: _Optional[float] = ..., pending_volume: _Optional[float] = ..., tracking_enabled: _Optional[bool] = ...) -> None: ...
 
 class ResourceState(_message.Message):
-    __slots__ = ("volume", "tip_tracking_enabled", "jaw_width", "tips_made")
+    __slots__ = ("volume", "tip_tracking_enabled", "jaw_width", "tips_made", "drive_angles")
+    class DriveAnglesEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: float
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[float] = ...) -> None: ...
     VOLUME_FIELD_NUMBER: _ClassVar[int]
     TIP_TRACKING_ENABLED_FIELD_NUMBER: _ClassVar[int]
     JAW_WIDTH_FIELD_NUMBER: _ClassVar[int]
     TIPS_MADE_FIELD_NUMBER: _ClassVar[int]
+    DRIVE_ANGLES_FIELD_NUMBER: _ClassVar[int]
     volume: VolumeState
     tip_tracking_enabled: bool
     jaw_width: float
     tips_made: int
-    def __init__(self, volume: _Optional[_Union[VolumeState, _Mapping]] = ..., tip_tracking_enabled: _Optional[bool] = ..., jaw_width: _Optional[float] = ..., tips_made: _Optional[int] = ...) -> None: ...
+    drive_angles: _containers.ScalarMap[str, float]
+    def __init__(self, volume: _Optional[_Union[VolumeState, _Mapping]] = ..., tip_tracking_enabled: _Optional[bool] = ..., jaw_width: _Optional[float] = ..., tips_made: _Optional[int] = ..., drive_angles: _Optional[_Mapping[str, float]] = ...) -> None: ...
 
 class ResourceNode(_message.Message):
     __slots__ = ("id", "parent_id", "root_id", "index", "attributes", "state", "child_ids", "pending_operation_ids", "revision")

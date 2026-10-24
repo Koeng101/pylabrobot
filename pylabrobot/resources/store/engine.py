@@ -1199,6 +1199,10 @@ class Engine:
       self.rotate(change, steps)
     if position.HasField("jaw_width"):
       self.set_jaw_width(node, position.jaw_width, steps)
+    if position.drive_angles:
+      self.set_attributes(
+        node, steps, lambda: node.state.drive_angles.update(dict(position.drive_angles))
+      )
     return node
 
   def record_measurement(

@@ -417,20 +417,29 @@ class FindResourcesAtResponse(_message.Message):
     def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ...) -> None: ...
 
 class DevicePosition(_message.Message):
-    __slots__ = ("resource", "frame", "location", "reference_point", "rotation", "jaw_width")
+    __slots__ = ("resource", "frame", "location", "reference_point", "rotation", "jaw_width", "drive_angles")
+    class DriveAnglesEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: float
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[float] = ...) -> None: ...
     RESOURCE_FIELD_NUMBER: _ClassVar[int]
     FRAME_FIELD_NUMBER: _ClassVar[int]
     LOCATION_FIELD_NUMBER: _ClassVar[int]
     REFERENCE_POINT_FIELD_NUMBER: _ClassVar[int]
     ROTATION_FIELD_NUMBER: _ClassVar[int]
     JAW_WIDTH_FIELD_NUMBER: _ClassVar[int]
+    DRIVE_ANGLES_FIELD_NUMBER: _ClassVar[int]
     resource: _types_pb2.ResourceRef
     frame: _types_pb2.ResourceRef
     location: _types_pb2.PartialVec3
     reference_point: _types_pb2.Vec3
     rotation: _types_pb2.RotationChange
     jaw_width: float
-    def __init__(self, resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., frame: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., location: _Optional[_Union[_types_pb2.PartialVec3, _Mapping]] = ..., reference_point: _Optional[_Union[_types_pb2.Vec3, _Mapping]] = ..., rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., jaw_width: _Optional[float] = ...) -> None: ...
+    drive_angles: _containers.ScalarMap[str, float]
+    def __init__(self, resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., frame: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., location: _Optional[_Union[_types_pb2.PartialVec3, _Mapping]] = ..., reference_point: _Optional[_Union[_types_pb2.Vec3, _Mapping]] = ..., rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., jaw_width: _Optional[float] = ..., drive_angles: _Optional[_Mapping[str, float]] = ...) -> None: ...
 
 class RecordDevicePositionsRequest(_message.Message):
     __slots__ = ("lock_tokens", "positions")
