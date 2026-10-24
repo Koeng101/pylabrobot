@@ -13,6 +13,73 @@
           "context": {},
           "data": {
             "resource": {
+              "name": "stacker",
+              "type": "PlateCarrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "out_of_order",
+              "type": "PlateCarrier",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "AmbiStore",
+                  "model": "AmbiStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "AmbiStore",
+              "model": "AmbiStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
               "name": "store_nest_1",
               "type": "PlateHolder",
               "rotation": {

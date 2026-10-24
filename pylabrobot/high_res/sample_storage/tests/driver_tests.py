@@ -16,6 +16,10 @@ from pylabrobot.high_res.sample_storage.driver.errors import (
   PlateNotFoundError,
 )
 from pylabrobot.high_res.sample_storage.driver.models import get_model_info
+from pylabrobot.high_res.sample_storage.driver.serialization import (
+  definition_from_serialized,
+  serialize_definition,
+)
 from pylabrobot.high_res.sample_storage.driver.settings import HighResSampleStorageSettings
 from pylabrobot.high_res.sample_storage.stackers import plate_holder
 from pylabrobot.resources import Coordinate
@@ -1255,6 +1259,135 @@ class HighResSampleStorageBookkeepingTests(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(await self.plate.get_parent(), self.driver.nests[0])
     self.assertIsNone(self.driver.unresolved_transfer)
     self.assertEqual(self.socket.written[-2:], ["platestatus", "neststatus"])
+
+
+class HighResSampleStorageResourcesTests(unittest.IsolatedAsyncioTestCase):
+  def driver(self, store=None) -> HighResSampleStorage:
+    driver = HighResSampleStorage(
+      host="10.253.253.253",
+      name="sample_store",
+      racks={1: rack_definition("rack_1", {"site_1": 20, "site_2": 30})},
+      store=store,
+    )
+    driver.io = FakeSocket(CAPTURES)  # type: ignore[assignment]
+    return driver
+
+  async def test_given_racks_are_reachable_before_setup(self):
+    driver = self.driver()
+    with self.assertRaises(RuntimeError):
+      driver.body  # noqa: B018
+    self.assertEqual(await driver.get_num_free_sites(), 2)
+    self.assertEqual([rack.name for rack in driver.racks], ["rack_1"])
+    self.assertEqual(driver.nests, [])
+    await driver.setup()
+    self.assertEqual(len(driver.nests), 2)
+    self.assertEqual(
+      [child.name for child in await driver.body.get_children()],
+      ["rack_1", "sample_store_nest_1", "sample_store_nest_2"],
+    )
+
+  async def test_given_racks_are_reported_attached_when_created(self):
+    driver = self.driver()
+    events: List[PLREvent] = []
+    bus = EventBus()
+    bus.subscribe(events.append)
+    with use_event_bus(bus):
+      await driver.create_resources()
+    self.assertEqual(
+      [(e.name, e.data["resource"]["name"], e.data["parent"]["name"]) for e in events],
+      [("resource.assigned", "rack_1", "sample_store")],
+    )
+
+  async def test_get_resources_finds_but_never_creates(self):
+    driver = self.driver()
+    with self.assertRaises(LookupError):
+      await driver.get_resources()
+    await driver.setup()
+    again = self.driver(store=driver.store)
+    self.assertEqual(await again.get_resources(), driver.body)
+    self.assertEqual(again.racks, driver.racks)
+    self.assertEqual(again.nests, driver.nests)
+
+  async def test_a_resource_of_its_name_that_is_not_a_sample_store_is_refused(self):
+    driver = self.driver()
+    await driver.store.create(
+      build.resource("sample_store", Coordinate(1, 1, 1)), name="sample_store"
+    )
+    with self.assertRaisesRegex(ValueError, "not the RESOURCE_KIND_RESOURCE of model"):
+      await driver.create_resources()
+
+  async def test_serialize_writes_whole_numbers_as_ints(self):
+    serialized = await self.driver().serialize()
+    rack = serialized["racks"]["1"]
+    self.assertIsInstance(rack["size_x"], int)
+    self.assertIsInstance(rack["children"][0]["location"]["x"], int)
+    self.assertIsInstance(rack["children"][0]["size_x"], float)
+
+
+class SerializationKindsTests(unittest.TestCase):
+  def round_trip(self, definition: pb.ResourceDefinition) -> None:
+    data = serialize_definition(definition)
+    restored = definition_from_serialized(json.loads(json.dumps(data)))
+    self.assertEqual(serialize_definition(restored), data)
+
+  def test_tube_racks_and_tubes(self):
+    tube = build.resource(
+      "tube",
+      Coordinate(8.5, 8.5, 44.5),
+      kind=pb.RESOURCE_KIND_TUBE,
+      location=Coordinate.zero(),
+      type_name="Tube",
+      container=pb.ContainerSpec(max_volume=1400),
+    )
+    holder = build.resource(
+      "rack_A1",
+      Coordinate(9, 9, 43),
+      kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
+      location=Coordinate(10, 7, 2),
+      type_name="ResourceHolder",
+      identifier="A1",
+      holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero()), capacity=1),
+      children=[tube],
+    )
+    rack = build.resource(
+      "rack",
+      Coordinate(127.76, 85.48, 45.2),
+      kind=pb.RESOURCE_KIND_TUBE_RACK,
+      type_name="TubeRack",
+      itemized=pb.ItemizedSpec(num_items_x=1, num_items_y=1),
+      children=[holder],
+    )
+    data = serialize_definition(rack)
+    self.assertEqual(data["ordering"], {"A1": "rack_A1"})
+    self.assertEqual(data["children"][0]["children"][0]["max_volume"], 1400)
+    self.round_trip(rack)
+
+  def test_troughs_and_stacks(self):
+    trough = build.resource(
+      "trough",
+      Coordinate(20, 80, 40),
+      kind=pb.RESOURCE_KIND_TROUGH,
+      location=Coordinate.zero(),
+      type_name="Trough",
+      container=pb.ContainerSpec(max_volume=100_000, bottom_type=pb.WELL_BOTTOM_TYPE_V),
+    )
+    stack = build.resource(
+      "stack",
+      Coordinate(20, 80, 40),
+      kind=pb.RESOURCE_KIND_RESOURCE_STACK,
+      type_name="ResourceStack",
+      stack=pb.ResourceStackSpec(direction=pb.STACK_DIRECTION_Z),
+      children=[trough],
+    )
+    data = serialize_definition(stack)
+    self.assertEqual(data["direction"], "z")
+    self.assertEqual(data["children"][0]["bottom_type"], "V")
+    self.round_trip(stack)
+
+  def test_kinds_a_sample_store_does_not_write_are_refused(self):
+    spot = build.resource("spot", Coordinate(9, 9, 9), kind=pb.RESOURCE_KIND_TIP_SPOT)
+    with self.assertRaisesRegex(ValueError, "holds no RESOURCE_KIND_TIP_SPOT"):
+      serialize_definition(spot)
 
 
 if __name__ == "__main__":

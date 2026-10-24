@@ -193,9 +193,11 @@ class Recorder(recording.Recorder):
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     """The resources under the store's body; none before setup creates it."""
-    if self.store.body is None:
+    try:
+      body = self.store.body
+    except RuntimeError:
       return []
-    return await snapshot_store(self.store.store, self.store.body)
+    return await snapshot_store(self.store.store, body)
 
   async def check(self, test: unittest.TestCase, scenario: str) -> None:
     """Compare the record of the steps so far with the scenario's golden file."""

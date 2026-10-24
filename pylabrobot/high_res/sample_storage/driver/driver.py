@@ -29,7 +29,7 @@ from pylabrobot.resources.barcode import Barcode
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.errors import ResourceNotFoundError
 from pylabrobot.resources.rotation import Rotation
-from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store import build, devices, handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -115,8 +115,11 @@ class HighResSampleStorage:
 
   The store's racks and nests are resources in a resource store: :attr:`body` is
   the device in the store, holding one plate carrier per stacker (its sites are
-  the stacker's slots) and one plate holder per nest. ``setup()`` creates the
-  body, or finds it by name when the store already holds it.
+  the stacker's slots) and one plate holder per nest. :meth:`create_resources`
+  finds the body by name when the store already holds it, or creates it, with
+  the racks and nests known so far; ``setup()`` calls it first, and again once it
+  has read the stackers and nests the device reports. :meth:`get_resources` only
+  finds them.
 
   If a plate move is interrupted without a definitive outcome, the driver
   exposes it through :attr:`unresolved_transfer` and blocks further plate moves,
@@ -195,7 +198,7 @@ class HighResSampleStorage:
     self.name = name
     self.model = configured_model
     self.store = store if store is not None else ResourceStore.in_memory()
-    self.body: Optional[handles.Resource] = None
+    self._body: Optional[handles.Resource] = None
     self._size = Coordinate(size_x, size_y, size_z)
     self._rotation = rotation
     self._category = category
@@ -303,8 +306,19 @@ class HighResSampleStorage:
     children = nests + racks if self._nests_restored else racks + nests
     return pb.ResourceDefinition(attributes=self._body_attributes(), children=children)
 
+  def _emit_part_events(self, part: pb.ResourceDefinition, body: pb.ResourceAttributes) -> None:
+    """Report a rack or nest assigned to the body, as PLR reports it: a stacker read from the
+    device as built with its slots, then attached; a stacker given at construction, or a nest,
+    attached."""
+    stackers = {rack.attributes.name: n for n, rack in self._rack_definitions.items()}
+    stacker = stackers.get(part.attributes.name)
+    if stacker is not None and stacker in self._discovered:
+      tree_events.emit_built(part)
+    tree_events.emit_attached(part, body)
+
   async def _create_body(self, restoring: bool = False) -> None:
-    """Create the body with its racks and nests, and report what was assigned as PLR would.
+    """Create the body with the racks and nests known so far, and report what was assigned as PLR
+    would.
 
     Args:
       restoring: Report it as `deserialize` builds it, rather than as setup does.
@@ -329,28 +343,99 @@ class HighResSampleStorage:
       for rack in self._rack_definitions.values():
         tree_events.emit_attached(rack, attributes)
       return
-    for stacker in sorted(self._discovered):
-      tree_events.emit_built(self._rack_definitions[stacker])
-      tree_events.emit_attached(self._rack_definitions[stacker], attributes)
-    if not self._nests_restored:
-      for nest in self._nest_definitions:
-        tree_events.emit_attached(nest, attributes)
+    for part in definition.children:
+      self._emit_part_events(part, attributes)
 
-  async def _find_body(self) -> bool:
-    """Find the body in the store by name, with its racks and nests: a device reconnecting.
-    Whether it was there."""
-    response = await self.store.commands.find_resources(
-      spb.FindResourcesRequest(
-        filter=spb.ResourceFilter(names=[self.name], type_names=[type(self).__name__])
+  async def _add_missing_parts(
+    self, body_id: bytes, nodes: Sequence[pb.ResourceNode]
+  ) -> Sequence[pb.ResourceNode]:
+    """Create in the body the racks and nests it does not hold yet, reporting each assigned; the
+    body's nodes as they are then."""
+    held = {node.attributes.name for node in nodes if node.parent_id == body_id}
+    missing = [
+      part for part in self._body_definition().children if part.attributes.name not in held
+    ]
+    if not missing:
+      return nodes
+    body = pb.ResourceRef(id=body_id)
+    await self.store.commands.create_resources(
+      spb.CreateResourcesRequest(
+        lock_tokens=self.store.lock_tokens,
+        resources=[
+          spb.CreateResource(
+            definition=part,
+            name=part.attributes.name,
+            assign=(
+              pb.AssignChild(parent=body, location=part.attributes.location)
+              if part.attributes.HasField("location")
+              else pb.AssignChild(parent=body, no_location=True)
+            ),
+          )
+          for part in missing
+        ],
       )
     )
-    if not response.nodes:
-      return False
-    nodes = await self.store.commands.get_resources(
-      spb.GetResourcesRequest(resources=[pb.ResourceRef(id=response.nodes[0].id)], depth=2)
+    attributes = self._body_attributes()
+    for part in missing:
+      self._emit_part_events(part, attributes)
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[body], depth=2)
     )
-    await self._attach_body(nodes.nodes)
-    return True
+    return response.nodes
+
+  async def _find_resources(self, create: bool) -> handles.Resource:
+    if self._body is None:
+      found = await devices.find_resource(
+        self.store, self.name, K.RESOURCE_KIND_RESOURCE, self.model
+      )
+      if found is None:
+        if not create:
+          raise LookupError(f"the store has no sample store '{self.name}'")
+        await self._create_body()
+        return self.body
+      body_id = found.id
+    else:
+      body_id = self._body.id
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[pb.ResourceRef(id=body_id)], depth=2)
+    )
+    nodes: Sequence[pb.ResourceNode] = response.nodes
+    if create:
+      nodes = await self._add_missing_parts(body_id, nodes)
+    await self._attach_body(nodes)
+    return self.body
+
+  async def create_resources(self) -> handles.Resource:
+    """Find the body in the store by name, with its racks and nests, creating the body and any
+    rack or nest it does not hold yet.
+
+    Racks given at construction are created with the body; stackers read from the device and the
+    transfer nests are added once `setup` has read them.
+
+    Raises:
+      ValueError: The store's resource of this name is not this sample store.
+    """
+    return await self._find_resources(create=True)
+
+  async def get_resources(self) -> handles.Resource:
+    """Find the body in the store by name, with its racks and nests; never create them.
+
+    Raises:
+      LookupError: The store has no sample store of this name.
+      RuntimeError: The body holds no stacker named as a configured rack is.
+    """
+    return await self._find_resources(create=False)
+
+  @property
+  def body(self) -> handles.Resource:
+    """The device's body in the resource store.
+
+    Raises:
+      RuntimeError: It is not found or created yet: call `create_resources` or `setup` first.
+    """
+    if self._body is None:
+      raise devices.not_in_store(self.name)
+    return self._body
 
   async def _attach_body(self, nodes: Sequence[pb.ResourceNode]) -> None:
     """Hold handles to the body, its racks and its nests, from the body's nodes, body first."""
@@ -368,7 +453,7 @@ class HighResSampleStorage:
           f"'{definition.attributes.name}' for stacker {stacker}."
         )
       racks[stacker] = rack
-    self.body = body
+    self._body = body
     self._racks_by_number = racks
     self.nests = [part for part in parts if isinstance(part, handles.PlateHolder)]
     self._slots = {}
@@ -380,8 +465,8 @@ class HighResSampleStorage:
 
   async def _device_reference(self) -> Optional[ResourceReference]:
     """The body as events refer to the device."""
-    if self.body is not None:
-      return await handle_reference(self.body)
+    if self._body is not None:
+      return await handle_reference(self._body)
     return tree_events.reference(self._body_attributes())
 
   async def _operation_data(
@@ -408,21 +493,21 @@ class HighResSampleStorage:
     """
     self._require_no_unresolved_transfer()
     parent_name: Optional[str] = None
-    if self.body is None:
+    if self._body is None:
       definition = self._body_definition()
     else:
       response = await self.store.commands.get_resources(
-        spb.GetResourcesRequest(resources=[self.body.ref], depth=-1, ancestors=True)
+        spb.GetResourcesRequest(resources=[self._body.ref], depth=-1, ancestors=True)
       )
-      definition = definition_from_nodes(self.body.id, response.nodes)
-      body_node = next(node for node in response.nodes if node.id == self.body.id)
+      definition = definition_from_nodes(self._body.id, response.nodes)
+      body_node = next(node for node in response.nodes if node.id == self._body.id)
       parent = next((node for node in response.nodes if node.id == body_node.parent_id), None)
       parent_name = parent.attributes.name if parent is not None else None
     children = {child.attributes.name: child for child in definition.children}
     rack_names = {stacker: rack.attributes.name for stacker, rack in self._rack_definitions.items()}
     nest_names = (
       [nest.name for nest in self.nests]
-      if self.body is not None
+      if self._body is not None
       else [nest.attributes.name for nest in self._nest_definitions]
     )
     # These fields preserve physical stacker numbers and transfer-nest ordering.
@@ -504,6 +589,7 @@ class HighResSampleStorage:
   async def setup(self, home: bool = False) -> None:
     if self._verification_warning is not None:
       logger.warning("%s", self._verification_warning)
+    await self.create_resources()
     await self.io.setup()
     self._transport_invalidated = False
     try:
@@ -531,11 +617,7 @@ class HighResSampleStorage:
     nest_status = await self.request_nest_status()
     if not nest_status:
       raise RuntimeError("The sample store did not report any nests.")
-    if self.body is None:
-      await self._find_body()
     if not self.nests:
-      if self.body is not None:
-        raise RuntimeError(f"'{self.name}' in the resource store holds no transfer nests.")
       nest_numbers = sorted(nest_status)
       expected_nest_numbers = list(range(1, len(nest_numbers) + 1))
       if nest_numbers != expected_nest_numbers:
@@ -545,8 +627,7 @@ class HighResSampleStorage:
       self._nest_definitions = [
         plate_holder(f"{self.name}_nest_{nest_number}", _NEST_SIZE) for nest_number in nest_numbers
       ]
-    if self.body is None:
-      await self._create_body()
+    await self.create_resources()
     if home:
       await self.home()
 
@@ -1128,11 +1209,18 @@ class HighResSampleStorage:
     )
     return {node.id: node for node in response.nodes}
 
+  async def _given_racks(self) -> None:
+    """Find or create the body when racks were given at construction and it is not found yet, so
+    their slots are known before `setup`."""
+    if self._body is None and self._rack_definitions:
+      await self.create_resources()
+
   def _sites(self) -> List[handles.Resource]:
     """Every configured stacker slot, by stacker and then by site."""
     return [site for rack in self._racks_by_number.values() for site in rack.sites]
 
   async def get_num_free_sites(self) -> int:
+    await self._given_racks()
     nodes = await self._read(self.racks, depth=1)
     return sum(1 for site in self._sites() if not nodes[site.id].child_ids)
 
@@ -1145,6 +1233,7 @@ class HighResSampleStorage:
     Raises:
       ResourceNotFoundError: No slot holds a resource of that name.
     """
+    await self._given_racks()
     nodes = await self._read(self.racks, depth=2)
     for site in self._sites():
       held = nodes[site.id].child_ids
@@ -1159,6 +1248,7 @@ class HighResSampleStorage:
   async def _find_available_sites_sorted(
     self, plate: handles.Resource
   ) -> List[handles.PlateHolder]:
+    await self._given_racks()
     nodes = await self._read([plate, *self.racks], depth=1)
     plate_node = nodes[plate.id]
     plate_height = plate_node.attributes.size.z

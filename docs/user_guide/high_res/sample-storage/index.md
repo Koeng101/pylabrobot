@@ -84,9 +84,12 @@ command and defines empty stackers. Passing `racks={}` explicitly represents a s
 configured racks and does not enable discovery.
 
 The store's racks and nests live in a resource store: `store.store`, a new in-memory store unless
-one is passed with `store=`. `setup()` creates the store's body there, holding its racks and
-transfer nests, or finds it by name when the resource store already holds it. `store.body`,
-`store.racks` and `store.nests` are handles to them, and plates are handles too:
+one is passed with `store=`. `await store.create_resources()` finds the store's body there by
+name, or creates it with the racks given as `racks`; `setup()` calls it first, and again once it
+has read the device's stackers and transfer nests, adding those the body does not hold yet. For a
+body the resource store already holds, `await store.get_resources()` finds it without creating
+anything. `store.body`, `store.racks` and `store.nests` are handles to them, and plates are
+handles too:
 
 ```python
 plate = await store.store.create(
