@@ -1,7 +1,15 @@
-"""What a store refuses, said as the protocol says it."""
+"""What a store refuses, said as the protocol says it, and as PLR raises it."""
 
 from __future__ import annotations
 
+from typing import Dict, Optional, Type
+
+from pylabrobot.resources.errors import (
+  HasTipError,
+  NoTipError,
+  TooLittleLiquidError,
+  TooLittleVolumeError,
+)
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
@@ -17,3 +25,30 @@ class StoreError(Exception):
     super().__init__(message)
     self.problem = problem
     self.resource_name = resource_name
+
+
+# The exception PLR raises for each tracking problem a store reports.
+PLR_ERRORS: Dict[int, Type[Exception]] = {
+  pb.PROBLEM_HAS_TIP: HasTipError,
+  pb.PROBLEM_NO_TIP: NoTipError,
+  pb.PROBLEM_TOO_LITTLE_LIQUID: TooLittleLiquidError,
+  pb.PROBLEM_TOO_LITTLE_VOLUME: TooLittleVolumeError,
+}
+
+
+def plr_error(error: StoreError, otherwise: Optional[Type[Exception]] = None) -> Exception:
+  """The exception PLR raises for a store's refusal, carrying the store's message.
+
+  A tracking problem in `PLR_ERRORS` becomes PLR's own error for it: `HasTipError`, `NoTipError`,
+  `TooLittleLiquidError`, `TooLittleVolumeError`. Any other problem becomes `otherwise`, or stays
+  the `StoreError` itself when `otherwise` is unset.
+
+  Use it as `raise plr_error(error) from error`.
+
+  Args:
+    error: What the store refused with.
+    otherwise: The exception for every other problem: `ValueError` for a holder refusing what
+      is put in it, say.
+  """
+  kind = PLR_ERRORS.get(error.problem, otherwise)
+  return error if kind is None else kind(str(error))
