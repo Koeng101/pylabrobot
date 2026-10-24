@@ -13,16 +13,11 @@ from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 from pylabrobot.lib.liquid_handling.channel_positioning import ChannelFootprint
 from pylabrobot.lib.liquid_handling.pipette_batch_scheduling import ChannelTarget
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.errors import (
-  HasTipError,
-  NoTipError,
-  TooLittleLiquidError,
-  TooLittleVolumeError,
-)
+from pylabrobot.resources.errors import NoTipError
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.errors import StoreError, plr_error
 from pylabrobot.resources.store.tree import to_coordinate, to_rotation, to_vec3
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -56,18 +51,9 @@ def store_problem(error: StoreError) -> Exception:
   is placed there as a `RuntimeError`, as a resource holder refuses it; anything else as a
   `ValueError`.
   """
-  message = str(error)
-  if error.problem == pb.PROBLEM_HAS_TIP:
-    return HasTipError(message)
-  if error.problem == pb.PROBLEM_NO_TIP:
-    return NoTipError(message)
-  if error.problem == pb.PROBLEM_TOO_LITTLE_LIQUID:
-    return TooLittleLiquidError(message)
-  if error.problem == pb.PROBLEM_TOO_LITTLE_VOLUME:
-    return TooLittleVolumeError(message)
   if error.problem == pb.PROBLEM_CANNOT_DROP_HERE:
-    return RuntimeError(message)
-  return ValueError(message)
+    return RuntimeError(str(error))
+  return plr_error(error, otherwise=ValueError)
 
 
 async def get_nodes(

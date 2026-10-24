@@ -10,6 +10,7 @@ from pylabrobot.events import (
 )
 from pylabrobot.resources import Coordinate, Rotation
 from pylabrobot.resources.store import StoreError
+from pylabrobot.resources.store.errors import plr_error
 from pylabrobot.resources.store.handles import Resource
 from pylabrobot.resources.store.tree import to_coordinate, to_rotation
 from pylabrobot.resources.store.v1 import store_pb2 as spb
@@ -237,7 +238,7 @@ class ManualOperator:
     try:
       await destination.assign_child_resource(resource, location=location)
     except StoreError as error:
-      raise RuntimeError(str(error)) from error
+      raise plr_error(error, otherwise=RuntimeError) from error
 
   @staticmethod
   async def _validate_resource_move(

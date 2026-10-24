@@ -5,30 +5,16 @@ The driver tells the store where its parts are (`record_positions`), asks it whe
 the store refuses as a tracking problem is raised here as the exception PLR raises for it.
 """
 
-from typing import Dict, List, NoReturn, Optional, Sequence, Type
+from typing import List, NoReturn, Optional, Sequence
 
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.errors import (
-  HasTipError,
-  NoTipError,
-  TooLittleLiquidError,
-  TooLittleVolumeError,
-)
 from pylabrobot.resources.hamilton.tip_creators import TipPickupMethod
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.errors import StoreError, plr_error
 from pylabrobot.resources.store.tree import to_coordinate, to_vec3
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
-
-# The exception PLR raises for each problem a store reports about tracking.
-TRACKING_ERRORS: Dict[int, Type[Exception]] = {
-  pb.PROBLEM_HAS_TIP: HasTipError,
-  pb.PROBLEM_NO_TIP: NoTipError,
-  pb.PROBLEM_TOO_LITTLE_LIQUID: TooLittleLiquidError,
-  pb.PROBLEM_TOO_LITTLE_VOLUME: TooLittleVolumeError,
-}
 
 # How a tip is collected, as the store states it and as the tip type table takes it.
 PICKUP_METHODS = {
@@ -48,10 +34,10 @@ def raise_tracking_error(error: StoreError) -> NoReturn:
     HasTipError, NoTipError, TooLittleLiquidError, TooLittleVolumeError: For those problems.
     StoreError: For any other.
   """
-  kind = TRACKING_ERRORS.get(error.problem)
-  if kind is None:
+  mapped = plr_error(error)
+  if mapped is error:
     raise error
-  raise kind(str(error)) from error
+  raise mapped from error
 
 
 def ref(resource: handles.Resource) -> pb.ResourceRef:
