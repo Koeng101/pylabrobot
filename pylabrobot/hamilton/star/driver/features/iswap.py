@@ -26,10 +26,11 @@ from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_dat
 from pylabrobot.hamilton.star import resource_model
 from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.errors import NoElementError, STARFirmwareError
-from pylabrobot.hamilton.star.resource_model import ELBOW_DRIVE_ANGLE, WRIST_DRIVE_ANGLE
+from pylabrobot.hamilton.star.resource_model import ELBOW_DRIVE, WRIST_DRIVE
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 if TYPE_CHECKING:
@@ -950,17 +951,22 @@ class iSWAP:
 
   # -- where it is -----------------------------------------------------------
 
-  async def _record_drive_angle(self, key: str, angle: float) -> None:
-    """Keep a rotation drive's angle on the head, in the drive's own terms, as it reported it."""
+  async def _record_drive_angle(self, drive: str, angle: float) -> None:
+    """Keep a rotation drive's angle in the head's state, in the drive's own terms, as it reported
+    it."""
     if self.resource is not None:
-      await self.resource.set_metadata({key: angle})
+      await model.record_positions(
+        self.resource.store,
+        [spb.DevicePosition(resource=self.resource.ref, drive_angles={drive: angle})],
+      )
 
-  async def _get_drive_angle(self, key: str) -> Optional[float]:
-    """A rotation drive's angle as the head keeps it, or None while nothing has recorded one."""
+  async def _get_drive_angle(self, drive: str) -> Optional[float]:
+    """A rotation drive's angle as the head's state keeps it, or None while nothing has recorded
+    one."""
     if self.resource is None:
       return None
-    angle = (await self.resource.get_metadata()).get(key)
-    return None if angle is None else float(angle)
+    angles = (await self.resource.state()).drive_angles
+    return angles[drive] if drive in angles else None
 
   async def elbow_drive_update_angle(self, angle: float) -> None:
     """Record which way the arm points on the resource that models it.
@@ -977,7 +983,7 @@ class iSWAP:
     """
     if self.resource is None:
       return
-    await self._record_drive_angle(ELBOW_DRIVE_ANGLE, angle)
+    await self._record_drive_angle(ELBOW_DRIVE, angle)
     if self.link_1 is not None:
       # The carriage does not turn; the arm mounted on it does. Link 1 leaves the drive at the
       # drive's own angle less ninety degrees, which is the deck angle it lies along.
@@ -1021,7 +1027,7 @@ class iSWAP:
     Returns:
       The angle in degrees, or None while nothing has read it yet.
     """
-    return await self._get_drive_angle(WRIST_DRIVE_ANGLE)
+    return await self._get_drive_angle(WRIST_DRIVE)
 
   async def elbow_drive_get_angle(self) -> Optional[float]:
     """Which way the model has the arm pointing, as the elbow drive reports it.
@@ -1033,7 +1039,7 @@ class iSWAP:
     Returns:
       The angle in degrees, or None while nothing has read it yet.
     """
-    return await self._get_drive_angle(ELBOW_DRIVE_ANGLE)
+    return await self._get_drive_angle(ELBOW_DRIVE)
 
   async def wrist_drive_update_angle(self, angle: float) -> None:
     """Record which way the wrist is turned on the resource that models it.
@@ -1049,7 +1055,7 @@ class iSWAP:
       angle: the wrist drive's angle, in degrees, as it reports it.
     """
     c = self.configuration
-    await self._record_drive_angle(WRIST_DRIVE_ANGLE, angle)
+    await self._record_drive_angle(WRIST_DRIVE, angle)
     if self.link_1 is None or self.gripper is None or c.wrist_drive_predefined_increments is None:
       return
     straight = c.wrist_increments_to_deg(c.wrist_drive_predefined_increments.straight)

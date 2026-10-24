@@ -424,11 +424,11 @@ GRIPPER_PAD_LOCATION = Coordinate(109.0, 1.5, -17.0)
 # rather than being stated again - the two cannot drift apart.
 ELBOW_DRIVE_COLUMN_ABOVE_REPORTED_Z = -LINK_1_JOINT.z + LINK_1_BODY_SIZE[2]
 
-# Where the head keeps the angles its two rotation drives last reported, in its metadata. Kept in
-# the drives' own terms, as they report them: the links' rotations carry the same facts rendered
-# for the deck, which is neither the same reference nor the same axis.
-ELBOW_DRIVE_ANGLE = "elbow_drive_angle"
-WRIST_DRIVE_ANGLE = "wrist_drive_angle"
+# The head's two rotation drives, by the names its state's `drive_angles` keeps their angles under.
+# Kept in the drives' own terms, as they report them: the links' rotations carry the same facts
+# rendered for the deck, which is neither the same reference nor the same axis.
+ELBOW_DRIVE = "elbow"
+WRIST_DRIVE = "wrist"
 
 
 def iswap_head_reference_point(diameter: float) -> Coordinate:

@@ -9,7 +9,7 @@ from pylabrobot.hamilton.star.conftest import make_deck
 from pylabrobot.hamilton.star.device import RECORDING_STAR
 from pylabrobot.hamilton.star.driver.features.iswap import iSWAP, iSWAPAxis
 from pylabrobot.hamilton.star.driver.simulator import SimulatedISWAP, STARSimulationDriver
-from pylabrobot.hamilton.star.resource_model import ELBOW_DRIVE_ANGLE, WRIST_DRIVE_ANGLE
+from pylabrobot.hamilton.star.resource_model import ELBOW_DRIVE, WRIST_DRIVE
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.tree import to_coordinate
@@ -234,8 +234,8 @@ class TestElbowWithoutADeck(unittest.IsolatedAsyncioTestCase):
 
 
 class TestTheModelIsSavedWhole(unittest.IsolatedAsyncioTestCase):
-  """The store holds the arm as it was: its parts, the angles its drives last reported on the
-  head, and the gripper's jaw width in its state."""
+  """The store holds the arm as it was: its parts, the angles its drives last reported in the
+  head's state, and the gripper's jaw width in its state."""
 
   async def test_the_store_holds_the_arm_whole(self):
     iswap, _ = await gripper()
@@ -244,9 +244,9 @@ class TestTheModelIsSavedWhole(unittest.IsolatedAsyncioTestCase):
 
     found = await deck.store.get(head.name, root=await deck.get_root())
     self.assertEqual(found, head)
-    held = await found.get_metadata()
-    self.assertEqual(held[ELBOW_DRIVE_ANGLE], await iswap.elbow_drive_get_angle())
-    self.assertEqual(held[WRIST_DRIVE_ANGLE], await iswap.wrist_drive_get_angle())
+    held = (await found.state()).drive_angles
+    self.assertEqual(held[ELBOW_DRIVE], await iswap.elbow_drive_get_angle())
+    self.assertEqual(held[WRIST_DRIVE], await iswap.wrist_drive_get_angle())
     width = await iswap.gripper_request_width()
     self.assertEqual((await gripper_.state()).jaw_width, width)
 
