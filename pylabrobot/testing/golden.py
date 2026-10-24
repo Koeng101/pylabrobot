@@ -3,6 +3,7 @@
 A device's golden tests run scenarios - setup, then what a protocol does - and record what the
 device was sent, in order, and what the resources were left as. Each scenario's record is a JSON
 file in the device's `golden/` directory. A run that does something else fails, showing where.
+`pylabrobot.testing.recorder` runs and records the steps.
 
 Write or rewrite the files after a change that is meant to change them:
 
