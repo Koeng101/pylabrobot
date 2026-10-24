@@ -28,7 +28,7 @@ from pylabrobot.events import (
 )
 from pylabrobot.io.ftdi import FTDI, is_ftdi_transport_error
 from pylabrobot.resources import Coordinate
-from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store import build, devices, handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -170,16 +170,17 @@ def bucket_definition(name: str) -> pb.ResourceDefinition:
 
 
 async def find_or_create_holder(
-  store: ResourceStore, definition: pb.ResourceDefinition
+  store: ResourceStore, definition: pb.ResourceDefinition, create: bool = True
 ) -> handles.ResourceHolder:
-  """The holder of the definition's name and type in `store`, made as a root if it is not there."""
-  attributes = definition.attributes
-  found = await store.find_resources(
-    spb.ResourceFilter(names=[attributes.name], type_names=[attributes.type_name])
-  )
-  holder = found[0] if found else await store.create(definition, name=attributes.name)
+  """The holder of the definition's name and kind in `store`, made as a root if it is not there
+  and `create`.
+
+  Raises:
+    LookupError: It is not there, and `create` is False.
+  """
+  holder = await devices.find_or_create(store, definition, create=create)
   if not isinstance(holder, handles.ResourceHolder):
-    raise RuntimeError(f"'{attributes.name}' in the store is not a holder")
+    raise RuntimeError(f"'{definition.attributes.name}' in the store is not a holder")
   return holder
 
 
@@ -229,19 +230,34 @@ class VSpin:
     # The controller has no query for which bucket is parked at the load position.
     self._at_bucket: Optional[handles.ResourceHolder] = None
 
+  async def _find_resources(self, create: bool) -> None:
+    self._buckets = (
+      await find_or_create_holder(
+        self.store, bucket_definition(f"{self.name}_bucket1"), create=create
+      ),
+      await find_or_create_holder(
+        self.store, bucket_definition(f"{self.name}_bucket2"), create=create
+      ),
+    )
+
   async def create_resources(self) -> None:
-    """Make the two buckets in the store, each a root, or find them there by name.
+    """Find the two buckets in the store by name, or make them there, each a root.
 
     Called by `setup`.
     """
-    self._buckets = (
-      await find_or_create_holder(self.store, bucket_definition(f"{self.name}_bucket1")),
-      await find_or_create_holder(self.store, bucket_definition(f"{self.name}_bucket2")),
-    )
+    await self._find_resources(create=True)
+
+  async def get_resources(self) -> None:
+    """Find the two buckets in the store by name; never make them.
+
+    Raises:
+      LookupError: The store has no bucket of one of their names.
+    """
+    await self._find_resources(create=False)
 
   def _bucket(self, index: int) -> handles.ResourceHolder:
     if self._buckets is None:
-      raise RuntimeError(f"'{self.name}' has no buckets in a store yet; call setup() first")
+      raise devices.not_in_store(self.name)
     return self._buckets[index]
 
   @property

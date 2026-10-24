@@ -99,7 +99,8 @@ from typing import (
 from pylabrobot.events import event_operation, handle_reference, is_event_bus_active
 from pylabrobot.io.socket import Socket
 from pylabrobot.resources import Coordinate, Rotation
-from pylabrobot.resources.store import StoreError, build, handles
+from pylabrobot.resources.store import StoreError, build, devices, handles
+from pylabrobot.resources.store.errors import plr_error
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -713,16 +714,8 @@ class BenchCel4R:
       children=[tray, *self._stack_definitions],
     )
 
-  async def create_resources(self) -> handles.Resource:
-    """Make the BenchCel's body, tray and stacks in its store, or find them there by name, and
-    calculate the labware settings of a plate given at construction.
-
-    Called by `setup`.
-    """
-    found = await self.store.find_resources(
-      spb.ResourceFilter(names=[self.name], type_names=["BenchCel4R"])
-    )
-    body = found[0] if found else await self.store.create(self.definition(), name=self.name)
+  async def _find_resources(self, create: bool) -> handles.Resource:
+    body = await devices.find_or_create(self.store, self.definition(), create=create)
     response = await self.store.commands.get_resources(
       spb.GetResourcesRequest(resources=[body.ref], depth=1)
     )
@@ -750,6 +743,23 @@ class BenchCel4R:
       self._labware_plate = None
     return body
 
+  async def create_resources(self) -> handles.Resource:
+    """Find the BenchCel's body, tray and stacks in its store by name, or make them there, and
+    calculate the labware settings of a plate given at construction.
+
+    Called by `setup`.
+    """
+    return await self._find_resources(create=True)
+
+  async def get_resources(self) -> handles.Resource:
+    """Find the BenchCel's body, tray and stacks in its store by name, never making them, and
+    calculate the labware settings of a plate given at construction.
+
+    Raises:
+      LookupError: The store has no BenchCel of its name.
+    """
+    return await self._find_resources(create=False)
+
   @property
   def body(self) -> handles.Resource:
     """The BenchCel's body in the store.
@@ -758,14 +768,14 @@ class BenchCel4R:
       RuntimeError: Its resources are not made yet: call `setup` first.
     """
     if self._body is None:
-      raise RuntimeError(f"'{self.name}' is not in a store yet; call setup() first")
+      raise devices.not_in_store(self.name)
     return self._body
 
   @property
   def loading_tray(self) -> handles.PlateHolder:
     """The loading tray's holder in the store."""
     if self._loading_tray is None:
-      raise RuntimeError(f"'{self.name}' is not in a store yet; call setup() first")
+      raise devices.not_in_store(self.name)
     return self._loading_tray
 
   async def setup(self) -> None:
@@ -1341,7 +1351,7 @@ class BenchCel4R:
   def stacks(self) -> Sequence[handles.ResourceStack]:
     """The four configured stacks in the store, ordered by human stacker number."""
     if self._body is None:
-      raise RuntimeError(f"'{self.name}' is not in a store yet; call setup() first")
+      raise devices.not_in_store(self.name)
     return tuple(self._stacks)
 
   def _stack_to_stacker(self, stack: handles.ResourceStack) -> int:
@@ -1418,7 +1428,7 @@ class BenchCel4R:
     except StoreError as error:
       # The tray refuses a plate it cannot seat, as PLR's PlateHolder does: with an
       # AssertionError. The plate stays on top of its stack.
-      raise AssertionError(str(error)) from error
+      raise plr_error(error, otherwise=AssertionError) from error
     logger.info("[benchcel] downstacked %s from stacker %d", plate.name, source_stacker)
     return plate
 

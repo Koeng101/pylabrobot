@@ -29,7 +29,7 @@ from pylabrobot.agilent.vspin.vspin import VSpin, find_or_create_holder
 from pylabrobot.events import event_operation, handle_reference, is_event_bus_active
 from pylabrobot.io.ftdi import FTDI, is_ftdi_transport_error
 from pylabrobot.resources import Coordinate
-from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store import build, devices, handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -1019,11 +1019,20 @@ class Access2:
     )
 
   async def create_resources(self) -> handles.ResourceHolder:
-    """Make the loader's stage in the store, a root, or find it there by name.
+    """Find the loader's stage in the store by name, or make it there, a root.
 
     Called by `setup`.
     """
     self._body = await find_or_create_holder(self.store, self.definition())
+    return self._body
+
+  async def get_resources(self) -> handles.ResourceHolder:
+    """Find the loader's stage in the store by name; never make it.
+
+    Raises:
+      LookupError: The store has no holder of its name.
+    """
+    self._body = await find_or_create_holder(self.store, self.definition(), create=False)
     return self._body
 
   @property
@@ -1031,10 +1040,10 @@ class Access2:
     """The loader's stage in the store.
 
     Raises:
-      RuntimeError: It is not made yet: call `setup` first.
+      RuntimeError: It is not found or made yet: call `create_resources` or `setup` first.
     """
     if self._body is None:
-      raise RuntimeError(f"'{self.name}' is not in a store yet; call setup() first")
+      raise devices.not_in_store(self.name)
     return self._body
 
   async def get_resource_held(self) -> Optional[handles.Resource]:

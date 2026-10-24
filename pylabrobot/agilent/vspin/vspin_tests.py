@@ -1880,6 +1880,16 @@ class TestAccess2Events(unittest.IsolatedAsyncioTestCase):
       ["centrifuge_bucket1", "centrifuge_bucket2", "loader"],
     )
 
+  async def test_get_resources_finds_but_never_makes(self):
+    vspin = VSpin(name="other", device_id="test", store=self.vspin.store)
+    with self.assertRaises(LookupError):
+      await vspin.get_resources()
+    again = VSpin(name="centrifuge", device_id="test", store=self.vspin.store)
+    await again.get_resources()
+    self.assertEqual(again.bucket1, self.vspin.bucket1)
+    loader = Access2(name="loader", device_id="test", vspin=again)
+    self.assertEqual(await loader.get_resources(), self.loader.body)
+
   async def test_setup_lifecycle_events(self):
     """Report one correlated lifecycle and preserve the original failure."""
     for error in (None, RuntimeError("setup failed")):

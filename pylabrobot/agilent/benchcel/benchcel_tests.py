@@ -377,6 +377,15 @@ class BenchCelFactoryTests(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(again.stacks, benchcel.stacks)
     self.assertEqual(len(await benchcel.store.roots()), 1)
 
+  async def test_get_resources_finds_but_never_makes(self):
+    benchcel = BenchCel4R(name="bc", host="192.168.0.100")
+    with self.assertRaises(LookupError):
+      await benchcel.get_resources()
+    await benchcel.create_resources()
+    again = BenchCel4R(name="bc", host="192.168.0.100", store=benchcel.store)
+    self.assertEqual(await again.get_resources(), benchcel.body)
+    self.assertEqual(again.stacks, benchcel.stacks)
+
   async def test_factory_records_labware_settings(self):
     store = ResourceStore.in_memory()
     plate = await _plate(store, "plate", size_z=44.04, size_y=85.47)
