@@ -7,11 +7,9 @@ with an ACK and a response frame echoing the command, so no hardware or USB is n
 
 from __future__ import annotations
 
-import asyncio
-import enum
+import contextlib
 import pathlib
 import unittest
-from collections.abc import Awaitable
 from typing import Any, Dict, List, Optional
 from unittest import mock
 
@@ -29,6 +27,7 @@ from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -98,8 +97,8 @@ class FakeFTDI:
   answered with NAK instead.
   """
 
-  def __init__(self) -> None:
-    self.sent: List[str] = []
+  def __init__(self, sent: List[str]) -> None:
+    self.sent = sent
     self.polls: List[bytes] = []
     self.nak: Optional[int] = None
     self._rx = b""
@@ -166,16 +165,7 @@ class FakeFTDI:
     return chunk
 
 
-def as_json(value: Any) -> Any:
-  """A call's return value made JSON-able: enums by name."""
-  if isinstance(value, dict):
-    return {key: as_json(item) for key, item in value.items()}
-  if isinstance(value, enum.Enum):
-    return value.name
-  return value
-
-
-class EL406Recorder:
+class EL406Recorder(recording.Recorder):
   """An EL406 on a fake FTDI, recording each step's writes, result and the plate's state.
 
   Plates are made in an in-memory store, and put in a plate holder there the way a person loads
@@ -183,12 +173,12 @@ class EL406Recorder:
   """
 
   def __init__(self, store: ResourceStore, holder: handles.Resource) -> None:
-    self.io = FakeFTDI()
+    super().__init__()
+    self.io = FakeFTDI(self.sent)
     with mock.patch("pylabrobot.agilent.biotek.el406.el406.FTDI", return_value=self.io):
       self.el406 = EL406(name="el406")
     self.store = store
     self.holder = holder
-    self.steps: List[Dict[str, Any]] = []
 
   async def plate(self, source: Any, name: str, with_lid: bool = False) -> handles.Plate:
     """A plate from a model's name or a definition, with the model's lid when asked."""
@@ -201,7 +191,7 @@ class EL406Recorder:
   async def connect(self) -> None:
     """Set up without a reset, before the recorded steps; `test_setup_and_stop` pins setup."""
     await self.el406.setup(skip_reset=True)
-    self.io.sent.clear()
+    self.take_sent()
 
   async def load(self, plate: handles.Plate) -> None:
     """Put `plate` in the carrier and tell the EL406 about it."""
@@ -209,17 +199,6 @@ class EL406Recorder:
       await held.unassign()
     await self.holder.assign_child_resource(plate, location=Coordinate.zero())
     await self.el406.set_plate(plate)
-
-  async def step(self, call: str, operation: Awaitable[Any]) -> None:
-    """Run `operation`, recording what was written and what it returned or raised."""
-    start = len(self.io.sent)
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      entry["result"] = as_json(await operation)
-    except Exception as error:  # the error is part of the record
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.io.sent[start:]
-    self.steps.append(entry)
 
   async def check(self, test: unittest.TestCase, scenario: str) -> None:
     """Compare the steps and the carrier's final state with the scenario's golden file."""
@@ -229,19 +208,14 @@ class EL406Recorder:
 
 class EL406GoldenTests(unittest.IsolatedAsyncioTestCase):
   async def asyncSetUp(self) -> None:
-    # The driver sleeps between header and data and between polls; the scenarios do not wait.
-    real_sleep = asyncio.sleep
-
-    async def no_wait(_: float) -> None:
-      await real_sleep(0)
-
-    patcher = mock.patch("pylabrobot.agilent.biotek.el406.el406.asyncio.sleep", no_wait)
-    patcher.start()
-    self.addCleanup(patcher.stop)
     store = ResourceStore.in_memory()
     self.addAsyncCleanup(store.close)
     holder = await store.create(plate_holder("el406_plate_holder"), name="el406_plate_holder")
     self.r = EL406Recorder(store, holder)
+    # The driver sleeps between header and data and between polls; the scenarios do not wait.
+    sleeps = contextlib.ExitStack()
+    sleeps.enter_context(self.r.instant_sleeps())
+    self.addCleanup(sleeps.close)
     self.el406 = self.r.el406
 
   async def test_setup_and_stop(self):

@@ -9,10 +9,10 @@ from __future__ import annotations
 import contextlib
 import pathlib
 import unittest
-from typing import Any, Awaitable, Callable, Dict, Iterator, List, Optional
+from typing import Iterator, List
 
 from pylabrobot.generic import SerialBarcodeScanner
-from pylabrobot.resources.barcode import Barcode
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -48,37 +48,16 @@ class FakeSerial:
     yield
 
 
-def barcode_json(barcode: Optional[Barcode]) -> Optional[Dict[str, Any]]:
-  if barcode is None:
-    return None
-  return {
-    "data": barcode.data,
-    "symbology": barcode.symbology,
-    "position_on_resource": barcode.position_on_resource,
-  }
-
-
-class Recorder:
+class Recorder(recording.Recorder):
   """Records what the scanner was sent, step by step."""
 
+  catches = (ValueError,)
+
   def __init__(self, scanner: SerialBarcodeScanner) -> None:
-    self.sent: List[str] = []
-    self.steps: List[Dict[str, Any]] = []
+    super().__init__()
     self.serial = FakeSerial(self)
     self.scanner = scanner
     scanner.io = self.serial  # type: ignore[assignment]
-
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> None:
-    """Run one step, recording what was sent, returned or raised."""
-    self.sent = []
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      result = await action()
-      entry["result"] = barcode_json(result) if isinstance(result, Barcode) else result
-    except ValueError as error:
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.sent
-    self.steps.append(entry)
 
 
 class SerialBarcodeScannerGoldenTests(unittest.IsolatedAsyncioTestCase):

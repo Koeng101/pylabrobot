@@ -16,18 +16,18 @@ import re
 import tempfile
 import types
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, ContextManager, Dict, List, Optional, Tuple
 from unittest import mock
 
 from pylabrobot.micronic import MicronicError, MicronicRD235
 from pylabrobot.micronic.code_reader import driver as driver_module
 from pylabrobot.micronic.code_reader.driver import DecodeResult, RackScanResult
 from pylabrobot.resources import Coordinate
-from pylabrobot.resources.barcode import Barcode
 from pylabrobot.resources.store import build
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.handles import TubeRack
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -124,33 +124,24 @@ class FakeScanner:
     return {"source": "fake"}
 
 
-def barcode_json(barcode: Optional[Barcode]) -> Optional[Dict[str, Any]]:
-  if barcode is None:
-    return None
-  return {
-    "data": barcode.data,
-    "symbology": barcode.symbology,
-    "position_on_resource": barcode.position_on_resource,
-  }
-
-
 def scan_json(result: RackScanResult) -> Dict[str, Any]:
   return {
     "rack_id": result.rack_id,
-    "rack_barcode": barcode_json(result.rack_barcode),
+    "rack_barcode": recording.jsonable(result.rack_barcode),
     "entries": [
-      [entry.position, entry.tube_id, entry.status, barcode_json(entry.barcode)]
+      [entry.position, entry.tube_id, entry.status, recording.jsonable(entry.barcode)]
       for entry in result.entries
     ],
   }
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Records what the reader was sent, step by step, and the rack's tree."""
 
+  catches = (MicronicError, asyncio.TimeoutError)
+
   def __init__(self, image_dir: str, store: ResourceStore, rack: TubeRack) -> None:
-    self.sent: List[str] = []
-    self.steps: List[Dict[str, Any]] = []
+    super().__init__()
     self.transport: Dict[str, Any] = {}
     self.image_dir = image_dir
     self.store = store
@@ -159,7 +150,6 @@ class Recorder:
       position: DecodeResult(tube_id=tube_id, method="fake") for position, tube_id in TUBES.items()
     }
     self.decode_error: Optional[Exception] = None
-    self.now = 0.0
 
     def make_serial(**settings: Any) -> FakeSerial:
       self.serial = FakeSerial(self, **settings)
@@ -176,34 +166,27 @@ class Recorder:
     name = re.sub(r"micronic_\d{8}_\d{6}_\d{6}", "micronic_<timestamp>", path.name)
     return f"<image_dir>/{name}" if str(path.parent) == self.image_dir else str(path)
 
-  def _monotonic(self) -> float:
-    self.now += 0.01
-    return self.now
-
   def _decode_image(self, image_path: pathlib.Path) -> Tuple[Dict[str, Any], Dict[str, object]]:
     self.sent.append(f"decode_image {self.placeholder(image_path)}")
     if self.decode_error is not None:
       raise self.decode_error
     return dict(self.decoded), {"decodedWells": len(self.decoded)}
 
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> None:
-    """Run one step, recording what was sent, returned or raised. The reader never changes the
-    rack, so its tree is recorded once, at the end."""
-    self.sent = []
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      with (
-        mock.patch.object(driver_module, "decode_image", self._decode_image),
-        mock.patch.object(driver_module, "time", types.SimpleNamespace(monotonic=self._monotonic)),
-      ):
-        result = await action()
-      entry["result"] = scan_json(result) if isinstance(result, RackScanResult) else result
-    except (MicronicError, asyncio.TimeoutError) as error:
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.sent
+  def patches(self) -> List[ContextManager[Any]]:
+    clock = types.SimpleNamespace(monotonic=self.clock(0.01))
+    return [
+      mock.patch.object(driver_module, "decode_image", self._decode_image),
+      mock.patch.object(driver_module, "time", clock),
+    ]
+
+  def jsonable(self, value: Any) -> Any:
+    return scan_json(value) if isinstance(value, RackScanResult) else value
+
+  async def annotate(self, entry: Dict[str, Any]) -> None:
+    """The image the step left last. The reader never changes the rack, so its tree is recorded
+    once, at the end."""
     last = self.reader.last_image_path
     entry["last_image_path"] = None if last is None else self.placeholder(last)
-    self.steps.append(entry)
 
   async def finish(self) -> Dict[str, Any]:
     return {

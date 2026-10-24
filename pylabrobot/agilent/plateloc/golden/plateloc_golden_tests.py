@@ -8,16 +8,16 @@ advances by a hundredth of a second each time it is read.
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import pathlib
 import types
 import unittest
-from typing import Any, Awaitable, Callable, Dict, Iterator, List
+from typing import Any, ContextManager, Dict, Iterator, List
 from unittest import mock
 
 from pylabrobot.agilent.plateloc import PlateLoc, PlateLocError, PlateLocStatus
 from pylabrobot.agilent.plateloc import plateloc as plateloc_module
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -61,16 +61,15 @@ class FakeSerial:
     yield
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Records what the PlateLoc was sent, step by step."""
 
+  catches = (PlateLocError, ValueError, TimeoutError)
+  records_waits = True
+
   def __init__(self) -> None:
-    self.sent: List[str] = []
-    self.waits: List[float] = []
+    super().__init__()
     self.transport: Dict[str, Any] = {}
-    self.steps: List[Dict[str, Any]] = []
-    self.now = 0.0
-    self.real_sleep = asyncio.sleep
 
     def make_serial(**settings: Any) -> FakeSerial:
       self.serial = FakeSerial(self, **settings)
@@ -82,42 +81,20 @@ class Recorder:
     ):
       self.plateloc = PlateLoc(port="/dev/ttyUSB0")
 
-  def _monotonic(self) -> float:
-    self.now += 0.01
-    return self.now
+  def patches(self) -> List[ContextManager[Any]]:
+    clock = types.SimpleNamespace(monotonic=self.clock(0.01))
+    return [*super().patches(), mock.patch.object(plateloc_module, "time", clock)]
 
-  async def _sleep(self, delay: float, result: Any = None) -> Any:
-    self.waits.append(delay)
-    await self.real_sleep(0)
-    return result
-
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> None:
-    """Run one step, recording what was sent, waited, returned or raised."""
-    self.sent, self.waits = [], []
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      with (
-        mock.patch.object(plateloc_module.asyncio, "sleep", self._sleep),
-        mock.patch.object(
-          plateloc_module, "time", types.SimpleNamespace(monotonic=self._monotonic)
-        ),
-      ):
-        result = await action()
-      if isinstance(result, PlateLocStatus):
-        result = {
-          "port": result.port,
-          "connected": result.connected,
-          "target_temperature": result.target_temperature,
-          "stage_position": result.stage_position,
-          "cycle_complete": result.cycle_complete,
-        }
-      entry["result"] = result
-    except (PlateLocError, ValueError, TimeoutError) as error:
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.sent
-    if self.waits:
-      entry["waits"] = self.waits
-    self.steps.append(entry)
+  def jsonable(self, value: Any) -> Any:
+    if isinstance(value, PlateLocStatus):
+      return {
+        "port": value.port,
+        "connected": value.connected,
+        "target_temperature": value.target_temperature,
+        "stage_position": value.stage_position,
+        "cycle_complete": value.cycle_complete,
+      }
+    return value
 
 
 class PlateLocGoldenTests(unittest.IsolatedAsyncioTestCase):

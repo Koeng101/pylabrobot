@@ -9,11 +9,10 @@ times out at once.
 
 from __future__ import annotations
 
-import asyncio
 import pathlib
 import types
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+from typing import Any, ContextManager, Dict, List, Optional, Union
 from unittest import mock
 
 from pylabrobot.inheco import (
@@ -26,9 +25,9 @@ from pylabrobot.inheco import (
   inheco_thermoshake_rm,
 )
 from pylabrobot.inheco import control_box as control_box_module
-from pylabrobot.inheco import thermoshake as thermoshake_module
 from pylabrobot.inheco.holder import InhecoHolder
 from pylabrobot.resources.store import handles
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -74,55 +73,31 @@ class FakeHID:
     return self.pending.pop(0) if self.pending else b""
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Records what the control box was sent, step by step, with the device's resource tree."""
 
+  records_waits = True
+
   def __init__(self) -> None:
-    self.sent: List[str] = []
-    self.waits: List[float] = []
-    self.steps: List[Dict[str, Any]] = []
+    super().__init__()
     self.box = InhecoTECControlBox()
     self.hid = FakeHID(self)
     self.box.io = self.hid  # type: ignore[assignment]
     self.device: Optional[InhecoHolder] = None
-    self.real_sleep = asyncio.sleep
-    self.now = 0.0
 
-  def _time(self) -> float:
-    self.now += 0.25
-    return self.now
+  def patches(self) -> List[ContextManager[Any]]:
+    clock = types.SimpleNamespace(time=self.clock(0.25))
+    return [*super().patches(), mock.patch.object(control_box_module, "time", clock)]
 
-  async def _sleep(self, delay: float, result: Any = None) -> Any:
-    self.waits.append(delay)
-    await self.real_sleep(0)
-    return result
-
-  async def step(
-    self,
-    call: str,
-    action: Callable[[], Union[Awaitable[Any], Any]],
-    resources: bool = False,
-  ) -> None:
-    """Run one step, recording what was sent, waited, returned or raised."""
-    self.sent, self.waits = [], []
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      with (
-        mock.patch.object(thermoshake_module.asyncio, "sleep", self._sleep),
-        mock.patch.object(control_box_module, "time", types.SimpleNamespace(time=self._time)),
-      ):
-        result = action()
-        if asyncio.iscoroutine(result):
-          result = await result
-      entry["result"] = result
-    except Exception as error:
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.sent
-    if self.waits:
-      entry["waits"] = self.waits
+  async def step(  # type: ignore[override]
+    self, call: str, action: recording.Action, resources: bool = False
+  ) -> Any:
+    """Run one step, recording what was sent, waited, returned or raised, and the tree after it
+    when `resources`."""
+    value = await super().step(call, action)
     if resources:
-      entry["resources"] = await self.snapshot()
-    self.steps.append(entry)
+      self.steps[-1]["resources"] = await self.snapshot()
+    return value
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     assert self.device is not None

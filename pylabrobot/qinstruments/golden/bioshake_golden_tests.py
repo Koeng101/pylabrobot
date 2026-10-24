@@ -7,11 +7,10 @@ call made on it, in order, and answers each written command the way the firmware
 
 from __future__ import annotations
 
-import asyncio
 import pathlib
 import types
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 from unittest import mock
 
 from pylabrobot.qinstruments import bioshake as bioshake_module
@@ -31,6 +30,7 @@ from pylabrobot.qinstruments.bioshake import (
   Heatplate,
 )
 from pylabrobot.resources.store import handles
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -82,20 +82,16 @@ class FakeSerial:
     return self.pending.pop(0) if self.pending else b""
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Records what the BioShake was sent, step by step, with its resource tree."""
 
+  records_waits = True
+
   def __init__(self) -> None:
-    self.sent: List[str] = []
-    self.waits: List[float] = []
+    super().__init__()
     self.transport: Dict[str, Any] = {}
-    self.steps: List[Dict[str, Any]] = []
     self.device: Optional[BioShake] = None
     self.serial: FakeSerial
-    self.real_sleep = asyncio.sleep
-    # The task a step runs in: the BioShake's own waits are made there, while the store's work
-    # runs in tasks of its own.
-    self.step_task: Optional["asyncio.Task[Any]"] = None
 
   def build(self, factory: Callable[..., BioShake]) -> BioShake:
     """Build a BioShake from `factory` on the fake transport."""
@@ -111,37 +107,15 @@ class Recorder:
       self.device = factory("bioshake", "/dev/ttyUSB0")
     return self.device
 
-  async def _sleep(self, delay: float, result: Any = None) -> Any:
-    if asyncio.current_task() is self.step_task:
-      self.waits.append(delay)
-    await self.real_sleep(0)
-    return result
-
-  async def step(
-    self,
-    call: str,
-    action: Callable[[], Union[Awaitable[Any], Any]],
-    resources: bool = False,
-  ) -> None:
-    """Run one step, recording what was sent, waited, returned or raised."""
-    self.sent, self.waits = [], []
-    self.step_task = asyncio.current_task()
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      with mock.patch.object(bioshake_module.asyncio, "sleep", self._sleep):
-        result = action()
-        if asyncio.iscoroutine(result):
-          result = await result
-      entry["result"] = result
-    except Exception as error:
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.sent
-    if self.waits:
-      entry["waits"] = self.waits
+  async def step(  # type: ignore[override]
+    self, call: str, action: recording.Action, resources: bool = False
+  ) -> Any:
+    """Run one step, recording what was sent, waited, returned or raised, and the tree after it
+    when `resources`."""
+    value = await super().step(call, action)
     if resources:
-      assert self.device is not None
-      entry["resources"] = await self.snapshot()
-    self.steps.append(entry)
+      self.steps[-1]["resources"] = await self.snapshot()
+    return value
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     assert self.device is not None

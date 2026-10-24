@@ -8,16 +8,15 @@ each time it is read.
 
 from __future__ import annotations
 
-import asyncio
 import pathlib
 import types
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, ContextManager, Dict, List
 from unittest import mock
 
 from pylabrobot.keyence import KeyenceBarcodeScanner, KeyenceBarcodeScannerError
 from pylabrobot.keyence import barcode_scanner as scanner_module
-from pylabrobot.resources.barcode import Barcode
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -56,26 +55,15 @@ class FakeSerial:
     return chunk
 
 
-def barcode_json(barcode: Optional[Barcode]) -> Optional[Dict[str, Any]]:
-  if barcode is None:
-    return None
-  return {
-    "data": barcode.data,
-    "symbology": barcode.symbology,
-    "position_on_resource": barcode.position_on_resource,
-  }
-
-
-class Recorder:
+class Recorder(recording.Recorder):
   """Records what the scanner was sent, step by step."""
 
+  catches = (KeyenceBarcodeScannerError,)
+  records_waits = True
+
   def __init__(self) -> None:
-    self.sent: List[str] = []
-    self.waits: List[float] = []
+    super().__init__()
     self.transport: Dict[str, Any] = {}
-    self.steps: List[Dict[str, Any]] = []
-    self.now = 0.0
-    self.real_sleep = asyncio.sleep
 
     def make_serial(**settings: Any) -> FakeSerial:
       self.serial = FakeSerial(self, **settings)
@@ -88,32 +76,9 @@ class Recorder:
     ):
       self.scanner = KeyenceBarcodeScanner(port="/dev/ttyUSB0")
 
-  def _time(self) -> float:
-    self.now += 0.1
-    return self.now
-
-  async def _sleep(self, delay: float, result: Any = None) -> Any:
-    self.waits.append(delay)
-    await self.real_sleep(0)
-    return result
-
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> None:
-    """Run one step, recording what was sent, waited, returned or raised."""
-    self.sent, self.waits = [], []
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      with (
-        mock.patch.object(scanner_module.asyncio, "sleep", self._sleep),
-        mock.patch.object(scanner_module, "time", types.SimpleNamespace(time=self._time)),
-      ):
-        result = await action()
-      entry["result"] = barcode_json(result) if isinstance(result, Barcode) else result
-    except KeyenceBarcodeScannerError as error:
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.sent
-    if self.waits:
-      entry["waits"] = self.waits
-    self.steps.append(entry)
+  def patches(self) -> List[ContextManager[Any]]:
+    clock = types.SimpleNamespace(time=self.clock(0.1))
+    return [*super().patches(), mock.patch.object(scanner_module, "time", clock)]
 
   def finish(self) -> Dict[str, Any]:
     return {"transport": self.transport, "steps": self.steps}
