@@ -10,7 +10,7 @@ import pathlib
 import unittest
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
-from pylabrobot.bmg_labtech.clariostar.device import CLARIOstarDevice, CLARIOstarPlus
+from pylabrobot.bmg_labtech.clariostar.device import CLARIOstarDevice
 from pylabrobot.bmg_labtech.clariostar.driver.features.absorbance_tests import (
   COLUMN_1_DATA_REPLY,
   RUN_REPLY,
@@ -108,7 +108,8 @@ class Recorder(recording.Recorder):
   def __init__(self) -> None:
     super().__init__()
     self.io = FakeFTDI(chunk=4096)
-    self.reader: CLARIOstarDevice = CLARIOstarPlus(name="reader", io=self.io)
+    # As `CLARIOstarPlus` builds it; its body is put in its store at `start`.
+    self.reader = CLARIOstarDevice(name="reader", io=self.io, model="CLARIOstarPlus")
     driver = self.reader.driver
     # No waits: the replies are queued.
     driver._PACKET_READ_TIMEOUT = 0.01
@@ -120,12 +121,11 @@ class Recorder(recording.Recorder):
 
   async def start(self) -> None:
     """Put the reader in its store: its tree before the first step."""
-    await self.reader.create_body()
+    await self.reader.create_resources()
     await self.mark()
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     """The reader's tree, read from its store."""
-    assert self.reader.body is not None
     return await snapshot_store(self.store, self.reader.body)
 
   async def plate(self, name: str) -> handles.Plate:

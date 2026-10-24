@@ -631,7 +631,7 @@ class SpectrumReadTests(unittest.IsolatedAsyncioTestCase):
 
 class SimulatedSpectrumTests(unittest.IsolatedAsyncioTestCase):
   async def asyncSetUp(self):
-    self.reader = CLARIOstarPlus(simulation=True)
+    self.reader = await CLARIOstarPlus(simulation=True)
     await self.reader.setup()
     self.plate = await stored(ground_truth_96_well_plate(), self.reader.store)
     await self.reader.drawer.open()
@@ -1096,7 +1096,7 @@ class GatingTests(unittest.IsolatedAsyncioTestCase):
 
 class SimulatedAbsorbanceTests(unittest.IsolatedAsyncioTestCase):
   async def test_a_simulated_read_is_checked_and_reads_within_range(self):
-    reader = CLARIOstarPlus(simulation=True)
+    reader = await CLARIOstarPlus(simulation=True)
     await reader.setup()
     absorbance = reader.absorbance
     assert absorbance is not None
@@ -1117,7 +1117,7 @@ class SimulatedAbsorbanceTests(unittest.IsolatedAsyncioTestCase):
 
 class SimulatedDataTests(unittest.IsolatedAsyncioTestCase):
   async def asyncSetUp(self):
-    self.reader = CLARIOstarPlus(simulation=True)
+    self.reader = await CLARIOstarPlus(simulation=True)
     await self.reader.setup()
     self.plate = await stored(BIORAD, self.reader.store)
     await self.reader.drawer.open()

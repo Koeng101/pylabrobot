@@ -6,9 +6,8 @@ from typing import Literal, Optional, Union
 from pylabrobot.io.ftdi import FTDI
 from pylabrobot.io.usb import USB
 from pylabrobot.resources import Coordinate
-from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store import build, devices, handles
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from .driver.features.absorbance import Absorbance
@@ -83,11 +82,12 @@ class CLARIOstarPlateHolder:
     """The plate holder in the resource store.
 
     Raises:
-      RuntimeError: if the reader's body is not in its store yet (`CLARIOstarDevice.create_body`).
+      RuntimeError: if the reader's body is not in its store yet
+        (`CLARIOstarDevice.create_resources`).
     """
     holder = self._device.driver.drawer.plate_holder
     if not isinstance(holder, handles.PlateHolder):
-      raise RuntimeError(f"{self._device.name} is not in its resource store yet; call setup first")
+      raise devices.not_in_store(self._device.name)
     return holder
 
   def _require_drawer_open(self, action: str) -> None:
@@ -147,8 +147,9 @@ class CLARIOstarDevice:
   wired: ``"ftdi"`` (the default) for readers with the FTDI serial bridge, ``"usb"`` for readers
   with native USB. Commands are the same on both. A given ``io`` sets it by its type.
 
-  The body is created in the store at `setup` (or `create_body`), or found there by name: a
-  reader already in the store, on a deck say, is the one used.
+  `create_resources` (which `setup` calls) finds the body in the store by name, or creates it when
+  the store has none: a reader already in the store, on a deck say, is the one used.
+  `get_resources` only finds it.
   """
 
   def __init__(
@@ -191,7 +192,7 @@ class CLARIOstarDevice:
     self.model = model if model is not None else self.__class__.__name__
     self.size = Coordinate(size_x, size_y, size_z)
     self.store = store if store is not None else ResourceStore.in_memory()
-    self.body: Optional[handles.Resource] = None
+    self._body: Optional[handles.Resource] = None
     self.driver: CLARIOstarDriver
     if simulation:
       if declared_configuration_json is None:
@@ -210,25 +211,51 @@ class CLARIOstarDevice:
     self.plate_holder = CLARIOstarPlateHolder(self)
 
   def definition(self) -> pb.ResourceDefinition:
-    """The reader's body and plate holder, as `create_body` creates them."""
+    """The reader's body and plate holder, as `create_resources` creates them."""
     return clariostar_definition(self.name, self.model, self.size.x, self.size.y, self.size.z)
 
-  async def create_body(self) -> handles.Resource:
+  @property
+  def body(self) -> handles.Resource:
+    """The reader's body in the store.
+
+    Raises:
+      RuntimeError: if it is not found or created yet: call `create_resources` or `setup` first.
+    """
+    if self._body is None:
+      raise devices.not_in_store(self.name)
+    return self._body
+
+  async def _find_resources(self, create: bool) -> handles.Resource:
+    if self._body is None:
+      body = await devices.find_or_create(self.store, self.definition(), create=create)
+      self.driver.drawer.plate_holder = await body.get_resource(self.plate_holder.name)
+      self._body = body
+    return self._body
+
+  async def create_resources(self) -> handles.Resource:
     """Find the reader's body in its store by name, or create it there as a root; `setup` does
     this first. The drawer moves the plate holder once its in and out locations are set; neither
     is measured.
 
     Returns:
       the body.
+
+    Raises:
+      ValueError: the store's resource of its name is not a reader of this model.
     """
-    if self.body is None:
-      found = await self.store.find_resources(
-        spb.ResourceFilter(names=[self.name], models=[self.model])
-      )
-      self.body = found[0] if found else await self.store.create(self.definition(), self.name)
-      holder = await self.body.get_resource(self.plate_holder.name)
-      self.driver.drawer.plate_holder = holder
-    return self.body
+    return await self._find_resources(create=True)
+
+  async def get_resources(self) -> handles.Resource:
+    """Find the reader's body in its store by name; never create it.
+
+    Returns:
+      the body.
+
+    Raises:
+      LookupError: the store has nothing of its name.
+      ValueError: the store's resource of its name is not a reader of this model.
+    """
+    return await self._find_resources(create=False)
 
   async def check_can_drop_resource_here(self, resource: handles.Resource) -> None:
     """Raise: a plate goes on the plate holder, not on the reader."""
@@ -274,7 +301,7 @@ class CLARIOstarDevice:
     Raises:
       RuntimeError: if the reader reports another model than the factory built.
     """
-    await self.create_body()
+    await self.create_resources()
     await self.driver.setup()
     reported = self.driver.configuration.model
     if self.model in MODELS and reported is not None and reported != self.model:
@@ -290,7 +317,7 @@ class CLARIOstarDevice:
     await self.driver.stop(accept_plate_left_in_device=accept_plate_left_in_device)
 
 
-def CLARIOstar(
+async def CLARIOstar(
   name: str = "CLARIOstar",
   *,
   use_io: Optional[Literal["ftdi", "usb"]] = None,
@@ -303,8 +330,9 @@ def CLARIOstar(
   simulation: bool = False,
   store: Optional[ResourceStore] = None,
 ) -> CLARIOstarDevice:
-  """A CLARIOstar. No recording of one exists, so simulating one needs a declared configuration."""
-  return CLARIOstarDevice(
+  """A CLARIOstar, its body found in `store` by name or created there (a new store in memory when
+  unset). No recording of one exists, so simulating one needs a declared configuration."""
+  device = CLARIOstarDevice(
     name=name,
     use_io=use_io,
     device_id=device_id,
@@ -317,9 +345,11 @@ def CLARIOstar(
     simulation=simulation,
     store=store,
   )
+  await device.create_resources()
+  return device
 
 
-def CLARIOstarPlus(
+async def CLARIOstarPlus(
   name: str = "CLARIOstarPlus",
   *,
   use_io: Optional[Literal["ftdi", "usb"]] = None,
@@ -332,10 +362,11 @@ def CLARIOstarPlus(
   simulation: bool = False,
   store: Optional[ResourceStore] = None,
 ) -> CLARIOstarDevice:
-  """A CLARIOstar Plus. Simulated, it defaults to ``RECORDING_CLARIOSTAR_PLUS``."""
+  """A CLARIOstar Plus, its body found in `store` by name or created there (a new store in memory
+  when unset). Simulated, it defaults to ``RECORDING_CLARIOSTAR_PLUS``."""
   if simulation and declared_configuration_json is None:
     declared_configuration_json = RECORDING_CLARIOSTAR_PLUS
-  return CLARIOstarDevice(
+  device = CLARIOstarDevice(
     name=name,
     use_io=use_io,
     device_id=device_id,
@@ -348,3 +379,5 @@ def CLARIOstarPlus(
     simulation=simulation,
     store=store,
   )
+  await device.create_resources()
+  return device

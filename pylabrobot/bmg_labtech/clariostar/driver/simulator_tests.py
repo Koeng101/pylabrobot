@@ -67,7 +67,7 @@ class RecordingTests(unittest.IsolatedAsyncioTestCase):
 
 class SimulatorTests(unittest.IsolatedAsyncioTestCase):
   async def asyncSetUp(self):
-    self.reader = CLARIOstarPlus(simulation=True)
+    self.reader = await CLARIOstarPlus(simulation=True)
     drawer = self.reader.drawer
     drawer.location_in, drawer.location_out = LOCATION_IN, LOCATION_OUT
     await self.reader.setup()
@@ -97,7 +97,6 @@ class SimulatorTests(unittest.IsolatedAsyncioTestCase):
       await self.reader.assign_child_resource(
         await make_plate(self.reader, "plate"), location=Coordinate.zero()
       )
-    assert self.reader.body is not None
     children = await self.reader.body.get_children()
     self.assertEqual([child.name for child in children], [self.reader.plate_holder.name])
 
@@ -184,25 +183,25 @@ class SimulatorTests(unittest.IsolatedAsyncioTestCase):
 
 class SimulatorWithoutLocationsTests(unittest.IsolatedAsyncioTestCase):
   async def test_drawer_falls_back_to_the_last_move(self):
-    reader = CLARIOstarPlus(simulation=True)
+    reader = await CLARIOstarPlus(simulation=True)
     await reader.setup()
     await reader.drawer.open()
     self.assertTrue((await reader.driver.request_status()).drawer_open)
 
   async def test_convenience_request_before_setup_raises(self):
     with self.assertRaises(RuntimeError):
-      await CLARIOstarPlus(simulation=True).driver.request_absorbance_available()
+      await (await CLARIOstarPlus(simulation=True)).driver.request_absorbance_available()
 
 
 # The driver's asyncio.Lock needs an event loop on Python 3.9: build drivers inside one.
 class SimulatorConstructionTests(unittest.IsolatedAsyncioTestCase):
-  def test_clariostar_has_no_recording(self):
+  async def test_clariostar_has_no_recording(self):
     with self.assertRaises(ValueError):
-      CLARIOstar(simulation=True)
+      await CLARIOstar(simulation=True)
 
-  def test_simulation_takes_no_link(self):
+  async def test_simulation_takes_no_link(self):
     with self.assertRaises(ValueError):
-      CLARIOstarPlus(simulation=True, io=FakeFTDI())
+      await CLARIOstarPlus(simulation=True, io=FakeFTDI())
 
 
 if __name__ == "__main__":

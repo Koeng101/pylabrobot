@@ -47,7 +47,7 @@ class DeviceTests(unittest.IsolatedAsyncioTestCase):
       build.resource("deck", Coordinate(1000, 1000, 0), kind=pb.RESOURCE_KIND_DECK), "deck"
     )
     for name in ("reader_1", "reader_2"):
-      body = await CLARIOstar(name, io=FakeFTDI(), store=store).create_body()
+      body = (await CLARIOstar(name, io=FakeFTDI(), store=store)).body
       await deck.assign_child_resource(body, location=Coordinate.zero())
     self.assertEqual(
       {r.name for r in await deck.find_resources()} - {"deck"},
@@ -56,13 +56,21 @@ class DeviceTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_a_reader_already_in_the_store_is_found(self):
     store = ResourceStore.in_memory()
-    body = await CLARIOstar("reader", io=FakeFTDI(), store=store).create_body()
-    again = CLARIOstar("reader", io=FakeFTDI(), store=store)
-    self.assertEqual(await again.create_body(), body)
+    body = (await CLARIOstar("reader", io=FakeFTDI(), store=store)).body
+    again = await CLARIOstar("reader", io=FakeFTDI(), store=store)
+    self.assertEqual(await again.get_resources(), body)
     self.assertEqual(again.plate_holder.handle.name, "reader_plate_holder")
 
-  def test_the_setup_summary_names_the_reader(self):
-    reader = CLARIOstar("reader_2", io=FakeFTDI())
+  async def test_a_reader_of_another_model_in_the_store_is_not_taken_over(self):
+    store = ResourceStore.in_memory()
+    await CLARIOstarPlus("reader", io=FakeFTDI(), store=store)
+    with self.assertRaisesRegex(ValueError, "of model 'CLARIOstarPlus'"):
+      await CLARIOstar("reader", io=FakeFTDI(), store=store)
+    with self.assertRaises(LookupError):
+      await CLARIOstarDevice("other", io=FakeFTDI(), store=store).get_resources()
+
+  async def test_the_setup_summary_names_the_reader(self):
+    reader = await CLARIOstar("reader_2", io=FakeFTDI())
     reader.driver.configuration = decoded()
     summary = reader.driver.format_setup_summary()
     self.assertTrue(summary.startswith("[reader_2] Connected on FakeFTDI 0x0403:0xbb68"), summary)
@@ -81,7 +89,7 @@ class DeviceTests(unittest.IsolatedAsyncioTestCase):
     self.assertIn("    - crossover: True\n", reader.driver.format_setup_summary())
 
   async def test_the_setup_summary_shows_the_modes_and_filter_slots(self):
-    reader = CLARIOstar("reader", io=FakeFTDI())
+    reader = await CLARIOstar("reader", io=FakeFTDI())
     reader.driver.configuration = await decoded_with_parameters()
     reader.driver._discover_features()
     summary = reader.driver.format_setup_summary()
@@ -97,7 +105,7 @@ class DeviceTests(unittest.IsolatedAsyncioTestCase):
     self.assertIn("(defaults: the slides are not reported)", reader.driver.format_setup_summary())
 
   async def test_the_setup_summary_shows_the_options(self):
-    reader = CLARIOstar("reader", io=FakeFTDI())
+    reader = await CLARIOstar("reader", io=FakeFTDI())
     c = await decoded_with_parameters()
     c.serial_number = "123-4567"
     c.high_speed_shaking_allowed = c.well_1536_plates_supported = True
@@ -133,13 +141,13 @@ class DeviceTests(unittest.IsolatedAsyncioTestCase):
     await reader.setup()
 
   async def test_reader_matching_the_factory_sets_up(self):
-    reader = CLARIOstarPlus(io=FakeFTDI())
+    reader = await CLARIOstarPlus(io=FakeFTDI())
     await self.setup_reader(reader)
     self.assertEqual(reader.driver.configuration.model, "CLARIOstarPlus")
 
   async def test_reader_of_another_model_is_refused(self):
     with self.assertRaises(RuntimeError) as ctx:
-      await self.setup_reader(CLARIOstar(io=FakeFTDI()))
+      await self.setup_reader(await CLARIOstar(io=FakeFTDI()))
     self.assertIn("built as a CLARIOstar, the reader is a CLARIOstarPlus", str(ctx.exception))
 
   async def test_generic_device_is_not_checked(self):

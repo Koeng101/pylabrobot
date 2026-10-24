@@ -167,7 +167,7 @@ class TemperatureControllerTests(unittest.IsolatedAsyncioTestCase):
 
 class SimulatedTemperatureControllerTests(unittest.IsolatedAsyncioTestCase):
   async def asyncSetUp(self):
-    self.reader = CLARIOstarPlus(simulation=True)
+    self.reader = await CLARIOstarPlus(simulation=True)
     await self.reader.setup()
 
   async def test_target_is_reached_at_once(self):
