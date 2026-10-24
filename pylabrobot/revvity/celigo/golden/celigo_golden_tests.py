@@ -13,7 +13,7 @@ import pathlib
 import re
 import struct
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import patch
 
 from pylabrobot.resources.store import handles
@@ -42,6 +42,7 @@ from pylabrobot.revvity.celigo.tests.helpers import (
   make_navigation_config,
   make_test_config,
 )
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -325,29 +326,13 @@ def _scan_result(result: ScanResult) -> List[Dict[str, Any]]:
   ]
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Runs scenario steps, recording what each sent and returned."""
 
   def __init__(self, plate: handles.Plate) -> None:
-    self.log: List[str] = []
-    self.celigo = make_golden_celigo(self.log)
+    super().__init__()
+    self.celigo = make_golden_celigo(self.sent)
     self.plate = plate
-    self.steps: List[Dict[str, Any]] = []
-
-  async def step(
-    self,
-    call: str,
-    action: Callable[[], Awaitable[Any]],
-    shape: Callable[[Any], Any] = lambda value: value,
-  ) -> None:
-    del self.log[:]
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      entry["result"] = shape(await action())
-    except Exception as error:  # the error is part of the record
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = list(self.log)
-    self.steps.append(entry)
 
   async def prepare(self) -> None:
     """Reference the stage and dichroic wheel as setup leaves them."""

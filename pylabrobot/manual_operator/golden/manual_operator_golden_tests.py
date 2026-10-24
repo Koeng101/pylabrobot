@@ -10,9 +10,8 @@ import dataclasses
 import inspect
 import pathlib
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Sequence, Union
+from typing import Any, Awaitable, Callable, ContextManager, Dict, List, Sequence, Union
 
-from pylabrobot.events import EventBus, PLREvent, use_event_bus
 from pylabrobot.manual_operator import (
   ManualOperator,
   OperatorActionRequest,
@@ -21,6 +20,7 @@ from pylabrobot.manual_operator import (
 from pylabrobot.resources import Coordinate, Rotation
 from pylabrobot.resources.store import ResourceStore, build, handles
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -31,33 +31,18 @@ Outcome = Union[
 ]
 
 
-def _jsonable(value: Any) -> Any:
-  """`value` with tuples as lists and anything else that is not JSON as its type name."""
-  if isinstance(value, dict):
-    return {str(key): _jsonable(item) for key, item in value.items()}
-  if isinstance(value, (list, tuple)):
-    return [_jsonable(item) for item in value]
-  if value is None or isinstance(value, (bool, int, float, str)):
-    return value
-  return type(value).__name__
-
-
-class _Recorder:
+class _Recorder(recording.Recorder):
   """Answers operator requests from a script and records requests, events and resources.
 
   Operation ids are uuids; they are recorded as `op-1`, `op-2`... in the order they appear.
   """
 
   def __init__(self, root: handles.Resource):
+    super().__init__()
     self.root = root
     self.outcomes: List[Outcome] = []
-    self.sent: List[Dict[str, Any]] = []
-    self.events: List[Dict[str, Any]] = []
-    self.steps: List[Dict[str, Any]] = []
     self.operator = ManualOperator(self, name="bench_operator")
-    self._operation_ids: Dict[str, str] = {}
-    self.bus = EventBus()
-    self.bus.subscribe(self._on_event)
+    self.events = recording.EventLog()
 
   async def request(self, action: OperatorActionRequest) -> OperatorActionResult:
     """The provider seam: record the request and answer with the next scripted outcome."""
@@ -68,7 +53,7 @@ class _Recorder:
         "title": action.title,
         "instructions": action.instructions,
         "confirmation_text": action.confirmation_text,
-        "details": _jsonable(action.details),
+        "details": recording.plain(action.details),
         "resources": [resource.name for resource in action.resources],
         "source": None if action.source is None else action.source.name,
         "destination": None if action.destination is None else action.destination.name,
@@ -80,41 +65,31 @@ class _Recorder:
     answer = outcome(action)
     return await answer if inspect.isawaitable(answer) else answer
 
-  def _on_event(self, event: PLREvent) -> None:
-    raw_id = event.context.get("operation_id")
-    operation_id = None
-    if raw_id is not None:
-      operation_id = self._operation_ids.setdefault(raw_id, f"op-{len(self._operation_ids) + 1}")
-    self.events.append(
-      {
-        "name": event.name,
-        "operation": event.context.get("operation"),
-        "operation_id": operation_id,
-        "data": _jsonable(event.data),
-      }
-    )
+  def patches(self) -> List[ContextManager[Any]]:
+    return [self.events.installed()]
 
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]], *outcomes: Outcome) -> Any:
+  def jsonable(self, value: Any) -> Any:
+    return _result(value)
+
+  def failed(self, entry: Dict[str, Any], error: BaseException) -> None:
+    entry["result"] = recording.error_result(error)
+
+  async def begin(self) -> None:
+    self.events.take()
+    await self.mark()
+
+  async def annotate(self, entry: Dict[str, Any]) -> None:
+    entry["events"] = [self.events.summary(event) for event in self.events.take()]
+    resources = await self.changed()
+    if resources is not None:
+      entry["resources"] = resources
+
+  async def step(  # type: ignore[override]
+    self, call: str, action: Callable[[], Awaitable[Any]], *outcomes: Outcome
+  ) -> Any:
     """Run one call with `outcomes` scripted for its requests, and record it."""
     self.outcomes = list(outcomes)
-    self.sent = []
-    self.events = []
-    before = await self.snapshot()
-    record: Dict[str, Any] = {"call": call}
-    result: Any = None
-    with use_event_bus(self.bus):
-      try:
-        result = await action()
-        record["result"] = _result(result)
-      except Exception as error:
-        record["result"] = {"error": type(error).__name__, "message": str(error)}
-    record["sent"] = self.sent
-    record["events"] = self.events
-    after = await self.snapshot()
-    if after != before:
-      record["resources"] = after
-    self.steps.append(record)
-    return result
+    return await super().step(call, action)
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     return await snapshot_store(self.root.store, self.root)
@@ -126,7 +101,7 @@ class _Recorder:
 def _result(result: Any) -> Any:
   if isinstance(result, OperatorActionResult):
     return {"status": result.status, "message": result.message, "confirmed_by": result.confirmed_by}
-  return _jsonable(result)
+  return recording.plain(result)
 
 
 @dataclasses.dataclass

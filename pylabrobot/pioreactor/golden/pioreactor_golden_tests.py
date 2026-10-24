@@ -9,36 +9,37 @@ from __future__ import annotations
 
 import pathlib
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List
+from typing import Any, Dict, List
 
 from pylabrobot.pioreactor.bioreactors import Pioreactor, pioreactor_20ml
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.errors import TooLittleLiquidError, TooLittleVolumeError
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Records each step's result or error, with the Pioreactor's tree after it."""
 
   def __init__(self, pioreactor: Pioreactor) -> None:
+    super().__init__()
     self.pioreactor = pioreactor
-    self.steps: List[Dict[str, Any]] = []
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     return await snapshot_store(self.pioreactor.store, await self.pioreactor.create_body())
 
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> None:
+  async def step(self, call: str, action: recording.Action) -> Any:  # type: ignore[override]
+    """Run one step, recording what it returned or raised. The Pioreactor sends nothing."""
     entry: Dict[str, Any] = {"call": call}
-    try:
-      entry["result"] = await action()
-    except Exception as error:
-      entry["error"] = f"{type(error).__name__}: {error}"
+    value, error = await self.outcome(action)
+    self.add_outcome(entry, value, error)
     entry["resources"] = await self.snapshot()
     self.steps.append(entry)
+    return value
 
   async def finish(self) -> Dict[str, Any]:
     return {"steps": self.steps, "resources": await self.snapshot()}

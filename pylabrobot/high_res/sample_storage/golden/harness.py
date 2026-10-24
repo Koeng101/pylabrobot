@@ -14,15 +14,15 @@ resources under the store's body in its resource store when the step changed the
 from __future__ import annotations
 
 import dataclasses
-import inspect
 import pathlib
 import unittest
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, ContextManager, Dict, List, Optional
 
-from pylabrobot.events import EventBus, PLREvent, use_event_bus
+from pylabrobot.events import PLREvent
 from pylabrobot.high_res.sample_storage.driver import HighResSampleStorage
 from pylabrobot.high_res.sample_storage.tests.driver_tests import CAPTURES, FakeSocket
 from pylabrobot.resources.store import handles
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN_DIRECTORY = pathlib.Path(__file__).parent
@@ -130,24 +130,22 @@ def describe(value: Any) -> Any:
   return value
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Runs a scenario's steps against a store and records what each one did."""
 
   def __init__(self, store: HighResSampleStorage, socket: SimulatedSocket):
+    super().__init__()
     self.store = store
     self.socket = socket
-    self.steps: List[Dict[str, Any]] = []
+    self.events = recording.EventLog()
     # Operation ids are random uuids: they are recorded as op1, op2... in order of appearance.
-    self._operation_ids: Dict[str, str] = {}
+    self.operation_ids = recording.Placeholders("op{}")
     store.io = socket  # type: ignore[assignment]
 
   def _event(self, event: PLREvent) -> Dict[str, Any]:
     context = dict(event.context)
     if "operation_id" in context:
-      operation_id = context["operation_id"]
-      if operation_id not in self._operation_ids:
-        self._operation_ids[operation_id] = f"op{len(self._operation_ids) + 1}"
-      context["operation_id"] = self._operation_ids[operation_id]
+      context["operation_id"] = self.operation_ids(context["operation_id"])
     return {"name": event.name, "context": describe(context), "data": describe(event.data)}
 
   def _unresolved(self) -> Optional[Dict[str, Any]]:
@@ -163,36 +161,37 @@ class Recorder:
       "error_message": transfer.error_message,
     }
 
-  async def step(self, call: str, action: Callable[[], Any]) -> Any:
+  def take_sent(self) -> List[Any]:
+    """What the socket was sent since the last call."""
+    taken = list(self.socket.events)
+    self.socket.events.clear()
+    return taken
+
+  def patches(self) -> List[ContextManager[Any]]:
+    return [self.events.installed()]
+
+  async def step(self, call: str, action: recording.Action) -> Any:  # type: ignore[override]
     """Run `action` (sync or async) as the step `call`; record it, and return what it returned
     or raised."""
-    before = await self._snapshot()
-    self.socket.events.clear()
-    events: List[PLREvent] = []
-    bus = EventBus()
-    bus.subscribe(events.append)
-    outcome: Any
-    with use_event_bus(bus):
-      try:
-        outcome = action()
-        if inspect.isawaitable(outcome):
-          outcome = await outcome
-      except Exception as error:  # the step's error is part of the record
-        outcome = error
+    await self.mark()
+    self.take_sent()
+    self.events.take()
+    result, error = await self.outcome(action)
+    outcome = result if error is None else error
     entry: Dict[str, Any] = {
       "call": call,
-      "sent": list(self.socket.events),
-      "events": [self._event(event) for event in events],
+      "sent": self.take_sent(),
+      "events": [self._event(event) for event in self.events.take()],
       "result": describe(outcome),
       "unresolved_transfer": self._unresolved(),
     }
-    after = await self._snapshot()
-    if after != before:
-      entry["resources"] = after
+    resources = await self.changed()
+    if resources is not None:
+      entry["resources"] = resources
     self.steps.append(entry)
     return outcome
 
-  async def _snapshot(self) -> List[Dict[str, Any]]:
+  async def snapshot(self) -> List[Dict[str, Any]]:
     """The resources under the store's body; none before setup creates it."""
     if self.store.body is None:
       return []
@@ -200,5 +199,5 @@ class Recorder:
 
   async def check(self, test: unittest.TestCase, scenario: str) -> None:
     """Compare the record of the steps so far with the scenario's golden file."""
-    record = {"steps": self.steps, "resources": await self._snapshot()}
+    record = {"steps": self.steps, "resources": await self.snapshot()}
     check_golden(test, GOLDEN_DIRECTORY / f"{scenario}.json", record)

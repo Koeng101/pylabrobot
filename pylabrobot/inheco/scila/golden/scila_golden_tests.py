@@ -10,13 +10,14 @@ from __future__ import annotations
 import pathlib
 import unittest
 import xml.etree.ElementTree as ET
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from unittest.mock import patch
 
 from pylabrobot.inheco.scila import SCILA
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -34,11 +35,11 @@ def _parameters(values: Dict[str, str]) -> ET.Element:
 class _FakeSiLA:
   """Stands in for `InhecoSiLAInterface`: records commands and answers like a SCILA."""
 
-  def __init__(self, client_ip: Optional[str] = None, machine_ip: str = ""):
-    self.client_ip = client_ip or "192.168.0.10"
-    self.machine_ip = machine_ip
+  def __init__(self, sent: List[Dict[str, Any]]):
+    self.client_ip = "192.168.0.10"
+    self.machine_ip = ""
     self.bound_port = 8081
-    self.sent: List[Dict[str, Any]] = []
+    self.sent = sent
     self.drawers: Dict[int, str] = {1: "Closed", 2: "Closed", 3: "Closed", 4: "Closed"}
     self.prepared: Optional[int] = None
     self.target = 37.0
@@ -86,14 +87,15 @@ class _FakeSiLA:
     return None
 
 
-class _Recorder:
+class _Recorder(recording.Recorder):
   """A SCILA on the fake SiLA interface, recording each step's commands and resources.
 
   Its body and drawers are made in its store before the first step, as `setup` would.
   """
 
   def __init__(self, gas_mixer_connected: bool = True):
-    self.sila = _FakeSiLA()
+    super().__init__()
+    self.sila = _FakeSiLA(self.sent)
     self.transport: Dict[str, Optional[str]] = {}
     with patch("pylabrobot.inheco.scila.scila.InhecoSiLAInterface") as interface:
       interface.side_effect = lambda client_ip, machine_ip: self._made(client_ip, machine_ip)
@@ -103,7 +105,6 @@ class _Recorder:
         client_ip="169.254.1.2",
         gas_mixer_connected=gas_mixer_connected,
       )
-    self.steps: List[Dict[str, Any]] = []
     self.initial: List[Dict[str, Any]] = []
 
   async def start(self) -> None:
@@ -119,23 +120,16 @@ class _Recorder:
     self.sila.machine_ip = machine_ip
     return self.sila
 
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> Any:
-    """Run one call and record what it sent, returned and changed."""
-    self.sila.sent = []
-    before = await self.snapshot()
-    record: Dict[str, Any] = {"call": call}
-    result: Any = None
-    try:
-      result = await action()
-      record["result"] = result
-    except Exception as error:
-      record["result"] = {"error": type(error).__name__, "message": str(error)}
-    record["sent"] = self.sila.sent
-    after = await self.snapshot()
-    if after != before:
-      record["resources"] = after
-    self.steps.append(record)
-    return result
+  def failed(self, entry: Dict[str, Any], error: BaseException) -> None:
+    entry["result"] = recording.error_result(error)
+
+  async def begin(self) -> None:
+    await self.mark()
+
+  async def annotate(self, entry: Dict[str, Any]) -> None:
+    resources = await self.changed()
+    if resources is not None:
+      entry["resources"] = resources
 
   async def record(self) -> Dict[str, Any]:
     return {

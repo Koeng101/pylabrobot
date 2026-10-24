@@ -6,13 +6,9 @@ The readers run over a fake HID link that answers each report the way the reader
 values: a status, identity fields, versions, wavelengths and measurement chunks.
 """
 
-import dataclasses
-import datetime
-import enum
-import inspect
 import pathlib
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
 from pylabrobot.byonoy import (
   byonoy_a96a,
@@ -29,6 +25,7 @@ from pylabrobot.io.hid import HID
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -130,61 +127,37 @@ class FakeByonoyHID(HID):
     return self._pending.pop(0)
 
 
-def to_jsonable(value: Any) -> Any:
-  """`value` as JSON can hold it. Timestamps are the placeholder "<timestamp>": they are the time
-  of the run."""
-  if dataclasses.is_dataclass(value) and not isinstance(value, type):
-    return to_jsonable(dataclasses.asdict(value))
-  if isinstance(value, datetime.datetime):
-    return "<timestamp>"
-  if isinstance(value, enum.Enum):
-    return value.name
-  if isinstance(value, dict):
-    return {str(key): to_jsonable(item) for key, item in value.items()}
-  if isinstance(value, (list, tuple)):
-    return [to_jsonable(item) for item in value]
-  return value
-
-
-class Recorder:
+class Recorder(recording.Recorder):
   """Runs a scenario's steps and records each: the reports written, as hex, what the call
   returned or raised, and the resource tree under `root` when the step changed it."""
 
   def __init__(self, root: handles.Resource, driver: Optional[ByonoyDriver] = None) -> None:
+    super().__init__()
     self.root = root
     self.io: Optional[FakeByonoyHID] = None
     if driver is not None:
       self.io = FakeByonoyHID(driver.io.human_readable_device_name)
       driver.io = self.io
-    self.steps: List[Dict[str, Any]] = []
-    self._resources: List[Dict[str, Any]] = []
 
   async def start(self) -> "Recorder":
     """Take the tree before the first step."""
-    self._resources = await snapshot_store(self.root.store, self.root)
+    await self.mark()
     return self
 
-  async def step(self, call: str, action: Callable[[], Union[Any, Awaitable[Any]]]) -> Any:
-    """Run `action`; record it as `call`."""
-    if self.io is not None:
-      self.io.written = []
-    returned: Any = None
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      returned = action()
-      if inspect.isawaitable(returned):
-        returned = await returned
-    except Exception as error:  # a refusal is part of the record
-      entry["error"] = f"{type(error).__name__}: {error}"
-    else:
-      entry["result"] = to_jsonable(returned)
-    entry["sent"] = [] if self.io is None else [report.hex() for report in self.io.written]
-    resources = await snapshot_store(self.root.store, self.root)
-    if resources != self._resources:
+  async def snapshot(self) -> List[Dict[str, Any]]:
+    return await snapshot_store(self.root.store, self.root)
+
+  def take_sent(self) -> List[Any]:
+    """The reports written since the last call, as hex."""
+    if self.io is None:
+      return []
+    written, self.io.written = self.io.written, []
+    return [report.hex() for report in written]
+
+  async def annotate(self, entry: Dict[str, Any]) -> None:
+    resources = await self.changed()
+    if resources is not None:
       entry["resources"] = resources
-      self._resources = resources
-    self.steps.append(entry)
-    return returned
 
   async def check(self, test: unittest.TestCase, scenario: str) -> None:
     """Compare the record with the scenario's golden file."""

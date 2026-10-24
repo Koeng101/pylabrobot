@@ -7,7 +7,6 @@ result grid follows the plate's geometry as the device was told it.
 
 from __future__ import annotations
 
-import dataclasses
 import pathlib
 import unittest
 from typing import Any, Awaitable, Dict, List, Optional, Type, Union
@@ -24,6 +23,7 @@ from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -72,8 +72,8 @@ class FakeSpectraMaxPort:
   is answered ``FAIL\\t<code>>`` instead.
   """
 
-  def __init__(self) -> None:
-    self.sent: List[str] = []
+  def __init__(self, sent: List[str]) -> None:
+    self.sent = sent
     self.fail: Dict[str, int] = {}
     self._pending: List[bytes] = []
     self._columns = 1
@@ -156,20 +156,30 @@ class FakeSpectraMaxPort:
     return self._pending.pop(0)
 
 
-def _jsonable(result: Any) -> Any:
-  if isinstance(result, list):
-    return [_jsonable(item) for item in result]
-  if dataclasses.is_dataclass(result) and not isinstance(result, type):
-    return dataclasses.asdict(result)
-  return result
+class Recorder(recording.Recorder):
+  """Records what each step sent and returned, or that it raised the error it was meant to."""
+
+  def failed(self, entry: Dict[str, Any], error: BaseException) -> None:
+    entry["raised"] = recording.described(error)
+
+  async def step(  # type: ignore[override]
+    self, call: str, action: Awaitable[Any], error: Optional[Type[BaseException]] = None
+  ) -> Any:
+    """Run `action` and record what was sent and what it returned, or, when `error` is given,
+    that it raised that error. Reads change no resources, so a step records none."""
+    self.catches = () if error is None else (error,)
+    result = await super().step(call, action)
+    if error is not None and "raised" not in self.steps[-1]:
+      raise AssertionError(f"{error.__name__} not raised by {call}")
+    return result
 
 
 class SpectraMaxGoldenTests(unittest.IsolatedAsyncioTestCase):
   """Scenarios through the readers' public API, each checked against its golden file."""
 
   async def asyncSetUp(self) -> None:
-    self.port = FakeSpectraMaxPort()
-    self.steps: List[Dict[str, Any]] = []
+    self.recorder = Recorder()
+    self.port = FakeSpectraMaxPort(self.recorder.sent)
     self.before: List[Dict[str, Any]] = []
     self.store = ResourceStore.in_memory()
     self.tray: Optional[handles.Resource] = None
@@ -199,21 +209,7 @@ class SpectraMaxGoldenTests(unittest.IsolatedAsyncioTestCase):
     action: Awaitable[Any],
     error: Optional[Type[BaseException]] = None,
   ) -> Any:
-    """Run `action` and record what was sent and what it returned, or, when `error` is given,
-    that it raised that error. Reads change no resources, so a step records none."""
-    start = len(self.port.sent)
-    entry: Dict[str, Any] = {"call": call}
-    result: Any = None
-    if error is None:
-      result = await action
-      entry["result"] = _jsonable(result)
-    else:
-      with self.assertRaises(error) as raised:
-        await action
-      entry["raised"] = f"{type(raised.exception).__name__}: {raised.exception}"
-    entry["sent"] = self.port.sent[start:]
-    self.steps.append(entry)
-    return result
+    return await self.recorder.step(call, action, error)
 
   async def check(self, scenario: str) -> None:
     """Compare the steps and the resources under the loading tray with the scenario's golden file,
@@ -223,7 +219,7 @@ class SpectraMaxGoldenTests(unittest.IsolatedAsyncioTestCase):
     resources = await snapshot_store(self.store, self.tray)
     if self.before:
       self.assertEqual(resources, self.before)
-    record = {"steps": self.steps, "resources": resources}
+    record = {"steps": self.recorder.steps, "resources": resources}
     check_golden(self, GOLDEN / f"{scenario}.json", record)
 
   async def load(

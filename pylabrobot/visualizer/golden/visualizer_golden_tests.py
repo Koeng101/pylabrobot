@@ -8,12 +8,13 @@ import asyncio
 import json
 import pathlib
 import unittest
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
 from pylabrobot.events.golden.events_golden_tests import build_bench, move_to
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 from pylabrobot.visualizer import Visualizer
 
@@ -23,8 +24,8 @@ GOLDEN = pathlib.Path(__file__).parent
 class RecordingSocket:
   """Stands in for the browser's websocket: keeps every message the visualizer sends it."""
 
-  def __init__(self) -> None:
-    self.sent: List[str] = []
+  def __init__(self, sent: List[str]) -> None:
+    self.sent = sent
 
   async def send(self, message: str) -> None:
     self.sent.append(message)
@@ -44,14 +45,14 @@ def normalized(message: str) -> Dict[str, Any]:
   return data
 
 
-class Bench:
+class Bench(recording.Recorder):
   """A STARlet deck with a plate carrier holding a plate and a tip carrier holding a tip rack, in a
   resource store, watched by a 2D visualizer whose messages are recorded step by step."""
 
   def __init__(self) -> None:
+    super().__init__()
     self.store = ResourceStore.in_memory()
-    self.socket = RecordingSocket()
-    self.steps: List[Dict[str, Any]] = []
+    self.socket = RecordingSocket(self.sent)
 
   async def build(self) -> None:
     built = await build_bench(self.store)
@@ -69,19 +70,19 @@ class Bench:
     self.visualizer._websocket = self.socket  # type: ignore[assignment]
     await self.visualizer.follow()
 
-  async def step(self, call: str, action: Callable[[], Any], resources: bool = True) -> None:
+  async def step(  # type: ignore[override]
+    self, call: str, action: recording.Action, resources: bool = True
+  ) -> None:
     """Run `action`, let the visualizer send what it sends, and record it under `call`."""
-    before = len(self.socket.sent)
-    result = action()
-    if asyncio.iscoroutine(result):
-      await result
+    self.take_sent()
+    await recording.run(action)
     await self.visualizer.caught_up()
     # Sends are scheduled on the loop: a few turns let every one of them run.
     for _ in range(10):
       await asyncio.sleep(0)
     entry: Dict[str, Any] = {
       "call": call,
-      "sent": [normalized(message) for message in self.socket.sent[before:]],
+      "sent": [normalized(message) for message in self.take_sent()],
     }
     if resources:
       entry["resources"] = await snapshot_store(self.store, self.deck)

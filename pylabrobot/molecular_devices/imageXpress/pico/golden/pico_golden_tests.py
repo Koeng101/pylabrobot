@@ -14,7 +14,7 @@ import json
 import pathlib
 import struct
 import unittest
-from typing import Any, Dict, List, Optional
+from typing import Any, ContextManager, Dict, List, Optional
 from unittest import mock
 
 import pytest
@@ -42,6 +42,7 @@ from pylabrobot.molecular_devices.imageXpress.pico.models import (  # noqa: E402
 from pylabrobot.molecular_devices.imageXpress.pico.pico import Pico  # noqa: E402
 from pylabrobot.resources.store import handles  # noqa: E402
 from pylabrobot.resources.store.client import ResourceStore  # noqa: E402
+from pylabrobot.testing import recorder as recording  # noqa: E402
 from pylabrobot.testing.golden import check_golden, snapshot_store  # noqa: E402
 
 HERE = pathlib.Path(__file__).parent
@@ -107,8 +108,8 @@ def _decode_request(path: str, request: bytes) -> Any:
 class _Channel:
   """A fake gRPC channel: answers from a table and records every call."""
 
-  def __init__(self) -> None:
-    self.sent: List[Dict[str, Any]] = []
+  def __init__(self, sent: List[Dict[str, Any]]) -> None:
+    self.sent = sent
     self.responses: Dict[str, bytes] = {}
     self.stream_responses: Dict[str, List[bytes]] = {}
 
@@ -142,13 +143,15 @@ class _Channel:
     self.sent.append({"rpc": "close"})
 
 
-class _Rig:
+class _Rig(recording.Recorder):
   """A Pico on a fake channel, and the record of a scenario's steps."""
 
+  catches = (ValueError, RuntimeError)
+
   def __init__(self, test: unittest.TestCase) -> None:
+    super().__init__()
     self.test = test
-    self.channel = _Channel()
-    self.steps: List[Dict[str, Any]] = []
+    self.channel = _Channel(self.sent)
     installed_objectives = [{"Id": Objective.O_4X_PL_FL.objective_id}, {"Id": "empty"}]
     self.channel.responses.update(
       {
@@ -197,20 +200,19 @@ class _Rig:
       _intermediate_response(blob, checksum)
     ]
 
-  async def step(self, call: str, coro: Any, plate: Optional[handles.Plate] = None) -> Any:
-    start = len(self.channel.sent)
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      with mock.patch.object(pico_module.time, "time", return_value=FIXED_TIME):
-        result = await coro
-      entry["result"] = _result_json(result)
-    except (ValueError, RuntimeError) as error:
-      result = None
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.channel.sent[start:]
+  def patches(self) -> List[ContextManager[Any]]:
+    return [mock.patch.object(pico_module.time, "time", return_value=FIXED_TIME)]
+
+  def jsonable(self, value: Any) -> Any:
+    return _result_json(value)
+
+  async def step(  # type: ignore[override]
+    self, call: str, coro: Any, plate: Optional[handles.Plate] = None
+  ) -> Any:
+    """Run one step, recording what was sent, returned or raised, and `plate` after it."""
+    result = await super().step(call, coro)
     if plate is not None:
-      entry["resources"] = await snapshot_store(self.store, plate)
-    self.steps.append(entry)
+      self.steps[-1]["resources"] = await snapshot_store(self.store, plate)
     return result
 
   async def setup(self) -> None:

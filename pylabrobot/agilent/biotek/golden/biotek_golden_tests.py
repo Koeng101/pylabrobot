@@ -11,7 +11,7 @@ from __future__ import annotations
 import pathlib
 import unittest
 import unittest.mock
-from typing import Any, Awaitable, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, List, Optional, Sequence, Tuple, cast
 
 from pylabrobot.agilent.biotek import Cytation1, Cytation5, CytationImagingConfig, SynergyH1
 from pylabrobot.agilent.biotek.cytation.microscope.aravis_camera import AravisCamera
@@ -31,6 +31,7 @@ from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -236,29 +237,17 @@ def _result(value: Any) -> Any:
   return value
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Runs a reader's steps against the fake transport and collects the golden record."""
 
   def __init__(self, reader: BioTekPlateReaderDriver, version: str, store: ResourceStore) -> None:
+    super().__init__()
     self.store = store
-    self.sent: List[str] = []
     self.io = FakeReaderIO(self.sent, version)
     reader.io = cast(FTDI, self.io)
-    self.steps: List[Dict[str, Any]] = []
 
-  async def step(self, call: str, operation: Awaitable[Any]) -> Any:
-    """Run one call, recording what it sent and what it returned or raised."""
-    self.sent.clear()
-    entry: Dict[str, Any] = {"call": call}
-    result: Any = None
-    try:
-      result = await operation
-      entry["result"] = _result(result)
-    except Exception as error:
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = list(self.sent)
-    self.steps.append(entry)
-    return result
+  def jsonable(self, value: Any) -> Any:
+    return _result(value)
 
   async def check(
     self,

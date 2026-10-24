@@ -15,9 +15,6 @@ Rewrite the golden files after a change meant to change them:
 from __future__ import annotations
 
 import asyncio
-import dataclasses
-import enum
-import inspect
 import pathlib
 import unittest
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, Type, Union
@@ -41,34 +38,13 @@ from pylabrobot.lib.liquid_handling.mix import Mix
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.errors import HasTipError, TooLittleVolumeError
 from pylabrobot.resources.store import handles, library
-from pylabrobot.testing.golden import check_golden, snapshot_changes, snapshot_store
+from pylabrobot.testing import recorder as recording
+from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
 # Where the simulated session's client sits, and the sequence every recorded frame is built with.
 CLIENT = Address(2, 1, 65535)
-
-
-def _jsonable(value: Any) -> Any:
-  """A call's result as a golden file holds it."""
-  if value is None or isinstance(value, (bool, int, float, str)):
-    return value
-  if isinstance(value, enum.Enum):
-    return value.name
-  if isinstance(value, Coordinate):
-    return [value.x, value.y, value.z]
-  if isinstance(value, bytes):
-    return value.hex()
-  if isinstance(value, dict):
-    return {str(key): _jsonable(item) for key, item in value.items()}
-  if isinstance(value, (list, tuple)):
-    return [_jsonable(item) for item in value]
-  if dataclasses.is_dataclass(value) and not isinstance(value, type):
-    return {
-      field.name: _jsonable(item)
-      for field, item in zip(dataclasses.fields(value), dataclasses.astuple(value))
-    }
-  return type(value).__name__
 
 
 def _error(error: Exception) -> Dict[str, Any]:
@@ -81,7 +57,7 @@ def _error(error: Exception) -> Dict[str, Any]:
   return record
 
 
-class _Recording:
+class _Recording(recording.Recorder):
   """A simulated Prep whose every frame is recorded, step by step, with the resources after each.
 
   Each step's `sent` is every frame the session exchanged during it, in order, each as the
@@ -89,25 +65,23 @@ class _Recording:
   step that raises what it was expected to records the error instead of a result.
   """
 
-  def __init__(self, prep: PrepDevice, resources: List[Dict[str, Any]]):
+  def __init__(self, prep: PrepDevice):
+    super().__init__()
     self.prep = prep
-    self.steps: List[Dict[str, Any]] = []
-    self._sent: List[str] = []
-    # The resources as the last step left them; a scenario changes them only through its steps.
-    self._resources = resources
     self._watch(prep.driver)
 
   @classmethod
   async def start(cls, prep: PrepDevice) -> "_Recording":
     """Record `prep` from here, its resources made in its store first."""
     await prep.create_resources()
-    return cls(prep, await cls.snapshot(prep))
+    run = cls(prep)
+    await run.mark()
+    return run
 
-  @staticmethod
-  async def snapshot(prep: PrepDevice) -> List[Dict[str, Any]]:
+  async def snapshot(self) -> List[Dict[str, Any]]:
     """The device's whole tree, from its body down."""
-    assert prep.body is not None
-    return await snapshot_store(prep.store, prep.body)
+    assert self.prep.body is not None
+    return await snapshot_store(self.prep.store, self.prep.body)
 
   def _watch(self, driver: Any) -> None:
     """Record every frame `driver`'s link exchanges, on each session it opens from here on."""
@@ -120,7 +94,7 @@ class _Recording:
 
       async def exchange_recorded(command: Any, *args: Any, **kwargs: Any) -> Any:
         request = command.request if isinstance(command, _ResolvedPrepCommand) else command
-        self._sent.append(f"{type(request).__name__} {command.build(CLIENT, 0).hex()}")
+        self.sent.append(f"{type(request).__name__} {command.build(CLIENT, 0).hex()}")
         return await exchange(command, *args, **kwargs)
 
       session.exchange = exchange_recorded
@@ -130,10 +104,10 @@ class _Recording:
 
   async def forget(self) -> None:
     """Start the record from here: what was sent so far is dropped, and the resources are read."""
-    self._sent = []
-    self._resources = await self.snapshot(self.prep)
+    self.take_sent()
+    await self.mark()
 
-  async def step(
+  async def step(  # type: ignore[override]
     self,
     call: str,
     action: Callable[[], Any],
@@ -146,32 +120,24 @@ class _Recording:
       action: the step itself; what it returns is awaited when it can be.
       raises: the exception it is expected to end in, recorded rather than raised.
     """
-    self._sent = []
+    self.take_sent()
     entry: Dict[str, Any] = {"call": call}
-    result = None
-    try:
-      result = action()
-      if inspect.isawaitable(result):
-        result = await result
-    except Exception as error:
-      if raises is None or not isinstance(error, raises):
-        raise
-      result = None
+    self.catches = () if raises is None else (raises,)
+    result, error = await self.outcome(action)
+    if error is not None:
+      assert isinstance(error, Exception)
       entry["error"] = _error(error)
-    else:
-      if raises is not None:
-        raise AssertionError(f"{call} was expected to raise {raises.__name__}")
-    entry["sent"] = self._sent
-    entry["result"] = _jsonable(result)
-    after = await self.snapshot(self.prep)
-    entry.update(snapshot_changes(self._resources, after))
-    self._resources = after
+    elif raises is not None:
+      raise AssertionError(f"{call} was expected to raise {raises.__name__}")
+    entry["sent"] = self.take_sent()
+    entry["result"] = self.jsonable(result)
+    entry.update(await self.changes())
     self.steps.append(entry)
     return result
 
   def record(self) -> Dict[str, Any]:
     """Every step, and the resources the scenario ended with."""
-    return {"steps": self.steps, "resources": self._resources}
+    return {"steps": self.steps, "resources": self.resources}
 
 
 async def _set_up(prep: PrepDevice) -> _Recording:

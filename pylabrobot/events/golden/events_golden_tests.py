@@ -4,20 +4,17 @@ The seam is a listener on an `EventBus` installed for the test: every event it i
 recorded, in order.
 """
 
-import asyncio
 import pathlib
 import unittest
 import warnings
-from typing import Any, Callable, Dict, List
+from typing import Any, ContextManager, Dict, List
 
 from pylabrobot.events import (
-  EventBus,
   PLREvent,
   emit_event,
   event_operation,
   evented_operation,
   handle_reference,
-  use_event_bus,
 )
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.hamilton import STARLetDeck
@@ -26,6 +23,7 @@ from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.definitions import definition_from_resource
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -69,17 +67,15 @@ async def move_to(resource: handles.Resource, location: Coordinate) -> None:
   )
 
 
-class Bench:
+class Bench(recording.Recorder):
   """A STARlet deck with a plate carrier holding a plate and a tip carrier holding a tip rack, in a
   resource store, with an event bus whose events are recorded step by step."""
 
   def __init__(self) -> None:
+    super().__init__()
     self.store = ResourceStore.in_memory()
-    self.bus = EventBus()
-    self.events: List[PLREvent] = []
-    self.bus.subscribe(self.events.append)
-    self.operations: Dict[str, str] = {}
-    self.steps: List[Dict[str, Any]] = []
+    self.events = recording.EventLog()
+    self.operations = recording.Placeholders("<operation-{}>", start=0)
 
   async def build(self) -> None:
     built = await build_bench(self.store)
@@ -94,26 +90,18 @@ class Bench:
     replaced by `<operation-n>`, numbered by first appearance."""
     context = dict(event.context)
     if "operation_id" in context:
-      operation_id = context["operation_id"]
-      context["operation_id"] = self.operations.setdefault(
-        operation_id, f"<operation-{len(self.operations)}>"
-      )
+      context["operation_id"] = self.operations(context["operation_id"])
     return {"sequence": event.sequence, "name": event.name, "context": context, "data": event.data}
 
-  async def step(self, call: str, action: Callable[[], Any]) -> None:
-    """Run `action` with the bus installed, and record the events it emitted under `call`."""
-    before = len(self.events)
-    entry: Dict[str, Any] = {"call": call}
-    with use_event_bus(self.bus):
-      try:
-        result = action()
-        if asyncio.iscoroutine(result):
-          result = await result
-        entry["result"] = result
-      except Exception as error:  # the failure is part of what is recorded
-        entry["raised"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = [self._event(event) for event in self.events[before:]]
-    self.steps.append(entry)
+  def patches(self) -> List[ContextManager[Any]]:
+    return [self.events.installed()]
+
+  def take_sent(self) -> List[Any]:
+    """The events emitted since the last call."""
+    return [self._event(event) for event in self.events.take()]
+
+  def failed(self, entry: Dict[str, Any], error: BaseException) -> None:
+    entry["raised"] = recording.described(error)
 
   async def record(self) -> Dict[str, Any]:
     return {"steps": self.steps, "resources": await snapshot_store(self.store, self.deck)}

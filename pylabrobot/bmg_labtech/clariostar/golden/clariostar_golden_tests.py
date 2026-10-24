@@ -6,13 +6,9 @@ reply; the replies are frames recorded from a CLARIOstar Plus. Each scenario set
 moves the drawer and the plate, and reads.
 """
 
-import dataclasses
-import datetime
-import enum
-import inspect
 import pathlib
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from pylabrobot.bmg_labtech.clariostar.device import CLARIOstarDevice, CLARIOstarPlus
 from pylabrobot.bmg_labtech.clariostar.driver.features.absorbance_tests import (
@@ -54,6 +50,7 @@ from pylabrobot.bmg_labtech.clariostar.driver.master_tests import (
 from pylabrobot.lib.absorbance.results import grid_of
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import handles
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -103,30 +100,13 @@ def luminescence_reply(wells: int) -> bytes:
   return ftdi_wrap_payload(bytes(payload))
 
 
-def to_jsonable(value: Any) -> Any:
-  """`value` as JSON can hold it. Timestamps are the placeholder "<timestamp>": they are the time
-  of the run."""
-  if dataclasses.is_dataclass(value) and not isinstance(value, type):
-    return to_jsonable(dataclasses.asdict(value))
-  if isinstance(value, datetime.datetime):
-    return "<timestamp>"
-  if isinstance(value, enum.Enum):
-    return value.name
-  if isinstance(value, dict):
-    return {str(key): to_jsonable(item) for key, item in value.items()}
-  if isinstance(value, (list, tuple)):
-    return [to_jsonable(item) for item in value]
-  if isinstance(value, bytes):
-    return value.hex()
-  return value
-
-
-class Recorder:
+class Recorder(recording.Recorder):
   """Runs a scenario's steps against a CLARIOstar Plus over a fake link and records each step:
   the frames written, as hex, what the call returned or raised, and the reader's tree when the
   step changed it."""
 
   def __init__(self) -> None:
+    super().__init__()
     self.io = FakeFTDI(chunk=4096)
     self.reader: CLARIOstarDevice = CLARIOstarPlus(name="reader", io=self.io)
     driver = self.reader.driver
@@ -137,13 +117,11 @@ class Recorder:
     driver.default_poll_interval = 0
     driver.drawer.default_poll_interval = 0
     self.store = self.reader.store
-    self.steps: List[Dict[str, Any]] = []
-    self._resources: List[Dict[str, Any]] = []
 
   async def start(self) -> None:
     """Put the reader in its store: its tree before the first step."""
     await self.reader.create_body()
-    self._resources = await self.snapshot()
+    await self.mark()
 
   async def snapshot(self) -> List[Dict[str, Any]]:
     """The reader's tree, read from its store."""
@@ -156,35 +134,28 @@ class Recorder:
     assert isinstance(plate, handles.Plate)
     return plate
 
-  async def step(
+  def take_sent(self) -> List[Any]:
+    """The frames written since the last call, as hex."""
+    written, self.io.written = self.io.written, []
+    return [frame.hex() for frame in written]
+
+  async def annotate(self, entry: Dict[str, Any]) -> None:
+    entry["unanswered_replies"] = len(self.io.replies)
+    resources = await self.changed()
+    if resources is not None:
+      entry["resources"] = resources
+
+  async def step(  # type: ignore[override]
     self,
     call: str,
-    action: Callable[[], Union[Any, Awaitable[Any]]],
+    action: recording.Action,
     replies: Sequence[bytes] = (),
     result: Optional[Callable[[Any], Any]] = None,
   ) -> Any:
     """Run `action` with `replies` queued; record it as `call`. `result` makes what it returned
     JSON-able; by default its fields are recorded."""
-    self.io.written = []
     self.io.replies = list(replies)
-    returned: Any = None
-    entry: Dict[str, Any] = {"call": call}
-    try:
-      returned = action()
-      if inspect.isawaitable(returned):
-        returned = await returned
-    except Exception as error:  # a refusal is part of the record
-      entry["error"] = f"{type(error).__name__}: {error}"
-    else:
-      entry["result"] = to_jsonable(returned if result is None else result(returned))
-    entry["sent"] = [frame.hex() for frame in self.io.written]
-    entry["unanswered_replies"] = len(self.io.replies)
-    resources = await self.snapshot()
-    if resources != self._resources:
-      entry["resources"] = resources
-      self._resources = resources
-    self.steps.append(entry)
-    return returned
+    return await super().step(call, action, result)
 
   async def check(self, test: unittest.TestCase, scenario: str) -> None:
     """Compare the record with the scenario's golden file."""

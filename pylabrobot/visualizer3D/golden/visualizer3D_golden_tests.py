@@ -11,12 +11,13 @@ import json
 import pathlib
 import struct
 import unittest
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pylabrobot.events.golden.events_golden_tests import build_bench, move_to
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 from pylabrobot.visualizer3D import Viewer3D
 
@@ -26,8 +27,8 @@ GOLDEN = pathlib.Path(__file__).parent
 class RecordingClient:
   """Stands in for a page's websocket: keeps every message, and stays open until closed."""
 
-  def __init__(self) -> None:
-    self.sent: List[str] = []
+  def __init__(self, sent: List[str]) -> None:
+    self.sent = sent
     self.closed = asyncio.Event()
 
   async def send(self, message: str) -> None:
@@ -76,16 +77,16 @@ class Normalizer:
     return parsed
 
 
-class Bench:
+class Bench(recording.Recorder):
   """A STARlet deck with a plate carrier holding a plate and a tip carrier holding a tip rack, in a
   resource store, watched by a 3D viewer whose messages to one client are recorded step by step."""
 
   def __init__(self) -> None:
+    super().__init__()
     self.store = ResourceStore.in_memory()
-    self.client = RecordingClient()
+    self.client = RecordingClient(self.sent)
     self.normalize = Normalizer()
     self.handler: Optional["asyncio.Future[None]"] = None
-    self.steps: List[Dict[str, Any]] = []
 
   async def build(self) -> None:
     built = await build_bench(self.store)
@@ -105,16 +106,12 @@ class Bench:
     for _ in range(5):
       await asyncio.sleep(0)
 
-  async def step(self, call: str, action: Callable[[], Any]) -> None:
+  async def step(self, call: str, action: recording.Action) -> None:  # type: ignore[override]
     """Run `action`, let the viewer send what it sends, and record it under `call`."""
-    before = len(self.client.sent)
-    result = action()
-    if asyncio.iscoroutine(result):
-      await result
+    self.take_sent()
+    await recording.run(action)
     await self.settle()
-    self.steps.append(
-      {"call": call, "sent": [self.normalize(m) for m in self.client.sent[before:]]}
-    )
+    self.steps.append({"call": call, "sent": [self.normalize(m) for m in self.take_sent()]})
 
   async def connect(self) -> None:
     """Give the viewer this loop, as `start` does, have it follow the store, and connect the

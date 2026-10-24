@@ -20,7 +20,7 @@ import dataclasses
 import pathlib
 import struct
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List
+from typing import Any, ContextManager, Dict, List
 from unittest.mock import patch
 
 from pylabrobot.agilent.vspin import _access2_protocol as protocol
@@ -32,28 +32,17 @@ from pylabrobot.agilent.vspin._state import (
 )
 from pylabrobot.agilent.vspin.access2 import Access2
 from pylabrobot.agilent.vspin.vspin import VSpin
-from pylabrobot.events import EventBus, PLREvent, use_event_bus
 from pylabrobot.io.binary import Reader, Writer
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
 
 # The bucket-1 calibration the VSpin reads from its calibration file at construction.
 BUCKET_1_REMAINDER = 1234
-
-
-def _jsonable(value: Any) -> Any:
-  """`value` with tuples as lists and anything else that is not JSON as its type name."""
-  if isinstance(value, dict):
-    return {str(key): _jsonable(item) for key, item in value.items()}
-  if isinstance(value, (list, tuple)):
-    return [_jsonable(item) for item in value]
-  if value is None or isinstance(value, (bool, int, float, str)):
-    return value
-  return type(value).__name__
 
 
 class _FakeVSpinFTDI:
@@ -143,7 +132,7 @@ class _FakeAccess2FTDI:
     return chunk
 
 
-class _Recorder:
+class _Recorder(recording.Recorder):
   """A VSpin and its Access2 loader on fake FTDI connections, recording each step's writes,
   events and resources.
 
@@ -151,7 +140,7 @@ class _Recorder:
   """
 
   def __init__(self):
-    self.sent: List[str] = []
+    super().__init__()
     with (
       patch("pylabrobot.agilent.vspin.vspin.FTDI", autospec=True),
       patch("pylabrobot.agilent.vspin.access2.FTDI", autospec=True),
@@ -177,11 +166,7 @@ class _Recorder:
       homing=VSpinHomingState.HOMED,
     )
     self.initial: List[Dict[str, Any]] = []
-    self.steps: List[Dict[str, Any]] = []
-    self.events: List[Dict[str, Any]] = []
-    self._operation_ids: Dict[str, str] = {}
-    self.bus = EventBus()
-    self.bus.subscribe(self._on_event)
+    self.events = recording.EventLog()
 
   async def start(self) -> None:
     await self.vspin.create_resources()
@@ -196,40 +181,24 @@ class _Recorder:
       + await snapshot_store(store, self.vspin.bucket2)
     )
 
-  def _on_event(self, event: PLREvent) -> None:
-    raw_id = event.context.get("operation_id")
-    operation_id = None
-    if raw_id is not None:
-      operation_id = self._operation_ids.setdefault(raw_id, f"op-{len(self._operation_ids) + 1}")
-    self.events.append(
-      {
-        "name": event.name,
-        "operation": event.context.get("operation"),
-        "operation_id": operation_id,
-        "data": _jsonable(event.data),
-      }
-    )
+  def patches(self) -> List[ContextManager[Any]]:
+    return [self.events.installed()]
 
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> Any:
-    """Run one call and record what it sent, emitted, returned and changed."""
-    self.sent.clear()
-    self.events = []
-    before = await self.snapshot()
-    record: Dict[str, Any] = {"call": call}
-    result: Any = None
-    with use_event_bus(self.bus):
-      try:
-        result = await action()
-        record["result"] = _jsonable(result)
-      except Exception as error:
-        record["result"] = {"error": type(error).__name__, "message": str(error)}
-    record["sent"] = list(self.sent)
-    record["events"] = self.events
-    after = await self.snapshot()
-    if after != before:
-      record["resources"] = after
-    self.steps.append(record)
-    return result
+  def jsonable(self, value: Any) -> Any:
+    return recording.plain(value)
+
+  def failed(self, entry: Dict[str, Any], error: BaseException) -> None:
+    entry["result"] = recording.error_result(error)
+
+  async def begin(self) -> None:
+    self.events.take()
+    await self.mark()
+
+  async def annotate(self, entry: Dict[str, Any]) -> None:
+    entry["events"] = [self.events.summary(event) for event in self.events.take()]
+    resources = await self.changed()
+    if resources is not None:
+      entry["resources"] = resources
 
   async def record(self) -> Dict[str, Any]:
     return {

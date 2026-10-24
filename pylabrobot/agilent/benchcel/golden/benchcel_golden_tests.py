@@ -12,7 +12,7 @@ from __future__ import annotations
 import pathlib
 import struct
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, ContextManager, Dict, List, Optional
 
 from pylabrobot.agilent.benchcel import (
   BenchCel4R,
@@ -22,10 +22,10 @@ from pylabrobot.agilent.benchcel import (
 )
 from pylabrobot.agilent.benchcel.benchcel import Frame, parse_frame_from_buffer
 from pylabrobot.agilent.benchcel.stacks import benchcel_4r_stacks
-from pylabrobot.events import EventBus, PLREvent, use_event_bus
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import ResourceStore, build, handles
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
 
 GOLDEN = pathlib.Path(__file__).parent
@@ -33,22 +33,11 @@ GOLDEN = pathlib.Path(__file__).parent
 LOADING_TRAY_TEACHPOINT = 0x1E
 
 
-def _jsonable(value: Any) -> Any:
-  """`value` with tuples as lists and anything else that is not JSON as its type name."""
-  if isinstance(value, dict):
-    return {str(key): _jsonable(item) for key, item in value.items()}
-  if isinstance(value, (list, tuple)):
-    return [_jsonable(item) for item in value]
-  if value is None or isinstance(value, (bool, int, float, str)):
-    return value
-  return type(value).__name__
-
-
 class _FakeSocket:
   """Stands in for the BenchCel's `Socket`: records frames and answers like the device."""
 
-  def __init__(self) -> None:
-    self.sent: List[str] = []
+  def __init__(self, sent: List[str]) -> None:
+    self.sent = sent
     self.errors: Dict[int, str] = {}
     self._received = bytearray()
     self._replies = bytearray()
@@ -105,7 +94,7 @@ class _FakeSocket:
     return [Frame(0x69, bytes([command]))]
 
 
-class _Recorder:
+class _Recorder(recording.Recorder):
   """A BenchCel 4R on the fake socket, recording each step's frames, events and resources.
 
   Operation ids are uuids; they are recorded as `op-1`, `op-2`... in the order they appear.
@@ -114,6 +103,7 @@ class _Recorder:
   def __init__(
     self, store: Optional[ResourceStore] = None, labware: Optional[handles.Plate] = None
   ):
+    super().__init__()
     self.store = store or ResourceStore.in_memory()
     self.benchcel = BenchCel4R(
       name="benchcel",
@@ -125,14 +115,10 @@ class _Recorder:
       loading_tray_location=Coordinate(-200, 50, 0),
       store=self.store,
     )
-    self.socket = _FakeSocket()
+    self.socket = _FakeSocket(self.sent)
     self.benchcel.io = self.socket  # type: ignore[assignment]
     self.initial: Optional[List[Dict[str, Any]]] = None
-    self.steps: List[Dict[str, Any]] = []
-    self.events: List[Dict[str, Any]] = []
-    self._operation_ids: Dict[str, str] = {}
-    self.bus = EventBus()
-    self.bus.subscribe(self._on_event)
+    self.events = recording.EventLog()
 
   async def start(self) -> None:
     await self.benchcel.create_resources()
@@ -140,42 +126,26 @@ class _Recorder:
   async def snapshot(self) -> List[Dict[str, Any]]:
     return await snapshot_store(self.store, self.benchcel.body)
 
-  def _on_event(self, event: PLREvent) -> None:
-    raw_id = event.context.get("operation_id")
-    operation_id = None
-    if raw_id is not None:
-      operation_id = self._operation_ids.setdefault(raw_id, f"op-{len(self._operation_ids) + 1}")
-    self.events.append(
-      {
-        "name": event.name,
-        "operation": event.context.get("operation"),
-        "operation_id": operation_id,
-        "data": _jsonable(event.data),
-      }
-    )
+  def patches(self) -> List[ContextManager[Any]]:
+    return [self.events.installed()]
 
-  async def step(self, call: str, action: Callable[[], Awaitable[Any]]) -> Any:
-    """Run one call and record what it sent, emitted, returned and changed."""
-    self.socket.sent = []
-    self.events = []
-    before = await self.snapshot()
+  def jsonable(self, value: Any) -> Any:
+    return _result(value)
+
+  def failed(self, entry: Dict[str, Any], error: BaseException) -> None:
+    entry["result"] = recording.error_result(error)
+
+  async def annotate(self, entry: Dict[str, Any]) -> None:
+    entry["events"] = [self.events.summary(event) for event in self.events.take()]
+    resources = await self.changed()
+    if resources is not None:
+      entry["resources"] = resources
+
+  async def begin(self) -> None:
+    self.events.take()
+    before = await self.mark()
     if self.initial is None:
       self.initial = before
-    record: Dict[str, Any] = {"call": call}
-    result: Any = None
-    with use_event_bus(self.bus):
-      try:
-        result = await action()
-        record["result"] = _result(result)
-      except Exception as error:
-        record["result"] = {"error": type(error).__name__, "message": str(error)}
-    record["sent"] = self.socket.sent
-    record["events"] = self.events
-    after = await self.snapshot()
-    if after != before:
-      record["resources"] = after
-    self.steps.append(record)
-    return result
 
   async def record(self) -> Dict[str, Any]:
     return {
@@ -192,7 +162,7 @@ def _result(result: Any) -> Any:
     return result.to_dict()
   if isinstance(result, Coordinate):
     return [result.x, result.y, result.z]
-  return _jsonable(result)
+  return recording.plain(result)
 
 
 async def _plate(store: ResourceStore, name: str, size_z: float = 14.2) -> handles.Plate:

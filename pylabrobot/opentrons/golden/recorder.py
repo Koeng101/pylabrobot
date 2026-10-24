@@ -16,7 +16,8 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 from pylabrobot.io.http import HTTP
 from pylabrobot.resources.store import handles
-from pylabrobot.testing.golden import snapshot_changes, snapshot_store
+from pylabrobot.testing import recorder as recording
+from pylabrobot.testing.golden import snapshot_store
 
 # Labware load names, and the OT-2's labware ids, are `uuid.uuid4().hex`. Each distinct one is
 # replaced by `<uuid-N>`, numbered in order of first appearance within a scenario.
@@ -175,7 +176,7 @@ class FakeRobotServer(HTTP):
     return 200, json.dumps(self._answer(method, path, body))
 
 
-class Recorder:
+class Recorder(recording.Recorder):
   """Run a scenario's steps and build its golden record.
 
   Made with `Recorder.start`, which takes the first snapshot.
@@ -192,12 +193,11 @@ class Recorder:
     root: handles.Resource,
     mounted: Callable[[], Awaitable[Dict[str, Any]]],
   ) -> None:
+    super().__init__()
     self.server = server
     self.root = root
     self.mounted = mounted
-    self.steps: List[Dict[str, Any]] = []
-    self._uuids: Dict[str, str] = {}
-    self._resources: List[Dict[str, Any]] = []
+    self._uuids = recording.Placeholders("<uuid-{}>")
 
   @classmethod
   async def start(
@@ -207,71 +207,56 @@ class Recorder:
     mounted: Callable[[], Awaitable[Dict[str, Any]]],
   ) -> "Recorder":
     recorder = cls(server, root, mounted)
-    recorder._resources = await snapshot_store(root.store, root)
+    await recorder.mark()
     return recorder
+
+  async def snapshot(self) -> List[Dict[str, Any]]:
+    return await snapshot_store(self.root.store, self.root)
 
   def _normalised(self, value: Any) -> Any:
     if isinstance(value, str):
-      return _UUID.sub(self._placeholder, value)
+      return _UUID.sub(lambda match: self._uuids(match.group(0)), value)
     if isinstance(value, dict):
       return {self._normalised(key): self._normalised(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
       return [self._normalised(item) for item in value]
     return value
 
-  def _placeholder(self, match: "re.Match[str]") -> str:
-    found = match.group(0)
-    if found not in self._uuids:
-      self._uuids[found] = f"<uuid-{len(self._uuids) + 1}>"
-    return self._uuids[found]
+  def take_sent(self) -> List[Any]:
+    return self.server.take_sent()
 
-  async def _add_resources(self, entry: Dict[str, Any]) -> None:
-    """Add what changed in the resources since the last step to `entry`."""
-    resources = await snapshot_store(self.root.store, self.root)
-    entry.update(snapshot_changes(self._resources, resources))
-    self._resources = resources
+  def jsonable(self, value: Any) -> Any:
+    return jsonable(value)
 
-  async def step(self, call: str, operation: Awaitable[Any]) -> Any:
+  async def annotate(self, entry: Dict[str, Any]) -> None:
+    entry.update(await self.changes())
+    entry["mounted"] = await self.mounted()
+
+  async def step(self, call: str, action: recording.Action) -> Any:  # type: ignore[override]
     """Run one call, recording what it sent, returned or raised, and the state it left.
 
     An exception the call raises is recorded as the step's `error` and not re-raised, so a
     refused or failed operation is pinned like any other.
     """
-    self.server.take_sent()
-    entry: Dict[str, Any] = {"call": call}
-    result: Any = None
-    try:
-      result = await operation
-      entry["result"] = jsonable(result)
-    except Exception as error:  # noqa: BLE001 - a raised error is part of the record
-      entry["error"] = f"{type(error).__name__}: {error}"
-    entry["sent"] = self.server.take_sent()
-    await self._add_resources(entry)
-    entry["mounted"] = await self.mounted()
-    self.steps.append(self._normalised(entry))
+    result = await super().step(call, action)
+    self.steps[-1] = self._normalised(self.steps[-1])
     return result
 
   async def arrange(
     self, description: str, change: Union[Awaitable[Any], Callable[[], Any]]
   ) -> None:
     """Change the resources by hand, as an operator would, recorded as its own step."""
-    pending = change() if callable(change) else change
-    if pending is not None:
-      await pending
-    entry: Dict[str, Any] = {"arrange": description}
-    await self._add_resources(entry)
+    await recording.run(change)
+    entry: Dict[str, Any] = {"arrange": description, **await self.changes()}
     self.steps.append(self._normalised(entry))
 
   async def record(self) -> Dict[str, Any]:
     """The scenario's golden record: its steps and the resources at the end."""
-    return {
-      "steps": self.steps,
-      "resources": self._normalised(await snapshot_store(self.root.store, self.root)),
-    }
+    return {"steps": self.steps, "resources": self._normalised(await self.snapshot())}
 
 
 def jsonable(value: Any) -> Any:
-  """A call's return value as JSON: dataclasses and coordinates as their fields."""
+  """A call's return value as JSON: anything JSON cannot hold as its `repr`."""
   if value is None or isinstance(value, (bool, int, float, str)):
     return value
   if isinstance(value, dict):
