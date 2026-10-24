@@ -2056,6 +2056,26 @@
             -39.2
           ],
           "volume": 0.0
+        },
+        {
+          "name": "ot2_deck_right_pipette",
+          "parent": "ot2_deck",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_0",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
         }
       ],
       "mounted": {
@@ -2153,15 +2173,25 @@
           "request": "GET /runs/run-1/commands/command-5"
         }
       ],
-      "removed": [
-        "tips_A1#0"
+      "resources": [
+        {
+          "name": "tips_A1#0",
+          "parent": "ot2_deck_right_pipette_channel_0",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.135,
+            -1.135,
+            -35.91
+          ],
+          "volume": 0.0
+        }
       ],
       "mounted": {
         "right": {
           "tips": [
             {
               "tip": "tips_A1#0",
-              "volume": 0
+              "volume": 0.0
             }
           ],
           "origins": [
@@ -2235,6 +2265,9 @@
         {
           "request": "GET /runs/run-1/commands/command-8"
         }
+      ],
+      "removed": [
+        "tips_A1#0"
       ],
       "mounted": {
         "right": {
@@ -4429,6 +4462,26 @@
         0.0
       ],
       "volume": 0.0
+    },
+    {
+      "name": "ot2_deck_right_pipette",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_0",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
     }
   ]
 }

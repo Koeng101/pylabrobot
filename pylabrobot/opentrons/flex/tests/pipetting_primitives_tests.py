@@ -9,6 +9,7 @@ from pylabrobot.opentrons.decks import get_slot_holder
 from pylabrobot.opentrons.flex.tests.mock_utils import make_api, make_deck, make_flex, place
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import build, handles, library
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 
 class PipettingPrimitivesTests(unittest.IsolatedAsyncioTestCase):
@@ -91,6 +92,29 @@ class PipettingPrimitivesTests(unittest.IsolatedAsyncioTestCase):
     await plate.set_volume_tracking(False)
     with self.assertRaisesRegex(ValueError, "material_z_thickness"):
       await self.head.aspirate(plate["A1:H1"], 1)
+    self.assertEqual(self.api.submit_command.await_args_list, [])
+
+  async def _put_lid_on(self, resource: handles.Resource) -> None:
+    lid = build.resource("lid", Coordinate(127.76, 85.48, 5), kind=pb.RESOURCE_KIND_LID)
+    await self.flex.store.create(
+      lid, name=f"{resource.name}_lid", parent=resource, location=Coordinate.zero()
+    )
+
+  async def test_pipetting_into_a_lidded_plate_is_a_value_error_before_aspirating(self):
+    """The store refuses a transfer under a lid; it is raised as a ValueError."""
+    await self._put_lid_on(self.plate)
+    with self.assertRaisesRegex(ValueError, "has its lid on"):
+      await self.head.aspirate(self.plate["A1:H1"], 1)
+    sent = [c.args[1] for c in self.api.submit_command.await_args_list]
+    self.assertNotIn("aspirateInPlace", sent)
+
+  async def test_picking_up_from_a_lidded_rack_is_a_value_error_before_motion(self):
+    """The store refuses a pick-up under a lid; it is raised as a ValueError."""
+    await self.head.drop_tips(self.rack, column=0)
+    self.api.submit_command.reset_mock()
+    await self._put_lid_on(self.rack)
+    with self.assertRaisesRegex(ValueError, "has its lid on"):
+      await self.head.pick_up_tips(self.rack["A2:H2"])
     self.assertEqual(self.api.submit_command.await_args_list, [])
 
   async def test_facility_placement_does_not_change_robot_commands(self):

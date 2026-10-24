@@ -11,12 +11,6 @@ from dataclasses import dataclass
 from typing import Dict, Iterator, List, Optional, Protocol, Sequence, Tuple, Union
 
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.errors import (
-  HasTipError,
-  NoTipError,
-  TooLittleLiquidError,
-  TooLittleVolumeError,
-)
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.client import ResourceStore
@@ -427,22 +421,6 @@ async def read_labware(store: ResourceStore, labware: Ref) -> LabwareFacts:
     volume=Liquid.of(node) if is_container else None,
     parent_id=node.parent_id,
   )
-
-
-# -- what the store refuses ----------------------------------------------------------------------
-
-
-def tracking_error(error: StoreError) -> Exception:
-  """The exception PLR raises for a tracking problem the store found; the error itself
-  otherwise."""
-  kinds = {
-    pb.PROBLEM_HAS_TIP: HasTipError,
-    pb.PROBLEM_NO_TIP: NoTipError,
-    pb.PROBLEM_TOO_LITTLE_LIQUID: TooLittleLiquidError,
-    pb.PROBLEM_TOO_LITTLE_VOLUME: TooLittleVolumeError,
-  }
-  kind = kinds.get(error.problem)
-  return kind(str(error)) if kind is not None else error
 
 
 async def resolve(

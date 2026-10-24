@@ -4,10 +4,10 @@ import math
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Dict, Optional, Sequence, Tuple
 
-from pylabrobot.opentrons.model import Liquid, Ref, ref_of, resolve, tracking_error
+from pylabrobot.opentrons.model import Liquid, Ref, ref_of, resolve
 from pylabrobot.resources.errors import TooLittleLiquidError, TooLittleVolumeError
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.errors import StoreError, plr_error
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
@@ -90,7 +90,7 @@ async def track_liquid_transfer(
   try:
     response = await store.commands.begin_liquid_transfer(request)
   except StoreError as error:
-    raise tracking_error(error) from error
+    raise plr_error(error) from error
   try:
     yield
   except BaseException:

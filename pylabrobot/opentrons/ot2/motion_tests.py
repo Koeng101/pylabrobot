@@ -40,14 +40,14 @@ class OT2MotionTests(unittest.IsolatedAsyncioTestCase):
       "left",
       "p20_multi_gen2",
       "left-id",
-      await PipetteShafts.create(self.store, "left_pipette", 8),
+      await PipetteShafts.create(self.deck, "left_pipette", 8),
     )
     self.single = OT2SingleChannelPipette(
       self.robot,
       "right",
       "p20_single_gen2",
       "right-id",
-      await PipetteShafts.create(self.store, "right_pipette", 1),
+      await PipetteShafts.create(self.deck, "right_pipette", 1),
     )
     self.rack = cast(
       handles.TipRack,
@@ -75,7 +75,7 @@ class OT2MotionTests(unittest.IsolatedAsyncioTestCase):
     return obstacle
 
   async def _tip_names(self, pipette: OT2_8ChannelPipette) -> List[str]:
-    return [tip.name for tip in await pipette.tips()]
+    return [tip.name for tip in await pipette.get_tips()]
 
   async def test_unreachable_tip_commands_send_nothing_on_either_pipette(self) -> None:
     """Reach failures occur before labware loading, command submission, or tip staging."""
@@ -187,7 +187,7 @@ class OT2MotionTests(unittest.IsolatedAsyncioTestCase):
       "left",
       "p300_multi_gen2",
       "p300-id",
-      await PipetteShafts.create(self.store, "p300_pipette", 8),
+      await PipetteShafts.create(self.deck, "p300_pipette", 8),
     )
     rack = cast(
       handles.TipRack,
@@ -202,7 +202,7 @@ class OT2MotionTests(unittest.IsolatedAsyncioTestCase):
 
     await pipette.pick_up_tips(rack["A1:H1"])  # type: ignore[arg-type]
 
-    self.assertEqual(len(await pipette.tips()), 8)
+    self.assertEqual(len(await pipette.get_tips()), 8)
     self.assertTrue(await _none_have_tips(rack["A1:H1"]))
     self.protocol_run.pick_up_tip.assert_awaited_once_with("p300-id", ANY, "A1", ANY)
 

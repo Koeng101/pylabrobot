@@ -41,8 +41,10 @@ class OT2:
   operations are exposed on ``left_pipette`` and ``right_pipette``.
 
   The deck is a handle to an OT-2 deck in a resource store (see
-  :func:`pylabrobot.opentrons.decks.create_ot2_deck`); without one, ``setup()`` makes an
-  in-memory store and an OT-2 deck in it.
+  :func:`pylabrobot.opentrons.decks.create_ot2_deck`), the robot's body there: its pipettes hang
+  from it. Without one, ``create_resources()`` (called by ``setup()``) makes an in-memory store and
+  an OT-2 deck in it. A deck already in a store is used by passing it:
+  ``OT2(..., deck=await store.get("ot2_deck"))``.
   """
 
   def __init__(
@@ -92,10 +94,19 @@ class OT2:
     """The deck, a handle into the resource store.
 
     Raises:
-      RuntimeError: No deck was given and ``setup()`` has not made one yet.
+      RuntimeError: No deck was given and ``create_resources()`` has not made one yet.
     """
     if self._deck is None:
-      raise RuntimeError("The OT-2 has no deck yet: pass one, or call setup()")
+      raise RuntimeError(
+        "The OT-2 has no deck yet: pass one, or call create_resources() or setup()"
+      )
+    return self._deck
+
+  async def create_resources(self) -> handles.Deck:
+    """The OT-2's deck, the robot's body in the store: the deck it was given, or an OT-2 deck made
+    in a new in-memory store when none was. Called by `setup`."""
+    if self._deck is None:
+      self._deck = await create_ot2_deck(ResourceStore.in_memory())
     return self._deck
 
   @property
@@ -152,8 +163,7 @@ class OT2:
     async with self._operation_lock:
       if self._run is not None:
         raise RuntimeError("The OT-2 is already set up")
-      if self._deck is None:
-        self._deck = await create_ot2_deck(ResourceStore.in_memory())
+      await self.create_resources()
       await self._connect()
       try:
         health = await self.get_health()
@@ -182,7 +192,7 @@ class OT2:
     for pipette in mounted:
       pipette_id = await run.load_pipette(pipette.name, pipette.mount)
       shafts = await PipetteShafts.create(
-        self.store,
+        self.deck,
         f"{self.deck.name}_{pipette.mount}_pipette",
         _PIPETTE_SPECS[pipette.name].channels,
       )

@@ -140,8 +140,8 @@ class Flex:
 
   The deck is a handle to a Flex deck in a resource store (see
   :func:`pylabrobot.opentrons.decks.create_flex_deck`); everything the Flex knows of its labware,
-  tips and liquid it reads from and records in that store. Without one, ``connect()`` makes an
-  in-memory store and a Flex deck in it.
+  tips and liquid it reads from and records in that store; its pipettes hang from it. Without one,
+  ``create_resources()`` (called by ``connect()``) makes an in-memory store and a Flex deck in it.
 
   ``connect()`` opens the transport for health/discovery queries; ``setup()``
   also creates a run, homes, and composes the heads. Use ``host="robot.local"``
@@ -226,10 +226,12 @@ class Flex:
     """The deck, a handle into the resource store.
 
     Raises:
-      RuntimeError: No deck was given and ``connect()`` has not made one yet.
+      RuntimeError: No deck was given and ``create_resources()`` has not made one yet.
     """
     if self._deck is None:
-      raise RuntimeError("The Flex has no deck yet: pass one, or call connect() or setup()")
+      raise RuntimeError(
+        "The Flex has no deck yet: pass one, or call create_resources(), connect() or setup()"
+      )
     return self._deck
 
   @property
@@ -237,10 +239,15 @@ class Flex:
     """The resource store the deck is in."""
     return self.deck.store
 
-  async def _ensure_deck(self) -> None:
-    """Make an in-memory store and a Flex deck in it when no deck was given."""
+  async def create_resources(self) -> handles.Deck:
+    """The Flex's deck, the robot's body in the store: the deck it was given, or a Flex deck made
+    in a new in-memory store when none was. Called by `connect` (and so by `setup`).
+
+    A deck already in a store is used by passing it: `Flex(..., deck=await store.get("flex_deck"))`.
+    """
     if self._deck is None:
       self._deck = await create_flex_deck(ResourceStore.in_memory())
+    return self._deck
 
   async def traversal_height(self) -> float:
     """Minimum tip/nozzle Z for travel, above the tallest modeled labware.
@@ -334,7 +341,7 @@ class Flex:
     """
     if self._connected:
       return
-    await self._ensure_deck()
+    await self.create_resources()
     await self.io.setup()
     try:
       health = await self._api.get_health()
@@ -387,7 +394,7 @@ class Flex:
   async def initialize(self) -> None:
     """Discover what is mounted and compose the heads. Moves nothing.
 
-    Each pipette's channels are made afresh in the store, as `<deck>_<mount>_pipette`, carrying
+    Each pipette's channels are made afresh on the deck, as `<deck>_<mount>_pipette`, carrying
     no tips.
     """
     # Discover ALL mounted pipettes and compose the matching head per mount.
@@ -418,7 +425,7 @@ class Flex:
           f"{pip.channels} channels (mount '{pip.mount}') has no matching FlexHead.",
         )
       shafts = await PipetteShafts.create(
-        self.store, f"{self.deck.name}_{pip.mount}_pipette", pip.channels
+        self.deck, f"{self.deck.name}_{pip.mount}_pipette", pip.channels
       )
       head = head_cls(
         self, pip.mount, pipette_id, pip.channels, pip.pipette_model, pip.max_volume, shafts

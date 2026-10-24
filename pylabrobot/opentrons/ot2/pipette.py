@@ -590,7 +590,7 @@ class OT2SingleChannelPipette(_OT2Pipette):
     """One independently addressed nozzle."""
     return 1
 
-  async def tip(self) -> Optional[handles.Tip]:
+  async def get_tip(self) -> Optional[handles.Tip]:
     """The single-channel mounted tip, or ``None`` when no tip is mounted."""
     return (await self.get_mounted_tips())[0]
 
@@ -685,7 +685,7 @@ class OT2_8ChannelPipette(_OT2Pipette):
     """Eight nozzles at 9 mm pitch."""
     return 8
 
-  async def tips(self) -> Tuple[handles.Tip, ...]:
+  async def get_tips(self) -> Tuple[handles.Tip, ...]:
     """Mounted tips in nozzle order, or an empty tuple when no tips are mounted."""
     return tuple(tip for tip in await self.get_mounted_tips() if tip is not None)
 

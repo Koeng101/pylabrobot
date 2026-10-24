@@ -1192,7 +1192,7 @@ class TestTipPresenceCommands(unittest.IsolatedAsyncioTestCase):
     deck = await make_deck()
     self.flex = Flex("robot.test", deck=deck, io=self.io, command_poll_interval=0)
     self.flex._run = OpentronsRun(self.flex._api, "run", "9.1.2", command_poll_interval=0)
-    shafts = await PipetteShafts.create(deck.store, "flex_deck_left_pipette", 8)
+    shafts = await PipetteShafts.create(deck, "flex_deck_left_pipette", 8)
     self.head = FlexHead8(self.flex, "left", "pipette", 8, "p1000_multi_v3.5", 1000, shafts)
 
   async def test_request_tip_presence_returns_the_reported_status(self):

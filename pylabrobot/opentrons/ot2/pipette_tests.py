@@ -16,7 +16,7 @@ from pylabrobot.resources.errors import (
   TooLittleLiquidError,
   TooLittleVolumeError,
 )
-from pylabrobot.resources.store import handles
+from pylabrobot.resources.store import build, handles, library
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -71,7 +71,7 @@ class OT2SingleChannelTests(unittest.IsolatedAsyncioTestCase):
       "left",
       "p20_single_gen2",
       "pipette-id",
-      await PipetteShafts.create(self.store, "left_pipette", 1),
+      await PipetteShafts.create(self.deck, "left_pipette", 1),
     )
     self.robot.left_pipette = self.pipette
     self.tips = cast(
@@ -84,9 +84,60 @@ class OT2SingleChannelTests(unittest.IsolatedAsyncioTestCase):
     )
 
   async def _tip(self) -> handles.Tip:
-    tip = await self.pipette.tip()
+    tip = await self.pipette.get_tip()
     assert tip is not None
     return tip
+
+  async def _put_lid_on(self, resource: handles.Resource) -> None:
+    lid = build.resource("lid", Coordinate(127.76, 85.48, 5), kind=pb.RESOURCE_KIND_LID)
+    await self.store.create(
+      lid, name=f"{resource.name}_lid", parent=resource, location=Coordinate.zero()
+    )
+
+  async def test_picking_up_from_a_lidded_rack_is_a_value_error_before_motion(self) -> None:
+    """The store refuses a pick-up under a lid; it is raised as a ValueError."""
+    await self._put_lid_on(self.tips)
+    self.protocol_run.reset_mock()
+    with self.assertRaisesRegex(ValueError, "has its lid on"):
+      await self.pipette.pick_up_tip(self.tips.get_tip_spot("A1"))
+    self.assertEqual(self.protocol_run.mock_calls, [])
+    self.assertFalse(await self.pipette.has_tip())
+
+  async def test_pipetting_into_a_lidded_plate_is_a_value_error_before_motion(self) -> None:
+    """The store refuses a transfer under a lid; it is raised as a ValueError."""
+    await self.plate.set_volume_tracking(False)
+    await self.tips.set_volume_tracking(False)
+    await self.pipette.pick_up_tip(self.tips.get_tip_spot("A1"))
+    await self._put_lid_on(self.plate)
+    self.protocol_run.reset_mock()
+    with self.assertRaisesRegex(ValueError, "has its lid on"):
+      await self.pipette.aspirate(self.plate.get_well("A1"), volume=1)
+    with self.assertRaisesRegex(ValueError, "has its lid on"):
+      await self.pipette.dispense(self.plate.get_well("A1"), volume=1)
+    self.assertEqual(self.protocol_run.mock_calls, [])
+
+  async def test_pipetting_into_a_container_without_a_floor_thickness_is_a_value_error(
+    self,
+  ) -> None:
+    """A cavity bottom the store cannot place is raised as a ValueError, before motion."""
+    definition = library.get_model(_PLATE).definition
+    definition.attributes.itemized.grid.item.attributes.container.ClearField("material_z_thickness")
+    await self.plate.unassign()
+    plate = cast(
+      handles.Plate,
+      await self.store.create(
+        definition, name="floorless", parent=await get_slot_holder(self.deck, 2)
+      ),
+    )
+    await plate.set_volume_tracking(False)
+    await self.tips.set_volume_tracking(False)
+    await self.pipette.pick_up_tip(self.tips.get_tip_spot("A1"))
+    self.protocol_run.reset_mock()
+    with self.assertRaisesRegex(ValueError, "does not say how thick its bottom is"):
+      await self.pipette.aspirate(plate.get_well("A1"), volume=1)
+    with self.assertRaisesRegex(ValueError, "does not say how thick its bottom is"):
+      await self.pipette.dispense(plate.get_well("A1"), volume=1)
+    self.assertEqual(self.protocol_run.mock_calls, [])
 
   async def test_failed_aspiration_rolls_back_volume_trackers(self) -> None:
     pipette = self.pipette
@@ -401,7 +452,7 @@ class OT2SingleChannelTests(unittest.IsolatedAsyncioTestCase):
           with self.assertRaisesRegex(OpentronsError, "retraction failed"):
             await operation()
 
-          self.assertIsNone(await self.pipette.tip())
+          self.assertIsNone(await self.pipette.get_tip())
           self.assertFalse(await self.pipette.has_tip())
           self.assertEqual(await _has_tip(origin), returned)
           with self.assertRaisesRegex(RuntimeError, "origin is unknown"):
@@ -664,7 +715,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
       "left",
       "p20_multi_gen2",
       "left-pipette-id",
-      await PipetteShafts.create(self.store, "left_pipette", 8),
+      await PipetteShafts.create(self.deck, "left_pipette", 8),
     )
     self.robot.left_pipette = self.pipette
     self.robot.right_pipette = OT2SingleChannelPipette(
@@ -672,7 +723,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
       "right",
       "p20_single_gen2",
       "right-pipette-id",
-      await PipetteShafts.create(self.store, "right_pipette", 1),
+      await PipetteShafts.create(self.deck, "right_pipette", 1),
     )
     self.tips = cast(
       handles.TipRack,
@@ -689,10 +740,10 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
       await well.set_volume(15)
 
   async def _tip_names(self) -> List[str]:
-    return [tip.name for tip in await self.pipette.tips()]
+    return [tip.name for tip in await self.pipette.get_tips()]
 
   async def _tip_volumes(self, view: pb.View = pb.VIEW_PENDING) -> List[float]:
-    return [await tip.get_volume(view) for tip in await self.pipette.tips()]
+    return [await tip.get_volume(view) for tip in await self.pipette.get_tips()]
 
   async def test_pickup_rejects_missing_or_mixed_models_before_commands(self) -> None:
     """A tip type is its model, and every nozzle must have a defined matching model."""
@@ -720,9 +771,16 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all(await _has_tips(self.column)))
         self.assertFalse(await self.pipette.has_tip())
 
+  async def test_pipettes_and_their_tips_hang_from_the_deck(self) -> None:
+    """The deck's tree reaches each pipette and the tips it carries."""
+    self.assertEqual(await self.pipette.shafts.root.get_parent(), self.deck)
+    await self.pipette.pick_up_tips(self.column)
+    for tip in await self.pipette.get_tips():
+      self.assertTrue(await tip.is_in_subtree_of(self.deck))
+
   async def test_constructors_reject_models_with_the_wrong_channel_count(self) -> None:
     """A concrete class cannot bind a model whose nozzle count contradicts its API."""
-    shafts = await PipetteShafts.create(self.store, "spare_pipette", 1)
+    shafts = await PipetteShafts.create(self.deck, "spare_pipette", 1)
     with self.assertRaisesRegex(ValueError, "8-channel"):
       OT2SingleChannelPipette(self.robot, "left", "p20_multi_gen2", "left-pipette-id", shafts)
     with self.assertRaisesRegex(ValueError, "1-channel"):
@@ -738,7 +796,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
     )
     await self.pipette.discard_tips()
     self.assertTrue(await single.has_tip())
-    self.assertIsNotNone(await single.tip())
+    self.assertIsNotNone(await single.get_tip())
     await single.return_tip()
     self.assertTrue(await _has_tip(self.tips.get_tip_spot("A3")))
     self.assertFalse(any(await _has_tips(self.column)))
@@ -811,7 +869,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(await _volumes(self.sources), [15] * 7 + [0])
     self.assertEqual(await self._tip_volumes(), [0] * 8)
     await self.sources[-1].set_volume(15)
-    await (await self.pipette.tips())[-1].set_volume(20)
+    await (await self.pipette.get_tips())[-1].set_volume(20)
     with self.assertRaises(TooLittleVolumeError):
       await self.pipette.aspirate(self.sources, volume=10)
     self.assertEqual(await _volumes(self.sources), [15] * 8)
@@ -826,7 +884,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
       (self.pipette.dispense, self.protocol_run.dispense_in_place, 10),
     ):
       with self.subTest(kind=kind):
-        for tip in await self.pipette.tips():
+        for tip in await self.pipette.get_tips():
           await tip.set_volume(tip_volume)
         kind.side_effect = OpentronsError("liquid operation failed")
         with self.assertRaises(OpentronsError):
@@ -859,7 +917,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
     self.protocol_run.get_position.side_effect = OpentronsError("get_position failed")
     with self.assertRaises(OpentronsError):
       await self.pipette.pick_up_tips(self.column)
-    self.assertEqual(len(await self.pipette.tips()), 8)
+    self.assertEqual(len(await self.pipette.get_tips()), 8)
     self.assertFalse(any(await _has_tips(self.column)))
     with self.assertRaises(OpentronsError):
       await self.pipette.aspirate(self.sources, volume=10)
@@ -873,7 +931,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
   async def test_discard_checks_every_tip_and_retains_tips_on_failure(self) -> None:
     """Liquid in the last tip blocks disposal; a failed drop keeps tip ownership."""
     await self.pipette.pick_up_tips(self.column)
-    await (await self.pipette.tips())[-1].set_volume(1)
+    await (await self.pipette.get_tips())[-1].set_volume(1)
     self.protocol_run.reset_mock()
     with self.assertRaisesRegex(ValueError, "contains liquid"):
       await self.pipette.discard_tips()
@@ -883,7 +941,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
     )
     with self.assertRaises(OpentronsError):
       await self.pipette.discard_tips(allow_nonzero_volume=True)
-    self.assertEqual(len(await self.pipette.tips()), 8)
+    self.assertEqual(len(await self.pipette.get_tips()), 8)
     self.protocol_run.discard_tip_in_fixed_trash.side_effect = None
     await self.pipette.discard_tips(allow_nonzero_volume=True)
     self.assertFalse(await self.pipette.has_tip())
@@ -895,7 +953,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
     await self.pipette.pick_up_tips(self.column)
     await self.pipette.aspirate(self.sources, volume=10)
     await self.pipette.dispense(self.destinations, volume=10)
-    self.assertEqual(len(await self.pipette.tips()), 8)
+    self.assertEqual(len(await self.pipette.get_tips()), 8)
     self.assertTrue(all(await _has_tips(self.column)))
     self.assertEqual(await _volumes(self.sources), [15] * 8)
     self.assertEqual(await _volumes(self.destinations), [0] * 8)
@@ -926,7 +984,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_column_dispense_uses_requested_flow_rate_for_every_tip(self) -> None:
     await self.pipette.pick_up_tips(self.column)
-    for tip in await self.pipette.tips():
+    for tip in await self.pipette.get_tips():
       await tip.set_volume(10)
 
     await self.pipette.dispense(self.destinations, volume=10, flow_rate=6)
@@ -942,7 +1000,7 @@ class OT2MultiChannelTests(unittest.IsolatedAsyncioTestCase):
     await self.pipette.return_tips()
 
     self.assertEqual([await _tip_name(spot) for spot in self.column], original_tips)
-    self.assertEqual(await self.pipette.tips(), ())
+    self.assertEqual(await self.pipette.get_tips(), ())
     self.assertFalse(await self.pipette.has_tip())
     self.protocol_run.drop_tip.assert_awaited_once_with(
       "left-pipette-id", ANY, "A1", Coordinate(z=10)

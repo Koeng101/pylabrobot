@@ -73,6 +73,116 @@
             0.0
           ],
           "volume": 0.0
+        },
+        {
+          "name": "flex_deck_left_pipette",
+          "parent": "flex_deck",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_left_pipette_channel_0",
+          "parent": "flex_deck_left_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette",
+          "parent": "flex_deck",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_0",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            63.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_1",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            54.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_2",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            45.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_3",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            36.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_4",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            27.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_5",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            18.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_6",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            9.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_7",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
         }
       ],
       "mounted": {
@@ -416,6 +526,116 @@
         492.0,
         321.0,
         14.5
+      ]
+    },
+    {
+      "name": "flex_deck_left_pipette",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_left_pipette_channel_0",
+      "parent": "flex_deck_left_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_0",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        63.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_1",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        54.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_2",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        45.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_3",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        36.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_4",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        27.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_5",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        18.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_6",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_7",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        0.0
       ]
     }
   ]

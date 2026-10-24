@@ -3168,6 +3168,96 @@
             0.0
           ],
           "volume": 0.0
+        },
+        {
+          "name": "flex_deck_right_pipette",
+          "parent": "flex_deck",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_0",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            63.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_1",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            54.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_2",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            45.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_3",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            36.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_4",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            27.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_5",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            18.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_6",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            9.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_7",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
         }
       ],
       "mounted": {
@@ -3290,49 +3380,129 @@
           "request": "GET /runs/run-1/commands/command-7"
         }
       ],
-      "removed": [
-        "tips_A1#0",
-        "tips_B1#0",
-        "tips_C1#0",
-        "tips_D1#0",
-        "tips_E1#0",
-        "tips_F1#0",
-        "tips_G1#0",
-        "tips_H1#0"
+      "resources": [
+        {
+          "name": "tips_A1#0",
+          "parent": "flex_deck_right_pipette_channel_0",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_B1#0",
+          "parent": "flex_deck_right_pipette_channel_1",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_C1#0",
+          "parent": "flex_deck_right_pipette_channel_2",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_D1#0",
+          "parent": "flex_deck_right_pipette_channel_3",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_E1#0",
+          "parent": "flex_deck_right_pipette_channel_4",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_F1#0",
+          "parent": "flex_deck_right_pipette_channel_5",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_G1#0",
+          "parent": "flex_deck_right_pipette_channel_6",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_H1#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        }
       ],
       "mounted": {
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -3500,7 +3670,7 @@
                   "x": 14.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3509,7 +3679,7 @@
                   "x": 14.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3518,7 +3688,7 @@
                   "x": 14.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3527,7 +3697,7 @@
                   "x": 14.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3536,7 +3706,7 @@
                   "x": 14.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3545,7 +3715,7 @@
                   "x": 14.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3554,7 +3724,7 @@
                   "x": 14.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3563,7 +3733,7 @@
                   "x": 14.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3572,7 +3742,7 @@
                   "x": 23.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3581,7 +3751,7 @@
                   "x": 23.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3590,7 +3760,7 @@
                   "x": 23.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3599,7 +3769,7 @@
                   "x": 23.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3608,7 +3778,7 @@
                   "x": 23.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3617,7 +3787,7 @@
                   "x": 23.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3626,7 +3796,7 @@
                   "x": 23.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3635,7 +3805,7 @@
                   "x": 23.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3644,7 +3814,7 @@
                   "x": 32.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3653,7 +3823,7 @@
                   "x": 32.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3662,7 +3832,7 @@
                   "x": 32.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3671,7 +3841,7 @@
                   "x": 32.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3680,7 +3850,7 @@
                   "x": 32.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3689,7 +3859,7 @@
                   "x": 32.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3698,7 +3868,7 @@
                   "x": 32.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3707,7 +3877,7 @@
                   "x": 32.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3716,7 +3886,7 @@
                   "x": 41.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3725,7 +3895,7 @@
                   "x": 41.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3734,7 +3904,7 @@
                   "x": 41.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3743,7 +3913,7 @@
                   "x": 41.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3752,7 +3922,7 @@
                   "x": 41.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3761,7 +3931,7 @@
                   "x": 41.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3770,7 +3940,7 @@
                   "x": 41.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3779,7 +3949,7 @@
                   "x": 41.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3788,7 +3958,7 @@
                   "x": 50.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3797,7 +3967,7 @@
                   "x": 50.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3806,7 +3976,7 @@
                   "x": 50.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3815,7 +3985,7 @@
                   "x": 50.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3824,7 +3994,7 @@
                   "x": 50.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3833,7 +4003,7 @@
                   "x": 50.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3842,7 +4012,7 @@
                   "x": 50.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3851,7 +4021,7 @@
                   "x": 50.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3860,7 +4030,7 @@
                   "x": 59.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3869,7 +4039,7 @@
                   "x": 59.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3878,7 +4048,7 @@
                   "x": 59.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3887,7 +4057,7 @@
                   "x": 59.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3896,7 +4066,7 @@
                   "x": 59.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3905,7 +4075,7 @@
                   "x": 59.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3914,7 +4084,7 @@
                   "x": 59.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3923,7 +4093,7 @@
                   "x": 59.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3932,7 +4102,7 @@
                   "x": 68.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3941,7 +4111,7 @@
                   "x": 68.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3950,7 +4120,7 @@
                   "x": 68.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3959,7 +4129,7 @@
                   "x": 68.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3968,7 +4138,7 @@
                   "x": 68.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3977,7 +4147,7 @@
                   "x": 68.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3986,7 +4156,7 @@
                   "x": 68.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -3995,7 +4165,7 @@
                   "x": 68.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4004,7 +4174,7 @@
                   "x": 77.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4013,7 +4183,7 @@
                   "x": 77.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4022,7 +4192,7 @@
                   "x": 77.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4031,7 +4201,7 @@
                   "x": 77.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4040,7 +4210,7 @@
                   "x": 77.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4049,7 +4219,7 @@
                   "x": 77.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4058,7 +4228,7 @@
                   "x": 77.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4067,7 +4237,7 @@
                   "x": 77.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4076,7 +4246,7 @@
                   "x": 86.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4085,7 +4255,7 @@
                   "x": 86.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4094,7 +4264,7 @@
                   "x": 86.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4103,7 +4273,7 @@
                   "x": 86.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4112,7 +4282,7 @@
                   "x": 86.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4121,7 +4291,7 @@
                   "x": 86.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4130,7 +4300,7 @@
                   "x": 86.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4139,7 +4309,7 @@
                   "x": 86.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4148,7 +4318,7 @@
                   "x": 95.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4157,7 +4327,7 @@
                   "x": 95.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4166,7 +4336,7 @@
                   "x": 95.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4175,7 +4345,7 @@
                   "x": 95.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4184,7 +4354,7 @@
                   "x": 95.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4193,7 +4363,7 @@
                   "x": 95.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4202,7 +4372,7 @@
                   "x": 95.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4211,7 +4381,7 @@
                   "x": 95.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4220,7 +4390,7 @@
                   "x": 104.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4229,7 +4399,7 @@
                   "x": 104.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4238,7 +4408,7 @@
                   "x": 104.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4247,7 +4417,7 @@
                   "x": 104.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4256,7 +4426,7 @@
                   "x": 104.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4265,7 +4435,7 @@
                   "x": 104.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4274,7 +4444,7 @@
                   "x": 104.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4283,7 +4453,7 @@
                   "x": 104.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4292,7 +4462,7 @@
                   "x": 113.3,
                   "y": 74.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4301,7 +4471,7 @@
                   "x": 113.3,
                   "y": 65.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4310,7 +4480,7 @@
                   "x": 113.3,
                   "y": 56.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4319,7 +4489,7 @@
                   "x": 113.3,
                   "y": 47.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4328,7 +4498,7 @@
                   "x": 113.3,
                   "y": 38.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4337,7 +4507,7 @@
                   "x": 113.3,
                   "y": 29.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4346,7 +4516,7 @@
                   "x": 113.3,
                   "y": 20.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 },
@@ -4355,7 +4525,7 @@
                   "x": 113.3,
                   "y": 11.2,
                   "z": 3.53,
-                  "totalLiquidVolume": 360,
+                  "totalLiquidVolume": 360.0,
                   "shape": "circular",
                   "diameter": 6.86
                 }
@@ -4519,35 +4689,35 @@
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -4586,35 +4756,35 @@
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -4818,41 +4988,129 @@
             3.03
           ],
           "volume": 20.0
+        },
+        {
+          "name": "tips_A1#0",
+          "parent": "flex_deck_right_pipette_channel_0",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 20.0
+        },
+        {
+          "name": "tips_B1#0",
+          "parent": "flex_deck_right_pipette_channel_1",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 20.0
+        },
+        {
+          "name": "tips_C1#0",
+          "parent": "flex_deck_right_pipette_channel_2",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 20.0
+        },
+        {
+          "name": "tips_D1#0",
+          "parent": "flex_deck_right_pipette_channel_3",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 20.0
+        },
+        {
+          "name": "tips_E1#0",
+          "parent": "flex_deck_right_pipette_channel_4",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 20.0
+        },
+        {
+          "name": "tips_F1#0",
+          "parent": "flex_deck_right_pipette_channel_5",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 20.0
+        },
+        {
+          "name": "tips_G1#0",
+          "parent": "flex_deck_right_pipette_channel_6",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 20.0
+        },
+        {
+          "name": "tips_H1#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 20.0
         }
       ],
       "mounted": {
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 20
+            "volume": 20.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 20
+            "volume": 20.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 20
+            "volume": 20.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 20
+            "volume": 20.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 20
+            "volume": 20.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 20
+            "volume": 20.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 20
+            "volume": 20.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 20
+            "volume": 20.0
           }
         }
       }
@@ -5111,41 +5369,129 @@
             3.03
           ],
           "volume": 20.0
+        },
+        {
+          "name": "tips_A1#0",
+          "parent": "flex_deck_right_pipette_channel_0",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_B1#0",
+          "parent": "flex_deck_right_pipette_channel_1",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_C1#0",
+          "parent": "flex_deck_right_pipette_channel_2",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_D1#0",
+          "parent": "flex_deck_right_pipette_channel_3",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_E1#0",
+          "parent": "flex_deck_right_pipette_channel_4",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_F1#0",
+          "parent": "flex_deck_right_pipette_channel_5",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_G1#0",
+          "parent": "flex_deck_right_pipette_channel_6",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_H1#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
         }
       ],
       "mounted": {
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -5317,35 +5663,35 @@
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -5358,35 +5704,35 @@
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -5513,41 +5859,129 @@
             0.0
           ],
           "volume": 960.0
+        },
+        {
+          "name": "tips_A1#0",
+          "parent": "flex_deck_right_pipette_channel_0",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
+        },
+        {
+          "name": "tips_B1#0",
+          "parent": "flex_deck_right_pipette_channel_1",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
+        },
+        {
+          "name": "tips_C1#0",
+          "parent": "flex_deck_right_pipette_channel_2",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
+        },
+        {
+          "name": "tips_D1#0",
+          "parent": "flex_deck_right_pipette_channel_3",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
+        },
+        {
+          "name": "tips_E1#0",
+          "parent": "flex_deck_right_pipette_channel_4",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
+        },
+        {
+          "name": "tips_F1#0",
+          "parent": "flex_deck_right_pipette_channel_5",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
+        },
+        {
+          "name": "tips_G1#0",
+          "parent": "flex_deck_right_pipette_channel_6",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
+        },
+        {
+          "name": "tips_H1#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
         }
       ],
       "mounted": {
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 5
+            "volume": 5.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 5
+            "volume": 5.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 5
+            "volume": 5.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 5
+            "volume": 5.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 5
+            "volume": 5.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 5
+            "volume": 5.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 5
+            "volume": 5.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 5
+            "volume": 5.0
           }
         }
       }
@@ -5659,41 +6093,129 @@
             0.0
           ],
           "volume": 1000.0
+        },
+        {
+          "name": "tips_A1#0",
+          "parent": "flex_deck_right_pipette_channel_0",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_B1#0",
+          "parent": "flex_deck_right_pipette_channel_1",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_C1#0",
+          "parent": "flex_deck_right_pipette_channel_2",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_D1#0",
+          "parent": "flex_deck_right_pipette_channel_3",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_E1#0",
+          "parent": "flex_deck_right_pipette_channel_4",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_F1#0",
+          "parent": "flex_deck_right_pipette_channel_5",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_G1#0",
+          "parent": "flex_deck_right_pipette_channel_6",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_H1#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
         }
       ],
       "mounted": {
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -5733,35 +6255,35 @@
         "right/8": {
           "0": {
             "tip": "tips_A1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "1": {
             "tip": "tips_B1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "2": {
             "tip": "tips_C1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "3": {
             "tip": "tips_D1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "4": {
             "tip": "tips_E1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G1#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H1#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -6045,29 +6567,69 @@
           "request": "GET /runs/run-1/commands/command-56"
         }
       ],
-      "removed": [
-        "tips_E2#0",
-        "tips_F2#0",
-        "tips_G2#0",
-        "tips_H2#0"
+      "resources": [
+        {
+          "name": "tips_E2#0",
+          "parent": "flex_deck_right_pipette_channel_4",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_F2#0",
+          "parent": "flex_deck_right_pipette_channel_5",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_G2#0",
+          "parent": "flex_deck_right_pipette_channel_6",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_H2#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        }
       ],
       "mounted": {
         "right/8": {
           "4": {
             "tip": "tips_E2#0",
-            "volume": 0
+            "volume": 0.0
           },
           "5": {
             "tip": "tips_F2#0",
-            "volume": 0
+            "volume": 0.0
           },
           "6": {
             "tip": "tips_G2#0",
-            "volume": 0
+            "volume": 0.0
           },
           "7": {
             "tip": "tips_H2#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -6227,25 +6789,69 @@
             3.03
           ],
           "volume": 10.0
+        },
+        {
+          "name": "tips_E2#0",
+          "parent": "flex_deck_right_pipette_channel_4",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F2#0",
+          "parent": "flex_deck_right_pipette_channel_5",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G2#0",
+          "parent": "flex_deck_right_pipette_channel_6",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H2#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 10.0
         }
       ],
       "mounted": {
         "right/8": {
           "4": {
             "tip": "tips_E2#0",
-            "volume": 10
+            "volume": 10.0
           },
           "5": {
             "tip": "tips_F2#0",
-            "volume": 10
+            "volume": 10.0
           },
           "6": {
             "tip": "tips_G2#0",
-            "volume": 10
+            "volume": 10.0
           },
           "7": {
             "tip": "tips_H2#0",
-            "volume": 10
+            "volume": 10.0
           }
         }
       }
@@ -6352,6 +6958,12 @@
         {
           "request": "GET /runs/run-1/commands/command-68"
         }
+      ],
+      "removed": [
+        "tips_E2#0",
+        "tips_F2#0",
+        "tips_G2#0",
+        "tips_H2#0"
       ],
       "mounted": {
         "right/8": {}
@@ -6471,14 +7083,24 @@
           "request": "GET /runs/run-1/commands/command-74"
         }
       ],
-      "removed": [
-        "tips_A3#0"
+      "resources": [
+        {
+          "name": "tips_A3#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
+        }
       ],
       "mounted": {
         "right/8": {
           "7": {
             "tip": "tips_A3#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -6605,13 +7227,24 @@
             3.03
           ],
           "volume": 15.0
+        },
+        {
+          "name": "tips_A3#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 5.0
         }
       ],
       "mounted": {
         "right/8": {
           "7": {
             "tip": "tips_A3#0",
-            "volume": 5
+            "volume": 5.0
           }
         }
       }
@@ -6723,13 +7356,24 @@
             3.03
           ],
           "volume": 5.0
+        },
+        {
+          "name": "tips_A3#0",
+          "parent": "flex_deck_right_pipette_channel_7",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -2.29,
+            -2.29,
+            -47.4
+          ],
+          "volume": 0.0
         }
       ],
       "mounted": {
         "right/8": {
           "7": {
             "tip": "tips_A3#0",
-            "volume": 0
+            "volume": 0.0
           }
         }
       }
@@ -6836,6 +7480,9 @@
         {
           "request": "GET /runs/run-1/commands/command-91"
         }
+      ],
+      "removed": [
+        "tips_A3#0"
       ],
       "mounted": {
         "right/8": {}
@@ -10116,6 +10763,96 @@
         492.0,
         321.0,
         14.5
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_0",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        63.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_1",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        54.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_2",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        45.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_3",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        36.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_4",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        27.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_5",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        18.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_6",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_7",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        0.0
       ]
     }
   ]

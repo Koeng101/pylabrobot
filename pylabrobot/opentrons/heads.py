@@ -1,7 +1,9 @@
 """A pipette's channels in the resource store: one shaft per channel, which mounts its tip.
 
-Each mounted pipette is a root of its own, `<deck>_<mount>_pipette`, with a tip-mounting shaft per
-channel, so the tips it holds are in the store, out of the deck's tree. A tip picked up moves from
+Each mounted pipette hangs from the robot's deck, the robot's body in the store, as
+`<deck>_<mount>_pipette`, with a tip-mounting shaft per channel, so the tips it holds are in the
+deck's tree. Its location on the deck is nominal: where the pipette really is is not tracked, and
+queries over what stands on the deck leave pipettes out (`is_pipette`). A tip picked up moves from
 its spot onto the channel's shaft; one dropped moves into its spot, or leaves the store for a
 trash. Each is staged before the robot is sent the command and resolved once it has answered.
 """
@@ -17,12 +19,11 @@ from pylabrobot.opentrons.model import (
   read,
   ref_of,
   resolve,
-  tracking_error,
 )
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.errors import StoreError, plr_error
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
@@ -30,6 +31,11 @@ K = pb.ResourceKind
 
 # The nozzle pitch of every multi-channel Opentrons pipette.
 _PITCH = 9.0
+
+
+def is_pipette(node: pb.ResourceNode) -> bool:
+  """Whether a deck's child is a mounted pipette rather than something standing on the deck."""
+  return node.attributes.kind == K.RESOURCE_KIND_N_CHANNEL_PIPETTE
 
 
 def pipette_definition(name: str, channels: int) -> pb.ResourceDefinition:
@@ -85,7 +91,7 @@ class PipetteShafts:
 
   Attributes:
     store: The store.
-    root: The pipette body, a root.
+    root: The pipette body, on the deck.
     shafts: Each channel's shaft, by channel.
   """
 
@@ -95,19 +101,31 @@ class PipetteShafts:
     self.shafts = list(shafts)
 
   @staticmethod
-  async def create(store: ResourceStore, name: str, channels: int) -> PipetteShafts:
-    """A fresh pipette body: one already of this name, and what it carried, is removed first."""
-    try:
-      existing = await store.get(name)
-    except StoreError as error:
-      if error.problem != pb.PROBLEM_NOT_FOUND:
-        raise
-    else:
+  async def create(deck: handles.Deck, name: str, channels: int) -> PipetteShafts:
+    """A fresh pipette body on `deck`: one already of this name there, and what it carried, is
+    removed first.
+
+    Args:
+      deck: The robot's deck; the pipette is assigned to it at the deck's origin, a nominal
+        location.
+      name: The pipette body's name, `<deck>_<mount>_pipette`.
+      channels: How many channels it has.
+    """
+    store = deck.store
+    for existing in await deck.find_resources(
+      kinds=[K.RESOURCE_KIND_N_CHANNEL_PIPETTE], names=[name]
+    ):
       await existing.delete()
     response = await store.commands.create_resources(
       spb.CreateResourcesRequest(
         lock_tokens=store.lock_tokens,
-        resources=[spb.CreateResource(definition=pipette_definition(name, channels), name=name)],
+        resources=[
+          spb.CreateResource(
+            definition=pipette_definition(name, channels),
+            name=name,
+            assign=pb.AssignChild(parent=deck.ref, location=pb.Vec3()),
+          )
+        ],
       )
     )
     root_node = response.nodes[0]
@@ -167,7 +185,7 @@ class PipetteShafts:
     try:
       response = await self.store.commands.begin_tool_pickup(request)
     except StoreError as error:
-      raise tracking_error(error) from error
+      raise plr_error(error) from error
     return response.operation
 
   async def begin_drop(
@@ -196,7 +214,7 @@ class PipetteShafts:
     try:
       response = await self.store.commands.begin_tool_drop(request)
     except StoreError as error:
-      raise tracking_error(error) from error
+      raise plr_error(error) from error
     return response.operation
 
   async def resolve(self, operation: Optional[pb.Operation], succeeded: bool) -> None:

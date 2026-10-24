@@ -1,5 +1,6 @@
 """Compute the Flex travel clearance from the deck's resources."""
 
+from pylabrobot.opentrons.heads import is_pipette
 from pylabrobot.opentrons.model import anchor, locate, read
 from pylabrobot.resources.store import handles
 
@@ -23,9 +24,10 @@ async def traversal_z(deck: handles.Deck, arc_margin: float = _DEFAULT_ARC_MARGI
   cleared. Two reads of the store; no robot round-trip.
   """
   # Highest points are along the root's axes and the deck may stand in a room, so each of the
-  # deck's children is measured from the deck's own bottom. The deck itself does not count.
+  # deck's children is measured from the deck's own bottom. The deck itself does not count, nor
+  # do the pipettes hanging from it.
   tree = await read(deck.store, [deck], depth=1)
-  children = tree.children(tree.node(deck))
+  children = [c for c in tree.children(tree.node(deck)) if not is_pipette(c)]
   geometries = await locate(deck.store, [(deck, [anchor()])] + [(c.id, ()) for c in children])
   floor = geometries[0].locations[0].z
   tops = [g.highest_point - floor for g in geometries[1:]]

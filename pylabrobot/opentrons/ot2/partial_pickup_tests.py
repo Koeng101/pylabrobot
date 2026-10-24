@@ -60,7 +60,7 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
       "left",
       "p20_multi_gen2",
       "left-id",
-      await PipetteShafts.create(self.store, "left_pipette", 8),
+      await PipetteShafts.create(self.deck, "left_pipette", 8),
     )
     self.robot.left_pipette = self.pipette
     self.robot.right_pipette = OT2_8ChannelPipette(
@@ -68,7 +68,7 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
       "right",
       "p20_multi_gen2",
       "right-id",
-      await PipetteShafts.create(self.store, "right_pipette", 8),
+      await PipetteShafts.create(self.deck, "right_pipette", 8),
     )
     self.rack = cast(
       handles.TipRack,
@@ -92,7 +92,7 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
     return [await well.get_volume() for well in wells]
 
   async def _tip_volumes(self, pipette: OT2_8ChannelPipette) -> List[float]:
-    return [await tip.get_volume() for tip in await pipette.tips()]
+    return [await tip.get_volume() for tip in await pipette.get_tips()]
 
   async def test_partial_pickup_liquid_transfer_and_return(self) -> None:
     """E-H tips map to nozzles 0-3 and support a complete protocol on either mount."""
@@ -106,13 +106,13 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
         tip_length = (await tip.attributes()).size.z
         self.protocol_run.reset_mock()
         await pipette.pick_up_tips(selected)  # type: ignore[arg-type]
-        self.assertEqual([t.name for t in await pipette.tips()], original_tips)
+        self.assertEqual([t.name for t in await pipette.get_tips()], original_tips)
         self.assertTrue(all(await _has_tips(self.column[:4])))
         await pipette.mix(self.sources[:4], volume=5, repetitions=2)
         await pipette.aspirate(self.sources[:4], volume=5)
         await pipette.dispense(self.destinations[:4], volume=5)
         await pipette.return_tips()
-        self.assertEqual(await pipette.tips(), ())
+        self.assertEqual(await pipette.get_tips(), ())
         self.assertEqual(await _tip_names(selected), original_tips)
         self.protocol_run.pick_up_tip.assert_awaited_once_with(
           pipette.pipette_id, ANY, "E1", Coordinate(z=tip_length)
@@ -130,9 +130,9 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
       await self.pipette.pick_up_tips(self.column[:6])  # type: ignore[arg-type]
     self.assertEqual(self.protocol_run.mock_calls, [])
     self.assertTrue(all(await _has_tips(self.column)))
-    self.assertEqual(await self.pipette.tips(), ())
+    self.assertEqual(await self.pipette.get_tips(), ())
     await self.pipette.pick_up_tips(self.column)  # type: ignore[arg-type]
-    self.assertEqual(len(await self.pipette.tips()), 8)
+    self.assertEqual(len(await self.pipette.get_tips()), 8)
     self.assertFalse(any(await _has_tips(self.column)))
     await self.pipette.return_tips()
     self.assertTrue(all(await _has_tips(self.column)))
@@ -144,14 +144,14 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
     with self.assertRaisesRegex(ValueError, "undeclared tips at tips_H1"):
       await self.pipette.pick_up_tips(self.column[:6])  # type: ignore[arg-type]
     self.assertEqual(self.protocol_run.mock_calls, [])
-    self.assertEqual(await self.pipette.tips(), ())
+    self.assertEqual(await self.pipette.get_tips(), ())
     self.assertEqual(await _has_tips(self.column), [True] * 6 + [False, True])
 
   async def test_empty_spots_below_selection_allow_partial_pickup(self) -> None:
     """Unused nozzles over empty spots do not count as extra tips."""
     await _take(self.column[6:])
     await self.pipette.pick_up_tips(self.column[:6])  # type: ignore[arg-type]
-    self.assertEqual(len(await self.pipette.tips()), 6)
+    self.assertEqual(len(await self.pipette.get_tips()), 6)
     await self.pipette.return_tips()
     self.assertEqual(await _has_tips(self.column), [True] * 6 + [False] * 2)
 
@@ -159,7 +159,7 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
     """A single selected tip stays on nozzle 0 and transfers only one well's volume."""
     await _take(self.column[1:])
     await self.pipette.pick_up_tips(self.column[:1])  # type: ignore[arg-type]
-    self.assertEqual(len(await self.pipette.tips()), 1)
+    self.assertEqual(len(await self.pipette.get_tips()), 1)
     await self.pipette.aspirate(self.sources[:1], volume=5)
     await self.pipette.dispense(self.destinations[:1], volume=5)
     await self.pipette.return_tips()
@@ -205,10 +205,10 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
     with self.assertRaises(OpentronsError):
       await self.pipette.pick_up_tips(self.rack["E1:H1"])  # type: ignore[arg-type]
     self.assertTrue(all(await _has_tips(self.column)))
-    self.assertEqual(await self.pipette.tips(), ())
+    self.assertEqual(await self.pipette.get_tips(), ())
     self.protocol_run.pick_up_tip.side_effect = None
     await self.pipette.pick_up_tips(self.rack["E1:H1"])  # type: ignore[arg-type]
-    self.assertEqual(len(await self.pipette.tips()), 4)
+    self.assertEqual(len(await self.pipette.get_tips()), 4)
 
   async def test_partial_liquid_failure_rolls_back_all_mounted_tips(self) -> None:
     """An unsuccessful stroke preserves source and tip volumes for a partial layout."""
@@ -245,7 +245,7 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
     self.protocol_run.drop_tip.side_effect = OpentronsError("drop_tip failed")
     with self.assertRaises(OpentronsError):
       await self.pipette.return_tips()
-    self.assertEqual(len(await self.pipette.tips()), 4)
+    self.assertEqual(len(await self.pipette.get_tips()), 4)
     self.assertFalse(any(await _has_tips(self.column[4:])))
     self.protocol_run.drop_tip.side_effect = None
     await self.pipette.return_tips()
@@ -272,7 +272,7 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
     self.protocol_run.get_position.side_effect = OpentronsError("get_position failed")
     with self.assertRaises(OpentronsError):
       await self.pipette.pick_up_tips(self.rack["E1:H1"])  # type: ignore[arg-type]
-    self.assertEqual(len(await self.pipette.tips()), 4)
+    self.assertEqual(len(await self.pipette.get_tips()), 4)
     self.assertFalse(any(await _has_tips(self.column[4:])))
 
   async def test_disabled_tracking_still_rejects_undeclared_tips(self) -> None:
@@ -283,15 +283,15 @@ class OT2PartialPickupTests(unittest.IsolatedAsyncioTestCase):
     with self.assertRaisesRegex(ValueError, "undeclared tips"):
       await self.pipette.pick_up_tips(self.column[:6])  # type: ignore[arg-type]
     self.assertEqual(self.protocol_run.mock_calls, [])
-    self.assertEqual(await self.pipette.tips(), ())
+    self.assertEqual(await self.pipette.get_tips(), ())
     await self.pipette.pick_up_tips(self.rack["E1:H1"])  # type: ignore[arg-type]
     # The fresh tips an untracked spot gives are not tracked either.
     await self.pipette.shafts.root.set_volume_tracking(False)
-    self.assertEqual(len(await self.pipette.tips()), 4)
+    self.assertEqual(len(await self.pipette.get_tips()), 4)
     self.assertTrue(all(await _has_tips(self.column)))
     await self.pipette.aspirate(self.sources[:4], volume=5)
     await self.pipette.discard_tips()
-    self.assertEqual(await self.pipette.tips(), ())
+    self.assertEqual(await self.pipette.get_tips(), ())
 
 
 if __name__ == "__main__":
