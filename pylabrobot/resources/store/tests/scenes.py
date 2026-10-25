@@ -11,8 +11,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Callable, Dict, List
 
-from pylabrobot.hamilton.star.resource_model.heads import head96
-from pylabrobot.hamilton.star.resource_model.iswap import iswap_gripper, iswap_link_1
+from pylabrobot.hamilton.star import resource_model
 from pylabrobot.resources import (
   Coordinate,
   Plate,
@@ -42,8 +41,12 @@ from pylabrobot.resources.hamilton.mfx_modules import (
 )
 from pylabrobot.resources.hamilton.trough_carriers import Trough_CAR_4R200_A00
 from pylabrobot.resources.hamilton.troughs import hamilton_1_trough_200mL_Vb
+from pylabrobot.resources.end_effector import MechanicalGripper
 from pylabrobot.resources.hamilton.tube_carriers import hamilton_tube_carrier_12_b00
-from pylabrobot.resources.n_channel_pipettes import TipMountingShaft
+from pylabrobot.resources.manipulator import LinkBody
+from pylabrobot.resources.n_channel_pipettes import NChannelPipette, TipMountingShaft
+from pylabrobot.resources.store.tree import to_coordinate
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.thermo_fisher.plate_adapters import thermo_AB_96_plateadapter_MicroAmp
 from pylabrobot.resources.thermo_fisher.plates import thermo_AB_96_wellplate_300ul_Vb_MicroAmp
 
@@ -61,6 +64,88 @@ class Scene:
   name: str
   root: Resource
   frame: Resource
+
+
+def _part(definition: pb.ResourceDefinition) -> Resource:
+  """A plain part of a definition, without its children, as PLR's `Resource` holds it."""
+  a = definition.attributes
+  return Resource(
+    name=a.name,
+    size_x=a.size.x,
+    size_y=a.size.y,
+    size_z=a.size.z,
+    category=a.category or None,
+    model=a.model or None,
+  )
+
+
+def pipette_from_definition(definition: pb.ResourceDefinition) -> NChannelPipette:
+  """A rigid head's definition as PLR's `NChannelPipette`: its body, and a shaft per channel on its
+  grid."""
+  a = definition.attributes
+  grid = a.itemized.grid
+  return NChannelPipette(
+    name=a.name,
+    size_x=a.size.x,
+    size_y=a.size.y,
+    size_z=a.size.z,
+    reference_point=to_coordinate(a.n_channel_pipette.reference_point),
+    ordered_items=create_ordered_items_2d(
+      TipMountingShaft,
+      name_prefix=a.name,
+      num_items_x=a.itemized.num_items_x,
+      num_items_y=a.itemized.num_items_y,
+      dx=grid.offset.x,
+      dy=grid.offset.y,
+      dz=grid.offset.z,
+      item_dx=grid.item_dx,
+      item_dy=grid.item_dy,
+      tip_pickup_mode=grid.item.attributes.tip_mounting_shaft.tip_pickup_mode,
+    ),
+    category=a.category,
+    model=a.model,
+  )
+
+
+def _link_from_definition(definition: pb.ResourceDefinition) -> LinkBody:
+  """A link's definition as PLR's `LinkBody`, with the parts bolted to it."""
+  a = definition.attributes
+  link = LinkBody(
+    name=a.name,
+    size_x=a.size.x,
+    size_y=a.size.y,
+    size_z=a.size.z,
+    proximal_joint=to_coordinate(a.link_body.proximal_joint),
+    distal_joint=to_coordinate(a.link_body.distal_joint),
+    category=a.category,
+    model=a.model,
+  )
+  for child in definition.children:
+    link.assign_child_resource(_part(child), location=to_coordinate(child.attributes.location))
+  return link
+
+
+def _gripper_from_definition(definition: pb.ResourceDefinition) -> MechanicalGripper:
+  """A gripper's definition as PLR's `MechanicalGripper`: its body, fingers and pads."""
+  a = definition.attributes
+  spec = a.mechanical_gripper
+  parts = {child.attributes.name: child for child in definition.children}
+  fingers = [parts[name] for name in spec.fingers]
+  pads = {pad.attributes.name: pad for finger in fingers for pad in finger.children}
+  return MechanicalGripper(
+    name=a.name,
+    proximal_joint=to_coordinate(spec.proximal_joint),
+    tool_center_point=to_coordinate(spec.tool_center_point),
+    body=_part(parts[spec.body]),
+    body_location=to_coordinate(parts[spec.body].attributes.location),
+    fingers=[_part(finger) for finger in fingers],
+    finger_location=to_coordinate(fingers[0].attributes.location),
+    pads=[_part(pads[name]) for name in spec.pads],
+    pad_location=to_coordinate(pads[spec.pads[0]].attributes.location),
+    jaw_range=(spec.jaw_width_min, spec.jaw_width_max),
+    jaw_width=definition.initial_state.jaw_width,
+    model=a.model,
+  )
 
 
 def stacking_plate(name: str, stacking_z_height: float = 4.0) -> Plate:
@@ -204,13 +289,20 @@ def star_deck() -> Scene:
     if channel < 2:
       shaft.mount_tip(rack.get_item(channel).tip_for_pickup())
 
-  head = head96("head96", size_z=40)
+  head = pipette_from_definition(resource_model.head96("head96", size_z=40))
   arm.assign_child_resource(head, location=Coordinate(-60, 100, 30))
 
-  link = iswap_link_1("iswap_link_1", length=120)
+  link = _link_from_definition(
+    resource_model.iswap_link_1("iswap_link_1", length=120, location=Coordinate.zero())
+  )
   arm.assign_child_resource(link, location=Coordinate(0, 500, -60))
-  gripper = iswap_gripper(
-    "iswap_gripper", tool_center_point=Coordinate(80, 0, -20), jaw_range=(60.0, 140.0)
+  gripper = _gripper_from_definition(
+    resource_model.iswap_gripper(
+      "iswap_gripper",
+      tool_center_point=Coordinate(80, 0, -20),
+      jaw_range=(60.0, 140.0),
+      location=Coordinate.zero(),
+    )
   )
   link.assign_child_resource(gripper, location=Coordinate(100, 0, -10))
   return Scene("star_deck", deck, deck)
