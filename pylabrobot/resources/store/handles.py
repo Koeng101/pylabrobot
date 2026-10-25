@@ -512,11 +512,11 @@ class Trash(Container):
 
   async def clear(self) -> None:
     """Delete everything it holds; each emits `resource.unassigned`."""
-    before = await _read_for_events(self.store, [self.ref], depth=1)
+    before = await read_for_events(self.store, [self.ref], depth=1)
     await self._update(spb.ResourceUpdate(clear_trash=pb.ClearTrash(trash=self.ref)))
     if before is not None:
       for child_id in before[self.id].child_ids:
-        _emit_unassigned(before, child_id)
+        emit_unassigned(before, child_id)
 
 
 # -- itemized resources --------------------------------------------------------------------------
