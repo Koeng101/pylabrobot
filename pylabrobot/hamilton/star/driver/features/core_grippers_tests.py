@@ -630,15 +630,18 @@ class TestPlaceByDestinationType(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(await other.get_lid(), lid)
     self.assertIsNone(await self.plate.get_lid())
 
-  async def test_a_trash_discards_it(self):
+  async def test_a_trash_keeps_it_until_it_is_cleared(self):
     trash = await _on_the_deck(
       self.star, Trash("bin", size_x=130, size_y=90, size_z=40), location=Coordinate(600, 150, 100)
     )
     await self.grippers.pick_up_resource(self.plate, pickup_distance_from_top=6, grip_strength=40)
     await self.grippers.place_resource(trash)
     self.assertEqual(self.sent, ["C0ZRxs06639xd0yj1927zj1101zi000zy0500yo0885th2800te2800"])
-    self.assertEqual(await self.deck.find_resources(names=["plate"]), [])
+    self.assertEqual(await self.plate.get_parent(), trash)
     self.assertEqual(await _children(self.source), [])
+    assert isinstance(trash, handles.Trash)
+    await trash.clear()
+    self.assertEqual(await self.deck.find_resources(names=["plate"]), [])
 
   async def test_a_coordinate_puts_its_centre_bottom_there(self):
     size = await self.plate.get_size()

@@ -117,6 +117,16 @@ def _is_item(resource: Resource) -> bool:
   return resource.parent is not None and isinstance(resource.parent, _ITEMS)
 
 
+def _under_stack_top(resource: Resource) -> bool:
+  """Whether it is in a stack growing in z, under the top item: the store picks up only the top."""
+  stack = resource.parent
+  return (
+    isinstance(stack, ResourceStack)
+    and stack.direction == "z"
+    and stack.children[-1] is not resource
+  )
+
+
 def _sampled(resources: List[Resource], every: int) -> List[Resource]:
   """All but the items of racks and plates, and every so many of those."""
   items = [r for r in resources if _is_item(r)]
@@ -308,7 +318,7 @@ def _scene_case(scene: Scene, rng: random.Random) -> Dict[str, Any]:
   case["placements"] = placements
 
   grips = []
-  for resource in pickable[:10]:
+  for resource in [r for r in pickable if not _under_stack_top(r)][:10]:
     for key, distance in (("distanceFromTop", 4.0), ("distanceFromBottom", 2.5)):
       try:
         height = get_grip_height(

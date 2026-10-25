@@ -807,6 +807,94 @@
       "result": null,
       "resources": [
         {
+          "name": "tips_tipspot_A2#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_B2#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_C2#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_D2#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_E2#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_F2#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_G2#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_H2#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
           "name": "Prep_x_arm",
           "parent": "Prep_deck",
           "kind": "RESOURCE_KIND_RESOURCE",
@@ -826,16 +914,6 @@
             -73.0
           ]
         }
-      ],
-      "removed": [
-        "tips_tipspot_A2#0",
-        "tips_tipspot_B2#0",
-        "tips_tipspot_C2#0",
-        "tips_tipspot_D2#0",
-        "tips_tipspot_E2#0",
-        "tips_tipspot_F2#0",
-        "tips_tipspot_G2#0",
-        "tips_tipspot_H2#0"
       ]
     },
     {
@@ -967,6 +1045,94 @@
       "result": null,
       "resources": [
         {
+          "name": "tips_tipspot_A1#0",
+          "parent": "Prep_waste_mph",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.1,
+            -1.1,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_B1#0",
+          "parent": "Prep_waste_mph",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.1,
+            -1.1,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_C1#0",
+          "parent": "Prep_waste_mph",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.1,
+            -1.1,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_D1#0",
+          "parent": "Prep_waste_mph",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.1,
+            -1.1,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_E1#0",
+          "parent": "Prep_waste_mph",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.1,
+            -1.1,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_F1#0",
+          "parent": "Prep_waste_mph",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.1,
+            -1.1,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_G1#0",
+          "parent": "Prep_waste_mph",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.1,
+            -1.1,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_H1#0",
+          "parent": "Prep_waste_mph",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -1.1,
+            -1.1,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
           "name": "Prep_x_arm",
           "parent": "Prep_deck",
           "kind": "RESOURCE_KIND_RESOURCE",
@@ -986,16 +1152,6 @@
             -73.0
           ]
         }
-      ],
-      "removed": [
-        "tips_tipspot_A1#0",
-        "tips_tipspot_B1#0",
-        "tips_tipspot_C1#0",
-        "tips_tipspot_D1#0",
-        "tips_tipspot_E1#0",
-        "tips_tipspot_F1#0",
-        "tips_tipspot_G1#0",
-        "tips_tipspot_H1#0"
       ]
     }
   ],
@@ -5156,6 +5312,94 @@
       ]
     },
     {
+      "name": "tips_tipspot_A2#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_B2#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_C2#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_D2#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_E2#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_F2#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_G2#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_H2#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
       "name": "Prep_waste_bin",
       "parent": "Prep_deck",
       "kind": "RESOURCE_KIND_RESOURCE",
@@ -5195,6 +5439,94 @@
         286.8,
         112.0,
         68.4
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_A1#0",
+      "parent": "Prep_waste_mph",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_B1#0",
+      "parent": "Prep_waste_mph",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_C1#0",
+      "parent": "Prep_waste_mph",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_D1#0",
+      "parent": "Prep_waste_mph",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_E1#0",
+      "parent": "Prep_waste_mph",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_F1#0",
+      "parent": "Prep_waste_mph",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_G1#0",
+      "parent": "Prep_waste_mph",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_H1#0",
+      "parent": "Prep_waste_mph",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        0.0
       ],
       "volume": 0.0
     },

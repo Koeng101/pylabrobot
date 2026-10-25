@@ -406,12 +406,17 @@ class TestHead96Tips(unittest.IsolatedAsyncioTestCase):
       spot = under.get(channel)
       self.assertEqual(tip, None if spot is None else in_rack[spot], channel)
 
-  async def test_tips_dropped_in_the_trash_belong_to_nothing(self):
+  async def test_tips_dropped_in_the_trash_stay_there_until_it_is_cleared(self):
     await self.head.pick_up_tips(self.tip_rack)
     tips = [tip for tip in await tips_on(self.head) if tip is not None]
     await self.head.drop_tips(self.trash)
     self.assertEqual(await tips_on(self.head), [None] * 96)
     self.assertEqual(await tips_in(self.tip_rack), [None] * 96)
+    kept = await self.store.find_resources(spb.ResourceFilter(names=tips))
+    self.assertEqual(len(kept), 96)
+    self.assertTrue(all([(await tip.get_parent()) == self.trash for tip in kept]))
+    assert isinstance(self.trash, handles.Trash)
+    await self.trash.clear()
     self.assertFalse(await self.store.find_resources(spb.ResourceFilter(names=tips)))
 
   def failing_on(self, failed: str):

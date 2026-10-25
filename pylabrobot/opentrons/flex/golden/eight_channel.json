@@ -6959,11 +6959,51 @@
           "request": "GET /runs/run-1/commands/command-68"
         }
       ],
-      "removed": [
-        "tips_E2#0",
-        "tips_F2#0",
-        "tips_G2#0",
-        "tips_H2#0"
+      "resources": [
+        {
+          "name": "tips_E2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.21,
+            40.21,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.21,
+            40.21,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.21,
+            40.21,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.21,
+            40.21,
+            0.0
+          ],
+          "volume": 10.0
+        }
       ],
       "mounted": {
         "right/8": {}
@@ -7481,8 +7521,18 @@
           "request": "GET /runs/run-1/commands/command-91"
         }
       ],
-      "removed": [
-        "tips_A3#0"
+      "resources": [
+        {
+          "name": "tips_A3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.21,
+            40.21,
+            0.0
+          ],
+          "volume": 0.0
+        }
       ],
       "mounted": {
         "right/8": {}
@@ -10721,6 +10771,61 @@
       "location": [
         0.0,
         0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_E2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.21,
+        40.21,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.21,
+        40.21,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.21,
+        40.21,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.21,
+        40.21,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.21,
+        40.21,
         0.0
       ],
       "volume": 0.0

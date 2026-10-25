@@ -2045,13 +2045,17 @@ class TestTipHandling(unittest.IsolatedAsyncioTestCase):
     with self.assertRaisesRegex(ValueError, "not in the subtree"):
       await pipettes.aspirate([cast(handles.Container, loose.get_item("A1"))], [10.0], [0])
 
-  async def test_a_discarded_tip_belongs_to_nothing(self):
+  async def test_a_discarded_tip_stays_in_the_trash_until_it_is_cleared(self):
     from pylabrobot.resources.store.errors import StoreError
 
     pipettes, rack, sent = await channels_over_a_rack()
     tip = cast(handles.Tip, await rack.get_tip_spot("A1").get_tip())
     await pipettes.pick_up_tips([rack.get_tip_spot("A1")])
     await pipettes.discard_tips()
+    trash = await tip.get_parent()
+    assert isinstance(trash, handles.Trash)
+    self.assertEqual(trash.name, "deck_trash")
+    await trash.clear()
     with self.assertRaises(StoreError):
       await tip.get_parent()
     self.assertIsNone(await pipettes.get_mounted_tip(0))
@@ -2313,15 +2317,14 @@ class TestTipHandling(unittest.IsolatedAsyncioTestCase):
     self.assertIsNone(await spot.get_tip())
 
   async def test_initialization_leaves_no_tips_on_the_channels(self):
-    from pylabrobot.resources.store.errors import StoreError
-
     pipettes, rack, _ = await channels_over_a_rack()
     tip = cast(handles.Tip, await rack.get_tip_spot("A1").get_tip())
     await pipettes.pick_up_tips([rack.get_tip_spot("A1")])
     await pipettes.initialize()
     self.assertIsNone(await pipettes.get_mounted_tip(0))
-    with self.assertRaises(StoreError):
-      await tip.get_parent()
+    parent = await tip.get_parent()
+    assert parent is not None
+    self.assertEqual(parent.name, "deck_trash")
 
   async def test_initialize_leaves_the_channels_at_minimum_traverse_height_end(self):
     pipettes, _, _ = await channels_over_a_rack()

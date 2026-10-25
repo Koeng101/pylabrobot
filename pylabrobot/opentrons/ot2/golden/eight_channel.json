@@ -4851,11 +4851,51 @@
           "request": "GET /runs/run-1/commands/command-34"
         }
       ],
-      "removed": [
-        "tips_A2#0",
-        "tips_B2#0",
-        "tips_C2#0",
-        "tips_D2#0"
+      "resources": [
+        {
+          "name": "tips_A2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            84.795,
+            81.295,
+            0.0
+          ],
+          "volume": 2.0
+        },
+        {
+          "name": "tips_B2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            84.795,
+            81.295,
+            0.0
+          ],
+          "volume": 2.0
+        },
+        {
+          "name": "tips_C2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            84.795,
+            81.295,
+            0.0
+          ],
+          "volume": 2.0
+        },
+        {
+          "name": "tips_D2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            84.795,
+            81.295,
+            0.0
+          ],
+          "volume": 2.0
+        }
       ],
       "mounted": {
         "left": {
@@ -8039,6 +8079,50 @@
         0.0
       ],
       "volume": 0.0
+    },
+    {
+      "name": "tips_A2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        84.795,
+        81.295,
+        0.0
+      ],
+      "volume": 2.0
+    },
+    {
+      "name": "tips_B2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        84.795,
+        81.295,
+        0.0
+      ],
+      "volume": 2.0
+    },
+    {
+      "name": "tips_C2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        84.795,
+        81.295,
+        0.0
+      ],
+      "volume": 2.0
+    },
+    {
+      "name": "tips_D2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        84.795,
+        81.295,
+        0.0
+      ],
+      "volume": 2.0
     },
     {
       "name": "ot2_deck_left_pipette",

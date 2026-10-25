@@ -395,6 +395,15 @@ class Resource:
       change.location.CopyFrom(to_vec3(location))
     await self._update(spb.ResourceUpdate(preferred_pickup_location=change))
 
+  async def set_display_model(self, model: Optional[str]) -> None:
+    """Draw it as another model, by name; None draws it as its own `model` again. What it is made
+    from, and its `model`, stay as they are."""
+    await self._update(
+      spb.ResourceUpdate(
+        display_model=pb.SetDisplayModel(resource=self.ref, display_model=model or "")
+      )
+    )
+
   async def set_volume_tracking(self, enabled: bool) -> None:
     """Track volumes in it and every container and tip under it, or stop."""
     await self._update(
@@ -499,7 +508,15 @@ class PetriDish(Container):
 
 
 class Trash(Container):
-  pass
+  """A container that keeps the tips and resources thrown into it until it is cleared."""
+
+  async def clear(self) -> None:
+    """Delete everything it holds; each emits `resource.unassigned`."""
+    before = await _read_for_events(self.store, [self.ref], depth=1)
+    await self._update(spb.ResourceUpdate(clear_trash=pb.ClearTrash(trash=self.ref)))
+    if before is not None:
+      for child_id in before[self.id].child_ids:
+        _emit_unassigned(before, child_id)
 
 
 # -- itemized resources --------------------------------------------------------------------------

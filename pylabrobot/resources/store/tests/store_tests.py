@@ -489,8 +489,8 @@ class ToolTests(StoreTestCase):
     )
     self.assertEqual([i.problem for i in drop.issues], [pb.PROBLEM_TIP_NOT_EMPTY])
     await self.succeed(drop.operation)
-    with self.assertRaises(StoreError):
-      await self.node(pb.ResourceRef(id=tip.id))
+    trashed = await self.node(pb.ResourceRef(id=tip.id))
+    self.assertEqual(trashed.parent_id, (await self.node(ref("trash"))).id)
 
   async def test_a_tool_named_itself_goes_back_where_it_stood(self):
     tool = build.resource(

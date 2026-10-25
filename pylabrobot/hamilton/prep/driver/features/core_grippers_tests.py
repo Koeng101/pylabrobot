@@ -1051,7 +1051,10 @@ def test_each_destination_type_is_let_go_of_where_it_places_it(layout: Layout, p
     top = drop.plate_top_center
     assert (top.x_position, top.y_position, top.z_position) == pytest.approx(plate_top_center)
     if isinstance(destination, handles.Trash):
-      # What goes into a trash is gone from the store.
+      # A trash keeps what goes into it until it is cleared.
+      parent = await resource.get_parent()
+      assert parent is not None and parent.id == destination.id
+      await destination.clear()
       with pytest.raises(StoreError, match="no resource"):
         await resource.get_parent()
       return

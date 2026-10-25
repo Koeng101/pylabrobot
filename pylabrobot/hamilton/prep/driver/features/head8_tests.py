@@ -519,11 +519,14 @@ def test_discard_tips_uses_mph_waste_and_releases_all_tips(use_channels, rack_mo
       assert drop.tip_roll_off_distance == 3.0
       assert await _mounted_names(p.head8) == [None] * 8
       assert await _tip_names(spots) == [None] * 8
-      # Into the waste, the tips leave the store.
-      gone = await deck.store.find_resources(
-        filter=spb.ResourceFilter(names=[tip.name for tip in tips])
-      )
-      assert gone == []
+      # The waste block keeps the tips until it is cleared.
+      names = [tip.name for tip in tips]
+      kept = await deck.store.find_resources(filter=spb.ResourceFilter(names=names))
+      assert len(kept) == len(tips)
+      (block,) = {await tip.get_parent() for tip in kept}
+      assert isinstance(block, handles.Trash) and block.name == "prep_waste_block"
+      await block.clear()
+      assert await deck.store.find_resources(filter=spb.ResourceFilter(names=names)) == []
 
       captured.clear()
       await p.head8.discard_tips(use_channels=use_channels)

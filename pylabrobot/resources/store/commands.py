@@ -22,6 +22,7 @@ from pylabrobot.resources.store.engine import (
   Step,
   Transfer,
   capacity,
+  check_stack_top,
   tool_in,
   volume_issue,
 )
@@ -184,7 +185,8 @@ def begin_tool_pickup(
 
 def begin_tool_drop(engine: Engine, request: spb.BeginToolDropRequest) -> spb.BeginToolDropResponse:
   """Stage each shaft letting go of its tool: into a spot or holder, back where it came from, or
-  out of the tree into a trash or an untracked spot."""
+  into a trash, which keeps it until cleared. A tip let go into an untracked spot leaves the
+  store."""
   frame = engine.resolve(request.frame)
   issues = _Issues(request.on_tracking_problem)
   plans: List[Tuple[Node, Optional[Node], Node]] = []  # shaft, tool, destination
@@ -211,6 +213,8 @@ def begin_tool_drop(engine: Engine, request: spb.BeginToolDropRequest) -> spb.Be
         )
     else:
       destination = engine.resolve(item.target)
+    if destination.kind == K.RESOURCE_KIND_TRASH and tool is not None:
+      engine.check_names_fit(tool, destination)
     if destination.kind == K.RESOURCE_KIND_TIP_SPOT and _tracks_tips(destination):
       held = tool_in(destination)
       if held is not None and held is not tool:
@@ -233,13 +237,14 @@ def begin_tool_drop(engine: Engine, request: spb.BeginToolDropRequest) -> spb.Be
     plan = spb.ToolDropPlan(item=index, destination=placement)
     if tool is not None:
       plan.tool.CopyFrom(engine.node_message(tool))
-      kept = destination.kind != K.RESOURCE_KIND_TRASH and (
-        destination.kind != K.RESOURCE_KIND_TIP_SPOT or _tracks_tips(destination)
-      )
+      # An untracked spot is left as it is: the tip dropped into it is gone.
+      kept = destination.kind != K.RESOURCE_KIND_TIP_SPOT or _tracks_tips(destination)
       to_origin = request.items[index].WhichOneof("destination") == "origin"
       # A tool taken by name goes back where it stood, beside whatever else is parked there.
       parked_at = engine.origin_locations.get(tool.id) if to_origin else None
-      if kept and parked_at is not None and destination.kind != K.RESOURCE_KIND_TIP_SPOT:
+      if destination.kind == K.RESOURCE_KIND_TRASH:
+        engine.move(tool, destination, None, g.trash_location(destination, tool), staged.steps)
+      elif kept and parked_at is not None and destination.kind != K.RESOURCE_KIND_TIP_SPOT:
         engine.move(tool, destination, None, parked_at, staged.steps)
       elif kept:
         held = tool_in(destination)
@@ -377,6 +382,7 @@ def begin_resource_pickup(
   frame = engine.resolve(request.frame)
   resource, carrier = engine.resolve(request.resource), engine.resolve(request.carrier)
   engine.check_locks([frame, resource, carrier], request.lock_tokens)
+  check_stack_top(resource, "be picked up")
   if g.is_in_subtree_of(carrier, resource):
     raise StoreError(
       pb.PROBLEM_CANNOT_DROP_HERE, f"'{carrier.name}' is in '{resource.name}'", resource.name
@@ -438,7 +444,8 @@ def begin_resource_place(
 ) -> spb.BeginResourcePlaceResponse:
   """Stage a resource let go into its destination, turned as the move turns it.
 
-  A location puts it on the frame there, and is refused when it falls inside something.
+  A location puts it on the frame there, and is refused when it falls inside something. A trash
+  keeps what is let go into it, where it was let go, until it is cleared.
   """
   frame = engine.resolve(request.frame)
   resource = engine.resolve(request.resource)
@@ -469,8 +476,7 @@ def begin_resource_place(
       resource, destination, frame, request.rotation_applied_by_move
     )
   engine.check_locks([frame, resource, target], request.lock_tokens)
-  if target.kind != K.RESOURCE_KIND_TRASH:
-    engine.check_names_fit(resource, target)
+  engine.check_names_fit(resource, target)
   height = _grip(resource, request.grip)
   grip = g.grip_location(resource, place, frame, height)
   response = spb.BeginResourcePlaceResponse(
@@ -486,9 +492,7 @@ def begin_resource_place(
   turn = pb.RotationChange(resource=pb.ResourceRef(id=resource.id))
   turn.by.z = rotation - resource.rotation.z
   engine.rotate(turn, staged.steps)
-  if target.kind == K.RESOURCE_KIND_TRASH:
-    engine.remove(resource, staged.steps)
-  elif target.kind == K.RESOURCE_KIND_RESOURCE_STACK:
+  if target.kind == K.RESOURCE_KIND_RESOURCE_STACK:
     seated = g.stack_child_location(target, resource)
     engine.move(resource, target, None, seated, staged.steps)
     engine.reseat_stack(target, staged.steps)

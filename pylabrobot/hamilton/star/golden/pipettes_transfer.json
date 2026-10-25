@@ -6855,6 +6855,28 @@
       "result": null,
       "resources": [
         {
+          "name": "tips_tipspot_A3#0",
+          "parent": "STARlet_deck_trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -4.1,
+            116.5,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_B3#0",
+          "parent": "STARlet_deck_trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -4.1,
+            116.5,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
           "name": "STARlet_left_x_arm",
           "parent": "STARlet_deck",
           "kind": "RESOURCE_KIND_RESOURCE",
@@ -6884,10 +6906,6 @@
             -43.9
           ]
         }
-      ],
-      "removed": [
-        "tips_tipspot_A3#0",
-        "tips_tipspot_B3#0"
       ]
     },
     {
@@ -7275,6 +7293,28 @@
         800.0,
         190.6,
         137.1
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_A3#0",
+      "parent": "STARlet_deck_trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -4.1,
+        116.5,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_B3#0",
+      "parent": "STARlet_deck_trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -4.1,
+        116.5,
+        0.0
       ],
       "volume": 0.0
     },

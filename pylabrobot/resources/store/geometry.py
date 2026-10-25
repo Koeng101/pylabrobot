@@ -595,7 +595,8 @@ def default_child_location(parent: Node, child: Node) -> Optional[Coordinate]:
   """Where `parent` seats `child` when no location is given, or None when it does not.
 
   A spot rests a tip by its collar; a shaft mounts a tool; a holder seats at its child location;
-  a stack at its edge; a plate adapter aligns a plate's wells over its holes; a lid sits on top.
+  a stack at its edge; a plate adapter aligns a plate's wells over its holes; a trash keeps what
+  is thrown in centred on its floor; a lid sits on top.
 
   Raises:
     StoreError: The parent cannot take a child of this kind.
@@ -614,9 +615,17 @@ def default_child_location(parent: Node, child: Node) -> Optional[Coordinate]:
         pb.PROBLEM_WRONG_KIND, f"only a plate goes onto plate adapter '{parent.name}'", child.name
       )
     return plate_adapter_location(parent, child)
+  if parent.kind == K.RESOURCE_KIND_TRASH:
+    return trash_location(parent, child)
   if parent.kind in LIDDABLE_KINDS and child.kind == K.RESOURCE_KIND_LID:
     return lid_location(parent, child)
   return None
+
+
+def trash_location(trash: Node, child: Node) -> Coordinate:
+  """Where a trash keeps what is thrown into it: centred on its floor."""
+  inside, held = size(trash), size(child)
+  return Coordinate((inside.x - held.x) / 2, (inside.y - held.y) / 2, 0)
 
 
 def track_location(deck: Node, track: int) -> Coordinate:

@@ -171,6 +171,8 @@ message ResourceUpdate {
     SetVolume volume = 5;
     SetTipPresence tip_presence = 6;
     SetPreferredPickupLocation preferred_pickup_location = 7;
+    SetDisplayModel display_model = 8;
+    ClearTrash clear_trash = 9;
   }
 }
 

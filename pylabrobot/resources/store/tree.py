@@ -30,6 +30,7 @@ INSTANCE_FIELDS = (
   "preferred_pickup_location",
   "barcode",
   "metadata",
+  "display_model",
 )
 
 _CONTAINERS = (

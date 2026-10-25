@@ -205,7 +205,7 @@ class UnassignResourcesResponse(_message.Message):
     def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ...) -> None: ...
 
 class ResourceUpdate(_message.Message):
-    __slots__ = ("rotation", "metadata", "barcode", "tracking", "volume", "tip_presence", "preferred_pickup_location")
+    __slots__ = ("rotation", "metadata", "barcode", "tracking", "volume", "tip_presence", "preferred_pickup_location", "display_model", "clear_trash")
     ROTATION_FIELD_NUMBER: _ClassVar[int]
     METADATA_FIELD_NUMBER: _ClassVar[int]
     BARCODE_FIELD_NUMBER: _ClassVar[int]
@@ -213,6 +213,8 @@ class ResourceUpdate(_message.Message):
     VOLUME_FIELD_NUMBER: _ClassVar[int]
     TIP_PRESENCE_FIELD_NUMBER: _ClassVar[int]
     PREFERRED_PICKUP_LOCATION_FIELD_NUMBER: _ClassVar[int]
+    DISPLAY_MODEL_FIELD_NUMBER: _ClassVar[int]
+    CLEAR_TRASH_FIELD_NUMBER: _ClassVar[int]
     rotation: _types_pb2.RotationChange
     metadata: _types_pb2.SetMetadata
     barcode: _types_pb2.SetBarcode
@@ -220,7 +222,9 @@ class ResourceUpdate(_message.Message):
     volume: _types_pb2.SetVolume
     tip_presence: _types_pb2.SetTipPresence
     preferred_pickup_location: _types_pb2.SetPreferredPickupLocation
-    def __init__(self, rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., metadata: _Optional[_Union[_types_pb2.SetMetadata, _Mapping]] = ..., barcode: _Optional[_Union[_types_pb2.SetBarcode, _Mapping]] = ..., tracking: _Optional[_Union[_types_pb2.SetTracking, _Mapping]] = ..., volume: _Optional[_Union[_types_pb2.SetVolume, _Mapping]] = ..., tip_presence: _Optional[_Union[_types_pb2.SetTipPresence, _Mapping]] = ..., preferred_pickup_location: _Optional[_Union[_types_pb2.SetPreferredPickupLocation, _Mapping]] = ...) -> None: ...
+    display_model: _types_pb2.SetDisplayModel
+    clear_trash: _types_pb2.ClearTrash
+    def __init__(self, rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., metadata: _Optional[_Union[_types_pb2.SetMetadata, _Mapping]] = ..., barcode: _Optional[_Union[_types_pb2.SetBarcode, _Mapping]] = ..., tracking: _Optional[_Union[_types_pb2.SetTracking, _Mapping]] = ..., volume: _Optional[_Union[_types_pb2.SetVolume, _Mapping]] = ..., tip_presence: _Optional[_Union[_types_pb2.SetTipPresence, _Mapping]] = ..., preferred_pickup_location: _Optional[_Union[_types_pb2.SetPreferredPickupLocation, _Mapping]] = ..., display_model: _Optional[_Union[_types_pb2.SetDisplayModel, _Mapping]] = ..., clear_trash: _Optional[_Union[_types_pb2.ClearTrash, _Mapping]] = ...) -> None: ...
 
 class UpdateResourcesRequest(_message.Message):
     __slots__ = ("lock_tokens", "updates", "on_tracking_problem")

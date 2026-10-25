@@ -14221,103 +14221,1063 @@
           "request": "GET /runs/run-1/commands/command-36"
         }
       ],
-      "removed": [
-        "tips_A1#0",
-        "tips_B1#0",
-        "tips_C1#0",
-        "tips_D1#0",
-        "tips_E1#0",
-        "tips_F1#0",
-        "tips_G1#0",
-        "tips_H1#0",
-        "tips_A2#0",
-        "tips_B2#0",
-        "tips_C2#0",
-        "tips_D2#0",
-        "tips_E2#0",
-        "tips_F2#0",
-        "tips_G2#0",
-        "tips_H2#0",
-        "tips_A3#0",
-        "tips_B3#0",
-        "tips_C3#0",
-        "tips_D3#0",
-        "tips_E3#0",
-        "tips_F3#0",
-        "tips_G3#0",
-        "tips_H3#0",
-        "tips_A4#0",
-        "tips_B4#0",
-        "tips_C4#0",
-        "tips_D4#0",
-        "tips_E4#0",
-        "tips_F4#0",
-        "tips_G4#0",
-        "tips_H4#0",
-        "tips_A5#0",
-        "tips_B5#0",
-        "tips_C5#0",
-        "tips_D5#0",
-        "tips_E5#0",
-        "tips_F5#0",
-        "tips_G5#0",
-        "tips_H5#0",
-        "tips_A6#0",
-        "tips_B6#0",
-        "tips_C6#0",
-        "tips_D6#0",
-        "tips_E6#0",
-        "tips_F6#0",
-        "tips_G6#0",
-        "tips_H6#0",
-        "tips_A7#0",
-        "tips_B7#0",
-        "tips_C7#0",
-        "tips_D7#0",
-        "tips_E7#0",
-        "tips_F7#0",
-        "tips_G7#0",
-        "tips_H7#0",
-        "tips_A8#0",
-        "tips_B8#0",
-        "tips_C8#0",
-        "tips_D8#0",
-        "tips_E8#0",
-        "tips_F8#0",
-        "tips_G8#0",
-        "tips_H8#0",
-        "tips_A9#0",
-        "tips_B9#0",
-        "tips_C9#0",
-        "tips_D9#0",
-        "tips_E9#0",
-        "tips_F9#0",
-        "tips_G9#0",
-        "tips_H9#0",
-        "tips_A10#0",
-        "tips_B10#0",
-        "tips_C10#0",
-        "tips_D10#0",
-        "tips_E10#0",
-        "tips_F10#0",
-        "tips_G10#0",
-        "tips_H10#0",
-        "tips_A11#0",
-        "tips_B11#0",
-        "tips_C11#0",
-        "tips_D11#0",
-        "tips_E11#0",
-        "tips_F11#0",
-        "tips_G11#0",
-        "tips_H11#0",
-        "tips_A12#0",
-        "tips_B12#0",
-        "tips_C12#0",
-        "tips_D12#0",
-        "tips_E12#0",
-        "tips_F12#0",
-        "tips_G12#0",
-        "tips_H12#0"
+      "resources": [
+        {
+          "name": "tips_A1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H2#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H3#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A4#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B4#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C4#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D4#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E4#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F4#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G4#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H4#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A5#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B5#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C5#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D5#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E5#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F5#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G5#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H5#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A6#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B6#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C6#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D6#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E6#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F6#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G6#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H6#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A7#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B7#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C7#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D7#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E7#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F7#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G7#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H7#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A8#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B8#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C8#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D8#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E8#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F8#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G8#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H8#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A9#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B9#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C9#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D9#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E9#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F9#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G9#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H9#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A10#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B10#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C10#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D10#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E10#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F10#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G10#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H10#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A11#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B11#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C11#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D11#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E11#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F11#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G11#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H11#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_A12#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_B12#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_C12#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_D12#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_E12#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_F12#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_G12#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_H12#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.205,
+            40.205,
+            0.0
+          ],
+          "volume": 10.0
+        }
       ],
       "mounted": {
         "left/96": {}
@@ -16558,6 +17518,1062 @@
         0.0
       ],
       "volume": 0.0
+    },
+    {
+      "name": "tips_A1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H2#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H3#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A4#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B4#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C4#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D4#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E4#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F4#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G4#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H4#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A5#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B5#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C5#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D5#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E5#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F5#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G5#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H5#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A6#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B6#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C6#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D6#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E6#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F6#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G6#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H6#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A7#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B7#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C7#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D7#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E7#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F7#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G7#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H7#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A8#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B8#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C8#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D8#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E8#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F8#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G8#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H8#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A9#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B9#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C9#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D9#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E9#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F9#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G9#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H9#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A10#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B10#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C10#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D10#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E10#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F10#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G10#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H10#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A11#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B11#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C11#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D11#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E11#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F11#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G11#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H11#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_A12#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_B12#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_C12#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_D12#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_E12#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_F12#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_G12#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_H12#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.205,
+        40.205,
+        0.0
+      ],
+      "volume": 10.0
     },
     {
       "name": "flex_deck_slot_D4",

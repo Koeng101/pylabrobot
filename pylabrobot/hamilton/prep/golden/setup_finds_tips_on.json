@@ -626,6 +626,28 @@
           ]
         },
         {
+          "name": "attached at setup (Pipettor Custom) on channel 0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "attached at setup (Pipettor Custom) on channel 1",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
           "name": "Prep_waste_rear",
           "parent": "Prep_deck",
           "kind": "RESOURCE_KIND_TRASH",
@@ -984,6 +1006,28 @@
         0.0,
         180.0
       ]
+    },
+    {
+      "name": "attached at setup (Pipettor Custom) on channel 0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "attached at setup (Pipettor Custom) on channel 1",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
     },
     {
       "name": "Prep_waste_bin",

@@ -7402,8 +7402,18 @@
           "request": "GET /runs/run-1/commands/command-39"
         }
       ],
-      "removed": [
-        "custom_tips_A1#0"
+      "resources": [
+        {
+          "name": "custom_tips_A1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            84.795,
+            81.295,
+            0.0
+          ],
+          "volume": 0.0
+        }
       ],
       "mounted": {
         "left": {
@@ -12676,6 +12686,17 @@
       "location": [
         0.0,
         0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "custom_tips_A1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        84.795,
+        81.295,
         0.0
       ],
       "volume": 0.0

@@ -379,6 +379,28 @@
       "result": null,
       "resources": [
         {
+          "name": "tips_tipspot_A1#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_B1#0",
+          "parent": "Prep_waste_block",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            2.15,
+            141.9,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
           "name": "Prep_x_arm",
           "parent": "Prep_deck",
           "kind": "RESOURCE_KIND_RESOURCE",
@@ -408,10 +430,6 @@
             -73.0
           ]
         }
-      ],
-      "removed": [
-        "tips_tipspot_A1#0",
-        "tips_tipspot_B1#0"
       ]
     }
   ],
@@ -4724,6 +4742,28 @@
         0.0,
         180.0
       ]
+    },
+    {
+      "name": "tips_tipspot_A1#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_B1#0",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        2.15,
+        141.9,
+        0.0
+      ],
+      "volume": 0.0
     },
     {
       "name": "Prep_waste_bin",

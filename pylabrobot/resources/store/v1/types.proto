@@ -351,7 +351,8 @@ message DeckSpec {
 // A stored resource refers to the model, or the inline definition, it was made from: what it is
 // (its kind, model, category, size and spec) is the model's, held once for every resource made
 // from it, and changes when the model is put again. Its name, location, rotation, identifier,
-// preferred pickup location, barcode and metadata are its own. A read answers both together.
+// preferred pickup location, barcode, metadata and display model are its own. A read answers both
+// together.
 message ResourceAttributes {
   reserved 3;
   reserved "type_name";
@@ -372,6 +373,10 @@ message ResourceAttributes {
   optional Vec3 preferred_pickup_location = 10;
   optional Barcode barcode = 11;
   google.protobuf.Struct metadata = 12;
+  // The model name it is drawn as, when that is not `model`: a Hamilton deck with an autoload
+  // fitted is drawn with the autoload's belt frame where its front panel was. What it is made
+  // from, and `model`, are unchanged. Empty: drawn as `model`.
+  string display_model = 13;
 
   // Only the ones its kind takes; the store refuses any other.
   optional ContainerSpec container = 20;
@@ -611,4 +616,15 @@ message SetVolume {
 message SetTipPresence {
   repeated ResourceRef spots = 1;
   bool present = 2;
+}
+
+// Draw a resource as another model, or, empty, as its own `model`: `display_model`.
+message SetDisplayModel {
+  ResourceRef resource = 1;
+  string display_model = 2;
+}
+
+// Delete everything a trash holds: the tips and resources dropped into it.
+message ClearTrash {
+  ResourceRef trash = 1;
 }

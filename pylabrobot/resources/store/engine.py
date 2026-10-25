@@ -59,6 +59,8 @@ VOLUME_TOLERANCE = 1e-6
 _LID_UNDERSIZE_TOLERANCE = 1.0
 # Resources standing on a Hamilton deck that take no part in its collision check.
 _DECK_PARTS = frozenset({"autoload_sled", "autoload_loading_tray"})
+# What a carrier takes, as PLR's `Carrier` has it: its sites and carriers.
+_CARRIER_CHILD_KINDS = g.HOLDER_KINDS | {K.RESOURCE_KIND_CARRIER}
 
 
 def _now() -> Timestamp:
@@ -81,11 +83,13 @@ class _Snapshot:
 
 @dataclass
 class _Reattach:
-  """Where a resource hung: its parent (None for a root) and its place among the children."""
+  """Where a resource hung: its parent (None for a root, or for one just created and not yet
+  anywhere) and its place among the children."""
 
   node: Node
   parent: Optional[Node]
   index: int
+  loose: bool = False
 
 
 @dataclass
@@ -347,8 +351,9 @@ class Engine:
     """Take a resource out of its parent, to be a root of its own."""
     parent = node.parent
     if parent is None:
-      self.roots.pop(node.name, None)
-      self._names.pop(node.id, None)
+      if self.roots.get(node.name) is node:
+        del self.roots[node.name]
+        self._names.pop(node.id, None)
       return
     root = parent.root()
     self._unindex_names(node, root)
@@ -380,7 +385,8 @@ class Engine:
     """Move a resource to `parent` at `location`, or make it a root with no location."""
     old_parent = node.parent
     old_index = old_parent.children.index(node) if old_parent is not None else 0
-    step = _Reattach(node, old_parent, old_index)
+    loose = old_parent is None and self.roots.get(node.name) is not node
+    step = _Reattach(node, old_parent, old_index, loose)
     steps.append(step)
     self._journal.append(step)
     self._snapshot(node, steps)
@@ -395,13 +401,14 @@ class Engine:
     for each in node.walk():
       self._touch(each)
 
-  def _create(self, node: Node, parent: Optional[Node], steps: List[Step]) -> None:
-    """Give a new tree ids and put it in the store."""
+  def _create(self, node: Node, as_root: bool, steps: List[Step]) -> None:
+    """Give a new tree ids and put it in the store: as a root, or nowhere yet, to be moved."""
     for each in node.walk():
       each.id = uuid.uuid4().bytes
       self.nodes[each.id] = each
       self._created[each.id] = each
-    self._attach(node, parent, None)
+    if as_root:
+      self._attach(node, None, None)
     step = _Created(node)
     steps.append(step)
     self._journal.append(step)
@@ -439,7 +446,8 @@ class Engine:
         self._touch(step.node)
       elif isinstance(step, _Reattach):
         self._detach(step.node)
-        self._attach(step.node, step.parent, step.index)
+        if not step.loose:
+          self._attach(step.node, step.parent, step.index)
         for each in step.node.walk():
           self._touch(each)
       elif isinstance(step, _Created):
@@ -688,6 +696,10 @@ class Engine:
     asked. A resource made from a model refers to the model's parts; one made from a definition
     has parts of its own.
 
+    A resource created into a parent is made in the parent's tree: its names must be free there,
+    and a root of the same name elsewhere does not matter. One created as a root must not share
+    its name with another root.
+
     Raises:
       StoreError: An unknown model, a definition refused, a name already taken, or an assignment
         refused.
@@ -704,10 +716,10 @@ class Engine:
       raise StoreError(
         pb.PROBLEM_NAME_CONFLICT, f"'{duplicate}' appears twice in '{name}'", duplicate
       )
-    if name in self.roots:
-      raise StoreError(pb.PROBLEM_NAME_CONFLICT, f"a root named '{name}' exists", name)
+    parent = self.resolve(request.assign.parent) if request.HasField("assign") else None
+    self.check_names_fit(node, parent)
     steps: List[Step] = []
-    self._create(node, None, steps)
+    self._create(node, parent is None, steps)
     if request.HasField("assign"):
       assign = pb.AssignChild()
       assign.CopyFrom(request.assign)
@@ -716,28 +728,46 @@ class Engine:
     return node
 
   def delete(self, node: Node, tokens: Sequence[bytes]) -> None:
+    """Take a resource and everything under it out of the store.
+
+    Raises:
+      StoreError: Its root is locked, or it is in a stack growing in z, under the top item.
+    """
     self.check_locks([node], tokens)
+    check_stack_top(node, "be deleted")
     self.remove(node, [])
 
   def check_names_fit(self, node: Node, parent: Optional[Node]) -> None:
-    """Refuse a move that would give a tree two resources of one name.
+    """Refuse a move that would give a tree two resources of one name, or the store two roots of
+    one name: a root is found by its name alone.
 
     Raises:
-      StoreError: A name in `node`'s subtree is already used in `parent`'s tree, or among roots.
+      StoreError: A name in `node`'s subtree is already used in `parent`'s tree, or, with no
+        parent, another root has `node`'s name.
     """
     if parent is None:
       other = self.roots.get(node.name)
       if other is not None and other is not node:
-        raise StoreError(pb.PROBLEM_NAME_CONFLICT, f"a root named '{node.name}' exists", node.name)
+        raise StoreError(
+          pb.PROBLEM_NAME_CONFLICT,
+          f"'{node.name}' cannot be a root: root names are unique in the store, and a root named "
+          f"'{node.name}' exists",
+          node.name,
+        )
       return
     root = parent.root()
     if node.root() is root:
       return
     names = self._names.get(root.id, {})
     for each in node.walk():
-      if each.name in names:
+      held = names.get(each.name)
+      if held is not None:
+        trash = next((a for a in _ancestors(held) if a.kind == K.RESOURCE_KIND_TRASH), None)
+        where = f" (in trash '{trash.name}': clearing it deletes it)" if trash is not None else ""
         raise StoreError(
-          pb.PROBLEM_NAME_CONFLICT, f"'{root.name}' already holds a '{each.name}'", each.name
+          pb.PROBLEM_NAME_CONFLICT,
+          f"'{root.name}' already holds a '{each.name}'{where}",
+          each.name,
         )
 
   def check_assignment(self, child: Node, parent: Node) -> None:
@@ -753,13 +783,36 @@ class Engine:
         f"'{child.name}' cannot go into '{parent.name}', which it holds",
         child.name,
       )
+    if child.parent is not parent:
+      check_stack_top(child, "be taken out")
+    if _z_stack(parent.parent):
+      check_stack_top(parent, "be assigned onto")
+    others = [c for c in parent.children if c is not child]
+    if parent.kind == K.RESOURCE_KIND_CARRIER and child.kind not in _CARRIER_CHILD_KINDS:
+      raise StoreError(
+        pb.PROBLEM_WRONG_KIND,
+        f"carrier '{parent.name}' takes only resource holders and carriers, not '{child.name}'",
+        child.name,
+      )
+    if parent.kind == K.RESOURCE_KIND_PETRI_DISH_HOLDER:
+      if child.kind != K.RESOURCE_KIND_PETRI_DISH:
+        raise StoreError(
+          pb.PROBLEM_WRONG_KIND,
+          f"only a petri dish goes into petri dish holder '{parent.name}'",
+          child.name,
+        )
+      if others:
+        raise StoreError(
+          pb.PROBLEM_CANNOT_DROP_HERE,
+          f"petri dish holder '{parent.name}' already holds '{others[0].name}'",
+          child.name,
+        )
     holder = parent.facts.holder
     if parent.kind in g.HOLDER_KINDS or holder.accepts or holder.capacity:
       if holder.accepts and child.kind not in holder.accepts:
         raise StoreError(
           pb.PROBLEM_CANNOT_DROP_HERE, f"'{parent.name}' does not take '{child.name}'", child.name
         )
-      others = [c for c in parent.children if c is not child]
       if holder.capacity and len(others) >= holder.capacity:
         raise StoreError(
           pb.PROBLEM_CANNOT_DROP_HERE,
@@ -782,10 +835,17 @@ class Engine:
             f"plate holder '{parent.name}' takes only a stack of plates growing in z",
             child.name,
           )
-    if parent.kind == K.RESOURCE_KIND_PLATE_ADAPTER and child.kind != K.RESOURCE_KIND_PLATE:
-      raise StoreError(
-        pb.PROBLEM_WRONG_KIND, f"only plates go onto plate adapter '{parent.name}'", child.name
-      )
+    if parent.kind == K.RESOURCE_KIND_PLATE_ADAPTER:
+      if child.kind != K.RESOURCE_KIND_PLATE:
+        raise StoreError(
+          pb.PROBLEM_WRONG_KIND, f"only plates go onto plate adapter '{parent.name}'", child.name
+        )
+      if others:
+        raise StoreError(
+          pb.PROBLEM_CANNOT_DROP_HERE,
+          f"plate adapter '{parent.name}' already holds '{others[0].name}'",
+          child.name,
+        )
     if parent.kind == K.RESOURCE_KIND_TIP_SPOT and child.kind == K.RESOURCE_KIND_TIP:
       held = next((c for c in parent.children if c.kind == K.RESOURCE_KIND_TIP), None)
       if held is not None and held is not child:
@@ -794,7 +854,12 @@ class Engine:
       held = next((c for c in parent.children if c.kind in g.TOOL_KINDS), None)
       if held is not None and held is not child:
         raise StoreError(pb.PROBLEM_HAS_TIP, f"'{parent.name}' already carries a tool", child.name)
-    if parent.kind in g.LIDDABLE_KINDS and child.kind == K.RESOURCE_KIND_LID:
+    # A lid thrown into a trash does not cover it.
+    if (
+      parent.kind in g.LIDDABLE_KINDS
+      and parent.kind != K.RESOURCE_KIND_TRASH
+      and child.kind == K.RESOURCE_KIND_LID
+    ):
       lid = g.lid_of(parent)
       if lid is not None and lid is not child:
         raise StoreError(pb.PROBLEM_LID_ON, f"'{parent.name}' already has a lid", child.name)
@@ -942,16 +1007,7 @@ class Engine:
     if parent is None:
       return
     self.check_locks([node], tokens)
-    if (
-      parent.kind == K.RESOURCE_KIND_RESOURCE_STACK
-      and parent.facts.stack.direction == pb.STACK_DIRECTION_Z
-      and parent.children[-1] is not node
-    ):
-      raise StoreError(
-        pb.PROBLEM_CANNOT_DROP_HERE,
-        f"'{node.name}' is not the top of stack '{parent.name}'",
-        node.name,
-      )
+    check_stack_top(node, "be taken out")
     self.check_names_fit(node, None)
     self.move(node, None, None, None, steps)
 
@@ -1029,7 +1085,7 @@ class Engine:
     tip = instantiate(spot.part.tip(), f"{spot.name}#{made}")
     tip.state.volume.CopyFrom(pb.VolumeState(tracking_enabled=True))
     self.set_attributes(spot, steps, lambda: _set_tips_made(spot, made + 1))
-    self._create(tip, None, steps)
+    self._create(tip, False, steps)
     return tip
 
   def set_tip_presence(self, request: pb.SetTipPresence, steps: List[Step]) -> None:
@@ -1078,6 +1134,21 @@ class Engine:
 
     self.set_attributes(node, steps, apply)
 
+  def set_display_model(self, request: pb.SetDisplayModel, steps: List[Step]) -> None:
+    node = self.resolve(request.resource)
+    self.set_attributes(node, steps, partial(_set_display_model, node, request.display_model))
+
+  def clear_trash(self, trash: Node, steps: List[Step]) -> None:
+    """Delete everything a trash holds.
+
+    Raises:
+      StoreError: It is not a trash.
+    """
+    if trash.kind != K.RESOURCE_KIND_TRASH:
+      raise StoreError(pb.PROBLEM_WRONG_KIND, f"'{trash.name}' is not a trash", trash.name)
+    for held in list(trash.children):
+      self.remove(held, steps)
+
   def set_jaw_width(self, gripper: Node, width: float, steps: List[Step]) -> None:
     if gripper.kind != K.RESOURCE_KIND_MECHANICAL_GRIPPER:
       raise StoreError(pb.PROBLEM_WRONG_KIND, f"'{gripper.name}' has no jaws", gripper.name)
@@ -1109,6 +1180,13 @@ class Engine:
     if which == "preferred_pickup_location":
       self.set_preferred_pickup_location(update.preferred_pickup_location, steps)
       return [self.resolve(update.preferred_pickup_location.resource)]
+    if which == "display_model":
+      self.set_display_model(update.display_model, steps)
+      return [self.resolve(update.display_model.resource)]
+    if which == "clear_trash":
+      trash = self.resolve(update.clear_trash.trash)
+      self.clear_trash(trash, steps)
+      return [trash]
     raise StoreError(pb.PROBLEM_UNSPECIFIED, "an empty update")
 
   def touched_by(self, update: spb.ResourceUpdate) -> List[Node]:
@@ -1128,6 +1206,10 @@ class Engine:
       return [self.resolve(ref) for ref in update.tip_presence.spots]
     if which == "preferred_pickup_location":
       return [self.resolve(update.preferred_pickup_location.resource)]
+    if which == "display_model":
+      return [self.resolve(update.display_model.resource)]
+    if which == "clear_trash":
+      return [self.resolve(update.clear_trash.trash)]
     return []
 
   # -- reading -----------------------------------------------------------------------------------
@@ -1177,7 +1259,7 @@ class Engine:
       elif isinstance(step, _Reattach):
         node = mapped(step.node)
         assert node is not None
-        translated.append(_Reattach(node, mapped(step.parent), step.index))
+        translated.append(_Reattach(node, mapped(step.parent), step.index, step.loose))
       elif isinstance(step, _Created):
         node = mapped(step.node)
         assert node is not None
@@ -1402,6 +1484,10 @@ def _set_location(node: Node, location: Coordinate) -> None:
   node.own.location.CopyFrom(to_vec3(location))
 
 
+def _set_display_model(node: Node, display_model: str) -> None:
+  node.own.display_model = display_model
+
+
 def _set_volume_tracking(node: Node, enabled: bool) -> None:
   node.state.volume.tracking_enabled = enabled
 
@@ -1466,6 +1552,41 @@ def _issue(error: StoreError, item: int, node: Optional[Node] = None) -> pb.Issu
     resource_id=node.id if node is not None else b"",
     item=item,
   )
+
+
+def _ancestors(node: Node) -> Iterable[Node]:
+  """What a resource hangs from, its parent first."""
+  current = node.parent
+  while current is not None:
+    yield current
+    current = current.parent
+
+
+def _z_stack(node: Optional[Node]) -> bool:
+  return (
+    node is not None
+    and node.kind == K.RESOURCE_KIND_RESOURCE_STACK
+    and node.facts.stack.direction == pb.STACK_DIRECTION_Z
+  )
+
+
+def check_stack_top(node: Node, doing: str) -> None:
+  """Refuse to change an item of a stack growing in z other than its top one.
+
+  Args:
+    node: The item.
+    doing: What would be done to it, as "be taken out" or "be deleted".
+
+  Raises:
+    StoreError: `node` is in a stack growing in z, under its top item.
+  """
+  stack = node.parent
+  if stack is not None and _z_stack(stack) and stack.children[-1] is not node:
+    raise StoreError(
+      pb.PROBLEM_CANNOT_DROP_HERE,
+      f"'{node.name}' is not the top of stack '{stack.name}': only the top item can {doing}",
+      node.name,
+    )
 
 
 def _same_placement(own: pb.ResourceAttributes, start: pb.ResourceAttributes) -> bool:

@@ -5626,8 +5626,18 @@
           "request": "GET /runs/run-1/commands/command-54"
         }
       ],
-      "removed": [
-        "tips_B1#0"
+      "resources": [
+        {
+          "name": "tips_B1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.21,
+            40.21,
+            0.0
+          ],
+          "volume": 20.0
+        }
       ],
       "mounted": {
         "left/1": {}
@@ -5977,8 +5987,18 @@
           "request": "GET /runs/run-1"
         }
       ],
-      "removed": [
-        "tips_D1#0"
+      "resources": [
+        {
+          "name": "tips_D1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            61.21,
+            40.21,
+            0.0
+          ],
+          "volume": 0.0
+        }
       ],
       "mounted": {}
     }
@@ -9191,6 +9211,28 @@
       "location": [
         0.0,
         0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_B1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.21,
+        40.21,
+        0.0
+      ],
+      "volume": 20.0
+    },
+    {
+      "name": "tips_D1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        61.21,
+        40.21,
         0.0
       ],
       "volume": 0.0

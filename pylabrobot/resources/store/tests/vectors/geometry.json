@@ -1752,10 +1752,6 @@
 {"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 114.24, "z": 185.62}, "resource": "plate"},
 {"distanceFromTop": 4.0, "gripHeight": 10.3, "gripLocation": {"x": 167.88, "y": 210.055, "z": 194.53}, "resource": "lidded_plate"},
 {"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 210.055, "z": 186.73}, "resource": "lidded_plate"},
-{"distanceFromTop": 4.0, "gripHeight": 10.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 196.65}, "resource": "stacked_1"},
-{"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 188.65}, "resource": "stacked_1"},
-{"distanceFromTop": 4.0, "gripHeight": 10.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 200.65}, "resource": "stacked_2"},
-{"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 192.65}, "resource": "stacked_2"},
 {"distanceFromTop": 4.0, "gripHeight": 10.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 204.65}, "resource": "stacked_3"},
 {"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 196.65}, "resource": "stacked_3"},
 {"distanceFromTop": 4.0, "gripHeight": 19.24, "gripLocation": {"x": 167.893, "y": 402.428, "z": 205.39}, "resource": "pcr_plate"},
@@ -1765,7 +1761,9 @@
 {"distanceFromTop": 4.0, "gripHeight": 16.0, "gripLocation": {"x": 324.9, "y": 210.3, "z": 224.95}, "resource": "tips_partial"},
 {"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 324.9, "y": 210.3, "z": 211.45}, "resource": "tips_partial"},
 {"distanceFromTop": 4.0, "gripHeight": 10.2, "gripLocation": {"x": 685.38, "y": 113.74, "z": 188.2}, "resource": "mfx_plate"},
-{"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 685.38, "y": 113.74, "z": 180.5}, "resource": "mfx_plate"}
+{"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 685.38, "y": 113.74, "z": 180.5}, "resource": "mfx_plate"},
+{"distanceFromTop": 4.0, "gripHeight": 51.0, "gripLocation": {"x": 685.0, "y": 306.5, "z": 196.0}, "resource": "ntr_2"},
+{"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 685.0, "y": 306.5, "z": 147.5}, "resource": "ntr_2"}
 ],
 "occupancy": [
 {"exclude": ["plate_well_G1"], "found": "plate", "location": {"x": 114.87, "y": 88.27, "z": 186.15}},
@@ -3058,10 +3056,6 @@
 {"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 114.24, "z": 185.62}, "resource": "plate"},
 {"distanceFromTop": 4.0, "gripHeight": 10.3, "gripLocation": {"x": 167.88, "y": 210.055, "z": 194.53}, "resource": "lidded_plate"},
 {"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 210.055, "z": 186.73}, "resource": "lidded_plate"},
-{"distanceFromTop": 4.0, "gripHeight": 10.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 196.65}, "resource": "stacked_1"},
-{"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 188.65}, "resource": "stacked_1"},
-{"distanceFromTop": 4.0, "gripHeight": 10.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 200.65}, "resource": "stacked_2"},
-{"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 192.65}, "resource": "stacked_2"},
 {"distanceFromTop": 4.0, "gripHeight": 10.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 204.65}, "resource": "stacked_3"},
 {"distanceFromBottom": 2.5, "gripHeight": 2.5, "gripLocation": {"x": 167.88, "y": 306.24, "z": 196.65}, "resource": "stacked_3"},
 {"distanceFromTop": 4.0, "gripHeight": 19.24, "gripLocation": {"x": 167.893, "y": 402.428, "z": 205.39}, "resource": "pcr_plate"},

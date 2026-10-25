@@ -2266,8 +2266,18 @@
           "request": "GET /runs/run-1/commands/command-8"
         }
       ],
-      "removed": [
-        "tips_A1#0"
+      "resources": [
+        {
+          "name": "tips_A1#0",
+          "parent": "trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            84.795,
+            81.295,
+            0.0
+          ],
+          "volume": 0.0
+        }
       ],
       "mounted": {
         "right": {
@@ -4459,6 +4469,17 @@
       "location": [
         0.0,
         0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_A1#0",
+      "parent": "trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        84.795,
+        81.295,
         0.0
       ],
       "volume": 0.0
