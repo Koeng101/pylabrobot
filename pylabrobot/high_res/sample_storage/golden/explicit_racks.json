@@ -14,7 +14,7 @@
           "data": {
             "resource": {
               "name": "stacker",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -24,14 +24,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -48,7 +48,7 @@
           "data": {
             "resource": {
               "name": "out_of_order",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "rotation": {
                 "x": 0,
                 "y": 0,
@@ -57,14 +57,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
