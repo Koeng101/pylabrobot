@@ -84,12 +84,6 @@ class STARRecorder(recording.Recorder):
 
     async def answered(module: str, command: str, **kwargs: Any) -> Any:
       result = await answer(module, command, **kwargs)
-      if (module, command) == ("C0", "TR"):
-        # `tips_mounted` stands for a tip the device holds that the model does not; a `fail` hook
-        # sets it for the channels a failed pick-up left holding one. A drop lets them go.
-        for channel, involved in enumerate(kwargs.get("tm", [])):
-          if int(involved):
-            self.driver.tips_mounted[channel] = False
       for rule in self._rules:
         if rule["times"] == 0 or (module, command) != (rule["module"], rule["command"]):
           continue

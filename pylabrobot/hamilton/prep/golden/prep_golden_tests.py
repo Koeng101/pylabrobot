@@ -17,22 +17,16 @@ from __future__ import annotations
 import asyncio
 import pathlib
 import unittest
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Type
 
 from pylabrobot.hamilton.prep import Prep, PrepDevice, PrepSimulationDriver
 from pylabrobot.hamilton.prep.driver import prep_commands as PrepCmd
 from pylabrobot.hamilton.prep.driver.features.head8 import Head8
 from pylabrobot.hamilton.prep.driver.features.pipettes import Pipettes
 from pylabrobot.hamilton.prep.driver.master import _ResolvedPrepCommand
-from pylabrobot.hamilton.prep.driver.simulator import (
-  FIRMWARE_TREE_V1_2_2,
-  RECORDING_PREP,
-  _DeviceRefuses,
-)
+from pylabrobot.hamilton.prep.driver.simulator import FIRMWARE_TREE_V1_2_2, RECORDING_PREP
 from pylabrobot.hamilton.transport.tcp.hoi_error import HoiError
-from pylabrobot.hamilton.transport.tcp.messages import HoiParams
 from pylabrobot.hamilton.transport.tcp.packets import Address
-from pylabrobot.hamilton.transport.tcp.wire_types import U32, Struct
 from pylabrobot.legacy.liquid_handling.errors import ChannelizedError
 from pylabrobot.lib.liquid_handling.mix import Mix
 from pylabrobot.resources.coordinate import Coordinate
@@ -176,86 +170,6 @@ def _tip_definition(model: str, is_tool: bool = False) -> PrepCmd.TipDefinition:
   )
 
 
-def _refuse(
-  driver: PrepSimulationDriver,
-  command: Union[Type[Any], Tuple[Type[Any], ...]],
-  entries: Callable[[], str],
-  times: int = 1,
-) -> None:
-  """Have the simulated device refuse the next `times` commands of type `command` (or of any of
-  the types it gives) with `entries`.
-
-  Each entry is `module.node.object:interface,action,result`, as the device sends them; several are
-  joined by `;`.
-  """
-  answer = driver._answer
-  left = [times]
-
-  async def refusing(request: Any, path: str, method: str) -> Any:
-    if isinstance(request, command) and left[0] > 0:
-      left[0] -= 1
-      raise _DeviceRefuses(entries())
-    return await answer(request, path, method)
-
-  driver._answer = refusing  # type: ignore[method-assign]
-
-
-def _find_liquid(driver: PrepSimulationDriver, above_floor: float) -> None:
-  """Have every capacitive Z search find liquid `above_floor` mm above the modelled cavity bottom.
-
-  A search is sent to end 1 mm under that bottom. The model moves nowhere for it.
-  """
-  answer = driver._answer
-
-  async def finding(request: Any, path: str, method: str) -> Any:
-    if isinstance(request, PrepCmd.PrepZAxisSeekCapacitiveLld):
-      return (
-        PrepCmd.PrepZAxisSeekCapacitiveLld.Response(
-          lld_detected=True, detect_position=request.position + 1.0 + above_floor
-        ),
-        "liquid found",
-      )
-    return await answer(request, path, method)
-
-  driver._answer = finding  # type: ignore[method-assign]
-
-
-def _device_holds(
-  driver: PrepSimulationDriver,
-  channels: List[int],
-  definition: PrepCmd.TipDefinition,
-  until: Type[Any],
-  plate_until: Optional[Type[Any]] = None,
-) -> None:
-  """Have the simulated device sense something on `channels` that the model does not hold, as one
-  left holding it by an earlier session does, until it is sent an `until` command.
-
-  The simulator answers from the model alone, so this answers the sleeve sensors and the tip
-  definition for it. With `plate_until`, it also records a plate gripped until that command.
-  """
-  answer = driver._answer
-  held = [True, plate_until is not None]
-
-  async def holding(request: Any, path: str, method: str) -> Any:
-    if isinstance(request, until):
-      held[0] = False
-    if plate_until is not None and isinstance(request, plate_until):
-      held[1] = False
-    if held[0] and isinstance(request, PrepCmd.PrepProbeRequest) and method == "GetTipPresent":
-      channel = driver.tree.channel_of(request.dest)
-      return HoiParams().add(int(channel in channels), U32), "held from before"
-    if held[0] and (
-      isinstance(request, PrepCmd.PrepGetTipDefinitionHeld)
-      or (isinstance(request, PrepCmd.PrepProbeRequest) and method == "GetTipDefinitionHeld")
-    ):
-      return HoiParams().add(definition, Struct()), "held from before"
-    if held[1] and isinstance(request, PrepCmd.PrepGetPlateHeld):
-      return PrepCmd.PrepGetPlateHeld.Response(value=True), "held from before"
-    return await answer(request, path, method)
-
-  driver._answer = holding  # type: ignore[method-assign]
-
-
 def _channel_node(driver: PrepSimulationDriver, channel: int) -> int:
   """The firmware node a channel's Z drive answers from."""
   assert driver.pipettes is not None
@@ -363,8 +277,7 @@ class PrepGoldenTests(unittest.TestCase):
       p = prep.pipettes
       assert p is not None
       # Channel 1's node answers 0x0F08, "a tip is not held".
-      _refuse(
-        driver,
+      driver.refuse(
         PrepCmd.PrepPickUpTips,
         lambda: f"0x0001.0x{_channel_node(driver, 1):04X}.0x0100:0x01,0x0009,0x0F08",
       )
@@ -378,7 +291,7 @@ class PrepGoldenTests(unittest.TestCase):
         lambda: p.pick_up_tips(tips["C1"], use_channels=[1]),
       )
       # The first entry answers for the first channel dropping: channel 0.
-      _refuse(driver, PrepCmd.PrepDropTips, lambda: "0xE000.0x0001.0x1000:0x01,0x000C,0x0F03")
+      driver.refuse(PrepCmd.PrepDropTips, lambda: "0xE000.0x0001.0x1000:0x01,0x000C,0x0F03")
       await run.step(
         "pipettes.drop_tips(tips['A1', 'C1'], use_channels=[0, 1]), channel 0 refused",
         lambda: p.drop_tips(tips["A1", "C1"], use_channels=[0, 1]),
@@ -458,8 +371,7 @@ class PrepGoldenTests(unittest.TestCase):
         lambda: p.pick_up_tips(tips["A1", "B1"], use_channels=[0, 1]),
       )
       # The first entry answers for the first channel aspirating: channel 0.
-      _refuse(
-        driver,
+      driver.refuse(
         tuple(Pipettes._ASPIRATE_CMD.values()),
         lambda: "0xE000.0x0001.0x1000:0x01,0x0019,0x0F43",
       )
@@ -473,8 +385,7 @@ class PrepGoldenTests(unittest.TestCase):
         "pipettes.aspirate(source['A1'], volumes=[40], use_channels=[0])",
         lambda: p.aspirate(source["A1"], volumes=[40.0], use_channels=[0]),
       )
-      _refuse(
-        driver,
+      driver.refuse(
         tuple(Pipettes._DISPENSE_CMD.values()),
         lambda: "0xE000.0x0001.0x1000:0x01,0x001A,0x0F43",
       )
@@ -510,7 +421,7 @@ class PrepGoldenTests(unittest.TestCase):
       assert isinstance(driver, PrepSimulationDriver)
       p = prep.pipettes
       assert p is not None
-      _find_liquid(driver, above_floor=5.0)
+      driver.find_liquid(above_floor=5.0)
       await run.step(
         "pipettes.pick_up_tips(tips['A1', 'B1'], use_channels=[0, 1])",
         lambda: p.pick_up_tips(tips["A1", "B1"], use_channels=[0, 1]),
@@ -733,14 +644,14 @@ class PrepGoldenTests(unittest.TestCase):
       assert head is not None
       # Each entry answers for the probe at its place: the first is probe 0.
       refusal = "0xE001.0x0001.0x1000:0x01,0x0001,0x0F43"
-      _refuse(driver, PrepCmd.MphPickupTips, lambda: refusal)
+      driver.refuse(PrepCmd.MphPickupTips, lambda: refusal)
       await run.step(
         "head8.pick_up_tips(tips.column(0)), refused",
         lambda: head.pick_up_tips(tips[0:8]),
         raises=HoiError,
       )
       await run.step("head8.pick_up_tips(tips.column(0))", lambda: head.pick_up_tips(tips[0:8]))
-      _refuse(driver, tuple(Head8._ASPIRATE_CMD.values()), lambda: refusal)
+      driver.refuse(tuple(Head8._ASPIRATE_CMD.values()), lambda: refusal)
       await run.step(
         "head8.aspirate(source.column(0), volume=20, disable_volume_correction=True), probe 0 "
         "refused",
@@ -751,14 +662,14 @@ class PrepGoldenTests(unittest.TestCase):
         "head8.aspirate(source.column(0), volume=20, disable_volume_correction=True)",
         lambda: head.aspirate(source[0:8], volume=20.0, disable_volume_correction=True),
       )
-      _refuse(driver, tuple(Head8._DISPENSE_CMD.values()), lambda: refusal)
+      driver.refuse(tuple(Head8._DISPENSE_CMD.values()), lambda: refusal)
       await run.step(
         "head8.dispense(target.column(0), volume=20, disable_volume_correction=True), probe 0 "
         "refused",
         lambda: head.dispense(target[0:8], volume=20.0, disable_volume_correction=True),
         raises=ChannelizedError,
       )
-      _refuse(driver, PrepCmd.MphDropTips, lambda: refusal)
+      driver.refuse(PrepCmd.MphDropTips, lambda: refusal)
       await run.step(
         "head8.drop_tips(tips.column(0)), refused",
         lambda: head.drop_tips(tips[0:8]),
@@ -777,8 +688,7 @@ class PrepGoldenTests(unittest.TestCase):
     async def scenario() -> Dict[str, Any]:
       prep = Prep(simulation=True)
       assert isinstance(prep.driver, PrepSimulationDriver)
-      _device_holds(
-        prep.driver,
+      prep.driver.hold_from_before(
         channels=[0, 1],
         definition=_tip_definition("hamilton_tip_300uL"),
         until=PrepCmd.PrepDropTips,
@@ -800,8 +710,7 @@ class PrepGoldenTests(unittest.TestCase):
       # It was set up and gripping before this session: it reports itself initialized.
       driver.initialized = True
       tool = PrepCmd.CO_RE_GRIPPER_TIP_PICKUP_PARAMETERS
-      _device_holds(
-        driver,
+      driver.hold_from_before(
         channels=[0, 1],
         definition=PrepCmd.TipDefinition(
           default_values=False,
@@ -836,14 +745,13 @@ class PrepGoldenTests(unittest.TestCase):
       prep = Prep(simulation=True)
       driver = prep.driver
       assert isinstance(driver, PrepSimulationDriver)
-      _device_holds(
-        driver,
+      driver.hold_from_before(
         channels=[0],
         definition=_tip_definition("hamilton_tip_300uL"),
         until=PrepCmd.PrepReleaseTips,
       )
       # The Pipettor forgets what it holds across a power cycle and refuses to drop it.
-      _refuse(driver, PrepCmd.PrepDropTips, lambda: "0xE000.0x0001.0x1000:0x01,0x000C,0x0F03")
+      driver.refuse(PrepCmd.PrepDropTips, lambda: "0xE000.0x0001.0x1000:0x01,0x000C,0x0F03")
       run = await _Recording.start(prep)
       await run.step("setup(), a tip on channel 0 the device will not drop", prep.setup)
       return run.record()

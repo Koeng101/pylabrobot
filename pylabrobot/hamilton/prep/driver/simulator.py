@@ -22,7 +22,20 @@ import json
 import logging
 import math
 import os
-from typing import Any, Dict, List, Optional, Set, Tuple, cast, get_type_hints
+from typing import (
+  Any,
+  Awaitable,
+  Callable,
+  Dict,
+  List,
+  Optional,
+  Set,
+  Tuple,
+  Type,
+  Union,
+  cast,
+  get_type_hints,
+)
 
 from pylabrobot.hamilton.liquid_class_resolver import LiquidClassLookup
 from pylabrobot.hamilton.transport.tcp.commands import TCPCommand
@@ -397,6 +410,11 @@ class _DeviceRefuses(Exception):
     self.entries = entries
 
 
+# An answer given ahead of the model's: given the request, its path and method, the answer, or None
+# to leave it to the model.
+_ScriptedAnswer = Callable[[TCPCommand, str, str], Awaitable[Optional[Tuple[Any, str]]]]
+
+
 class _Simulated:
   """Reaches the device behind a feature, which for a simulated one is the simulator."""
 
@@ -567,9 +585,15 @@ class SimulatedPipettes(_Simulated, Pipettes):
     ]
     if not candidates:
       return []
+    # Every corner, so a resource turned on the deck is boxed where it stands rather than from its
+    # origin, which a turn leaves at another corner of its box.
+    corners = [handles.anchor(x, y, z) for x in "lr" for y in "fb" for z in "bt"]
     response = await deck.store.commands.resolve_geometry(
       spb.ResolveGeometryRequest(
-        queries=[spb.GeometryQuery(resource=ref(n.id), frame=ref(deck.id)) for n in candidates]
+        queries=[
+          spb.GeometryQuery(resource=ref(n.id), frame=ref(deck.id), anchors=corners)
+          for n in candidates
+        ]
       )
     )
     boxes = []
@@ -579,8 +603,12 @@ class SimulatedPipettes(_Simulated, Pipettes):
       size = to_coordinate(geometry.absolute_size)
       if min(size.x, size.y, size.z) <= 0:
         continue
-      low = to_coordinate(geometry.locations[0])
-      boxes.append((node.attributes.name, low, low + size))
+      points = [to_coordinate(point) for point in geometry.locations]
+      low = Coordinate(min(p.x for p in points), min(p.y for p in points), min(p.z for p in points))
+      high = Coordinate(
+        max(p.x for p in points), max(p.y for p in points), max(p.z for p in points)
+      )
+      boxes.append((node.attributes.name, low, high))
     return boxes
 
   async def _bottom_offset(self, channel: int) -> float:
@@ -1438,6 +1466,9 @@ class PrepSimulationDriver(PrepDriver):
     self.simulated_default_minimum_traverse_height = default_minimum_traverse_height
     self.simulate_motion_time = simulate_motion_time
     self.motion_time_scale = motion_time_scale
+    # Answers given ahead of the model's, latest first: what `refuse`, `find_liquid` and
+    # `hold_from_before` have the device do. Each answers a request or passes it on with None.
+    self._scripted: List[_ScriptedAnswer] = []
 
     # The features this device has, each answering for itself. Setup builds only the ones that are
     # not already there, so these stand in for the real ones throughout.
@@ -1496,13 +1527,104 @@ class PrepSimulationDriver(PrepDriver):
     pipettes = self.pipettes
     return self.head8_location_in(None if pipettes is None else await pipettes._read_arm())
 
+  def refuse(
+    self,
+    command: Union[Type[Any], Tuple[Type[Any], ...]],
+    entries: Callable[[], str],
+    times: int = 1,
+  ) -> None:
+    """Have the device refuse the next `times` commands of type `command`, or of any of the types it
+    gives, with its exception `entries`.
+
+    Args:
+      command: the command type, or types, refused.
+      entries: makes the exception's entries when one is refused, each
+        `module.node.object:interface,action,result` as the device sends them, joined by `;`.
+      times: how many to refuse.
+    """
+    left = [times]
+
+    async def refusing(request: TCPCommand, path: str, method: str) -> Optional[Tuple[Any, str]]:
+      if isinstance(request, command) and left[0] > 0:
+        left[0] -= 1
+        raise _DeviceRefuses(entries())
+      return None
+
+    self._scripted.insert(0, refusing)
+
+  def find_liquid(self, above_floor: float) -> None:
+    """Have every capacitive Z search find liquid `above_floor` mm above the modelled cavity bottom.
+
+    A search is sent to end 1 mm under that bottom. The model moves nowhere for it.
+
+    Args:
+      above_floor: how far above the cavity bottom the surface is found, in mm.
+    """
+
+    async def finding(request: TCPCommand, path: str, method: str) -> Optional[Tuple[Any, str]]:
+      if isinstance(request, PrepCmd.PrepZAxisSeekCapacitiveLld):
+        return (
+          PrepCmd.PrepZAxisSeekCapacitiveLld.Response(
+            lld_detected=True, detect_position=request.position + 1.0 + above_floor
+          ),
+          "liquid found",
+        )
+      return None
+
+    self._scripted.insert(0, finding)
+
+  def hold_from_before(
+    self,
+    channels: List[int],
+    definition: PrepCmd.TipDefinition,
+    until: Type[Any],
+    plate_until: Optional[Type[Any]] = None,
+  ) -> None:
+    """Have the device sense something on `channels` that the model does not hold, as one left
+    holding it by an earlier session does, until it is sent an `until` command.
+
+    The sleeve sensors and the held tip definition answer for it. With `plate_until`, the device
+    also records a plate gripped until that command.
+
+    Args:
+      channels: the channels holding it, 0-indexed from the back.
+      definition: the tip definition the device reports held.
+      until: the command type that lets go of it.
+      plate_until: the command type that lets go of the plate; None records none.
+    """
+    held = [True, plate_until is not None]
+
+    async def holding(request: TCPCommand, path: str, method: str) -> Optional[Tuple[Any, str]]:
+      if isinstance(request, until):
+        held[0] = False
+      if plate_until is not None and isinstance(request, plate_until):
+        held[1] = False
+      if held[0] and isinstance(request, PrepCmd.PrepProbeRequest) and method == "GetTipPresent":
+        channel = self.tree.channel_of(request.dest)
+        return HoiParams().add(int(channel in channels), U32), "held from before"
+      if held[0] and (
+        isinstance(request, PrepCmd.PrepGetTipDefinitionHeld)
+        or (isinstance(request, PrepCmd.PrepProbeRequest) and method == "GetTipDefinitionHeld")
+      ):
+        return HoiParams().add(definition, Struct()), "held from before"
+      if held[1] and isinstance(request, PrepCmd.PrepGetPlateHeld):
+        return PrepCmd.PrepGetPlateHeld.Response(value=True), "held from before"
+      return None
+
+    self._scripted.insert(0, holding)
+
   async def _answer(self, request: TCPCommand, path: str, method: str) -> Optional[Tuple[Any, str]]:
     """What the device would answer, asked of the feature the command is about.
 
     Each feature answers for its own model, so the logic stays where the model is; this only decides
-    who is asked, and answers what the device itself holds. Keeping time, a move is recorded first
-    and then waited out, so whatever watches the model sees it for as long as the device takes.
+    who is asked, and answers what the device itself holds. What `refuse`, `find_liquid` and
+    `hold_from_before` have it do is answered first. Keeping time, a move is recorded first and then
+    waited out, so whatever watches the model sees it for as long as the device takes.
     """
+    for scripted in list(self._scripted):
+      answered = await scripted(request, path, method)
+      if answered is not None:
+        return answered
     before = await self._where_everything_is() if self.simulate_motion_time else None
     answered = None
     for feature in (self.head8, self.pipettes, self.x_arm, self.hs):

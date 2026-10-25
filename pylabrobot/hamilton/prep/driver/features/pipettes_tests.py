@@ -34,7 +34,6 @@ from pylabrobot.hamilton.prep.driver.simulator import (
   SIMULATED_X_SPEED,
   SIMULATED_Y_DRIVE_OFFSETS,
   SIMULATED_Z_DRIVE_OFFSETS,
-  _DeviceRefuses,
   _SimulatedIO,
 )
 from pylabrobot.hamilton.prep.driver.test_helpers import (
@@ -340,17 +339,11 @@ def _pick_up_refused_by(front_channel: bool):
     front = p.pipettes.channels[1].zdrive
     assert front is not None
     node = front.node if front_channel else 0x0001
-    answer = p._answer
-
-    async def refuse_pick_up(request, path, method):
-      if isinstance(request, PrepCmd.PrepPickUpTips):
-        raise _DeviceRefuses(f"0x0001.0x{node:04X}.0x0100:0x01,0x0009,0x0F08")
-      return await answer(request, path, method)
+    p.refuse(PrepCmd.PrepPickUpTips, lambda: f"0x0001.0x{node:04X}.0x0100:0x01,0x0009,0x0F08")
 
     spots = [tip_rack.get_tip_spot("A1"), tip_rack.get_tip_spot("B1")]
-    with patch.object(p, "_answer", refuse_pick_up):
-      with pytest.raises(ChannelizedError) as raised:
-        await p.pipettes.pick_up_tips(spots, use_channels=[0, 1])
+    with pytest.raises(ChannelizedError) as raised:
+      await p.pipettes.pick_up_tips(spots, use_channels=[0, 1])
     tips = [await p.pipettes.get_mounted_tip(ch) for ch in (0, 1)]
     await p.stop()
     return raised.value, tips

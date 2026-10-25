@@ -15,13 +15,15 @@ from pylabrobot.hamilton.prep.driver.simulator import (
   RECORDING_PREP,
   RECORDING_PREP_HEAD8,
   RECORDING_PREP_HEATER_SHAKER,
+  SimulatedPipettes,
 )
 from pylabrobot.hamilton.prep.driver.test_helpers import make_prep_deck, parts_of
 from pylabrobot.hamilton.transport.tcp.hoi_error import HoiError
 from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import build, handles
 from pylabrobot.resources.store.client import ResourceStore
-from pylabrobot.resources.store.tree import to_coordinate
+from pylabrobot.resources.store.tree import to_coordinate, to_rotation_message
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 
 
@@ -352,5 +354,26 @@ def test_named_prep_drops_tips_at_its_own_waste_positions(discard):
     assert prep.body is not None
     assert (await prep.body.get_resource("tips")).id == rack.id
     await prep.stop()
+
+  asyncio.run(_run())
+
+
+def test_a_resource_turned_on_the_deck_is_touched_where_it_stands():
+  """A box turned a quarter about z covers the deck to the left of its origin, not to the right."""
+
+  async def _run() -> None:
+    deck = await make_prep_deck()
+    p = PrepSimulationDriver(deck=deck)
+    await p.setup()
+    assert isinstance(p.pipettes, SimulatedPipettes)
+    turned = build.resource("turned", Coordinate(100, 50, 20))
+    turned.attributes.rotation.CopyFrom(to_rotation_message(Rotation(z=90)))
+    await deck.store.create(turned, name="turned", parent=deck, location=Coordinate(250, 150, 80))
+    (low, high) = next(
+      (lo, hi) for name, lo, hi in await p.pipettes._touchable() if name == "turned"
+    )
+    assert (low.x, low.y, low.z) == pytest.approx((200.0, 150.0, 80.0))
+    assert (high.x, high.y, high.z) == pytest.approx((250.0, 250.0, 100.0))
+    await p.stop()
 
   asyncio.run(_run())
