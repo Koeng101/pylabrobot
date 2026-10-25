@@ -222,7 +222,7 @@ def _below_stop_disc_of(tool: Optional[pb.ResourceNode]) -> float:
   if tool is None:
     return 0.0
   bottom = tool.attributes.location.z
-  if tool.attributes.model in resource_model.GRIP_LINE_HEIGHTS:
+  if resource_model.grips(tool.attributes):
     return -bottom - resource_model.grip_line_height(tool.attributes)
   return -bottom
 
@@ -448,12 +448,16 @@ class SimulatedPipettes(_Simulated, Pipettes):
         )
       if command in ("TP", "TR"):
         # As a device showed: a pick-up takes the pistons to 0, a drop leaves them 10 uL up; the
-        # old tip's air goes with it.
+        # old tip's air goes with it. A drop lets go of a tip the device holds that the model does
+        # not, too.
+        mounted = self.device.tips_mounted
         for index, involved in enumerate(kwargs["tm"]):
           if int(involved):
             standing = self.device.dispensing_drive_uL.get(index, 0.0)
             self.device.dispensing_drive_uL[index] = 0.0 if command == "TP" else standing + 10.0
             self.device.transport_air_uL.pop(index, None)
+            if command == "TR" and index < len(mounted):
+              mounted[index] = False
         return None
       if command == "AS":
         # The command moves the channels itself: each involved one to its Y and, at the end, its
@@ -1651,12 +1655,13 @@ class SimulatedCoreGrippers(_Simulated, CoreGrippers):
     response = await deck.store.commands.find_resources(
       spb.FindResourcesRequest(
         scope=deck.ref,
-        filter=spb.ResourceFilter(models=list(resource_model.GRIP_LINE_HEIGHTS)),
+        filter=spb.ResourceFilter(kinds=[pb.RESOURCE_KIND_HEAD_TOOL]),
       )
     )
     for node in response.nodes:
       tool = node.attributes
-      return tool.size.z - tool.head_tool.fitting_depth - resource_model.grip_line_height(tool)
+      if resource_model.grips(tool):
+        return tool.size.z - tool.head_tool.fitting_depth - resource_model.grip_line_height(tool)
     return 0.0
 
   async def _record_pair(

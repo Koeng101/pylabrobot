@@ -9,12 +9,16 @@ finds those parts again on a deck in a store.
 from __future__ import annotations
 
 import dataclasses
+import logging
 from typing import Dict, List, Optional, Sequence
 
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import build, handles, library
+from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
+
+logger = logging.getLogger(__name__)
 
 # What a Prep's deck is called among the store's types, so a driver knows one when it is given one.
 PREP_DECK_TYPE = "PrepDeck"
@@ -60,10 +64,9 @@ PREP_TEACHING_NEEDLE_LOCATION = Coordinate(4.46, 217.29, 75.75)
 PREP_TEACHING_NEEDLE_MODEL = "hamilton_teaching_needle_300uL"
 
 # The CO-RE gripper holder on the waste block: it overhangs the block's left face by 4 mm, its flat
-# 40 mm up. The two tools stand 18 mm apart, centred on it.
+# 40 mm up. Its model says where its two tools stand.
 PREP_CORE_GRIPPER_HOLDER_MODEL = "prep_core_gripper_holder"
 PREP_CORE_GRIPPER_HOLDER_LOCATION = Coordinate(-4.0, 249.5, 37.0)
-PREP_CORE_GRIPPER_TOOL_SPACING = 18.0
 
 # PRPAA1087's waste sites (DeckConfiguration), by the waste position each is: the driver moves them
 # to the connected device's at setup.
@@ -74,9 +77,6 @@ PREP_WASTE_POSITION_SIZE = Coordinate(6.0, 6.0, 0.0)
 
 PREP_SPOT_MODEL = "hamilton_prep_resourceholder"
 
-# Holder metadata: where each channel's tool stands along the holder's y, from its front.
-BACK_CHANNEL_Y_CENTER = "back_channel_y_center"
-FRONT_CHANNEL_Y_CENTER = "front_channel_y_center"
 # Deck metadata: the prefix its parts' names carry.
 NAME_PREFIX = "name_prefix"
 
@@ -161,19 +161,6 @@ def _teaching_needle_spot(name: str) -> pb.ResourceDefinition:
   )
 
 
-def _core_gripper_holder(name: str) -> pb.ResourceDefinition:
-  """The holder the CO-RE grip tools park in, saying where each channel's tool stands in it."""
-  holder = _from_model(PREP_CORE_GRIPPER_HOLDER_MODEL, name, PREP_CORE_GRIPPER_HOLDER_LOCATION)
-  middle = holder.attributes.size.y / 2
-  holder.attributes.metadata.update(
-    {
-      BACK_CHANNEL_Y_CENTER: middle + PREP_CORE_GRIPPER_TOOL_SPACING / 2,
-      FRONT_CHANNEL_Y_CENTER: middle - PREP_CORE_GRIPPER_TOOL_SPACING / 2,
-    }
-  )
-  return holder
-
-
 def _waste_block(name_prefix: Optional[str], with_core_grippers: bool) -> pb.ResourceDefinition:
   """The waste block, and what stands on it: the trough, the teaching needle, the tool holder."""
   # As wide as the block, from the tip drop's back edge to the needle's front edge; its volume is
@@ -200,7 +187,13 @@ def _waste_block(name_prefix: Optional[str], with_core_grippers: bool) -> pb.Res
   )
   children = [liquid_waste, _teaching_needle_spot(component_name("teaching_needle", name_prefix))]
   if with_core_grippers:
-    children.append(_core_gripper_holder(component_name("core_grippers", name_prefix)))
+    children.append(
+      _from_model(
+        PREP_CORE_GRIPPER_HOLDER_MODEL,
+        component_name("core_grippers", name_prefix),
+        PREP_CORE_GRIPPER_HOLDER_LOCATION,
+      )
+    )
   return _trash(
     component_name("waste_block", name_prefix),
     PREP_WASTE_BLOCK_SIZE,
@@ -386,3 +379,86 @@ async def read_prep_deck(deck: handles.Deck) -> PrepDeckParts:
       if isinstance(part := found.get(name), handles.Trash)
     },
   )
+
+
+def _carried_or_off_deck(
+  node: pb.ResourceNode, deck_id: bytes, by_id: Dict[bytes, pb.ResourceNode]
+) -> bool:
+  """Whether the device carries a resource - it hangs from the arm, or is a tool or a tip - or it is
+  not on the deck at all."""
+  current: Optional[pb.ResourceNode] = node
+  while current is not None and current.id != deck_id:
+    if current.attributes.category == "x_arm" or current.attributes.kind in (
+      pb.RESOURCE_KIND_TIP,
+      pb.RESOURCE_KIND_HEAD_TOOL,
+    ):
+      return True
+    current = by_id.get(current.parent_id)
+  return current is None
+
+
+async def warn_of_resources_above_safe_height(
+  deck: handles.Deck, resources: Optional[Sequence[bytes]] = None
+) -> None:
+  """Log a warning for each resource standing above `PREP_SAFE_DECK_HEIGHT` on the deck, where a
+  traversing channel's tip can hit it. What the device carries is left out, and so are tip spots:
+  a spot is where a tip hangs, not something standing up.
+
+  Args:
+    deck: the deck.
+    resources: the ids of what to check, each with everything under it; one no longer in the
+      store is left out. None checks the whole deck.
+  """
+  store = deck.store
+  roots = [pb.ResourceRef(id=i) for i in resources] if resources is not None else [deck.ref]
+  try:
+    response = await store.commands.get_resources(
+      spb.GetResourcesRequest(resources=roots, depth=-1, ancestors=True)
+    )
+  except StoreError as error:
+    # Gone from the tree, into a trash say: it stands nowhere.
+    if error.problem == pb.PROBLEM_NOT_FOUND:
+      return
+    raise
+  by_id = {node.id: node for node in response.nodes}
+  # The ancestors come after every subtree asked for; only the subtrees are checked.
+  ancestors = set()
+  for root in roots:
+    current = by_id.get(by_id[root.id].parent_id) if root.id in by_id else None
+    while current is not None:
+      ancestors.add(current.id)
+      current = by_id.get(current.parent_id)
+  checked = [
+    node
+    for node in response.nodes
+    if node.id not in ancestors
+    and node.id != deck.id
+    and node.attributes.HasField("location")
+    and node.attributes.kind != pb.RESOURCE_KIND_TIP_SPOT
+    and not _carried_or_off_deck(node, deck.id, by_id)
+  ]
+  if not checked:
+    return
+  located = await store.commands.resolve_geometry(
+    spb.ResolveGeometryRequest(
+      queries=[
+        spb.GeometryQuery(
+          resource=pb.ResourceRef(id=node.id),
+          frame=deck.ref,
+          anchors=[pb.Anchor(z=pb.ANCHOR_Z_TOP)],
+        )
+        for node in checked
+      ]
+    )
+  )
+  for node, geometry in zip(checked, located.results):
+    if geometry.HasField("issue"):
+      continue
+    z_top = geometry.locations[0].z
+    if z_top > PREP_SAFE_DECK_HEIGHT:
+      logger.warning(
+        "Resource '%s' stands %s mm high on the deck, above the %s mm that is safe under any tip.",
+        node.attributes.name,
+        round(z_top, 4),
+        PREP_SAFE_DECK_HEIGHT,
+      )

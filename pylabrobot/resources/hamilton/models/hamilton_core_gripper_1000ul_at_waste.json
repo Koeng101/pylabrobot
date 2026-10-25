@@ -12,7 +12,13 @@
         "y": 45.0,
         "z": 24.0
       },
-      "rotation": {}
+      "rotation": {},
+      "holder": {
+        "channelYCenters": [
+          35.5,
+          9.5
+        ]
+      }
     },
     "children": [
       {
@@ -40,7 +46,8 @@
               "x": 18.0,
               "y": 4.25,
               "z": 32.0
-            }
+            },
+            "gripLineHeight": 2.0
           }
         }
       },
@@ -69,7 +76,8 @@
               "x": 18.0,
               "y": 4.25,
               "z": 32.0
-            }
+            },
+            "gripLineHeight": 2.0
           }
         }
       }

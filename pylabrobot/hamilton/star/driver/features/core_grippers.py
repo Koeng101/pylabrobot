@@ -44,13 +44,6 @@ _DEPOSIT_BELOW_PICK_UP = 20.0
 # head the grippers hang from.
 _MAX_PICKUP_DISTANCE_FROM_TOP = 20.0
 
-# Where each holder model keeps its two tools: the y of the back and of the front channel's tool
-# centre from the holder's front edge, in mm. The store keeps a holder's shape, not this.
-HOLDER_CHANNEL_Y_CENTERS: Dict[str, Tuple[float, float]] = {
-  "hamilton_core_gripper_1000ul_5ml_on_waste": (18 + 21.5, 0 + 21.5),
-  "hamilton_core_gripper_1000ul_at_waste": (26 + 9.5, 0 + 9.5),
-}
-
 # The tool the channels are taken to carry when they hold tools nothing models: what the grip
 # line's reach is checked by.
 _DEFAULT_TOOL_MODEL = "hamilton_core_gripper_tool"
@@ -108,8 +101,9 @@ class CoreGrippers:
     self._front_channel: Optional[int] = None
     # x, rear y, front y, seek z and end z of the pick-up the channels hold the tools from, in mm.
     self._tools_taken_from: Optional[Tuple[float, float, float, float, float]] = None
-    # Each mounted tool, the holder it came from and where in it, to put it back in the model.
-    self._parked_tools: List[Tuple[handles.Resource, handles.Resource, Optional[Coordinate]]] = []
+    # The channels the model has the tools on, in the order the tools stood in their holder, which
+    # is the order they go back in.
+    self._parked_from: List[int] = []
     self._grip_height: Optional[float] = None
     self._holding_resource_width: Optional[float] = None
     self._held_resource: Optional[handles.Resource] = None
@@ -147,16 +141,20 @@ class CoreGrippers:
       raise RuntimeError("the CoRe grippers are placed from the deck; this driver was given none")
     return self._driver.deck
 
-  async def _holder(self) -> handles.Resource:
-    """The CO-RE gripper holder the deck carries.
+  async def _holder(self) -> Tuple[handles.Resource, pb.ResourceNode]:
+    """The CO-RE gripper holder the deck carries, and its node: one whose spec says where each
+    channel takes its tool.
 
     Raises:
       TypeError: If the deck carries none.
     """
-    found = await self._deck.find_resources(models=list(HOLDER_CHANNEL_Y_CENTERS))
-    if not found:
-      raise TypeError("the deck carries no CO-RE gripper holder")
-    return found[0]
+    deck = self._deck
+    found = await deck.find_resources(categories=["core_grippers"])
+    nodes = await model.get_nodes(deck.store, found) if found else []
+    for holder, node in zip(found, nodes):
+      if len(node.attributes.holder.channel_y_centers) == 2:
+        return holder, node
+    raise TypeError("the deck carries no CO-RE gripper holder")
 
   # -- state ---------------------------------------------------------------------------------------
 
@@ -236,7 +234,7 @@ class CoreGrippers:
     if held is None or grip_height is None or self._front_channel is None:
       return
     (tool,) = await self._tools_on([self._front_channel])
-    if tool is None or tool.attributes.model not in resource_model.GRIP_LINE_HEIGHTS:
+    if tool is None or not resource_model.grips(tool.attributes):
       return
     points = await self._pipettes.get_reference_point_locations()
     back, front = points[cast(int, self._back_channel)], points[self._front_channel]
@@ -539,47 +537,69 @@ class CoreGrippers:
   # -- mounting ------------------------------------------------------------------------------------
 
   async def _park_tools(self) -> None:
-    """Put the tools back in the holder in the model, where and in the order they were taken.
+    """Put the tools back where they stood in their holder in the model, in the order they stood.
 
-    The tools left the channels as the device put them back; nothing stages that, since a holder
-    does not seat a tool where its own model has it.
+    Recorded once the device has let go of them: each tool was taken by naming it, so it goes back
+    to its origin, where it stood.
     """
-    for tool, holder, location in self._parked_tools:
-      await holder.assign_child_resource(tool, location=location)
-    self._parked_tools = []
+    channels, self._parked_from = self._parked_from, []
+    shafts = [shaft for ch in channels if (shaft := self._pipettes.shaft(ch)) is not None]
+    if not shafts:
+      return
+    store = self._deck.store
+    response = await store.commands.begin_tool_drop(
+      spb.BeginToolDropRequest(
+        lock_tokens=store.lock_tokens,
+        frame=self._deck.ref,
+        items=[spb.ToolDropItem(shaft=shaft.ref, origin=True) for shaft in shafts],
+        on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
+      )
+    )
+    await store.commands.resolve_operation(
+      spb.ResolveOperationRequest(
+        lock_tokens=store.lock_tokens,
+        operation_id=response.operation.id,
+        outcomes=[spb.ItemOutcome(item=i, succeeded=True) for i in range(len(shafts))],
+      )
+    )
 
   async def _mount_tools(
-    self, holder: handles.Resource, tools: Sequence[handles.Resource], channels: Dict[bytes, int]
+    self, tools: Sequence[handles.Resource], channels: Dict[bytes, int]
   ) -> None:
-    """Take the tools out of the holder and onto the channels' shafts in the model, one tool each.
+    """Take the tools out of their holder and onto the channels' shafts in the model, one tool each.
 
-    A holder gives up the first tool it holds, so the tools are taken in the order it holds them.
+    Recorded once the device has taken them. Each is named, so it is that tool that is taken, and
+    dropped back to its origin it goes back where it stood.
 
     Args:
-      holder: what they are taken from.
       tools: the tools, in the order the holder holds them.
       channels: the channel each tool goes on, by the tool's id.
     """
-    deck = self._deck
+    items = []
     for tool in tools:
       channel = channels.get(tool.id)
       shaft = None if channel is None else self._pipettes.shaft(channel)
-      if shaft is None:
-        continue
-      response = await deck.store.commands.begin_tool_pickup(
-        spb.BeginToolPickupRequest(
-          lock_tokens=deck.store.lock_tokens,
-          frame=deck.ref,
-          items=[spb.ToolPickupItem(source=holder.ref, shaft=shaft.ref)],
-        )
+      if channel is not None and shaft is not None:
+        items.append(spb.ToolPickupItem(source=tool.ref, shaft=shaft.ref))
+        self._parked_from.append(channel)
+    if not items:
+      return
+    store = self._deck.store
+    response = await store.commands.begin_tool_pickup(
+      spb.BeginToolPickupRequest(
+        lock_tokens=store.lock_tokens,
+        frame=self._deck.ref,
+        items=items,
+        on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
       )
-      await deck.store.commands.resolve_operation(
-        spb.ResolveOperationRequest(
-          lock_tokens=deck.store.lock_tokens,
-          operation_id=response.operation.id,
-          outcomes=[spb.ItemOutcome(item=0, succeeded=True)],
-        )
+    )
+    await store.commands.resolve_operation(
+      spb.ResolveOperationRequest(
+        lock_tokens=store.lock_tokens,
+        operation_id=response.operation.id,
+        outcomes=[spb.ItemOutcome(item=i, succeeded=True) for i in range(len(items))],
       )
+    )
 
   async def pick_up_tools(self, front_channel: Optional[int] = None) -> None:
     """Take the tools out of the deck's holder and onto two channels.
@@ -593,7 +613,7 @@ class CoreGrippers:
     """
     if self._tools_mounted:
       raise RuntimeError("the CoRe gripper tools are already mounted")
-    holder = await self._holder()
+    holder, holder_node = await self._holder()
     tools = [child for child in await holder.get_children() if isinstance(child, handles.HeadTool)]
     if not tools:
       raise TypeError("the holder carries no CO-RE grip tools to pick up")
@@ -606,8 +626,7 @@ class CoreGrippers:
         model.query(tool, deck, [handles.anchor("l", "f", "t"), handles.anchor("c", "c", "b")])
       )
     located = await model.resolve_geometry(deck.store, queries)
-    nodes = await model.get_nodes(deck.store, [holder, *tools])
-    back_y, front_y = HOLDER_CHANNEL_Y_CENTERS[nodes[0].attributes.model]
+    back_y, front_y = holder_node.attributes.holder.channel_y_centers
     loc = to_coordinate(located[0].locations[0])
     top = max(answer.locations[0].z for answer in located[1:])
     await self.pick_up_tools_at_location(
@@ -622,13 +641,10 @@ class CoreGrippers:
 
     # A taken tool rides where the channel rides, as a tip does. The back channel takes the rear
     # tool.
-    self._parked_tools = [
-      (tool, holder, model.location_of(node)) for tool, node in zip(tools, nodes[1:])
-    ]
     centre_y = {tool.id: answer.locations[1].y for tool, answer in zip(tools, located[1:])}
     rear_first = sorted(tools, key=lambda tool: centre_y[tool.id])
     channels = {tool.id: channel for channel, tool in zip(pair, reversed(rear_first))}
-    await self._mount_tools(holder, tools, channels)
+    await self._mount_tools(tools, channels)
     taken = [channel for channel in pair if channel in channels.values()]
     await self._pipettes._record_where_they_stopped("z")
 
@@ -793,7 +809,7 @@ class CoreGrippers:
       pipettes._check_reachable("z", z)
     c = pipettes.configuration
     (front,) = await self._tools_on([cast(int, self._front_channel)])
-    if front is not None and front.attributes.model in resource_model.GRIP_LINE_HEIGHTS:
+    if front is not None and resource_model.grips(front.attributes):
       tool = front.attributes
     else:
       tool = library.get_model(_DEFAULT_TOOL_MODEL).definition.attributes

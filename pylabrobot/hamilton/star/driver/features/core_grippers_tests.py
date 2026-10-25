@@ -7,7 +7,6 @@ from pylabrobot.hamilton.star.conftest import BARE_X_ARM
 from pylabrobot.hamilton.star.device import STAR, STARDevice
 from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.errors import HardwareError, STARFirmwareError
-from pylabrobot.hamilton.star.driver.features.core_grippers import HOLDER_CHANNEL_Y_CENTERS
 from pylabrobot.hamilton.star.driver.features.x_arm_tests import RECORDED_DEVICE, declaring
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
 from pylabrobot.resources.alpaqua.magnetic_racks import alpaqua_96_plateadapter_magnum_flx
@@ -666,7 +665,7 @@ class TestMounting(unittest.IsolatedAsyncioTestCase):
     await self.star.setup()
     assert self.star.core_grippers is not None
     self.grippers = self.star.core_grippers
-    self.holder = await self.grippers._holder()
+    self.holder, _ = await self.grippers._holder()
     self.parked = await self.held()
     self.sent: List[str] = []
     answer = self.grippers._driver.send_command
@@ -760,8 +759,8 @@ class TestSimulatedChannelPositions(unittest.IsolatedAsyncioTestCase):
     return [location for location in locations if location is not None]
 
   async def test_the_tools_are_taken_where_the_holder_holds_them(self):
-    holder = await self.grippers._holder()
-    back_y, front_y = HOLDER_CHANNEL_Y_CENTERS[(await holder.attributes()).model]
+    holder, _ = await self.grippers._holder()
+    back_y, front_y = (await holder.attributes()).holder.channel_y_centers
     await self.grippers.pick_up_tools()
     back, front = await self.pair()
     at = await holder.get_location_wrt(self.deck, x="c")

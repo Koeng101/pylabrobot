@@ -5,7 +5,6 @@ from pylabrobot.hamilton.star.resource_model.parts import (
   ELBOW_DRIVE,
   ELBOW_DRIVE_COLUMN_ABOVE_REPORTED_Z,
   FRAME_BY_NUM_TRACKS,
-  GRIP_LINE_HEIGHTS,
   GRIPPER_JOINT,
   LINK_1_JOINT,
   SHAFT_DIAMETER,
@@ -18,6 +17,7 @@ from pylabrobot.hamilton.star.resource_model.parts import (
   channel_reference_point,
   device_body,
   grip_line_height,
+  grips,
   head96,
   head384,
   iswap_gripper,
@@ -31,8 +31,8 @@ from pylabrobot.hamilton.star.resource_model.parts import (
 )
 
 __all__ = [
-  "GRIP_LINE_HEIGHTS",
   "grip_line_height",
+  "grips",
   "ARM_BACK_FROM_DEVICE_BACK",
   "GRIPPER_JOINT",
   "LINK_1_JOINT",

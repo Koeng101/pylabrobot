@@ -477,8 +477,7 @@ def test_picking_the_tools_up_sends_where_the_deck_holds_them():
     holder, tools = await _holder_tools(p)
     at = await holder.get_location_wrt(deck, x="c")
     engage = await _engage(deck, tools)
-    metadata = await holder.get_metadata()
-    back_y, front_y = metadata["back_channel_y_center"], metadata["front_channel_y_center"]
+    back_y, front_y = (await holder.attributes()).holder.channel_y_centers
 
     await p.core_grippers.pick_up_tools()
 

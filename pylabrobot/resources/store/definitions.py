@@ -11,6 +11,8 @@ from pylabrobot.resources.container import Container
 from pylabrobot.resources.container_rack import ContainerRack
 from pylabrobot.resources.deck import Deck
 from pylabrobot.resources.end_effector import MechanicalGripper
+from pylabrobot.resources.hamilton.core_gripper_tools import HamiltonCoreGripperTool
+from pylabrobot.resources.hamilton.core_grippers import HamiltonCoreGrippers
 from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck
 from pylabrobot.resources.hamilton.tip_creators import HamiltonTip
 from pylabrobot.resources.head_tool import HeadTool
@@ -157,6 +159,8 @@ def _set_tool_specs(attributes: pb.ResourceAttributes, tool: HeadTool) -> None:
     attributes.head_tool.is_conductive = tool.is_conductive
   if tool.pick_up_location is not None:
     attributes.head_tool.pick_up_location.CopyFrom(to_vec3(tool.pick_up_location))
+  if isinstance(tool, HamiltonCoreGripperTool):
+    attributes.head_tool.grip_line_height = tool.grip_line_height
   if isinstance(tool, Tip):
     attributes.tip.diameter = tool.get_size_x()
     attributes.tip.has_filter = tool.has_filter
@@ -228,6 +232,10 @@ def _attributes(resource: Resource) -> pb.ResourceAttributes:
     attributes.holder.capacity = 1
     if isinstance(resource, PlateHolder):
       attributes.holder.pedestal_size_z = resource.pedestal_size_z
+  if isinstance(resource, HamiltonCoreGrippers):
+    attributes.holder.channel_y_centers.extend(
+      [resource.back_channel_y_center, resource.front_channel_y_center]
+    )
   if isinstance(resource, ResourceStack):
     attributes.stack.direction = _STACK_DIRECTIONS[resource.direction]
   if isinstance(resource, PlateAdapter):

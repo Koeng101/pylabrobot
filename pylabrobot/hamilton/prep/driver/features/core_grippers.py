@@ -29,7 +29,7 @@ from pylabrobot.resources.store.tree import to_coordinate, to_vec3
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
-from ...deck import BACK_CHANNEL_Y_CENTER, FRONT_CHANNEL_Y_CENTER, PREP_SAFE_DECK_HEIGHT
+from ...deck import PREP_SAFE_DECK_HEIGHT, warn_of_resources_above_safe_height
 from .. import prep_commands as PrepCmd
 from ..model import (
   get_nodes,
@@ -704,7 +704,7 @@ class CoreGrippers:
             lock_tokens=self._store.lock_tokens,
             frame=self._deck,
             items=items,
-            on_tracking_problem=pb.ON_TRACKING_PROBLEM_REJECT,
+            on_tracking_problem=pb.ON_TRACKING_PROBLEM_RECORD,
           )
         )
       except StoreError as e:
@@ -730,7 +730,8 @@ class CoreGrippers:
     Raises:
       RuntimeError: If they are already mounted, setup has not run, or the channels do not report
         a tool once the pick-up has run.
-      TypeError: If the deck carries no holder, or the holder is empty.
+      TypeError: If the deck carries no holder, the holder is empty, or it does not say where its
+        tools stand.
     """
     if self._tools_mounted:
       raise RuntimeError("the CoRe gripper tools are already mounted")
@@ -773,12 +774,17 @@ class CoreGrippers:
     self._tools_mounted = True
 
   async def _channel_y_centers(self, holder: handles.Resource) -> Tuple[float, float]:
-    """Where the back and the front channel's tool stand along the holder's y, from its front."""
-    metadata = await holder.get_metadata()
-    size_y = (await holder.attributes()).size.y
-    back = metadata.get(BACK_CHANNEL_Y_CENTER, size_y / 2 + 9.0)
-    front = metadata.get(FRONT_CHANNEL_Y_CENTER, size_y / 2 - 9.0)
-    return float(back), float(front)
+    """Where the back and the front channel's tool stand along the holder's y, from its front, as
+    its spec says.
+
+    Raises:
+      TypeError: If its spec does not say.
+    """
+    centers = (await holder.attributes()).holder.channel_y_centers
+    if len(centers) != 2:
+      raise TypeError(f"'{holder.name}' does not say where its two tools stand")
+    back, front = centers
+    return back, front
 
   async def return_tools(self) -> None:
     """Put the tools back in their holder, if the device lets go of them.
@@ -1181,13 +1187,19 @@ class CoreGrippers:
       raise RuntimeError(
         "place_resource requires a prior pick_up_resource (held resource and grip height)."
       )
+    deck = self._driver.deck
+    held_id = held.id
+
+    async def warn_if_tall() -> None:
+      if self._driver.parts is not None and deck is not None:
+        await warn_of_resources_above_safe_height(deck, [held_id])
+
     if isinstance(to, Coordinate):
       # The centre-bottom goes to `to`, so the resource's own origin goes this far from it. It
-      # joins the deck there, inside whatever stands there or not.
+      # joins the deck there, inside whatever stands there or not, as a Prep deck takes it.
       center = self._held_center()
       location = to - Coordinate(center.x, center.y, 0)
       grip = location + center
-      held_id = held.id
 
       async def onto_the_deck() -> None:
         await self._store.commands.assign_resources(
@@ -1198,6 +1210,7 @@ class CoreGrippers:
             ],
           )
         )
+        await warn_if_tall()
 
       await self._place_at(
         Coordinate(grip.x, grip.y, grip.z + grip_height) + offset,
@@ -1230,6 +1243,7 @@ class CoreGrippers:
     async def let_go() -> None:
       staged = await self._store.commands.begin_resource_place(request)
       await resolve(self._store, staged.operation, [True])
+      await warn_if_tall()
 
     await self._place_at(
       to_coordinate(planned.grip_location) + offset,

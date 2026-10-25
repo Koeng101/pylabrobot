@@ -1,8 +1,7 @@
 """The STAR's own parts, as the store builds them: the body, the panels beside it, the X-arm, the
 pipetting channels, the heads, the iSWAP's arm, and the autoload's sled and tray.
 
-Each is a definition for `CreateResources`. `heads` and `iswap` beside this build the same parts as
-PLR's `Resource` classes, for code that still works with those.
+Each is a definition for `CreateResources`.
 """
 
 from typing import Optional, Tuple
@@ -16,21 +15,21 @@ from pylabrobot.resources.store.v1 import types_pb2 as pb
 # the frame's length differ between them and need saying which one they are.
 FRAME_BY_NUM_TRACKS = {30: "starlet", 54: "star", 76: "starplus"}
 
-# How far a CoRe gripper tool's grip line - the axis through its pins - stands above the tool's
-# bottom, in mm, by the tool's model. The store keeps how a tool fits a shaft, not where it grips.
-GRIP_LINE_HEIGHTS = {"hamilton_core_gripper_tool": 2.0}
+
+def grips(tool: pb.ResourceAttributes) -> bool:
+  """Whether a tool is one that grips: its spec says where its grip line is."""
+  return tool.head_tool.HasField("grip_line_height")
 
 
 def grip_line_height(tool: pb.ResourceAttributes) -> float:
-  """How far a CoRe gripper tool grips above its bottom, in mm.
+  """How far a CoRe gripper tool grips above its bottom, in mm, as its spec says.
 
   Raises:
-    ValueError: It is not a CoRe gripper tool this package knows.
+    ValueError: Its spec says nothing of a grip line.
   """
-  height = GRIP_LINE_HEIGHTS.get(tool.model)
-  if height is None:
-    raise ValueError(f"'{tool.name}' is not a CoRe gripper tool whose grip line is known")
-  return height
+  if not grips(tool):
+    raise ValueError(f"'{tool.name}' is not a gripper tool whose grip line is known")
+  return tool.head_tool.grip_line_height
 
 
 SHAFT_DIAMETER = 7.0
