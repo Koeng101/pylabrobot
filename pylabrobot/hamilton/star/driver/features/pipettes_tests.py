@@ -2041,9 +2041,7 @@ class TestTipHandling(unittest.IsolatedAsyncioTestCase):
     deck = pipettes._driver.deck
     assert deck is not None
     await pipettes.pick_up_tips([rack.get_tip_spot("A1")])
-    loose = cast(
-      handles.Plate, await deck.store.create("cor_96_wellplate_360uL_Fb", name="loose")
-    )
+    loose = cast(handles.Plate, await deck.store.create("cor_96_wellplate_360uL_Fb", name="loose"))
     with self.assertRaisesRegex(ValueError, "not in the subtree"):
       await pipettes.aspirate([cast(handles.Container, loose.get_item("A1"))], [10.0], [0])
 
