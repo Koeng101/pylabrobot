@@ -538,3 +538,7 @@ class TestEveryConfiguration(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(arm.head384 is not None, head384)
                 self.assertEqual(arm.iswap is not None, iswap)
                 self.assertEqual(driver.autoload is not None, autoload)
+                # Fitted, the autoload's belt frame is drawn where the deck's front panel was.
+                assert driver.deck is not None
+                drawn = (await driver.deck.attributes()).display_model
+                self.assertEqual(drawn, "star_autoload_tray_belt_frame" if autoload else "")
