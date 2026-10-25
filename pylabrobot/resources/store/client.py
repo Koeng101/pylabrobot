@@ -15,10 +15,10 @@ from typing import Dict, List, Optional, Sequence, TypeVar, Union
 from connectrpc.errors import ConnectError
 from connectrpc.request import RequestContext
 from pyqwest import Client
-from pylabrobot.resources.store.asgi_transport import ASGITransport
 
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import handles, library
+from pylabrobot.resources.store.asgi_transport import ASGITransport
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.memory import ISSUE_TYPE, MemoryStore, asgi_app
 from pylabrobot.resources.store.tree import to_vec3
