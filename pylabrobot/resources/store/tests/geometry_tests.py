@@ -72,7 +72,7 @@ def anchors_for(node: Node) -> List[Tuple[pb.AnchorX, pb.AnchorY, pb.AnchorZ]]:
   """The anchors worth asking a resource for: all of them, but few for the many items of a rack,
   and its cavity bottom for a container that has one."""
   anchors = list(FEW_ANCHORS if node.kind in ITEM_KINDS else ALL_ANCHORS)
-  if node.kind in g.CONTAINER_KINDS and node.attributes.container.HasField("material_z_thickness"):
+  if node.kind in g.CONTAINER_KINDS and node.facts.container.HasField("material_z_thickness"):
     anchors.append((pb.ANCHOR_X_CENTER, pb.ANCHOR_Y_CENTER, pb.ANCHOR_Z_CAVITY_BOTTOM))
   return anchors
 
@@ -529,7 +529,7 @@ class MotionTests(GeometryTestCase):
       reference = Coordinate(4.5, 4.5, -10.0)
       for _ in range(20):
         y, z = rng.uniform(0, 600), rng.uniform(100, 300)
-        node.attributes.location.CopyFrom(
+        node.own.location.CopyFrom(
           pb.Vec3(**dict(zip("xyz", g.location_from_reference(node, deck, None, y, z, reference))))
         )
         reported = g.location_wrt(node, deck) + reference

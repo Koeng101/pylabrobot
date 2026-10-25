@@ -74,14 +74,21 @@ message GetLockResponse {
 // Models
 // ============================================================================================
 
+// Keep a model, or change one. A changed model's resources follow it: each resource made from a
+// part of the old model, matched by where the part is in it, is what the new part says, and one
+// still standing where the old part put it in its parent moves to where the new part puts it. A
+// resource is not added or taken away by a change, and a change that would turn a resource into
+// another kind is refused. Each resource changed is reported to `Watch` as updated.
 message PutModelRequest {
   ResourceModel model = 1;
 }
 
 message GetModelRequest {
+  // A model's name; PLR's stores also know the deprecated names of PLR's labware, as aliases.
   string name = 1;
 }
 
+// The models put in the store, by name. PLR's own stores start with PLR's labware put in.
 message ListModelsRequest {
   ResourceKind kind = 1;
   int32 page_size = 2;
@@ -99,8 +106,9 @@ message ListModelsResponse {
 
 message CreateResource {
   oneof source {
-    // A stored model, by name.
+    // A stored model, by name: the resource refers to it, and follows it when it changes.
     string model = 1;
+    // A definition of its own, kept for it alone and not listed as a model.
     ResourceDefinition definition = 2;
   }
   // The new root's name; replaces the model's or definition's.
@@ -170,11 +178,14 @@ message UpdateResourcesRequest {
   repeated bytes lock_tokens = 1;
   // In order, all or none.
   repeated ResourceUpdate updates = 2;
+  // A volume set above what a container or tip holds at most, or below nothing.
+  OnTrackingProblem on_tracking_problem = 3;
 }
 
 message UpdateResourcesResponse {
   repeated ResourceNode nodes = 1;
   uint64 revision = 2;
+  repeated Issue issues = 3;
 }
 
 // ============================================================================================
@@ -365,6 +376,7 @@ message MeasurementResult {
   // For volumes and heights: what the model held before, and holds now.
   optional double previous_volume = 1;
   optional double volume = 2;
+  // A volume measured above what the resource holds at most is recorded, with an issue.
   optional Issue issue = 3;
 }
 
@@ -632,7 +644,7 @@ enum ChangeAspect {
   CHANGE_ASPECT_PLACEMENT = 1;
   // Its volume, tracking, jaw width or tips made.
   CHANGE_ASPECT_STATE = 2;
-  // Anything else about what it is: metadata, barcode, spec.
+  // Anything else about what it is: metadata, barcode, spec, or its model changing.
   CHANGE_ASPECT_ATTRIBUTES = 3;
   // Which resources hang from it, or their order.
   CHANGE_ASPECT_CHILDREN = 4;

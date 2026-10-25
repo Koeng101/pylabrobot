@@ -16,7 +16,15 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import geometry as g
-from pylabrobot.resources.store.engine import Engine, Item, Step, Transfer, tool_in
+from pylabrobot.resources.store.engine import (
+  Engine,
+  Item,
+  Step,
+  Transfer,
+  capacity,
+  tool_in,
+  volume_issue,
+)
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.tree import Node, to_coordinate, to_rotation_message, to_vec3
 from pylabrobot.resources.store.v1 import primitives_pb2 as ppb
@@ -297,9 +305,9 @@ def begin_liquid_transfer(
         index,
       )
     capacity = (
-      taker.attributes.tip.maximal_volume
+      taker.facts.tip.maximal_volume
       if taker.kind == K.RESOURCE_KIND_TIP
-      else taker.attributes.container.max_volume
+      else taker.facts.container.max_volume
     )
     if _tracks_volume(taker) and held(taker) + item.volume > capacity + _EMPTY:
       issues.add(
@@ -395,7 +403,7 @@ def begin_resource_pickup(
   engine.set_attributes(
     resource,
     staged.steps,
-    lambda: resource.attributes.rotation.CopyFrom(to_rotation_message(turned)),
+    lambda: resource.own.rotation.CopyFrom(to_rotation_message(turned)),
   )
   op = engine.stage(
     frame.root(),
@@ -556,12 +564,15 @@ def _apply_change(
       partial.y if partial.HasField("y") else here.y,
       partial.z if partial.HasField("z") else here.z,
     )
-    engine.set_attributes(node, steps, lambda: node.attributes.location.CopyFrom(to_vec3(location)))
+    engine.set_attributes(node, steps, lambda: node.own.location.CopyFrom(to_vec3(location)))
     return [node]
   if which == "rotation":
     return [engine.rotate(change.rotation, steps)]
   if which == "set_volume":
     node = engine.resolve(change.set_volume.resource)
+    issue = volume_issue(node, change.set_volume.volume, index)
+    if issue is not None:
+      issues.add(issue.problem, issue.message, node, index)
     engine.set_volume(node, change.set_volume.volume, steps)
     return [node]
   if which in ("add_liquid", "remove_liquid"):
@@ -574,6 +585,14 @@ def _apply_change(
       issues.add(
         pb.PROBLEM_TOO_LITTLE_LIQUID,
         f"'{node.name}' holds {node.state.volume.pending_volume} uL",
+        node,
+        index,
+      )
+    most = capacity(node)
+    if most is not None and node.state.volume.pending_volume + delta > most + _EMPTY:
+      issues.add(
+        pb.PROBLEM_TOO_LITTLE_VOLUME,
+        f"'{node.name}' has room for {most - node.state.volume.pending_volume} uL, not {delta}",
         node,
         index,
       )

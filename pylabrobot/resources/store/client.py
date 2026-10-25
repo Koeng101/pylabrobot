@@ -374,6 +374,9 @@ class ResourceStore:
   ) -> handles.Resource:
     """Make a resource from a model or a definition, and put it in `parent` when given.
 
+    A model is named, never sent: one of PLR's labware that the store does not have is put in it
+    first, once.
+
     Args:
       source: A model's name - one of PLR's labware, or one the store keeps - or a definition.
       name: What to call it; names in a model follow it.
@@ -385,8 +388,6 @@ class ResourceStore:
     request = spb.CreateResource(name=name)
     if isinstance(source, pb.ResourceDefinition):
       request.definition.CopyFrom(source)
-    elif source in library.model_names():
-      request.definition.CopyFrom(library.get_model(source).definition)
     else:
       request.model = source
     if parent is not None:
@@ -398,12 +399,104 @@ class ResourceStore:
     elif location is not None or track is not None:
       raise ValueError("a location needs a parent")
     before = await handles._read_for_events(self, [parent.ref]) if parent is not None else None
-    response = await self.commands.create_resources(
-      spb.CreateResourcesRequest(lock_tokens=self.lock_tokens, resources=[request])
-    )
+    create = spb.CreateResourcesRequest(lock_tokens=self.lock_tokens, resources=[request])
+    try:
+      response = await self.commands.create_resources(create)
+    except StoreError as refused:
+      if (
+        refused.problem != pb.PROBLEM_NOT_FOUND
+        or isinstance(source, pb.ResourceDefinition)
+        or not await self._put_library_model(source)
+      ):
+        raise
+      response = await self.commands.create_resources(create)
     if before is not None and parent is not None:
       handles._emit_assigned(before, response.nodes[0], parent.id)
     return (await self.make_handles(response.nodes[:1], response.nodes[1:]))[0]
+
+  async def _put_library_model(self, name: str) -> bool:
+    """Put one of PLR's models in the store, under the name asked for, when the store has no model
+    of that name. Whether it did."""
+    model = library.LIBRARY.get(name)
+    if model is None:
+      return False
+    try:
+      await self.commands.get_model(spb.GetModelRequest(name=name))
+      return False
+    except StoreError as missing:
+      if missing.problem != pb.PROBLEM_NOT_FOUND:
+        raise
+    model.name = name
+    await self.commands.put_model(spb.PutModelRequest(model=model))
+    return True
+
+  async def get_or_create(
+    self,
+    source: Union[str, pb.ResourceDefinition],
+    name: str,
+    parent: Optional[handles.Resource] = None,
+    location: Optional[Coordinate] = None,
+    track: Optional[int] = None,
+  ) -> handles.Resource:
+    """The resource of this name where `create` would make it - a root, or a child of `parent` -
+    or, when there is none, one made as `create` makes it.
+
+    Args:
+      source: A model's name or a definition; see `create`.
+      name: Its name.
+      parent: What it is in, or is put in; unset for a root.
+      location: Where in `parent` it is put, when it is made.
+      track: A Hamilton deck's track, from 1, when it is made.
+
+    Raises:
+      StoreError: A resource of this name is there, but is another kind or model
+        (`PROBLEM_NAME_CONFLICT`).
+    """
+    found = await self._find_named(name, parent)
+    if found is None:
+      return await self.create(source, name, parent=parent, location=location, track=track)
+    expected = await self._made_as(source)
+    attributes = found.attributes
+    if attributes.kind != expected.kind or attributes.model != expected.model:
+      raise StoreError(
+        pb.PROBLEM_NAME_CONFLICT,
+        f"'{name}' is there, a {pb.ResourceKind.Name(attributes.kind)} of model "
+        f"'{attributes.model}', not a {pb.ResourceKind.Name(expected.kind)} of model "
+        f"'{expected.model}'",
+      )
+    return (await self.make_handles([found]))[0]
+
+  async def _made_as(self, source: Union[str, pb.ResourceDefinition]) -> pb.ResourceAttributes:
+    """What a model or a definition makes its root as."""
+    if isinstance(source, pb.ResourceDefinition):
+      return source.attributes
+    try:
+      model = await self.commands.get_model(spb.GetModelRequest(name=source))
+    except StoreError as missing:
+      known = library.LIBRARY.get(source)
+      if missing.problem != pb.PROBLEM_NOT_FOUND or known is None:
+        raise
+      model = known
+    return model.definition.attributes
+
+  async def _find_named(
+    self, name: str, parent: Optional[handles.Resource]
+  ) -> Optional[pb.ResourceNode]:
+    """The root of this name, or the child of `parent` of this name; None when there is none."""
+    if parent is None:
+      try:
+        response = await self.commands.get_resources(
+          spb.GetResourcesRequest(resources=[pb.ResourceRef(name=pb.NameRef(name=name))])
+        )
+      except StoreError as missing:
+        if missing.problem != pb.PROBLEM_NOT_FOUND:
+          raise
+        return None
+      return response.nodes[0]
+    found = await self.commands.find_resources(
+      spb.FindResourcesRequest(scope=parent.ref, filter=spb.ResourceFilter(names=[name]))
+    )
+    return next((node for node in found.nodes if node.parent_id == parent.id), None)
 
   @contextlib.asynccontextmanager
   async def lock(

@@ -63,6 +63,14 @@ class WatchTests(_InProcess, store_tests.WatchTests):
   pass
 
 
+class ModelTests(_InProcess, store_tests.ModelTests):
+  pass
+
+
+class LibraryTests(_InProcess, store_tests.LibraryTests):
+  pass
+
+
 class ReadingTests(_InProcess, handles_tests.ReadingTests):
   pass
 

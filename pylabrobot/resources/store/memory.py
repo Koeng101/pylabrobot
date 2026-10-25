@@ -18,9 +18,9 @@ from connectrpc.request import RequestContext
 from google.protobuf.timestamp_pb2 import Timestamp
 from protobuf.wkt import Any as AnyMessage
 
-from pylabrobot.resources.store import commands
+from pylabrobot.resources.store import commands, library
 from pylabrobot.resources.store import geometry as g
-from pylabrobot.resources.store.engine import Engine
+from pylabrobot.resources.store.engine import Engine, volume_issue
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.tree import Node, to_coordinate
 from pylabrobot.resources.store.v1 import primitives_pb2 as ppb
@@ -67,10 +67,11 @@ class _Event:
 
 
 class MemoryStore(ResourceStoreService, ResourcePrimitivesService):
-  """A resource store held in memory, for one process; the default store of PLR."""
+  """A resource store held in memory, for one process; the default store of PLR. It starts with
+  PLR's labware models put in, each read from its file when first asked for."""
 
   def __init__(self, engine: Optional[Engine] = None):
-    self.engine = engine or Engine()
+    self.engine = engine or Engine(library=library.LIBRARY)
     self._lock = asyncio.Lock()
     self._changed: Optional[asyncio.Condition] = None
     self._events: List[_Event] = []
@@ -195,19 +196,31 @@ class MemoryStore(ResourceStoreService, ResourcePrimitivesService):
     return await self._call(lambda: self.engine.put_model(request.model))
 
   async def get_model(self, request: spb.GetModelRequest, ctx: RequestContext) -> pb.ResourceModel:
-    return await self._call(lambda: self.engine.get_model(request.name))
+    def work() -> pb.ResourceModel:
+      # A copy: a client in this process may change what it is handed.
+      model = pb.ResourceModel()
+      model.CopyFrom(self.engine.get_model(request.name))
+      return model
+
+    return await self._call(work)
 
   async def list_models(
     self, request: spb.ListModelsRequest, ctx: RequestContext
   ) -> spb.ListModelsResponse:
     def work() -> spb.ListModelsResponse:
-      models = [
-        m
-        for name, m in sorted(self.engine.models.items())
-        if request.kind in (pb.RESOURCE_KIND_UNSPECIFIED, m.definition.attributes.kind)
-      ]
-      page, token = _page(models, request.page_size, request.page_token)
-      return spb.ListModelsResponse(models=page, next_page_token=token)
+      names = self.engine.model_names()
+      if request.kind != pb.RESOURCE_KIND_UNSPECIFIED:
+        names = [
+          name
+          for name in names
+          if self.engine.get_model(name).definition.attributes.kind == request.kind
+        ]
+      # Only the page is read: the library's models are read from their files as they are asked for.
+      page, token = _page(names, request.page_size, request.page_token)
+      # Copied into the response: a client in this process may change what it is handed.
+      return spb.ListModelsResponse(
+        models=[self.engine.get_model(name) for name in page], next_page_token=token
+      )
 
     return await self._call(work)
 
@@ -270,10 +283,21 @@ class MemoryStore(ResourceStoreService, ResourcePrimitivesService):
     def work() -> spb.UpdateResourcesResponse:
       for update in request.updates:
         self.engine.check_locks(self.engine.touched_by(update), request.lock_tokens)
+      issues = [
+        issue
+        for index, update in enumerate(request.updates)
+        if update.WhichOneof("update") == "volume"
+        for issue in [
+          volume_issue(self.engine.resolve(update.volume.resource), update.volume.volume, index)
+        ]
+        if issue is not None
+      ]
+      if issues and request.on_tracking_problem == pb.ON_TRACKING_PROBLEM_REJECT:
+        raise StoreError(issues[0].problem, issues[0].message)
       changed: List[Node] = []
       for update in request.updates:
         changed += self.engine.update(update, [])
-      return spb.UpdateResourcesResponse(nodes=self._nodes(changed))
+      return spb.UpdateResourcesResponse(nodes=self._nodes(changed), issues=issues)
 
     response = await self._call(work)
     response.revision = self.engine.revision
@@ -557,13 +581,13 @@ def _timestamp() -> Timestamp:
 
 
 def _matches(node: Node, filter: spb.ResourceFilter) -> bool:
-  a = node.attributes
+  facts = node.facts
   return (
-    (not filter.kinds or a.kind in filter.kinds)
-    and (not filter.models or a.model in filter.models)
-    and (not filter.categories or a.category in filter.categories)
-    and a.name.startswith(filter.name_prefix)
-    and (not filter.names or a.name in filter.names)
+    (not filter.kinds or facts.kind in filter.kinds)
+    and (not filter.models or facts.model in filter.models)
+    and (not filter.categories or facts.category in filter.categories)
+    and node.name.startswith(filter.name_prefix)
+    and (not filter.names or node.name in filter.names)
   )
 
 

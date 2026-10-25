@@ -14,7 +14,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Union
+from typing import Callable, Dict, Iterable, List, Optional, Protocol, Sequence, Set, Tuple, Union
 
 from google.protobuf.timestamp_pb2 import Timestamp
 
@@ -22,10 +22,12 @@ from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store import geometry as g
 from pylabrobot.resources.store.errors import StoreError
-from pylabrobot.resources.store.models import expand_grids
 from pylabrobot.resources.store.tree import (
   Node,
-  build_tree,
+  Part,
+  build_parts,
+  instantiate,
+  resolved,
   to_coordinate,
   to_rotation_message,
   to_vec3,
@@ -36,10 +38,23 @@ from pylabrobot.resources.store.v1 import types_pb2 as pb
 K = pb.ResourceKind
 API_VERSION = "v1"
 
+
+class ModelLibrary(Protocol):
+  """Models a store starts with, put in when first asked for: PLR's labware, for PLR's stores."""
+
+  def names(self) -> Sequence[str]:
+    """The name of every model it has; not its aliases."""
+
+  def get(self, name: str) -> Optional[pb.ResourceModel]:
+    """The model of a name, or of a name it is an alias of; None when it has none."""
+
+
 _ANCHOR_BOTTOM = (pb.ANCHOR_X_CENTER, pb.ANCHOR_Y_CENTER, pb.ANCHOR_Z_BOTTOM)
 _ANCHOR_CAVITY = (pb.ANCHOR_X_CENTER, pb.ANCHOR_Y_CENTER, pb.ANCHOR_Z_CAVITY_BOTTOM)
 _ANCHOR_TOP = (pb.ANCHOR_X_CENTER, pb.ANCHOR_Y_CENTER, pb.ANCHOR_Z_TOP)
 
+# How far a volume may be past what a resource holds, in uL, and still be held.
+VOLUME_TOLERANCE = 1e-6
 # A lid may be up to this much smaller than what it covers; `LID_UNDERSIZE_TOLERANCE` in PLR.
 _LID_UNDERSIZE_TOLERANCE = 1.0
 # Resources standing on a Hamilton deck that take no part in its collision check.
@@ -57,10 +72,10 @@ def _now() -> Timestamp:
 
 @dataclass
 class _Snapshot:
-  """A resource's attributes and state as they were."""
+  """A resource's own fields and state as they were."""
 
   node: Node
-  attributes: bytes
+  own: bytes
   state: bytes
 
 
@@ -170,7 +185,7 @@ class _View:
 
   placement: tuple
   state: bytes
-  attributes: bytes
+  attributes: tuple
   children: tuple
 
   def changed_since(self, before: _View) -> List[spb.ChangeAspect]:
@@ -187,12 +202,12 @@ class _View:
 
 
 def _view(node: Node) -> _View:
-  attributes = pb.ResourceAttributes()
-  attributes.CopyFrom(node.attributes)
-  location = attributes.location.SerializeToString() if attributes.HasField("location") else None
-  rotation = attributes.rotation.SerializeToString(deterministic=True)
-  attributes.ClearField("location")
-  attributes.ClearField("rotation")
+  own = pb.ResourceAttributes()
+  own.CopyFrom(node.own)
+  location = own.location.SerializeToString() if own.HasField("location") else None
+  rotation = own.rotation.SerializeToString(deterministic=True)
+  own.ClearField("location")
+  own.ClearField("rotation")
   parent = node.parent
   return _View(
     placement=(
@@ -202,7 +217,9 @@ def _view(node: Node) -> _View:
       rotation,
     ),
     state=node.state.SerializeToString(deterministic=True),
-    attributes=attributes.SerializeToString(deterministic=True),
+    # Its part's facts as the message itself: a tuple compares the same message by identity, and
+    # a model edit gives its parts new ones.
+    attributes=(own.SerializeToString(deterministic=True), node.facts),
     children=tuple(child.id for child in node.children),
   )
 
@@ -213,13 +230,17 @@ class Engine:
   Not safe to call from two threads at once: a server serializes requests.
   """
 
-  def __init__(self, implementation: str = "memory"):
+  def __init__(self, implementation: str = "memory", library: Optional[ModelLibrary] = None):
     self.implementation = implementation
+    self.library = library
     self.instance_id = uuid.uuid4().hex
     self.revision = 0
     self.nodes: Dict[bytes, Node] = {}
     self.roots: Dict[str, Node] = {}
+    # The models put in, and the parts each one's resources are made from, made when first needed.
+    # The library's models are put in when first asked for.
     self.models: Dict[str, pb.ResourceModel] = {}
+    self.parts: Dict[str, Part] = {}
     self.locks: Dict[bytes, spb.Lock] = {}
     self.operations: Dict[bytes, _Operation] = {}
     self.revisions: Dict[bytes, int] = {}
@@ -302,7 +323,7 @@ class Engine:
     self._touched_roots.add(node.root().id)
 
   def _snapshot(self, node: Node, steps: List[Step]) -> None:
-    step = _Snapshot(node, node.attributes.SerializeToString(), node.state.SerializeToString())
+    step = _Snapshot(node, node.own.SerializeToString(), node.state.SerializeToString())
     steps.append(step)
     self._journal.append(step)
 
@@ -367,9 +388,9 @@ class Engine:
       self._touched_roots.add(each.root().id)
     self._detach(node)
     if location is None:
-      node.attributes.ClearField("location")
+      node.own.ClearField("location")
     else:
-      node.attributes.location.CopyFrom(to_vec3(location))
+      node.own.location.CopyFrom(to_vec3(location))
     self._attach(node, parent, index)
     for each in node.walk():
       self._touch(each)
@@ -413,7 +434,7 @@ class Engine:
   def _undo(self, steps: Sequence[Step]) -> None:
     for step in reversed(steps):
       if isinstance(step, _Snapshot):
-        step.node.attributes.ParseFromString(step.attributes)
+        step.node.own.ParseFromString(step.own)
         step.node.state.ParseFromString(step.state)
         self._touch(step.node)
       elif isinstance(step, _Reattach):
@@ -474,9 +495,7 @@ class Engine:
       return found
     if which == "item":
       parent = self.resolve(ref.item.parent)
-      item = next(
-        (c for c in parent.children if c.attributes.identifier == ref.item.identifier), None
-      )
+      item = next((c for c in parent.children if c.own.identifier == ref.item.identifier), None)
       if item is None:
         raise StoreError(
           pb.PROBLEM_NOT_FOUND, f"'{parent.name}' has no item '{ref.item.identifier}'", parent.name
@@ -511,7 +530,7 @@ class Engine:
       parent_id=parent.id if parent is not None else b"",
       root_id=node.root().id,
       index=parent.children.index(node) if parent is not None else 0,
-      attributes=node.attributes,
+      attributes=resolved(node),
       state=node.state,
       child_ids=[child.id for child in node.children],
       pending_operation_ids=self.pending_operations(node),
@@ -567,42 +586,118 @@ class Engine:
   # -- models ------------------------------------------------------------------------------------
 
   def put_model(self, model: pb.ResourceModel) -> pb.ResourceModel:
+    """Keep a model, or change one: every resource made from it is then what the new model says.
+
+    A changed model's parts are matched to the old one's by where they are in it. Each resource
+    made from a matched part takes the new part's facts, and, while it still stands where the old
+    model put it in its parent, the new part's location and rotation. Resources are not added or
+    taken away: a part the new model drops leaves its resources as they were.
+
+    Raises:
+      StoreError: The model has no name, its definition is refused, or the change would turn
+        a resource made from it into another kind.
+    """
     if not model.name:
       raise StoreError(pb.PROBLEM_NOT_FOUND, "a model needs a name")
-    expanded = pb.ResourceDefinition()
-    expanded.CopyFrom(model.definition)
-    expand_grids(expanded)
-    _check_definition(expanded)
-    self.models[model.name] = model
+    parts = build_parts(model.definition, model.name)
+    old = self.parts.get(model.name)
+    if old is not None:
+      self._repoint(old, parts)
+    kept = pb.ResourceModel()
+    kept.CopyFrom(model)
+    self.models[model.name] = kept
+    self.parts[model.name] = parts
     return model
 
-  def get_model(self, name: str) -> pb.ResourceModel:
-    model = self.models.get(name)
+  def _load(self, name: str) -> Optional[str]:
+    """Put in the library's model of a name, or of the name it is an alias of, when it has one and
+    it is not put in yet. The name it is kept under, or None."""
+    if name in self.models:
+      return name
+    if self.library is None:
+      return None
+    model = self.library.get(name)
     if model is None:
+      return None
+    if model.name not in self.models:
+      self.models[model.name] = model
+    return model.name
+
+  def _repoint(self, old: Part, new: Part) -> None:
+    """Make every resource made from a model's old parts a resource of the new ones."""
+    pairs: Dict[Part, Part] = {}
+
+    def pair(was: Part, now: Part) -> None:
+      pairs[was] = now
+      for a, b in zip(was.children, now.children):
+        pair(a, b)
+
+    pair(old, new)
+    affected = [node for node in self.nodes.values() if node.part in pairs]
+    for node in affected:
+      if pairs[node.part].facts.kind != node.kind:
+        raise StoreError(
+          pb.PROBLEM_WRONG_KIND,
+          f"the model would make '{node.name}' a {K.Name(pairs[node.part].facts.kind)}",
+          node.name,
+        )
+    # Decided before any resource changes part: a child stands where the model put it only in the
+    # resource made from its part's parent.
+    in_place = {
+      node.id
+      for node in affected
+      if node.parent is not None
+      and node.part.parent is not None
+      and node.parent.part is node.part.parent
+      and _same_placement(node.own, node.part.start)
+    }
+    for node in affected:
+      now = pairs[node.part]
+      if node.id in in_place:
+        _place_as(node.own, now.start)
+      node.part = now
+      self._touch(node)
+
+  def model(self, name: str) -> Tuple[pb.ResourceModel, Part]:
+    """A model put in, and its parts, by its name or an alias of it.
+
+    Raises:
+      StoreError: No model of that name.
+    """
+    kept = self._load(name)
+    if kept is None:
       raise StoreError(pb.PROBLEM_NOT_FOUND, f"no model named '{name}'", name)
-    return model
+    if kept not in self.parts:
+      self.parts[kept] = build_parts(self.models[kept].definition, kept)
+    return self.models[kept], self.parts[kept]
+
+  def get_model(self, name: str) -> pb.ResourceModel:
+    return self.model(name)[0]
+
+  def model_names(self) -> List[str]:
+    """The name of every model put in, the library's with them, in order."""
+    names = set(self.models)
+    if self.library is not None:
+      names.update(self.library.names())
+    return sorted(names)
 
   # -- building the tree -------------------------------------------------------------------------
 
   def create(self, request: spb.CreateResource, tokens: Sequence[bytes]) -> Node:
     """Create a resource from a model or a definition, its grids' items made, and assign it where
-    asked.
+    asked. A resource made from a model refers to the model's parts; one made from a definition
+    has parts of its own.
 
     Raises:
-      StoreError: An unknown model, a grid refused, a name already taken, or an assignment
+      StoreError: An unknown model, a definition refused, a name already taken, or an assignment
         refused.
     """
     if request.WhichOneof("source") == "model":
-      definition = pb.ResourceDefinition()
-      definition.CopyFrom(self.get_model(request.model).definition)
+      _, part = self.model(request.model)
     else:
-      definition = pb.ResourceDefinition()
-      definition.CopyFrom(request.definition)
-    expand_grids(definition)
-    _check_definition(definition)
-    name = request.name or definition.attributes.name
-    _rename(definition, name)
-    node = build_tree(definition)
+      part = build_parts(request.definition)
+    name = request.name or part.start.name
+    node = instantiate(part, name)
     names = [each.name for each in node.walk()]
     if len(set(names)) != len(names):
       duplicate = next(n for n in names if names.count(n) > 1)
@@ -658,7 +753,7 @@ class Engine:
         f"'{child.name}' cannot go into '{parent.name}', which it holds",
         child.name,
       )
-    holder = parent.attributes.holder
+    holder = parent.facts.holder
     if parent.kind in g.HOLDER_KINDS or holder.accepts or holder.capacity:
       if holder.accepts and child.kind not in holder.accepts:
         raise StoreError(
@@ -672,14 +767,14 @@ class Engine:
           child.name,
         )
     if parent.kind == K.RESOURCE_KIND_PLATE_HOLDER:
-      if child.kind == K.RESOURCE_KIND_PLATE and child.attributes.plate.plate_type != "skirted":
+      if child.kind == K.RESOURCE_KIND_PLATE and child.facts.plate.plate_type != "skirted":
         raise StoreError(
           pb.PROBLEM_CANNOT_DROP_HERE,
           f"plate holder '{parent.name}' takes only skirted plates",
           child.name,
         )
       if child.kind == K.RESOURCE_KIND_RESOURCE_STACK:
-        if child.attributes.stack.direction != pb.STACK_DIRECTION_Z or any(
+        if child.facts.stack.direction != pb.STACK_DIRECTION_Z or any(
           c.kind != K.RESOURCE_KIND_PLATE for c in child.children
         ):
           raise StoreError(
@@ -743,11 +838,11 @@ class Engine:
     Raises:
       StoreError: It overlaps, or does not fit at its track.
     """
-    if not deck.attributes.deck.HasField("hamilton"):
+    if not deck.facts.deck.HasField("hamilton"):
       return
-    if child.kind in (K.RESOURCE_KIND_TRASH,) or child.attributes.category in _DECK_PARTS:
+    if child.kind in (K.RESOURCE_KIND_TRASH,) or child.facts.category in _DECK_PARTS:
       return
-    if child.attributes.category == "core_grippers":
+    if child.facts.category == "core_grippers":
       return
 
     def footprint(node: Node) -> g.Size:
@@ -762,7 +857,7 @@ class Engine:
       return g.Size(max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs))
 
     size_x, size_y, size_z = footprint(child)
-    spec = deck.attributes.deck.hamilton
+    spec = deck.facts.deck.hamilton
     if track and location.x + size_x > g.track_location(deck, spec.num_tracks + 1).x:
       raise StoreError(
         pb.PROBLEM_CANNOT_DROP_HERE,
@@ -770,7 +865,7 @@ class Engine:
         child.name,
       )
     for other in deck.children:
-      if other is child or other.attributes.category in _DECK_PARTS or other.location is None:
+      if other is child or other.facts.category in _DECK_PARTS or other.location is None:
         continue
       at = other.location
       ox, oy, oz = footprint(other)
@@ -803,9 +898,9 @@ class Engine:
     elif where == "location":
       location = to_coordinate(request.location)
     elif where == "track":
-      if not parent.attributes.deck.HasField("hamilton"):
+      if not parent.facts.deck.HasField("hamilton"):
         raise StoreError(pb.PROBLEM_WRONG_KIND, f"'{parent.name}' has no tracks", parent.name)
-      num_tracks = parent.attributes.deck.hamilton.num_tracks
+      num_tracks = parent.facts.deck.hamilton.num_tracks
       if not -4 <= request.track <= num_tracks:
         raise StoreError(
           pb.PROBLEM_OUT_OF_RANGE, f"a track is from -4 to {num_tracks}, not {request.track}"
@@ -835,7 +930,7 @@ class Engine:
     if holder.kind != K.RESOURCE_KIND_PLATE_HOLDER:
       return
     location = g.holder_child_location(holder, stack.children[0])
-    self.set_attributes(stack, steps, lambda: stack.attributes.location.CopyFrom(to_vec3(location)))
+    self.set_attributes(stack, steps, lambda: stack.own.location.CopyFrom(to_vec3(location)))
 
   def unassign(self, node: Node, tokens: Sequence[bytes], steps: List[Step]) -> None:
     """Take a resource out of its parent, to be a root with no location.
@@ -849,7 +944,7 @@ class Engine:
     self.check_locks([node], tokens)
     if (
       parent.kind == K.RESOURCE_KIND_RESOURCE_STACK
-      and parent.attributes.stack.direction == pb.STACK_DIRECTION_Z
+      and parent.facts.stack.direction == pb.STACK_DIRECTION_Z
       and parent.children[-1] is not node
     ):
       raise StoreError(
@@ -883,9 +978,9 @@ class Engine:
       location = g.pivoted_location(node, rotation, to_coordinate(change.pivot))
 
     def apply() -> None:
-      node.attributes.rotation.CopyFrom(to_rotation_message(rotation))
+      node.own.rotation.CopyFrom(to_rotation_message(rotation))
       if location is not None:
-        node.attributes.location.CopyFrom(to_vec3(location))
+        node.own.location.CopyFrom(to_vec3(location))
 
     self.set_attributes(node, steps, apply)
     return node
@@ -928,14 +1023,11 @@ class Engine:
     Raises:
       StoreError: The spot does not say what tip it makes.
     """
-    if not spot.attributes.tip_spot.HasField("prototype_tip"):
+    if not spot.facts.tip_spot.HasField("prototype_tip"):
       raise StoreError(pb.PROBLEM_WRONG_KIND, f"'{spot.name}' makes no tips", spot.name)
     made = spot.state.tips_made if spot.state.HasField("tips_made") else 0
-    definition = pb.ResourceDefinition(attributes=spot.attributes.tip_spot.prototype_tip)
-    definition.attributes.name = f"{spot.name}#{made}"
-    definition.attributes.ClearField("location")
-    definition.initial_state.volume.CopyFrom(pb.VolumeState(tracking_enabled=True))
-    tip = build_tree(definition)
+    tip = instantiate(spot.part.tip(), f"{spot.name}#{made}")
+    tip.state.volume.CopyFrom(pb.VolumeState(tracking_enabled=True))
     self.set_attributes(spot, steps, lambda: _set_tips_made(spot, made + 1))
     self._create(tip, None, steps)
     return tip
@@ -957,8 +1049,8 @@ class Engine:
 
     def apply() -> None:
       if request.replace:
-        node.attributes.metadata.Clear()
-      node.attributes.metadata.update(dict(request.metadata))
+        node.own.metadata.Clear()
+      node.own.metadata.update(dict(request.metadata))
 
     self.set_attributes(node, steps, apply)
 
@@ -967,9 +1059,9 @@ class Engine:
 
     def apply() -> None:
       if request.HasField("barcode"):
-        node.attributes.barcode.CopyFrom(request.barcode)
+        node.own.barcode.CopyFrom(request.barcode)
       else:
-        node.attributes.ClearField("barcode")
+        node.own.ClearField("barcode")
 
     self.set_attributes(node, steps, apply)
 
@@ -980,9 +1072,9 @@ class Engine:
 
     def apply() -> None:
       if request.HasField("location"):
-        node.attributes.preferred_pickup_location.CopyFrom(request.location)
+        node.own.preferred_pickup_location.CopyFrom(request.location)
       else:
-        node.attributes.ClearField("preferred_pickup_location")
+        node.own.ClearField("preferred_pickup_location")
 
     self.set_attributes(node, steps, apply)
 
@@ -1042,14 +1134,14 @@ class Engine:
 
   def committed_view(self) -> Engine:
     """A copy of the store with every unresolved staged item undone."""
-    view = Engine(self.implementation)
+    view = Engine(self.implementation, self.library)
     copies: Dict[int, Node] = {}
 
     def copy(node: Node, parent: Optional[Node]) -> Node:
-      attributes, state = pb.ResourceAttributes(), pb.ResourceState()
-      attributes.CopyFrom(node.attributes)
+      own, state = pb.ResourceAttributes(), pb.ResourceState()
+      own.CopyFrom(node.own)
       state.CopyFrom(node.state)
-      made = Node(attributes=attributes, state=state, parent=parent, id=node.id)
+      made = Node(part=node.part, own=own, state=state, parent=parent, id=node.id)
       copies[id(node)] = made
       made.children = [copy(child, made) for child in node.children]
       return made
@@ -1081,7 +1173,7 @@ class Engine:
       if isinstance(step, _Snapshot):
         node = mapped(step.node)
         assert node is not None
-        translated.append(_Snapshot(node, step.attributes, step.state))
+        translated.append(_Snapshot(node, step.own, step.state))
       elif isinstance(step, _Reattach):
         node = mapped(step.node)
         assert node is not None
@@ -1150,7 +1242,7 @@ class Engine:
     is_container = node.kind in g.CONTAINER_KINDS
     cavity = (
       g.location_wrt(node, frame, *_ANCHOR_CAVITY, placements)
-      if is_container and node.attributes.container.HasField("material_z_thickness")
+      if is_container and node.facts.container.HasField("material_z_thickness")
       else bottom
     )
     size = g.absolute_size(node)
@@ -1164,7 +1256,7 @@ class Engine:
       rotation_in_frame=to_rotation_message(g.rotation_wrt(node, frame)),
     )
     if is_container:
-      message.container.CopyFrom(node.attributes.container)
+      message.container.CopyFrom(node.facts.container)
     if node.state.HasField("volume"):
       message.volume.CopyFrom(node.state.volume)
     return message
@@ -1191,7 +1283,7 @@ class Engine:
         location = Coordinate(
           here.x if x is None else x, here.y if y is None else y, here.z if z is None else z
         )
-      self.set_attributes(node, steps, lambda: node.attributes.location.CopyFrom(to_vec3(location)))
+      self.set_attributes(node, steps, lambda: node.own.location.CopyFrom(to_vec3(location)))
     if position.HasField("rotation"):
       change = pb.RotationChange()
       change.CopyFrom(position.rotation)
@@ -1218,7 +1310,11 @@ class Engine:
         else g.volume_from_height(node, measurement.liquid_height)
       )
       self.set_volume(node, volume, steps)
-      return spb.MeasurementResult(previous_volume=previous, volume=volume)
+      result = spb.MeasurementResult(previous_volume=previous, volume=volume)
+      issue = volume_issue(node, volume, index)
+      if issue is not None:
+        result.issue.CopyFrom(issue)
+      return result
     if which == "tool_present":
       holds = tool_in(node) is not None
       if holds == measurement.tool_present:
@@ -1303,7 +1399,7 @@ class Engine:
 
 
 def _set_location(node: Node, location: Coordinate) -> None:
-  node.attributes.location.CopyFrom(to_vec3(location))
+  node.own.location.CopyFrom(to_vec3(location))
 
 
 def _set_volume_tracking(node: Node, enabled: bool) -> None:
@@ -1335,6 +1431,29 @@ def _step_node(step: Step) -> Node:
   return step.node
 
 
+def capacity(node: Node) -> Optional[float]:
+  """What a container or tip holds at most; None when it does not say."""
+  if node.kind == K.RESOURCE_KIND_TIP:
+    return node.facts.tip.maximal_volume if node.facts.HasField("tip") else None
+  if node.kind in g.CONTAINER_KINDS and node.facts.container.HasField("max_volume"):
+    return node.facts.container.max_volume
+  return None
+
+
+def volume_issue(node: Node, volume: float, item: int) -> Optional[pb.Issue]:
+  """The issue with a resource holding `volume`: more than it holds at most, or less than
+  nothing. None when it can."""
+  most = capacity(node)
+  if volume < -VOLUME_TOLERANCE:
+    problem, message = pb.PROBLEM_TOO_LITTLE_LIQUID, f"'{node.name}' cannot hold {volume:g} uL"
+  elif most is not None and volume > most + VOLUME_TOLERANCE:
+    problem = pb.PROBLEM_TOO_LITTLE_VOLUME
+    message = f"'{node.name}' holds at most {most:g} uL, not {volume:g} uL"
+  else:
+    return None
+  return pb.Issue(problem=problem, message=message, resource_id=node.id, item=item)
+
+
 def tool_in(node: Node) -> Optional[Node]:
   """The tool a spot, shaft or holder holds: its first child that is a tip or a tool."""
   return next((c for c in node.children if c.kind in g.TOOL_KINDS), None)
@@ -1349,31 +1468,19 @@ def _issue(error: StoreError, item: int, node: Optional[Node] = None) -> pb.Issu
   )
 
 
-def _rename(definition: pb.ResourceDefinition, name: str) -> None:
-  """Name a definition's root, and put that name where its descendants say `{name}`."""
-  definition.attributes.name = name
-
-  def visit(children: Iterable[pb.ResourceDefinition]) -> None:
-    for child in children:
-      child.attributes.name = child.attributes.name.replace("{name}", name)
-      visit(child.children)
-
-  visit(definition.children)
+def _same_placement(own: pb.ResourceAttributes, start: pb.ResourceAttributes) -> bool:
+  """Whether a resource stands where a part puts it."""
+  return (
+    own.HasField("location") == start.HasField("location")
+    and own.location == start.location
+    and own.rotation == start.rotation
+  )
 
 
-def _check_definition(definition: pb.ResourceDefinition) -> None:
-  """Refuse a definition with no kind or no name.
-
-  Raises:
-    StoreError: A resource in it has no kind or no name.
-  """
-  if definition.attributes.kind == K.RESOURCE_KIND_UNSPECIFIED:
-    raise StoreError(
-      pb.PROBLEM_WRONG_KIND,
-      f"'{definition.attributes.name}' has no kind",
-      definition.attributes.name,
-    )
-  for child in definition.children:
-    if not child.attributes.name:
-      raise StoreError(pb.PROBLEM_NOT_FOUND, "a resource needs a name")
-    _check_definition(child)
+def _place_as(own: pb.ResourceAttributes, start: pb.ResourceAttributes) -> None:
+  """Stand a resource where a part puts it."""
+  if start.HasField("location"):
+    own.location.CopyFrom(start.location)
+  else:
+    own.ClearField("location")
+  own.rotation.CopyFrom(start.rotation)

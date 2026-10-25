@@ -19,14 +19,36 @@ from pylabrobot.resources.carrier import Carrier, PlateCarrier
 from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
 from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck, track_for_x_coordinate
 from pylabrobot.resources.plate import Plate as PLRPlate
+from pylabrobot.resources.resource import Resource as PLRResource
 from pylabrobot.resources.store import build
 from pylabrobot.resources.store import handles as h
 from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.definitions import kind_of
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.tests.store_tests import ROOT, StoreTestCase, build_deck
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.tip_rack import TipSpot
 from pylabrobot.resources.well import Well as PLRWell
+
+
+def by_kind(data: Any, plr: PLRResource) -> Any:
+  """PLR's event data with each resource's type the handle class its kind is, as a store names it:
+  the store keeps a resource's kind, not the PLR class it was built as."""
+  classes: Dict[str, str] = {}
+  for resource in [plr, *plr.get_all_children()]:
+    classes[type(resource).__name__] = h.HANDLE_TYPES[kind_of(resource)].__name__
+
+  def visit(value: Any) -> Any:
+    if isinstance(value, dict):
+      made = {key: visit(each) for key, each in value.items()}
+      if isinstance(made.get("type"), str) and "name" in made:
+        made["type"] = classes.get(made["type"], made["type"])
+      return made
+    if isinstance(value, (list, tuple)):
+      return type(value)(visit(each) for each in value)
+    return value
+
+  return visit(data)
 
 
 class HandleTestCase(StoreTestCase):
@@ -135,7 +157,9 @@ class EventTests(HandleTestCase):
     for name in ("plate_well_B3", "tips", "shaft_1"):
       handle = await self.store.get(name, root=self.deck)
       self.assertEqual(
-        await handle_reference(handle), resource_reference(self.plr.get_resource(name)), name
+        await handle_reference(handle),
+        by_kind(resource_reference(self.plr.get_resource(name)), self.plr),
+        name,
       )
     self.assertIsNone(await handle_reference(None))
 
@@ -165,7 +189,10 @@ class EventTests(HandleTestCase):
       await carrier[3].assign_child_resource(plate)
       await carrier[4].assign_child_resource(plate)
 
-    self.assertEqual([(e.name, e.data) for e in events], [(e.name, e.data) for e in plr_events])
+    self.assertEqual(
+      [(e.name, e.data) for e in events],
+      [(e.name, by_kind(e.data, self.plr)) for e in plr_events],
+    )
     self.assertEqual(
       [e.name for e in events],
       ["resource.unassigned", "resource.assigned"] * 2,
@@ -188,9 +215,10 @@ class EventTests(HandleTestCase):
     spot = self.plr.get_resource("tips_tipspot_A1")
     assert isinstance(spot, TipSpot)
     ours = await self.events_of(lambda: tips.set_tip_state([i != 0 for i in range(tips.num_items)]))
-    self.assertEqual(ours, await self.events_of(spot.unassign_tip))
+    self.assertEqual(ours, by_kind(await self.events_of(spot.unassign_tip), self.plr))
     ours = await self.events_of(tips.fill)
-    self.assertEqual(ours, await self.events_of(lambda: spot.assign_tip(spot.make_tip())))
+    made = await self.events_of(lambda: spot.assign_tip(spot.make_tip()))
+    self.assertEqual(ours, by_kind(made, self.plr))
     ours = await self.events_of(tips.empty)
     self.assertEqual(len(ours), tips.num_items)
     self.assertEqual({name for name, _ in ours}, {"resource.unassigned"})

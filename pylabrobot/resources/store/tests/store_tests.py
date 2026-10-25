@@ -27,12 +27,13 @@ from pylabrobot.resources.hamilton.trough_carriers import Trough_CAR_4R200_A00
 from pylabrobot.resources.hamilton.troughs import hamilton_1_trough_200mL_Vb
 from pylabrobot.resources.n_channel_pipettes import TipMountingShaft
 from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.store import build, library
+from pylabrobot.resources.store import build, handles, library
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.definitions import definition_from_resource
 from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.tests.scenes import stacking_plate
 from pylabrobot.resources.store.tree import to_coordinate
+from pylabrobot.resources.store.v1 import primitives_pb2 as ppb
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.store.v1.store_connect import ResourceStoreServiceClient
@@ -281,8 +282,9 @@ class TreeTests(StoreTestCase):
     self.assertTrue(model.definition.attributes.itemized.HasField("grid"))
     model.name = "cor_96"
     await self.commands.put_model(spb.PutModelRequest(model=model))
-    models = await self.commands.list_models(spb.ListModelsRequest())
-    self.assertEqual([m.name for m in models.models], ["cor_96"])
+    self.assertEqual(
+      (await self.commands.get_model(spb.GetModelRequest(name="cor_96"))).name, "cor_96"
+    )
     await self.commands.create_resources(
       spb.CreateResourcesRequest(
         resources=[
@@ -652,6 +654,43 @@ class LiquidTests(StoreTestCase):
     self.assertAlmostEqual(converted.results[1].height, 3.22)
     self.assertEqual(converted.results[2].issue.problem, pb.PROBLEM_OUTSIDE_HEIGHT_VOLUME_DATA)
 
+  async def test_a_volume_it_cannot_hold_is_an_issue_or_a_refusal(self):
+    def update(volume: float, policy: int) -> spb.UpdateResourcesRequest:
+      return spb.UpdateResourcesRequest(
+        updates=[
+          spb.ResourceUpdate(volume=pb.SetVolume(resource=item("plate", "B1"), volume=volume))
+        ],
+        on_tracking_problem=policy,  # type: ignore[arg-type]
+      )
+
+    recorded = await self.commands.update_resources(update(400, pb.ON_TRACKING_PROBLEM_RECORD))
+    self.assertEqual([i.problem for i in recorded.issues], [pb.PROBLEM_TOO_LITTLE_VOLUME])
+    self.assertAlmostEqual(await self.volume(item("plate", "B1")), 400)
+    for volume, problem in (
+      (500, pb.PROBLEM_TOO_LITTLE_VOLUME),
+      (-1, pb.PROBLEM_TOO_LITTLE_LIQUID),
+    ):
+      with self.assertRaises(StoreError) as refused:
+        await self.commands.update_resources(update(volume, pb.ON_TRACKING_PROBLEM_REJECT))
+      self.assertEqual(refused.exception.problem, problem)
+    self.assertAlmostEqual(await self.volume(item("plate", "B1")), 400)
+    fits = await self.commands.update_resources(update(360, pb.ON_TRACKING_PROBLEM_REJECT))
+    self.assertEqual(list(fits.issues), [])
+
+  async def test_liquid_added_past_what_it_holds_is_an_issue_or_a_refusal(self):
+    def add(volume: float, policy: int) -> ppb.ApplyChangesRequest:
+      change = ppb.Change(add_liquid=ppb.AddLiquid(resource=item("plate", "B1"), volume=volume))
+      return ppb.ApplyChangesRequest(
+        groups=[ppb.ChangeGroup(changes=[change])],
+        on_tracking_problem=policy,  # type: ignore[arg-type]
+      )
+
+    with self.assertRaises(StoreError) as refused:
+      await self.store.primitives.apply_changes(add(400, pb.ON_TRACKING_PROBLEM_REJECT))
+    self.assertEqual(refused.exception.problem, pb.PROBLEM_TOO_LITTLE_VOLUME)
+    recorded = await self.store.primitives.apply_changes(add(400, pb.ON_TRACKING_PROBLEM_RECORD))
+    self.assertEqual([i.problem for i in recorded.issues], [pb.PROBLEM_TOO_LITTLE_VOLUME])
+
 
 class PlaceTests(StoreTestCase):
   async def test_a_plate_moves_between_sites(self):
@@ -888,6 +927,127 @@ class WatchTests(StoreTestCase):
       break
     self.assertEqual(events[0].updated.attributes.name, "trough")
     self.assertEqual(list(events[0].changed), [spb.CHANGE_ASPECT_STATE])
+
+
+class ModelTests(StoreTestCase):
+  """Resources made from a model refer to it, and follow it when it changes."""
+
+  async def put(self, model: pb.ResourceModel) -> None:
+    await self.commands.put_model(spb.PutModelRequest(model=model))
+
+  async def create(self, model: str, name: str) -> None:
+    await self.commands.create_resources(
+      spb.CreateResourcesRequest(resources=[spb.CreateResource(model=model, name=name)])
+    )
+
+  async def test_resources_of_a_model_follow_it_when_it_changes(self):
+    model = library.get_model("cor_96_wellplate_360uL_Fb")
+    model.name = "plate_96"
+    await self.put(model)
+    await self.create("plate_96", "a")
+    await self.create("plate_96", "b")
+    start = (await self.commands.get_store_info(spb.GetStoreInfoRequest())).revision
+    grid = model.definition.attributes.itemized.grid
+    grid.item.attributes.container.max_volume = 500
+    grid.offset.z += 1
+    await self.put(model)
+    for plate in ("a", "b"):
+      well = await self.node(ref(f"{plate}_well_C3", plate))
+      self.assertEqual(well.attributes.container.max_volume, 500)
+      self.assertAlmostEqual(well.attributes.location.z, grid.offset.z)
+    events = []
+    async for event in self.commands.watch(spb.WatchRequest(after_revision=start)):
+      events.append(event)
+      if len(events) == 2 * 96:
+        break
+    self.assertEqual({e.updated.attributes.kind for e in events}, {pb.RESOURCE_KIND_WELL})
+    self.assertEqual(
+      {tuple(e.changed) for e in events},
+      {(spb.CHANGE_ASPECT_PLACEMENT, spb.CHANGE_ASPECT_ATTRIBUTES)},
+    )
+
+  async def test_a_resource_moved_off_its_model_place_stays_there(self):
+    model = library.get_model("cor_96_wellplate_360uL_Fb")
+    model.name = "plate_96"
+    await self.put(model)
+    await self.create("plate_96", "a")
+    await self.commands.update_resources(
+      spb.UpdateResourcesRequest(
+        updates=[
+          spb.ResourceUpdate(
+            rotation=pb.RotationChange(resource=ref("a_well_A1", "a"), by=pb.Rotation(z=90))
+          )
+        ]
+      )
+    )
+    before = (await self.node(ref("a_well_A1", "a"))).attributes.location
+    model.definition.attributes.itemized.grid.offset.z += 1
+    await self.put(model)
+    self.assertEqual((await self.node(ref("a_well_A1", "a"))).attributes.location, before)
+    moved = await self.node(ref("a_well_B1", "a"))
+    self.assertAlmostEqual(moved.attributes.location.z, before.z + 1)
+
+  async def test_a_model_change_of_kind_is_refused(self):
+    model = library.get_model("cor_96_wellplate_360uL_Fb")
+    model.name = "plate_96"
+    await self.put(model)
+    await self.create("plate_96", "a")
+    model.definition.attributes.itemized.grid.item.attributes.kind = pb.RESOURCE_KIND_TUBE
+    with self.assertRaises(StoreError) as refused:
+      await self.put(model)
+    self.assertEqual(refused.exception.problem, pb.PROBLEM_WRONG_KIND)
+    well = await self.node(ref("a_well_A1", "a"))
+    self.assertEqual(well.attributes.kind, pb.RESOURCE_KIND_WELL)
+
+  async def test_a_spec_of_another_kind_is_refused(self):
+    definition = build.resource(
+      "odd", Coordinate(10, 10, 10), kind=pb.RESOURCE_KIND_LID, plate=pb.PlateSpec()
+    )
+    with self.assertRaises(StoreError) as refused:
+      await self.commands.create_resources(
+        spb.CreateResourcesRequest(resources=[spb.CreateResource(definition=definition)])
+      )
+    self.assertEqual(refused.exception.problem, pb.PROBLEM_WRONG_KIND)
+
+  async def test_get_or_create_finds_what_is_there(self):
+    made = await self.store.get_or_create("cor_96_wellplate_360uL_Fb", "a")
+    again = await self.store.get_or_create("cor_96_wellplate_360uL_Fb", "a")
+    self.assertEqual(again, made)
+    with self.assertRaises(StoreError) as refused:
+      await self.store.get_or_create("hamilton_96_tiprack_300uL_filter", "a")
+    self.assertEqual(refused.exception.problem, pb.PROBLEM_NAME_CONFLICT)
+    carrier = await self.store.get("plate_carrier", ROOT)
+    assert isinstance(carrier, handles.Carrier)
+    held = await self.store.get_or_create("cor_96_wellplate_360uL_Fb", "plate", parent=carrier[0])
+    self.assertEqual(held, await self.store.get("plate", ROOT))
+
+  async def test_a_definition_read_back_gives_its_grid_once(self):
+    made = await self.store.create("cor_96_wellplate_360uL_Fb", "a")
+    definition = await made.definition()
+    grid = definition.attributes.itemized.grid
+    self.assertEqual(grid.item.attributes.name, "a_well_{identifier}")
+    self.assertEqual(len(definition.children), 0)
+    await self.store.create(definition, "b")
+    self.assertEqual(len((await self.node(ref("b", ""))).child_ids), 96)
+
+
+class LibraryTests(StoreTestCase):
+  """PLR's stores start with PLR's labware models put in."""
+
+  async def test_plr_models_are_listed_and_made_by_name(self):
+    first = await self.commands.list_models(spb.ListModelsRequest(page_size=3))
+    self.assertEqual([m.name for m in first.models], library.model_names()[:3])
+    self.assertTrue(first.next_page_token)
+    await self.store.create("hamilton_96_tiprack_300uL_filter", "more_tips")
+    node = await self.node(ref("more_tips", ""))
+    made_as = library.get_model("hamilton_96_tiprack_300uL_filter").definition.attributes
+    self.assertEqual(node.attributes.model, made_as.model)
+
+  async def test_a_deprecated_name_makes_its_model(self):
+    alias, target = next(iter(sorted(library.aliases().items())))
+    await self.store.create(alias, "aliased")
+    made_as = library.get_model(target).definition.attributes
+    self.assertEqual((await self.node(ref("aliased", ""))).attributes.model, made_as.model)
 
 
 if __name__ == "__main__":

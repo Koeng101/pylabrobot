@@ -61,6 +61,11 @@ class ModelFileTests(unittest.TestCase):
             functions.update(n for n, _ in inspect.getmembers(module, inspect.isfunction))
         self.assertIn(name, functions, f"{path} has no factory beside it")
 
+  def test_aliases_are_the_deprecated_factories(self):
+    self.assertEqual(library.aliases(), library.alias_targets())
+    for alias, target in library.aliases().items():
+      self.assertEqual(library.get_model(alias).name, target)
+
 
 class GridTests(unittest.TestCase):
   """Items given once as a grid are made as `create_ordered_items_2d` makes them."""

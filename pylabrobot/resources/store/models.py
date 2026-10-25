@@ -20,7 +20,8 @@ _TOLERANCE = 1e-6
 _DECIMALS = 6
 
 
-def _identifier(column: int, row: int) -> str:
+def identifier_of(column: int, row: int) -> str:
+  """The identifier of the item in a column and row, "A1" for the first."""
   return f"{row_index_to_label(row)}{column + 1}"
 
 
@@ -42,7 +43,7 @@ def _grid_items(spec: pb.ItemizedSpec) -> List[pb.ResourceDefinition]:
     for row in range(spec.num_items_y):
       item = pb.ResourceDefinition()
       item.CopyFrom(grid.item)
-      identifier = _identifier(column, row)
+      identifier = identifier_of(column, row)
       item.attributes.identifier = identifier
       item.attributes.location.CopyFrom(
         pb.Vec3(

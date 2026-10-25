@@ -60,17 +60,15 @@ def lid_of(node: Node) -> Optional[Node]:
 
 def _stacking_z_height(node: Node) -> Optional[float]:
   """How far a plate or standing tip rack adds to a stack of its own kind, if it says."""
-  if node.kind == K.RESOURCE_KIND_PLATE and node.attributes.plate.HasField("stacking_z_height"):
-    return node.attributes.plate.stacking_z_height
-  if node.kind == K.RESOURCE_KIND_TIP_RACK and node.attributes.tip_rack.HasField(
-    "stacking_z_height"
-  ):
-    return node.attributes.tip_rack.stacking_z_height
+  if node.kind == K.RESOURCE_KIND_PLATE and node.facts.plate.HasField("stacking_z_height"):
+    return node.facts.plate.stacking_z_height
+  if node.kind == K.RESOURCE_KIND_TIP_RACK and node.facts.tip_rack.HasField("stacking_z_height"):
+    return node.facts.tip_rack.stacking_z_height
   return None
 
 
 def _is_standing_tip_rack(node: Node) -> bool:
-  return node.kind == K.RESOURCE_KIND_TIP_RACK and node.attributes.tip_rack.style in (
+  return node.kind == K.RESOURCE_KIND_TIP_RACK and node.facts.tip_rack.style in (
     pb.TIP_RACK_STYLE_STANDING,
     pb.TIP_RACK_STYLE_NESTED,
   )
@@ -80,7 +78,7 @@ def _occupied_height(node: Node) -> float:
   """The height a resource takes up in a stack, with its lid on."""
   lid = lid_of(node)
   if node.kind in (K.RESOURCE_KIND_PLATE, K.RESOURCE_KIND_TIP_RACK) and lid is not None:
-    return size(node).z + size(lid).z - lid.attributes.lid.nesting_z_height
+    return size(node).z + size(lid).z - lid.facts.lid.nesting_z_height
   return size(node).z
 
 
@@ -90,7 +88,7 @@ def nesting_overlap(stack: Node, upper: Node, lower: Optional[Node]) -> float:
   A bare plate on a bare plate, or a standing tip rack on a bare standing tip rack, nests when the
   upper one states its stacking height.
   """
-  if stack.attributes.stack.direction != pb.STACK_DIRECTION_Z or lower is None:
+  if stack.facts.stack.direction != pb.STACK_DIRECTION_Z or lower is None:
     return 0.0
   stacking = _stacking_z_height(upper)
   if stacking is None or lid_of(lower) is not None:
@@ -106,7 +104,7 @@ def _stack_size(stack: Node) -> Size:
   """A stack's size, from what it holds."""
   if not stack.children:
     return Size(0.0, 0.0, 0.0)
-  direction = stack.attributes.stack.direction
+  direction = stack.facts.stack.direction
   sizes = [size(child) for child in stack.children]
   x = sum(s.x for s in sizes) if direction == pb.STACK_DIRECTION_X else max(s.x for s in sizes)
   y = sum(s.y for s in sizes) if direction == pb.STACK_DIRECTION_Y else max(s.y for s in sizes)
@@ -124,7 +122,7 @@ def size(node: Node) -> Size:
   """A resource's size along its own axes: its own, or a stack's from what it holds."""
   if node.kind == K.RESOURCE_KIND_RESOURCE_STACK:
     return _stack_size(node)
-  s = node.attributes.size
+  s = node.facts.size
   return Size(s.x, s.y, s.z)
 
 
@@ -161,13 +159,13 @@ def anchor(
       raise StoreError(
         pb.PROBLEM_WRONG_KIND, f"'{node.name}' is not a container: it has no cavity", node.name
       )
-    if not node.attributes.container.HasField("material_z_thickness"):
+    if not node.facts.container.HasField("material_z_thickness"):
       raise StoreError(
         pb.PROBLEM_WRONG_KIND,
         f"'{node.name}' does not say how thick its bottom is, so its cavity bottom is unknown",
         node.name,
       )
-    return Coordinate(x_, y_, node.attributes.container.material_z_thickness)
+    return Coordinate(x_, y_, node.facts.container.material_z_thickness)
   z_ = {
     pb.ANCHOR_Z_UNSPECIFIED: 0.0,
     pb.ANCHOR_Z_BOTTOM: 0.0,
@@ -433,7 +431,7 @@ def plate_sinking_depth(holder: Node, plate: Node) -> float:
   heights = {
     round(well_location.z, 2)
     for well in plate.walk()
-    if well is not plate and well.attributes.category == "well"
+    if well is not plate and well.facts.category == "well"
     for well_location in [well.location]
     if well_location is not None
   }
@@ -443,7 +441,7 @@ def plate_sinking_depth(holder: Node, plate: Node) -> float:
       f"the wells of '{plate.name}' do not all stand at the same height",
       plate.name,
     )
-  return min(abs(holder.attributes.holder.pedestal_size_z), heights.pop())
+  return min(abs(holder.facts.holder.pedestal_size_z), heights.pop())
 
 
 def holder_child_location(
@@ -456,11 +454,11 @@ def holder_child_location(
     StoreError: An embedded tip rack holder given anything but an embedded tip rack.
   """
   turned = rotation_offset(child, child_rotation)
-  child_location = to_coordinate(holder.attributes.holder.child_location)
+  child_location = to_coordinate(holder.facts.holder.child_location)
   if holder.kind == K.RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER:
     if not (
       child.kind == K.RESOURCE_KIND_TIP_RACK
-      and child.attributes.tip_rack.style == pb.TIP_RACK_STYLE_EMBEDDED
+      and child.facts.tip_rack.style == pb.TIP_RACK_STYLE_EMBEDDED
     ):
       raise StoreError(
         pb.PROBLEM_WRONG_KIND,
@@ -477,7 +475,7 @@ def holder_child_location(
       + Coordinate(
         x=(holder_size.x - rack_x) / 2,
         y=(holder_size.y - rack_y) / 2,
-        z=-child.attributes.tip_rack.sinking_depth,
+        z=-child.facts.tip_rack.sinking_depth,
       )
       + child_location
     )
@@ -499,7 +497,7 @@ def stack_child_location(
   """Where a stack seats a child: at its growing edge, sunk into the one below when they nest."""
   lower = stack.children[-1] if stack.children else None
   s = size(stack)
-  direction = stack.attributes.stack.direction
+  direction = stack.facts.stack.direction
   edge = {
     pb.STACK_DIRECTION_X: Coordinate(s.x, 0, 0),
     pb.STACK_DIRECTION_Y: Coordinate(0, s.y, 0),
@@ -524,7 +522,7 @@ def plate_adapter_location(adapter: Node, plate: Node) -> Coordinate:
   Raises:
     StoreError: The plate's wells are not spaced as the adapter's holes are, or not uniformly.
   """
-  spec = adapter.attributes.plate_adapter
+  spec = adapter.facts.plate_adapter
   well_locations = [child.location for child in plate.children]
   xs = sorted({location.x for location in well_locations if location is not None})
   ys = sorted({location.y for location in well_locations if location is not None})
@@ -557,13 +555,13 @@ def lid_location(parent: Node, lid: Node, lid_rotation: Optional[Rotation] = Non
     rotation_offset(lid, lid_rotation)
     + anchor(parent, pb.ANCHOR_X_CENTER, pb.ANCHOR_Y_CENTER, pb.ANCHOR_Z_TOP)
     - anchor(lid, pb.ANCHOR_X_CENTER, pb.ANCHOR_Y_CENTER, pb.ANCHOR_Z_BOTTOM)
-    - Coordinate(0, 0, lid.attributes.lid.nesting_z_height)
+    - Coordinate(0, 0, lid.facts.lid.nesting_z_height)
   )
 
 
 def _pick_up_point(tool: Node) -> Coordinate:
   """Where a tool is held: its stated pick-up location, or the centre of its top."""
-  spec = tool.attributes.head_tool
+  spec = tool.facts.head_tool
   if spec.HasField("pick_up_location"):
     return to_coordinate(spec.pick_up_location)
   return anchor(tool, pb.ANCHOR_X_CENTER, pb.ANCHOR_Y_CENTER, pb.ANCHOR_Z_TOP)
@@ -571,7 +569,7 @@ def _pick_up_point(tool: Node) -> Coordinate:
 
 def resting_location(spot: Node, tip: Node) -> Coordinate:
   """Where a tip rests in its spot: centred on it, its pick-up point a collar's height above."""
-  collar = tip.attributes.tip.collar_height if tip.attributes.tip.HasField("collar_height") else 0.0
+  collar = tip.facts.tip.collar_height if tip.facts.tip.HasField("collar_height") else 0.0
   pick_up = _pick_up_point(tip)
   spot_size = size(spot)
   return Coordinate(
@@ -589,7 +587,7 @@ def mount_location(shaft: Node, tool: Node) -> Coordinate:
   return Coordinate(
     x=shaft_size.x / 2 - grip.x,
     y=shaft_size.y / 2 - grip.y,
-    z=tool.attributes.head_tool.fitting_depth - grip.z,
+    z=tool.facts.head_tool.fitting_depth - grip.z,
   )
 
 
@@ -627,9 +625,9 @@ def track_location(deck: Node, track: int) -> Coordinate:
   Raises:
     StoreError: The deck has no tracks.
   """
-  if not deck.attributes.deck.HasField("hamilton"):
+  if not deck.facts.deck.HasField("hamilton"):
     raise StoreError(pb.PROBLEM_WRONG_KIND, f"'{deck.name}' has no tracks", deck.name)
-  spec = deck.attributes.deck.hamilton
+  spec = deck.facts.deck.hamilton
   origin = to_coordinate(spec.track_origin)
   return Coordinate(origin.x + (track - 1) * spec.track_pitch, origin.y, origin.z)
 
@@ -643,7 +641,7 @@ def _height_volume_data(container: Node) -> Dict[float, float]:
   Raises:
     StoreError: It has fewer than two points, or its volumes do not rise with height.
   """
-  points = container.attributes.container.height_volume_data
+  points = container.facts.container.height_volume_data
   if container.kind not in CONTAINER_KINDS or len(points) < 2:
     raise StoreError(
       pb.PROBLEM_NO_HEIGHT_VOLUME_DATA,
@@ -748,7 +746,7 @@ def jaw_locations(gripper: Node, jaw_width: float) -> List[Tuple[Node, Coordinat
   Raises:
     StoreError: The width is outside the jaws' range, or a named part is missing.
   """
-  spec = gripper.attributes.mechanical_gripper
+  spec = gripper.facts.mechanical_gripper
   if not spec.jaw_width_min <= jaw_width <= spec.jaw_width_max:
     raise StoreError(
       pb.PROBLEM_OUT_OF_RANGE,
@@ -784,9 +782,9 @@ def reference_point(node: Node) -> Coordinate:
   """Where a device part's drives report it, from its left front bottom corner: a channel's or a
   multi-channel head's stated point, its corner otherwise."""
   if node.kind == K.RESOURCE_KIND_PIPETTE_CHANNEL:
-    return to_coordinate(node.attributes.pipette_channel.reference_point)
+    return to_coordinate(node.facts.pipette_channel.reference_point)
   if node.kind == K.RESOURCE_KIND_N_CHANNEL_PIPETTE:
-    return to_coordinate(node.attributes.n_channel_pipette.reference_point)
+    return to_coordinate(node.facts.n_channel_pipette.reference_point)
   return Coordinate(0, 0, 0)
 
 
@@ -826,9 +824,7 @@ def turned_copy(node: Node, turn_z: float) -> Node:
   """A copy of a resource and everything under it, belonging to no tree, turned further about z:
   `Resource.rotated(z=...)`."""
   copy = copy_tree(node)
-  copy.attributes.rotation.CopyFrom(
-    to_rotation_message(turned_by(copy.rotation, Rotation(z=turn_z)))
-  )
+  copy.own.rotation.CopyFrom(to_rotation_message(turned_by(copy.rotation, Rotation(z=turn_z))))
   return copy
 
 
@@ -866,7 +862,7 @@ def place_location(
   along = rotation_wrt(destination, frame)
   child: Coordinate
   if destination.kind == K.RESOURCE_KIND_RESOURCE_STACK:
-    if destination.attributes.stack.direction != pb.STACK_DIRECTION_Z:
+    if destination.facts.stack.direction != pb.STACK_DIRECTION_Z:
       raise StoreError(
         pb.PROBLEM_CANNOT_DROP_HERE,
         f"stack '{destination.name}' does not grow in z: a resource is placed only onto one that "

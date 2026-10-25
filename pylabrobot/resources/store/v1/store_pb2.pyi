@@ -223,20 +223,24 @@ class ResourceUpdate(_message.Message):
     def __init__(self, rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., metadata: _Optional[_Union[_types_pb2.SetMetadata, _Mapping]] = ..., barcode: _Optional[_Union[_types_pb2.SetBarcode, _Mapping]] = ..., tracking: _Optional[_Union[_types_pb2.SetTracking, _Mapping]] = ..., volume: _Optional[_Union[_types_pb2.SetVolume, _Mapping]] = ..., tip_presence: _Optional[_Union[_types_pb2.SetTipPresence, _Mapping]] = ..., preferred_pickup_location: _Optional[_Union[_types_pb2.SetPreferredPickupLocation, _Mapping]] = ...) -> None: ...
 
 class UpdateResourcesRequest(_message.Message):
-    __slots__ = ("lock_tokens", "updates")
+    __slots__ = ("lock_tokens", "updates", "on_tracking_problem")
     LOCK_TOKENS_FIELD_NUMBER: _ClassVar[int]
     UPDATES_FIELD_NUMBER: _ClassVar[int]
+    ON_TRACKING_PROBLEM_FIELD_NUMBER: _ClassVar[int]
     lock_tokens: _containers.RepeatedScalarFieldContainer[bytes]
     updates: _containers.RepeatedCompositeFieldContainer[ResourceUpdate]
-    def __init__(self, lock_tokens: _Optional[_Iterable[bytes]] = ..., updates: _Optional[_Iterable[_Union[ResourceUpdate, _Mapping]]] = ...) -> None: ...
+    on_tracking_problem: _types_pb2.OnTrackingProblem
+    def __init__(self, lock_tokens: _Optional[_Iterable[bytes]] = ..., updates: _Optional[_Iterable[_Union[ResourceUpdate, _Mapping]]] = ..., on_tracking_problem: _Optional[_Union[_types_pb2.OnTrackingProblem, str]] = ...) -> None: ...
 
 class UpdateResourcesResponse(_message.Message):
-    __slots__ = ("nodes", "revision")
+    __slots__ = ("nodes", "revision", "issues")
     NODES_FIELD_NUMBER: _ClassVar[int]
     REVISION_FIELD_NUMBER: _ClassVar[int]
+    ISSUES_FIELD_NUMBER: _ClassVar[int]
     nodes: _containers.RepeatedCompositeFieldContainer[_types_pb2.ResourceNode]
     revision: int
-    def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ...) -> None: ...
+    issues: _containers.RepeatedCompositeFieldContainer[_types_pb2.Issue]
+    def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ..., issues: _Optional[_Iterable[_Union[_types_pb2.Issue, _Mapping]]] = ...) -> None: ...
 
 class GetResourcesRequest(_message.Message):
     __slots__ = ("resources", "depth", "view", "ancestors")

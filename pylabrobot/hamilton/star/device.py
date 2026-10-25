@@ -303,7 +303,7 @@ class STARDevice:
     """Make the body, put the deck in it, and bolt on what the device is declared to have."""
     deck = self.deck
     if deck is None:
-      made = await self.store.create(self._deck_model, name=f"{self.name}_deck")
+      made = await self.store.get_or_create(self._deck_model, name=f"{self.name}_deck")
       if not isinstance(made, handles.Deck):
         raise ValueError(f"'{self._deck_model}' is not a deck")
       deck = made

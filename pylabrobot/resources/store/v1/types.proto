@@ -206,7 +206,7 @@ message ItemizedSpec {
   int32 num_items_y = 2;
   // A uniform grid, given once: a definition with it lists only the children that are not items,
   // a lid say, and the store makes the items, ahead of those, when the resource is created. A
-  // stored resource never has it; its items are its children.
+  // resource read from the store never has it: its items are its children.
   optional ItemGrid grid = 3;
 }
 
@@ -346,7 +346,12 @@ message DeckSpec {
 }
 
 // What a resource is, without where it is in a tree or what state it is in. The same message
-// describes a stored model, an inline definition, and a stored resource.
+// describes a resource of a model, of an inline definition, and of the store as it is read.
+//
+// A stored resource refers to the model, or the inline definition, it was made from: what it is
+// (its kind, model, category, size and spec) is the model's, held once for every resource made
+// from it, and changes when the model is put again. Its name, location, rotation, identifier,
+// preferred pickup location, barcode and metadata are its own. A read answers both together.
 message ResourceAttributes {
   reserved 3;
   reserved "type_name";
@@ -397,7 +402,8 @@ message ResourceDefinition {
 }
 
 // A named definition the store keeps: the JSON labware file is this message's proto3 JSON. In a
-// model, `{name}` in a child's name becomes the name the instance is created with.
+// model, `{name}` in a child's name becomes the name the instance is created with. Every resource
+// made from a model refers to it; putting the model again changes what each of them is.
 message ResourceModel {
   string name = 1;
   ResourceDefinition definition = 2;

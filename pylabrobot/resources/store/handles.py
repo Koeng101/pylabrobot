@@ -36,6 +36,7 @@ from pylabrobot.events import coordinate_reference, emit_event, is_event_bus_act
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.rotation import Rotation
 from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.models import compact_grids
 from pylabrobot.resources.store.tree import to_coordinate, to_rotation, to_vec3
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -199,6 +200,26 @@ class Resource:
     attributes = await self.attributes()
     return attributes.barcode if attributes.HasField("barcode") else None
 
+  async def definition(self) -> pb.ResourceDefinition:
+    """It and everything under it as a definition, with its state, as it is now: what `create`
+    makes again. Items alike but for where they are, and evenly spaced, are given once as an
+    `ItemGrid`, as model files give them."""
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[self.ref], depth=-1)
+    )
+    by_id = {node.id: node for node in response.nodes}
+
+    def define(node: pb.ResourceNode) -> pb.ResourceDefinition:
+      made = pb.ResourceDefinition(attributes=node.attributes)
+      if node.state.ByteSize() > 0:
+        made.initial_state.CopyFrom(node.state)
+      made.children.extend(define(by_id[child]) for child in node.child_ids)
+      return made
+
+    definition = define(by_id[self.id])
+    compact_grids(definition)
+    return definition
+
   async def get_parent(self) -> Optional[Resource]:
     node = await self.node()
     if not node.parent_id:
@@ -306,6 +327,18 @@ class Resource:
       spb.UpdateResourcesRequest(lock_tokens=self.store.lock_tokens, updates=updates)
     )
 
+  async def _set_volume(
+    self, volume: float, on_tracking_problem: "pb.OnTrackingProblem"
+  ) -> List[pb.Issue]:
+    response = await self.store.commands.update_resources(
+      spb.UpdateResourcesRequest(
+        lock_tokens=self.store.lock_tokens,
+        updates=[spb.ResourceUpdate(volume=pb.SetVolume(resource=self.ref, volume=volume))],
+        on_tracking_problem=on_tracking_problem,
+      )
+    )
+    return list(response.issues)
+
   async def rotate(
     self, x: float = 0, y: float = 0, z: float = 0, pivot: Optional[Coordinate] = None
   ) -> None:
@@ -412,9 +445,22 @@ class Container(Resource):
       raise ValueError(f"'{self.name}' has no maximum volume")
     return spec.max_volume - node.state.volume.pending_volume
 
-  async def set_volume(self, volume: float) -> None:
-    """Say what it holds, as a person who filled it would."""
-    await self._update(spb.ResourceUpdate(volume=pb.SetVolume(resource=self.ref, volume=volume)))
+  async def set_volume(
+    self,
+    volume: float,
+    on_tracking_problem: "pb.OnTrackingProblem" = pb.ON_TRACKING_PROBLEM_RECORD,
+  ) -> List[pb.Issue]:
+    """Say what it holds, as a person who filled it would.
+
+    Args:
+      volume: What it holds now.
+      on_tracking_problem: Whether more than it holds at most, or less than nothing, is set and
+        returned as an issue, or refused.
+
+    Raises:
+      StoreError: The volume is refused (`PROBLEM_TOO_LITTLE_VOLUME`, `PROBLEM_TOO_LITTLE_LIQUID`).
+    """
+    return await self._set_volume(volume, on_tracking_problem)
 
   async def compute_height_from_volume(self, volume: float) -> float:
     """The liquid height above the cavity bottom that `volume` makes."""
@@ -648,9 +694,22 @@ class Tip(Resource):
     state = await self.state(view)
     return state.volume.pending_volume if view != pb.VIEW_COMMITTED else state.volume.volume
 
-  async def set_volume(self, volume: float) -> None:
-    """Say what it holds: 0 once it has been emptied somewhere the model does not hold."""
-    await self._update(spb.ResourceUpdate(volume=pb.SetVolume(resource=self.ref, volume=volume)))
+  async def set_volume(
+    self,
+    volume: float,
+    on_tracking_problem: "pb.OnTrackingProblem" = pb.ON_TRACKING_PROBLEM_RECORD,
+  ) -> List[pb.Issue]:
+    """Say what it holds: 0 once it has been emptied somewhere the model does not hold.
+
+    Args:
+      volume: What it holds now.
+      on_tracking_problem: Whether more than it holds at most, or less than nothing, is set and
+        returned as an issue, or refused.
+
+    Raises:
+      StoreError: The volume is refused (`PROBLEM_TOO_LITTLE_VOLUME`, `PROBLEM_TOO_LITTLE_LIQUID`).
+    """
+    return await self._set_volume(volume, on_tracking_problem)
 
 
 class Lid(Resource):
