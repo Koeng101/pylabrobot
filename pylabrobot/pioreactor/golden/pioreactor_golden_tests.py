@@ -15,6 +15,7 @@ from pylabrobot.pioreactor.bioreactors import Pioreactor, pioreactor_20ml
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.errors import TooLittleLiquidError, TooLittleVolumeError
 from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.errors import StoreError
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.testing import recorder as recording
 from pylabrobot.testing.golden import check_golden, snapshot_store
@@ -66,20 +67,27 @@ def container(name: str, kind: pb.ResourceKind = pb.RESOURCE_KIND_CONTAINER):
   )
 
 
+async def _set_volume(vessel: handles.Container, volume: float) -> None:
+  """Set what the vessel holds, refused by the store when it cannot hold it, as a volume tracker
+  refuses it."""
+  try:
+    await vessel.set_volume(volume, on_tracking_problem=pb.ON_TRACKING_PROBLEM_REJECT)
+  except StoreError as refused:
+    if refused.problem == pb.PROBLEM_TOO_LITTLE_VOLUME:
+      raise TooLittleVolumeError(str(refused)) from refused
+    if refused.problem == pb.PROBLEM_TOO_LITTLE_LIQUID:
+      raise TooLittleLiquidError(str(refused)) from refused
+    raise
+
+
 async def add_liquid(vessel: handles.Container, volume: float) -> None:
-  """A person adds liquid: refused when it does not fit, as a volume tracker refuses it."""
-  free = await vessel.get_free_volume()
-  if volume - free > 1e-6:
-    raise TooLittleVolumeError(f"Not enough space in container: {volume:g}uL > {free:g}uL.")
-  await vessel.set_volume(await vessel.get_volume() + volume)
+  """A person adds liquid: refused when it does not fit."""
+  await _set_volume(vessel, await vessel.get_volume() + volume)
 
 
 async def remove_liquid(vessel: handles.Container, volume: float) -> None:
-  """A person takes liquid: refused when there is not that much, as a volume tracker refuses it."""
-  held = await vessel.get_volume()
-  if volume - held > 1e-6:
-    raise TooLittleLiquidError(f"Container has too little liquid: {volume:g}uL > {held:g}uL.")
-  await vessel.set_volume(held - volume)
+  """A person takes liquid: refused when there is not that much."""
+  await _set_volume(vessel, await vessel.get_volume() - volume)
 
 
 class PioreactorGoldenTests(unittest.IsolatedAsyncioTestCase):

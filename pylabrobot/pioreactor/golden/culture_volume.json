@@ -46,7 +46,7 @@
     },
     {
       "call": "vessel.tracker.add_liquid(10000)",
-      "error": "TooLittleVolumeError: Not enough space in container: 10000uL > 6000uL.",
+      "error": "TooLittleVolumeError: 'pioreactor_vessel' holds at most 20000 uL, not 24000 uL",
       "resources": [
         {
           "name": "pioreactor",
