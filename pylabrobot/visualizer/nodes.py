@@ -174,8 +174,8 @@ def _deck_fields(attributes: pb.ResourceAttributes, data: Dict[str, Any]) -> Dic
   data.pop("model", None)
   if not attributes.deck.HasField("hamilton"):
     return data
-  if attributes.model:
-    data["model"] = attributes.model
+  if attributes.display_model or attributes.model:
+    data["model"] = attributes.display_model or attributes.model
   data["num_tracks"] = attributes.deck.hamilton.num_tracks
   data["with_trash"] = False
   data["with_trash96"] = False
@@ -203,8 +203,9 @@ def _attributes_data(
     data["rotation"] = rotation(attributes.rotation)
   if attributes.category:
     data["category"] = attributes.category
-  if attributes.model:
-    data["model"] = attributes.model
+  # What it is drawn as: its own `model`, unless it is drawn as another.
+  if attributes.display_model or attributes.model:
+    data["model"] = attributes.display_model or attributes.model
   if attributes.HasField("barcode"):
     data["barcode"] = {
       "data": attributes.barcode.data,

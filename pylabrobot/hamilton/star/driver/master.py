@@ -39,6 +39,7 @@ from pylabrobot.hamilton.star.driver.features.x_arm import XArm, XArmConfigurati
 from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.driver.lock import _FirmwareLock
 from pylabrobot.hamilton.star.resource_model import (
+  AUTOLOAD_BELT_MODEL,
   ELBOW_DRIVE_COLUMN_ABOVE_REPORTED_Z,
   FRAME_BY_NUM_TRACKS,
 )
@@ -1987,7 +1988,8 @@ class STARDriver:
     return link_1, gripper
 
   async def _create_autoload_resource(self) -> None:
-    """Put the autoload's sled on the deck, where it is, and the tray it draws carriers from.
+    """Put the autoload's sled on the deck, where it is, and the tray it draws carriers from, and
+    draw the deck with the autoload's belt frame in place of its front panel.
 
     The tray is placed from the deck's features, not read off the device. It is bolted to the
     device and has no drive to report its position.
@@ -2016,3 +2018,7 @@ class STARDriver:
           )
         ],
       )
+    deck = await self.deck.attributes()
+    frame = FRAME_BY_NUM_TRACKS.get(deck.deck.hamilton.num_tracks)
+    if deck.deck.HasField("hamilton") and frame is not None:
+      await self.deck.set_display_model(AUTOLOAD_BELT_MODEL.format(frame=frame))

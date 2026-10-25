@@ -14,6 +14,9 @@ from pylabrobot.resources.store.v1 import types_pb2 as pb
 # lengths, so the track count is the only thing that tells them apart - and parts that are cut to
 # the frame's length differ between them and need saying which one they are.
 FRAME_BY_NUM_TRACKS = {30: "starlet", 54: "star", 76: "starplus"}
+# What a deck with an autoload fitted is drawn as: the autoload's belt frame stands where the front
+# panel, `{frame}_deck_front_top_cover`, is otherwise.
+AUTOLOAD_BELT_MODEL = "{frame}_autoload_tray_belt_frame"
 
 
 def grips(tool: pb.ResourceAttributes) -> bool:
