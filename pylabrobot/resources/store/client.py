@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Sequence, TypeVar, Union
 from connectrpc.errors import ConnectError
 from connectrpc.request import RequestContext
 from pyqwest import Client
-from pyqwest.testing import ASGITransport
+from pylabrobot.resources.store.asgi_transport import ASGITransport
 
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.store import handles, library
