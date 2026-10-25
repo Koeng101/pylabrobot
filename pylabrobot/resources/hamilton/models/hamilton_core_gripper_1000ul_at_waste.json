@@ -1,0 +1,83 @@
+{
+  "name": "hamilton_core_gripper_1000ul_at_waste",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "model": "hamilton_core_gripper_1000ul_at_waste",
+      "category": "core_grippers",
+      "size": {
+        "x": 45.0,
+        "y": 45.0,
+        "z": 24.0
+      },
+      "rotation": {},
+      "holder": {
+        "channelYCenters": [
+          35.5,
+          9.5
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}_front",
+          "kind": "RESOURCE_KIND_HEAD_TOOL",
+          "model": "hamilton_core_gripper_tool",
+          "category": "core_gripper_tool",
+          "size": {
+            "x": 36.0,
+            "y": 8.346,
+            "z": 32.0
+          },
+          "location": {
+            "x": 4.5,
+            "y": 5.25,
+            "z": -2.0
+          },
+          "rotation": {},
+          "headTool": {
+            "fittingDepth": 8.0,
+            "isConductive": true,
+            "pickUpLocation": {
+              "x": 18.0,
+              "y": 4.25,
+              "z": 32.0
+            },
+            "gripLineHeight": 2.0
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_back",
+          "kind": "RESOURCE_KIND_HEAD_TOOL",
+          "model": "hamilton_core_gripper_tool",
+          "category": "core_gripper_tool",
+          "size": {
+            "x": 36.0,
+            "y": 8.346,
+            "z": 32.0
+          },
+          "location": {
+            "x": 4.5,
+            "y": 31.25,
+            "z": -2.0
+          },
+          "rotation": {},
+          "headTool": {
+            "fittingDepth": 8.0,
+            "isConductive": true,
+            "pickUpLocation": {
+              "x": 18.0,
+              "y": 4.25,
+              "z": 32.0
+            },
+            "gripLineHeight": 2.0
+          }
+        }
+      }
+    ]
+  }
+}

@@ -11,9 +11,12 @@ import math
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Sequence, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 
-from pylabrobot.resources import Plate, Well
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from ..errors import CommandRefusedError, FrameError
 
@@ -46,14 +49,134 @@ _SHAKE_PATTERNS: Dict[str, int] = {"orbital": 0x00, "linear": 0x01, "double_orbi
 
 
 # ----------------------------------------
+# The plate, as a measurement reads it
+# ----------------------------------------
+
+
+@dataclass(frozen=True)
+class WellFacts:
+  """A well of the plate, as the resource store held it when the measurement read it.
+
+  Attributes:
+    id: its id in the store.
+    name: its name.
+    identifier: its identifier on the plate, "A1".
+    location: where it is on the plate; None when unknown.
+    size: its size along its own axes.
+    material_z_thickness: from its outer bottom to its floor; None when unknown.
+  """
+
+  id: bytes
+  name: str
+  identifier: str
+  location: Optional[Coordinate]
+  size: Coordinate
+  material_z_thickness: Optional[float]
+
+
+@dataclass(frozen=True)
+class PlateFacts:
+  """The plate a measurement reads, as the resource store held it.
+
+  Attributes:
+    name: its name.
+    size: its size along its own axes.
+    num_items_x: its columns.
+    num_items_y: its rows.
+    wells: its wells column by column: A1, B1, ..., A2, ...
+  """
+
+  name: str
+  size: Coordinate
+  num_items_x: int
+  num_items_y: int
+  wells: Tuple[WellFacts, ...]
+
+  @property
+  def num_items(self) -> int:
+    return len(self.wells)
+
+  def get_well(self, well: handles.Resource) -> WellFacts:
+    """The facts of `well`.
+
+    Raises:
+      ValueError: if `well` is not on the plate.
+    """
+    for facts in self.wells:
+      if facts.id == well.id:
+        return facts
+    raise ValueError(f"{well.name} is not on {self.name}")
+
+
+def _to_coordinate(vector: pb.Vec3) -> Coordinate:
+  return Coordinate(vector.x, vector.y, vector.z)
+
+
+def _plate_facts(plate: pb.ResourceNode, nodes: Sequence[pb.ResourceNode]) -> PlateFacts:
+  """The facts of `plate`, its wells among `nodes`."""
+  by_id = {node.id: node for node in nodes}
+  wells = []
+  for child_id in plate.child_ids:
+    node = by_id.get(child_id)
+    if node is None or not node.attributes.identifier:
+      continue
+    attributes = node.attributes
+    spec = attributes.container
+    wells.append(
+      WellFacts(
+        id=node.id,
+        name=attributes.name,
+        identifier=attributes.identifier,
+        location=_to_coordinate(attributes.location) if attributes.HasField("location") else None,
+        size=_to_coordinate(attributes.size),
+        material_z_thickness=(
+          spec.material_z_thickness if spec.HasField("material_z_thickness") else None
+        ),
+      )
+    )
+  return PlateFacts(
+    name=plate.attributes.name,
+    size=_to_coordinate(plate.attributes.size),
+    num_items_x=plate.attributes.itemized.num_items_x,
+    num_items_y=plate.attributes.itemized.num_items_y,
+    wells=tuple(wells),
+  )
+
+
+async def read_plate(plate: handles.Resource) -> PlateFacts:
+  """The facts of a plate and its wells, read from its store in one call."""
+  response = await plate.store.commands.get_resources(
+    spb.GetResourcesRequest(resources=[plate.ref], depth=1)
+  )
+  return _plate_facts(response.nodes[0], response.nodes)
+
+
+async def read_plate_in(holder: handles.Resource) -> PlateFacts:
+  """The facts of the plate in `holder` and its wells, read from its store in one call.
+
+  Raises:
+    RuntimeError: if `holder` holds no plate.
+  """
+  response = await holder.store.commands.get_resources(
+    spb.GetResourcesRequest(resources=[holder.ref], depth=2)
+  )
+  by_id = {node.id: node for node in response.nodes}
+  child_ids = by_id[holder.id].child_ids
+  plate = by_id.get(child_ids[0]) if child_ids else None
+  if plate is None or plate.attributes.kind != pb.RESOURCE_KIND_PLATE:
+    raise RuntimeError(f"no plate in {holder.name}")
+  return _plate_facts(plate, response.nodes)
+
+
+# ----------------------------------------
 # Settings
 # ----------------------------------------
 
 
-def _get_well_diameter(plate: Plate) -> float:
+def _get_well_diameter(plate: PlateFacts) -> float:
   """The plate's well diameter in mm: the smaller side of its first well."""
-  well = plate.get_all_items()[0]
-  return min(well.get_size_x(), well.get_size_y())
+  well = plate.wells[0]
+  return min(well.size.x, well.size.y)
 
 
 @dataclass
@@ -190,7 +313,10 @@ class MeasurementSettings:
       raise ValueError("; ".join(errors))
 
   def check(
-    self, plate: Plate, wells: Sequence[Well], configuration: MeasurementConfiguration
+    self,
+    plate: PlateFacts,
+    wells: Sequence[Union[WellFacts, handles.Resource]],
+    configuration: MeasurementConfiguration,
   ) -> None:
     """Raise if these settings cannot read `wells` of `plate` on the reader.
 
@@ -217,8 +343,8 @@ class MeasurementSettings:
       errors.append(f"flashes must be {lowest} to {highest}, is {self.flashes}")
     if not wells:
       errors.append("no wells to measure")
-    items = {id(well) for well in plate.get_all_items()}
-    if any(id(well) not in items for well in wells):
+    items = {well.id for well in plate.wells}
+    if any(well.id not in items for well in wells):
       errors.append(f"every well must be on {plate.name}")
     if plate.num_items > 8 * _WELL_MASK_SIZE:
       errors.append(f"plates over {8 * _WELL_MASK_SIZE} wells are not supported")
@@ -239,18 +365,18 @@ class MeasurementSettings:
 # ----------------------------------------
 
 
-def _get_measured_identifiers(plate: Plate, wells: Sequence[Well]) -> List[str]:
+def _get_measured_identifiers(plate: PlateFacts, wells: Sequence[WellFacts]) -> List[str]:
   """The identifiers of the measured wells, row by row as the reader reads them out; a well
   given twice is measured once."""
-  items = plate.get_all_items()
+  items = plate.wells
   rows = plate.num_items_y
-  index = {id(well): i for i, well in enumerate(items)}
-  positions = sorted({(index[id(well)] % rows, index[id(well)] // rows) for well in wells})
-  return [plate.get_child_identifier(items[column * rows + row]) for row, column in positions]
+  index = {well.id: i for i, well in enumerate(items)}
+  positions = sorted({(index[well.id] % rows, index[well.id] // rows) for well in wells})
+  return [items[column * rows + row].identifier for row, column in positions]
 
 
 def _get_readings_by_well(
-  plate: Plate, wells: Sequence[Well], readings: List[float]
+  plate: PlateFacts, wells: Sequence[WellFacts], readings: List[float]
 ) -> Dict[str, float]:
   """The readings, given row by row over the measured wells, keyed by well identifier."""
   return dict(zip(_get_measured_identifiers(plate, wells), readings))
@@ -372,7 +498,7 @@ class Measurement:
 
   @classmethod
   def _compute_default_focal_height(
-    cls, wells: Sequence[Well], percent: float, focal_height_range: Tuple[float, float]
+    cls, wells: Sequence[WellFacts], percent: float, focal_height_range: Tuple[float, float]
   ) -> float:
     """The focal height `percent` of the depth up `wells`, mm above the plate's base.
 
@@ -387,11 +513,10 @@ class Measurement:
     for well in wells:
       if well.location is None:
         raise ValueError(f"well {well.name} has no location on its plate")
-      try:
-        floor = well.material_z_thickness
-      except NotImplementedError as error:
-        raise ValueError(f"well {well.name} has no floor thickness; give focal_height") from error
-      depth = well.get_size_z() * percent / 100
+      floor = well.material_z_thickness
+      if floor is None:
+        raise ValueError(f"well {well.name} has no floor thickness; give focal_height")
+      depth = well.size.z * percent / 100
       heights.add(round(well.location.z + floor + depth, 1))
     if len(heights) > 1:
       raise ValueError(
@@ -405,14 +530,14 @@ class Measurement:
 
   # -- plate and wells -----------------------------------------------------------------------------
 
-  def _get_plate_and_wells(
+  async def _get_plate_and_wells(
     self,
     settings: MeasurementSettings,
     shake: Optional[ShakeSettings],
-    wells: Optional[List[Well]],
-  ) -> Tuple[Plate, List[Well]]:
-    """The plate in the plate holder and the wells to read (every well when None), the settings
-    checked against the plate and the configuration.
+    wells: Optional[Sequence[handles.Resource]],
+  ) -> Tuple[PlateFacts, List[WellFacts]]:
+    """The plate in the plate holder and the wells to read (every well when None), read from the
+    store in one call, the settings checked against the plate and the configuration.
 
     Raises:
       RuntimeError: if no plate is in the plate holder.
@@ -422,14 +547,16 @@ class Measurement:
     plate_holder = self._driver.drawer.plate_holder
     if plate_holder is None:
       raise RuntimeError("the drawer has no plate holder; build the reader as a CLARIOstarDevice")
-    if not isinstance(plate_holder.resource, Plate):
-      raise RuntimeError(f"no plate in {plate_holder.name}")
-    plate = plate_holder.resource
-    wells = plate.get_all_items() if wells is None else wells
-    settings.check(plate, wells, self.configuration)
+    plate = await read_plate_in(plate_holder)
+    if wells is None:
+      measured = list(plate.wells)
+      settings.check(plate, measured, self.configuration)
+    else:
+      settings.check(plate, wells, self.configuration)
+      measured = [plate.get_well(well) for well in wells]
     if shake is not None:
       shake.check(self.configuration)
-    return plate, wells
+    return plate, measured
 
   # ----------------------------------------
   # RUN parameters
@@ -438,42 +565,42 @@ class Measurement:
   # -- plate block ---------------------------------------------------------------------------------
 
   @staticmethod
-  def _encode_plate_geometry(plate: Plate) -> bytes:
+  def _encode_plate_geometry(plate: PlateFacts) -> bytes:
     """The plate's 14 bytes: size, first and last well centre in 0.01 mm (u16 BE), columns, rows.
 
     Y is measured from the plate's back edge.
     """
-    items = plate.get_all_items()
+    items = plate.wells
 
-    def center_from_back(well: Well):
+    def center_from_back(well: WellFacts):
       if well.location is None:
         raise ValueError(f"well {well.name} has no location on {plate.name}")
-      center = well.location + well.center()
-      return center.x, plate.get_size_y() - center.y
+      center = well.location + Coordinate(well.size.x / 2, well.size.y / 2, well.size.z / 2)
+      return center.x, plate.size.y - center.y
 
     first_x, first_y = center_from_back(items[0])
     last_x, last_y = center_from_back(items[-1])
-    geometry = (plate.get_size_x(), plate.get_size_y(), first_x, first_y, last_x, last_y)
+    geometry = (plate.size.x, plate.size.y, first_x, first_y, last_x, last_y)
     block = b"".join(round(value * 100).to_bytes(2, "big") for value in geometry)
     return block + bytes([plate.num_items_x, plate.num_items_y])
 
   @staticmethod
-  def _encode_well_mask(plate: Plate, wells: Sequence[Well]) -> bytes:
+  def _encode_well_mask(plate: PlateFacts, wells: Sequence[WellFacts]) -> bytes:
     """The 48-byte well mask, a bit per well of `wells`.
 
     The bit of a well is row * columns + column, most significant bit first.
     """
-    items = plate.get_all_items()
+    items = plate.wells
     columns, rows = plate.num_items_x, plate.num_items_y
     mask = bytearray(_WELL_MASK_SIZE)
-    selected = {id(well) for well in wells}
+    selected = {well.id for well in wells}
     for index, well in enumerate(items):  # column-major: A1, B1, ..., A2, ...
-      if id(well) in selected:
+      if well.id in selected:
         bit = (index % rows) * columns + index // rows
         mask[bit // 8] |= 0x80 >> (bit % 8)
     return bytes(mask)
 
-  def _encode_plate_block(self, plate: Plate, wells: Sequence[Well]) -> bytes:
+  def _encode_plate_block(self, plate: PlateFacts, wells: Sequence[WellFacts]) -> bytes:
     """The 63-byte plate block: `_encode_plate_geometry`, `00`, then `_encode_well_mask`."""
     return self._encode_plate_geometry(plate) + b"\x00" + self._encode_well_mask(plate, wells)
 
@@ -531,7 +658,7 @@ class Measurement:
       block[20] = shake.duration
     return bytes(block)
 
-  def _compute_well_scan_field(self, plate: Plate, settings: MeasurementSettings) -> bytes:
+  def _compute_well_scan_field(self, plate: PlateFacts, settings: MeasurementSettings) -> bytes:
     """The field after `27 0f 27 0f` of an orbital, spiral or matrix read; none for a point read.
 
     `[_WELL_SCAN_CODE, scan diameter in mm, well diameter u16 BE in 0.01 mm, 00]`; for a matrix,
@@ -555,8 +682,8 @@ class Measurement:
 
   def _compute_run_start(
     self,
-    plate: Plate,
-    wells: Sequence[Well],
+    plate: PlateFacts,
+    wells: Sequence[WellFacts],
     settings: MeasurementSettings,
     shake: Optional[ShakeSettings],
     *,

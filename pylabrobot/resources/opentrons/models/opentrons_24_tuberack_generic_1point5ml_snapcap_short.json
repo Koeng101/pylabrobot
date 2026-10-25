@@ -1,0 +1,48 @@
+{
+  "name": "opentrons_24_tuberack_generic_1point5ml_snapcap_short",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "model": "opentrons_24_tuberack_generic_1point5ml_snapcap_short",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.5,
+        "z": 48.5
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_resourceholder_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "category": "resource_holder",
+              "size": {
+                "x": 9.2,
+                "y": 9.2,
+                "z": 37.4
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 13.5,
+            "y": 13.5,
+            "z": 12.0
+          },
+          "itemDx": 19.89,
+          "itemDy": 19.28
+        }
+      }
+    }
+  },
+  "description": "OpenTrons 24 well rack with the shorter stand; 30mm shorter than default stand.\n3D print available here: https://www.thingiverse.com/thing:3405002\nSpec sheet (json):\nhttps://raw.githubusercontent.com/Opentrons/opentrons/edge/shared-data/labware/definitions/2/opentrons_24_tuberack_nest_1.5ml_screwcap/1.json"
+}

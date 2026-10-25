@@ -1,0 +1,36 @@
+{
+  "name": "hamilton_tip_50uL",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "model": "hamilton_tip_50uL",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 50.4
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "maximalVolume": 65.0,
+        "nominalVolume": 50.0,
+        "collarHeight": 8.0,
+        "hamilton": {
+          "tipSize": "STANDARD_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton 50 uL tip without filter\n\nVariants:\n  - Hamilton cat. no.: 235978 - black/conductive, framed EmbeddedTipRack, sterile\n  - Hamilton cat. no.: 235966 - black/conductive, framed EmbeddedTipRack, non-sterile\n  - Hamilton cat. no.: 235987 - black/conductive, nested StandingTipRack, sterile\n  - Hamilton cat. no.: 235947 - black/conductive, nested StandingTipRack, non-sterile\n  - Hamilton cat. no.: 235964 - transparent, nested StandingTipRack, non-sterile"
+}

@@ -26,6 +26,7 @@ from pylabrobot.bmg_labtech.clariostar.driver.features.absorbance_tests import (
   ground_truth_96_well_plate,
   make_absorbance,
 )
+from pylabrobot.bmg_labtech.clariostar.driver.features.drawer_tests import stored
 from pylabrobot.bmg_labtech.clariostar.driver.framing import ftdi_extract_payload
 from pylabrobot.bmg_labtech.clariostar.driver.ftdi_queued_reads import QueuedReads
 from pylabrobot.bmg_labtech.clariostar.driver.master import CLARIOstarDriver
@@ -404,7 +405,7 @@ class QueuedReadsTests(unittest.IsolatedAsyncioTestCase):
     before = ([(0.0, reply)] for reply in (STATUS_IDLE, RUN_REPLY, STATUS_MEASURED))
     chip = PacedChipModel(*before, packets, [(0.0, STOP_REPLY)], [(0.0, STATUS_IDLE)], pace=0.25)
     io, libusb = LibftdiFTDI(chip), FakeLibusb(chip)
-    absorbance = make_absorbance(io, ground_truth_96_well_plate())
+    absorbance = await make_absorbance(io, await stored(ground_truth_96_well_plate()))
     driver = absorbance._driver
     reads = keep_reads_queued(driver, libusb)
     self.addCleanup(driver._stop_queued_reads)
@@ -443,7 +444,7 @@ class QueuedReadsTests(unittest.IsolatedAsyncioTestCase):
     before = ([(0.0, reply)] for reply in (STATUS_IDLE, RUN_REPLY, STATUS_MEASURED))
     chip = PacedChipModel(*before, packets, [(0.0, STOP_REPLY)], [(0.0, STATUS_IDLE)], pace=0.25)
     io = LibftdiFTDI(chip)
-    absorbance = make_absorbance(io, ground_truth_96_well_plate())
+    absorbance = await make_absorbance(io, await stored(ground_truth_96_well_plate()))
     driver = absorbance._driver
     driver._PACKET_READ_TIMEOUT, driver._FRAME_STALL_TIMEOUT = 1.0, 0.3
     self.assertIsNone(driver._queued_reads)

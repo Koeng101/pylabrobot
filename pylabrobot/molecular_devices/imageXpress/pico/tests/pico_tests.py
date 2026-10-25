@@ -35,45 +35,46 @@ from pylabrobot.molecular_devices.imageXpress.pico.pico import (
   _extract_image_buffer,
   _get_image_info,
 )
-from pylabrobot.resources.plate import Plate
-from pylabrobot.resources.utils import create_ordered_items_2d
-from pylabrobot.resources.well import Well, WellBottomType
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 # ---------------------------------------------------------------------------
 # Test plate fixture
 # ---------------------------------------------------------------------------
 
 
-def _test_plate() -> Plate:
-  """Create a 96-well plate with known geometry for testing.
+async def _test_plate() -> handles.Plate:
+  """Create a 96-well plate with known geometry for testing, in a store of its own.
 
-  dx/dy are LFB (left-front-bottom of well bounding box).  Pico dist2first*
-  values are center-based, so the expected centers are dx + size/2 and
-  dy + size/2:  10.9 + 3.4 = 14.3,  7.96 + 3.4 = 11.36.
+  The grid offset is the LFB (left-front-bottom of the well bounding box) of the front-left well.
+  Pico dist2first* values are center-based, so the expected centers are offset + size/2:
+  10.9 + 3.4 = 14.3,  7.96 + 3.4 = 11.36.
   """
-  return Plate(
-    name="test_plate",
-    size_x=127.6,
-    size_y=85.75,
-    size_z=13.83,
-    ordered_items=create_ordered_items_2d(
-      Well,
-      num_items_x=12,
-      num_items_y=8,
-      dx=10.9,
-      dy=7.96,
-      dz=1.5,
-      item_dx=9.0,
-      item_dy=9.0,
-      size_x=6.8,
-      size_y=6.8,
-      size_z=10.67,
-      bottom_type=WellBottomType.FLAT,
-      material_z_thickness=0.17,
-      max_volume=350.0,
-      name_prefix="test_plate",
-    ),
+  well = build.well(
+    "test_plate_well_{identifier}",
+    Coordinate(6.8, 6.8, 10.67),
+    category="well",
+    max_volume=350.0,
+    material_z_thickness=0.17,
+    bottom_type=pb.WELL_BOTTOM_TYPE_FLAT,
+    cross_section_type=pb.CROSS_SECTION_TYPE_CIRCLE,
   )
+  definition = build.plate(
+    "test_plate",
+    Coordinate(127.6, 85.75, 13.83),
+    category="plate",
+    num_items_x=12,
+    num_items_y=8,
+    item=well,
+    item_offset=Coordinate(10.9, 7.96, 1.5),
+    item_dx=9.0,
+    item_dy=9.0,
+  )
+  plate = await ResourceStore.in_memory().create(definition, name="test_plate")
+  assert isinstance(plate, handles.Plate)
+  return plate
 
 
 # ---------------------------------------------------------------------------
@@ -521,7 +522,7 @@ class TestCapture(unittest.IsolatedAsyncioTestCase):
       exposure_time=15.0,  # ms
       focal_height=2.5,  # mm
       gain=0,
-      plate=_test_plate(),
+      plate=await _test_plate(),
     )
 
     # Decode the SnapImages request: field 1 = SiLA String(labware JSON),
@@ -593,7 +594,7 @@ class TestCapture(unittest.IsolatedAsyncioTestCase):
       exposure_time="machine-auto",
       focal_height="machine-auto",
       gain=0,
-      plate=_test_plate(),
+      plate=await _test_plate(),
     )
 
     snap_call = channel.get_calls(f"/{_SNAP_SVC}/SnapImages")[0]
@@ -632,7 +633,7 @@ class TestCapture(unittest.IsolatedAsyncioTestCase):
       exposure_time=10.0,
       focal_height=1.0,
       gain=0,
-      plate=_test_plate(),
+      plate=await _test_plate(),
     )
 
     # Initialize, SnapImages, SnapImages_Intermediate, SnapImages_Result
@@ -705,7 +706,7 @@ class TestCapture(unittest.IsolatedAsyncioTestCase):
       exposure_time=1.0,
       focal_height=0.5,
       gain=0,
-      plate=_test_plate(),
+      plate=await _test_plate(),
     )
 
     self.assertEqual(len(result.images), 1)
@@ -737,7 +738,7 @@ class TestCapture(unittest.IsolatedAsyncioTestCase):
       exposure_time=10.0,
       focal_height=1.0,
       gain=0,
-      plate=_test_plate(),
+      plate=await _test_plate(),
     )
 
     snap_call = channel.get_calls(f"/{_SNAP_SVC}/SnapImages")[0]

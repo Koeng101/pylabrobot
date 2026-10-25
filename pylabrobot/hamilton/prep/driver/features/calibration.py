@@ -21,13 +21,13 @@ from typing import (
   Union,
 )
 
-from pylabrobot.resources.tip_rack import TipSpot
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 from .. import prep_commands as PrepCmd
+from ..model import read_spots
 
 if TYPE_CHECKING:
-  from pylabrobot.resources.deck import Deck
-
   from ..configuration import DeviceConfiguration
   from ..master import PrepDriver
 
@@ -72,7 +72,7 @@ class Calibration:
     self._calibration_session_active: bool = False
 
   @property
-  def deck(self) -> Optional["Deck"]:
+  def deck(self) -> Optional[handles.Deck]:
     """The deck positions are measured from: the driver's."""
     return self._driver.deck
 
@@ -120,7 +120,7 @@ class Calibration:
       raise RuntimeError("no configuration read; have you called `prep.setup()`?")
     return self._driver.configuration
 
-  def _require_deck(self) -> "Deck":
+  def _require_deck(self) -> pb.ResourceRef:
     """The deck positions are measured from, which is what the firmware counts from.
 
     Raises:
@@ -128,7 +128,7 @@ class Calibration:
     """
     if self.deck is None:
       raise RuntimeError("no deck to measure positions from; pass one to the driver")
-    return self.deck
+    return self._driver.deck_ref
 
   def calibration_session(
     self,
@@ -529,7 +529,7 @@ class CalibrationSession:
 
   async def calibrate_squeeze_tips(
     self,
-    tip_spots: List[TipSpot],
+    tip_spots: List[handles.Resource],
     *,
     use_channels: Optional[List[int]] = None,
     z_seek_offset: Optional[float] = None,
@@ -542,18 +542,18 @@ class CalibrationSession:
       if len(tip_spots) != len(channels):
         raise ValueError(f"{len(tip_spots)} tip spots given for {len(channels)} channels")
 
-      indexed_spots = {ch: spot for ch, spot in zip(channels, tip_spots)}
+      read = await read_spots(self._cal._driver.store, self._cal._require_deck(), tip_spots)
+      indexed_spots = {ch: spot for ch, spot in zip(channels, read)}
       tip_positions: List[PrepCmd.TipPositionParameters] = []
       for ch in range(self._cal.num_channels):
         if ch not in indexed_spots:
           continue
         spot = indexed_spots[ch]
-        loc = spot.get_location_wrt(self._cal._require_deck(), "c", "c", "t")
         tip_positions.append(
           PrepCmd.TipPositionParameters.for_op(
             self._cal._channel_enum(ch),
-            loc,
-            spot.get_tip(),
+            spot.placed.top,
+            spot.tip_for_pickup(),
             z_seek_offset=z_seek_offset,
           )
         )
@@ -576,7 +576,7 @@ class CalibrationSession:
 
   async def calibrate_squeeze_tips_mph(
     self,
-    tip_spot: Union[TipSpot, List[TipSpot]],
+    tip_spot: Union[handles.Resource, List[handles.Resource]],
     *,
     z_seek_offset: Optional[float] = None,
     read_timeout: Optional[float] = None,
@@ -592,12 +592,13 @@ class CalibrationSession:
       if not spots:
         raise ValueError("calibrate_squeeze_tips_mph: tip_spot list is empty")
 
-      ref_spot = spots[0]
-      loc = ref_spot.get_location_wrt(self._cal._require_deck(), "c", "c", "t")
+      ref_spot = (await read_spots(self._cal._driver.store, self._cal._require_deck(), spots[:1]))[
+        0
+      ]
       tip_position = PrepCmd.TipPositionParameters.for_op(
         PrepCmd.ChannelIndex.MPHChannel,
-        loc,
-        ref_spot.get_tip(),
+        ref_spot.placed.top,
+        ref_spot.tip_for_pickup(),
         z_seek_offset=z_seek_offset,
       )
 

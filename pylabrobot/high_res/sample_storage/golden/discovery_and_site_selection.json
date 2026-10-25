@@ -1,0 +1,1172 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "sent": [
+        "<setup>",
+        "version",
+        "getstackerdimensions",
+        "environmentstatus",
+        "neststatus"
+      ],
+      "events": [
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_1_slot_1",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_1",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_1",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 10.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_1_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_1",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_1",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 40.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_1_slot_3",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_1",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_1",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 70.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_1",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2_slot_1",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_2",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_2",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 20.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2_slot_3",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_2",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 40.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2_slot_4",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_2",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 60.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_5_slot_1",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_5",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_5",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 5.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_5_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_5",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_5",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 21.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_5",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_nest_1",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null,
+      "resources": [
+        {
+          "name": "store",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "store_stacker_1",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "store_stacker_1_slot_1",
+          "parent": "store_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            10.0
+          ]
+        },
+        {
+          "name": "store_stacker_1_slot_2",
+          "parent": "store_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            40.0
+          ]
+        },
+        {
+          "name": "store_stacker_1_slot_3",
+          "parent": "store_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            70.0
+          ]
+        },
+        {
+          "name": "store_stacker_2",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "store_stacker_2_slot_1",
+          "parent": "store_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            0.0
+          ]
+        },
+        {
+          "name": "store_stacker_2_slot_2",
+          "parent": "store_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            20.0
+          ]
+        },
+        {
+          "name": "store_stacker_2_slot_3",
+          "parent": "store_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            40.0
+          ]
+        },
+        {
+          "name": "store_stacker_2_slot_4",
+          "parent": "store_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            60.0
+          ]
+        },
+        {
+          "name": "store_stacker_5",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "store_stacker_5_slot_1",
+          "parent": "store_stacker_5",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            5.0
+          ]
+        },
+        {
+          "name": "store_stacker_5_slot_2",
+          "parent": "store_stacker_5",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            21.0
+          ]
+        },
+        {
+          "name": "store_nest_1",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER"
+        },
+        {
+          "name": "store_nest_2",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER"
+        }
+      ]
+    },
+    {
+      "call": "find_smallest_site_for_plate(short)",
+      "sent": [],
+      "events": [],
+      "result": "store_stacker_5_slot_1",
+      "unresolved_transfer": null
+    },
+    {
+      "call": "find_smallest_site_for_plate(medium)",
+      "sent": [],
+      "events": [],
+      "result": "store_stacker_2_slot_1",
+      "unresolved_transfer": null
+    },
+    {
+      "call": "find_smallest_site_for_plate(lidded)",
+      "sent": [],
+      "events": [],
+      "result": "store_stacker_2_slot_1",
+      "unresolved_transfer": null
+    },
+    {
+      "call": "find_smallest_site_for_plate(tall)",
+      "sent": [],
+      "events": [],
+      "result": "store_stacker_1_slot_1",
+      "unresolved_transfer": null
+    },
+    {
+      "call": "find_smallest_site_for_plate(too_tall)",
+      "sent": [],
+      "events": [],
+      "result": {
+        "error": "NoFreeSiteError",
+        "message": "No free site at least 35 mm high found for plate 'too_tall'."
+      },
+      "unresolved_transfer": null
+    },
+    {
+      "call": "random.seed(0); find_random_site(short)",
+      "sent": [],
+      "events": [],
+      "result": "store_stacker_1_slot_1",
+      "unresolved_transfer": null
+    },
+    {
+      "call": "random.seed(1); find_random_site(short)",
+      "sent": [],
+      "events": [],
+      "result": "store_stacker_2_slot_1",
+      "unresolved_transfer": null
+    },
+    {
+      "call": "random.seed(2); find_random_site(short)",
+      "sent": [],
+      "events": [],
+      "result": "store_stacker_5_slot_1",
+      "unresolved_transfer": null
+    },
+    {
+      "call": "random.seed(0); find_random_site(tall)",
+      "sent": [],
+      "events": [],
+      "result": "store_stacker_1_slot_2",
+      "unresolved_transfer": null
+    },
+    {
+      "call": "get_num_free_sites()",
+      "sent": [],
+      "events": [],
+      "result": 9,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "racks",
+      "sent": [],
+      "events": [],
+      "result": [
+        "store_stacker_1",
+        "store_stacker_2",
+        "store_stacker_5"
+      ],
+      "unresolved_transfer": null
+    },
+    {
+      "call": "serialize()",
+      "sent": [],
+      "events": [],
+      "result": {
+        "name": "store",
+        "type": "Resource",
+        "size_x": 0,
+        "size_y": 0,
+        "size_z": 0,
+        "category": "plate_store",
+        "model": "SteriStore",
+        "host": "10.253.253.253",
+        "port": 1000,
+        "read_timeout": 30.0,
+        "motion_timeout": 240.0,
+        "racks": {
+          "1": {
+            "name": "store_stacker_1",
+            "type": "PlateCarrier",
+            "size_x": 112.3,
+            "size_y": 146.6,
+            "size_z": 100.0,
+            "category": "plate_carrier",
+            "model": "high_res_stacker",
+            "metadata": {
+              "zero_offset": 10.0,
+              "slot_height": 30.0,
+              "slot_count": 3
+            },
+            "children": [
+              {
+                "name": "store_stacker_1_slot_1",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 30.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 10.0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_1",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              },
+              {
+                "name": "store_stacker_1_slot_2",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 30.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 40.0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_1",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              },
+              {
+                "name": "store_stacker_1_slot_3",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 30.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 70.0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_1",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              }
+            ],
+            "parent_name": "store"
+          },
+          "2": {
+            "name": "store_stacker_2",
+            "type": "PlateCarrier",
+            "size_x": 112.3,
+            "size_y": 146.6,
+            "size_z": 80.0,
+            "category": "plate_carrier",
+            "model": "high_res_stacker",
+            "metadata": {
+              "zero_offset": 0.0,
+              "slot_height": 20.0,
+              "slot_count": 4
+            },
+            "children": [
+              {
+                "name": "store_stacker_2_slot_1",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 20.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_2",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              },
+              {
+                "name": "store_stacker_2_slot_2",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 20.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 20.0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_2",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              },
+              {
+                "name": "store_stacker_2_slot_3",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 20.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 40.0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_2",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              },
+              {
+                "name": "store_stacker_2_slot_4",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 20.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 60.0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_2",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              }
+            ],
+            "parent_name": "store"
+          },
+          "5": {
+            "name": "store_stacker_5",
+            "type": "PlateCarrier",
+            "size_x": 112.3,
+            "size_y": 146.6,
+            "size_z": 37.0,
+            "category": "plate_carrier",
+            "model": "high_res_stacker",
+            "metadata": {
+              "zero_offset": 5.0,
+              "slot_height": 16.0,
+              "slot_count": 2
+            },
+            "children": [
+              {
+                "name": "store_stacker_5_slot_1",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 16.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 5.0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_5",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              },
+              {
+                "name": "store_stacker_5_slot_2",
+                "type": "PlateHolder",
+                "size_x": 85.48,
+                "size_y": 127.76,
+                "size_z": 16.0,
+                "location": {
+                  "x": 13.41,
+                  "y": 9.42,
+                  "z": 21.0,
+                  "type": "Coordinate"
+                },
+                "category": "plate_holder",
+                "parent_name": "store_stacker_5",
+                "child_location": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0,
+                  "type": "Coordinate"
+                },
+                "pedestal_size_z": 0
+              }
+            ],
+            "parent_name": "store"
+          }
+        },
+        "nests": [
+          {
+            "name": "store_nest_1",
+            "type": "PlateHolder",
+            "size_x": 127.76,
+            "size_y": 85.48,
+            "size_z": 0,
+            "category": "plate_holder",
+            "parent_name": "store",
+            "child_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            },
+            "pedestal_size_z": 0
+          },
+          {
+            "name": "store_nest_2",
+            "type": "PlateHolder",
+            "size_x": 127.76,
+            "size_y": 85.48,
+            "size_z": 0,
+            "category": "plate_holder",
+            "parent_name": "store",
+            "child_location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            },
+            "pedestal_size_z": 0
+          }
+        ]
+      },
+      "unresolved_transfer": null
+    },
+    {
+      "call": "setup() again",
+      "sent": [
+        "<setup>",
+        "version",
+        "environmentstatus",
+        "neststatus"
+      ],
+      "events": [],
+      "result": null,
+      "unresolved_transfer": null
+    }
+  ],
+  "resources": [
+    {
+      "name": "store",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "store_stacker_1",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_CARRIER"
+    },
+    {
+      "name": "store_stacker_1_slot_1",
+      "parent": "store_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        10.0
+      ]
+    },
+    {
+      "name": "store_stacker_1_slot_2",
+      "parent": "store_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        40.0
+      ]
+    },
+    {
+      "name": "store_stacker_1_slot_3",
+      "parent": "store_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        70.0
+      ]
+    },
+    {
+      "name": "store_stacker_2",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_CARRIER"
+    },
+    {
+      "name": "store_stacker_2_slot_1",
+      "parent": "store_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        0.0
+      ]
+    },
+    {
+      "name": "store_stacker_2_slot_2",
+      "parent": "store_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        20.0
+      ]
+    },
+    {
+      "name": "store_stacker_2_slot_3",
+      "parent": "store_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        40.0
+      ]
+    },
+    {
+      "name": "store_stacker_2_slot_4",
+      "parent": "store_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        60.0
+      ]
+    },
+    {
+      "name": "store_stacker_5",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_CARRIER"
+    },
+    {
+      "name": "store_stacker_5_slot_1",
+      "parent": "store_stacker_5",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        5.0
+      ]
+    },
+    {
+      "name": "store_stacker_5_slot_2",
+      "parent": "store_stacker_5",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        21.0
+      ]
+    },
+    {
+      "name": "store_nest_1",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    },
+    {
+      "name": "store_nest_2",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    }
+  ]
+}

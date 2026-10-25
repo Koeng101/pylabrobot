@@ -1,0 +1,24 @@
+{
+  "name": "hamilton_mfx_tiprackholder_standard",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+      "model": "hamilton_mfx_tiprackholder_standard",
+      "category": "embedded_tip_rack_holder",
+      "size": {
+        "x": 135.0,
+        "y": 94.0,
+        "z": 96.5
+      },
+      "rotation": {},
+      "holder": {
+        "childLocation": {
+          "z": 96.5
+        },
+        "capacity": 1
+      }
+    }
+  },
+  "description": "Hamilton cat. no.: 188160\nHamilton name: 'MFX_TIP_module' or sometimes 'Tip Module BC'\nModule to position a high-, standard- or low volume tip rack (but not a 384 tip rack).\n\nTakes an `EmbeddedTipRack` - Hamilton calls these 'framed' tip racks - which sinks into the\nmodule's opening and is centred over it, as in a tip carrier's site."
+}

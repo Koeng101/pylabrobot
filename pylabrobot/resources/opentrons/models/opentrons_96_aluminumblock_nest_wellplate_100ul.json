@@ -1,0 +1,47 @@
+{
+  "name": "opentrons_96_aluminumblock_nest_wellplate_100ul",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "model": "Opentrons 96 Well Aluminum Block with NEST Well Plate 100 \u00b5L",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.45,
+        "z": 21.2
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "category": "resource_holder",
+              "size": {
+                "x": 3.776,
+                "y": 3.776,
+                "z": 14.78
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 12.492,
+            "y": 9.312,
+            "z": 6.42
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      }
+    }
+  }
+}

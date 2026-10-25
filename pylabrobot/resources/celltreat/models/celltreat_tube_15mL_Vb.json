@@ -1,0 +1,27 @@
+{
+  "name": "celltreat_tube_15mL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE",
+      "model": "celltreat_tube_15mL_Vb",
+      "category": "tube",
+      "size": {
+        "x": 14.7,
+        "y": 14.7,
+        "z": 190.5
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": 15000.0,
+        "materialZThickness": 0.8
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "CELLTREAT\u00ae Centrifuge Tubes-RackMaster 15mL Centrifuge Tube, Best Value - Paperboard Rack, Sterile\nPart no.: 229414\n\n- bottom_type=TubeBottomType.V"
+}

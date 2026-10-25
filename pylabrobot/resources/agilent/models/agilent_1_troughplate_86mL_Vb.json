@@ -1,0 +1,56 @@
+{
+  "name": "agilent_1_troughplate_86mL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Agilent_1_troughplate_86mL_Vb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.47,
+        "z": 19.05
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 1,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 106.22,
+                "y": 70.46,
+                "z": 12.7
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 95050.11723999998,
+                "materialZThickness": 1.15,
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.3,
+            "y": 6.21,
+            "z": 1.14
+          }
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Agilent 1 Troughplate 86mL V bottom\nPart Number: 201254-100\n- Max Volume: 86 mL\nSpec: https://labrulez.com/pdf/br_microplate_dimension_guide_5994_5247en_agilent_1368d1a796/br-microplate-dimension-guide-5994-5247en-agilent.pdf"
+}

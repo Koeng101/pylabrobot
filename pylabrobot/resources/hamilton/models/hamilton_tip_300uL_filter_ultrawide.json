@@ -1,0 +1,37 @@
+{
+  "name": "hamilton_tip_300uL_filter_ultrawide",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "model": "hamilton_tip_300uL_filter_ultrawide",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 51.9
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "hasFilter": true,
+        "maximalVolume": 360.0,
+        "nominalVolume": 300.0,
+        "collarHeight": 8.0,
+        "hamilton": {
+          "tipSize": "STANDARD_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton 300 uL ultra wide bore (1.55 mm) tip with filter"
+}

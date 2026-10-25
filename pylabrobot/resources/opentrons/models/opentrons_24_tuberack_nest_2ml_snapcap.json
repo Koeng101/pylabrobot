@@ -1,0 +1,47 @@
+{
+  "name": "opentrons_24_tuberack_nest_2ml_snapcap",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "model": "Opentrons 24 Tube Rack with NEST 2 mL Snapcap",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.5,
+        "z": 79.45
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "category": "resource_holder",
+              "size": {
+                "x": 7.198,
+                "y": 7.198,
+                "z": 39.28
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 14.611,
+            "y": 13.991,
+            "z": 40.17
+          },
+          "itemDx": 19.89,
+          "itemDy": 19.28
+        }
+      }
+    }
+  }
+}

@@ -6,10 +6,10 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from pylabrobot.io.serial import Serial
+from pylabrobot.molecular_devices._plate import read_plate
 from pylabrobot.molecular_devices.spectramax.errors import ERROR_CODES, SpectraMaxError
 from pylabrobot.molecular_devices.spectramax.results import AbsorbanceResult
-from pylabrobot.resources.plate import Plate
-from pylabrobot.resources.well import Well
+from pylabrobot.resources.store import handles
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,7 @@ class SpectrumSettings:
 class MolecularDevicesSettings:
   """A comprehensive, internal container for all plate reader settings."""
 
-  plate: Plate = field(repr=False)
+  plate: handles.Plate = field(repr=False)
   read_mode: ReadMode
   read_type: ReadType
   read_order: ReadOrder
@@ -438,18 +438,26 @@ class MolecularDevicesPlateReader:
 
   async def _set_plate_position(self, settings: MolecularDevicesSettings) -> None:
     plate = settings.plate
-    num_cols, num_rows, size_y = plate.num_items_x, plate.num_items_y, plate.get_size_y()
+    num_cols, num_rows = plate.num_items_x, plate.num_items_y
     if num_cols < 2 or num_rows < 2:
       raise ValueError("Plate must have at least 2 rows and 2 columns to calculate well spacing.")
-    top_left_well = plate.get_item(0)
-    if top_left_well.location is None:
+    first = plate.identifiers[0]
+    corner = handles.anchor()
+    geometry = await read_plate(
+      plate,
+      points=[
+        (first, handles.anchor("c", "c")),
+        ("A1", corner),
+        ("A2", corner),
+        ("B1", corner),
+      ],
+    )
+    top_left_well_center, loc_A1, loc_A2, loc_B1 = geometry.points
+    if top_left_well_center is None:
       raise ValueError("Top left well location is not set.")
-    top_left_well_center = top_left_well.location + top_left_well.get_anchor(x="c", y="c")
-    loc_A1 = plate.get_item("A1").location
-    loc_A2 = plate.get_item("A2").location
-    loc_B1 = plate.get_item("B1").location
     if loc_A1 is None or loc_A2 is None or loc_B1 is None:
       raise ValueError("Well locations for A1, A2, or B1 are not set.")
+    size_y = geometry.size.y
     dx = loc_A2.x - loc_A1.x
     dy = loc_A1.y - loc_B1.y
 
@@ -600,8 +608,8 @@ class MolecularDevicesPlateReader:
 
   async def read_absorbance(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: handles.Plate,
+    wells: List[handles.Well],
     wavelength: int,
     wavelengths: Optional[List[Union[int, Tuple[int, bool]]]] = None,
     read_type: ReadType = "endpoint",

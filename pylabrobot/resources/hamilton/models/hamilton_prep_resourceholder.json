@@ -1,0 +1,26 @@
+{
+  "name": "hamilton_prep_resourceholder",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "model": "hamilton_prep_resourceholder",
+      "category": "resource_holder",
+      "size": {
+        "x": 133.5,
+        "y": 91.5,
+        "z": 13.5
+      },
+      "rotation": {},
+      "holder": {
+        "childLocation": {
+          "x": 2.87,
+          "y": 3.01,
+          "z": 3.5
+        },
+        "capacity": 1
+      }
+    }
+  },
+  "description": "A PREP deck's labware spot: four corner clips around an insert pedestal, as measured.\n\nWhat stands here is centred between the clips, on the moat around the pedestal: the pedestal's\ntop is 4.5 mm above the deck and the moat is a millimetre below that, probed on PRPAA1087 at\n0.89, 0.94, 0.82 and 0.79 across the four spots.\n\nEverything the Prep carries reaches the moat floor - a tip rack's tray and a plate with a\nmillimetre or more under its wells alike - so the seat is that floor rather than the pedestal.\nA plate whose wells sit flush with its own base would come to rest on the pedestal instead, a\nmillimetre higher than this puts it."
+}

@@ -1,0 +1,64 @@
+{
+  "name": "cor_falcon_96_wellplate_275uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "cor_falcon_96_wellplate_275uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.11,
+        "z": 14.3
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 6.35,
+                "y": 6.35,
+                "z": 14.3
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 489.46478236842313,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 14.3,
+                    "volume": 489.464783
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 11.05,
+            "y": 7.75,
+            "z": 1.11
+          },
+          "itemDx": 8.99,
+          "itemDy": 8.99
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Corning cat. no.: 353072\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2b/UK/en/Microplates/\n  Assay-Microplates/96-Well-Microplates/Falcon%C2%AE-96-well-Polystyrene-Microplates/p/353072\n- brand: Falcon\n- distributor: (Fisher Scientific, 08-772-2C)\n- material: Polypropylene\n- max_volume: 275 uL"
+}

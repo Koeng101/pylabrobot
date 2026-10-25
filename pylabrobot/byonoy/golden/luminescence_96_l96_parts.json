@@ -1,0 +1,40 @@
+{
+  "steps": [],
+  "resources": [
+    {
+      "name": "l96_base",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "l96_base_plate_holder",
+      "parent": "l96_base",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "l96_base_reader_unit_holder",
+      "parent": "l96_base",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "l96_reader",
+      "parent": "l96_base_reader_unit_holder",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        0.0,
+        0.0,
+        7.2
+      ]
+    }
+  ]
+}

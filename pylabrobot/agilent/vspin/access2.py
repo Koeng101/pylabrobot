@@ -5,7 +5,8 @@ import dataclasses
 import logging
 import math
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Literal
+from functools import wraps
+from typing import Any, AsyncIterator, Awaitable, Callable, Coroutine, Dict, Literal, Optional
 
 from pylabrobot.agilent.vspin import _access2_protocol as protocol
 from pylabrobot.agilent.vspin._state import (
@@ -24,10 +25,14 @@ from pylabrobot.agilent.vspin.errors import (
   LoaderNoPlateError,
   NotAtBucketError,
 )
-from pylabrobot.agilent.vspin.vspin import VSpin
-from pylabrobot.events import evented_operation, resource_reference
+from pylabrobot.agilent.vspin.vspin import VSpin, find_or_create_holder
+from pylabrobot.events import event_operation, handle_reference, is_event_bus_active
 from pylabrobot.io.ftdi import FTDI, is_ftdi_transport_error
-from pylabrobot.resources import Coordinate, ResourceHolder
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import build, devices, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 logger = logging.getLogger(__name__)
 
@@ -93,30 +98,52 @@ def _transfer_route(
   raise ValueError(f"Invalid transfer direction: {direction}")
 
 
-def _loader_lifecycle_event_context(self: "Access2") -> dict[str, object]:
+def _evented(
+  name: str, context_factory: Callable[..., Awaitable[Dict[str, Any]]]
+) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Coroutine[Any, Any, Any]]]:
+  """`evented_operation` with a context read from the store: the call's arguments go to
+  `context_factory`, which is awaited only while an event bus listens."""
+
+  def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Coroutine[Any, Any, Any]]:
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+      if not is_event_bus_active():
+        return await func(*args, **kwargs)
+      with event_operation(name, **await context_factory(*args, **kwargs)):
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+  return decorator
+
+
+async def _loader_lifecycle_event_context(self: "Access2") -> Dict[str, Any]:
   """Identify the loader whose connection lifecycle is changing."""
-  return {"device": resource_reference(self)}
+  return {"device": await handle_reference(self._body)}
 
 
-def _loader_load_event_context(self: "Access2", **parameters: float | str) -> dict:
-  plate = self.resource
+async def _loader_load_event_context(self: "Access2", **parameters: float | str) -> Dict[str, Any]:
+  plate = await self.get_resource_held()
+  device = await handle_reference(self.body)
   return {
-    "device": resource_reference(self),
-    "resources": [] if plate is None else [resource_reference(plate)],
-    "source": resource_reference(self),
-    "destination": resource_reference(self._vspin.at_bucket),
+    "device": device,
+    "resources": [] if plate is None else [await handle_reference(plate)],
+    "source": device,
+    "destination": await handle_reference(self._vspin.at_bucket),
     "parameters": parameters,
   }
 
 
-def _loader_unload_event_context(self: "Access2", **parameters: float | str) -> dict:
+async def _loader_unload_event_context(
+  self: "Access2", **parameters: float | str
+) -> Dict[str, Any]:
   bucket = self._vspin.at_bucket
-  plate = None if bucket is None else bucket.resource
+  plate = None if bucket is None else await bucket.get_resource_held()
   return {
-    "device": resource_reference(self),
-    "resources": [] if plate is None else [resource_reference(plate)],
-    "source": resource_reference(bucket),
-    "destination": resource_reference(self),
+    "device": await handle_reference(self.body),
+    "resources": [] if plate is None else [await handle_reference(plate)],
+    "source": await handle_reference(bucket),
+    "destination": await handle_reference(self.body),
     "parameters": parameters,
   }
 
@@ -940,8 +967,13 @@ class Access2Driver:
     )
 
 
-class Access2(ResourceHolder):
-  """Agilent Access2 centrifuge loader."""
+class Access2:
+  """Agilent Access2 centrifuge loader.
+
+  Its stage is a holder in the resource store, `body`, the root of a tree of its own; `setup`
+  makes it there, or finds it when it is already there. A plate on the stage is that holder's
+  child.
+  """
 
   def __init__(
     self,
@@ -951,55 +983,117 @@ class Access2(ResourceHolder):
     size_x: float = 0.0,
     size_y: float = 0.0,
     size_z: float = 0.0,
+    store: Optional[ResourceStore] = None,
   ):
     """Create an Access2 loader paired with a VSpin centrifuge.
 
     Args:
-      name: Resource name.
+      name: The name of the loader's stage in the store.
       device_id: The libftdi identifier for the loader.
       vspin: Paired VSpin centrifuge.
-      size_x: Resource width in millimeters.
-      size_y: Resource depth in millimeters.
-      size_z: Resource height in millimeters.
+      size_x: Stage width in millimeters.
+      size_y: Stage depth in millimeters.
+      size_z: Stage height in millimeters.
+      store: The resource store its stage is in; the VSpin's by default, so plates move between
+        the stage and the buckets.
     """
-    driver = Access2Driver(
+    self.name = name
+    self.size = Coordinate(size_x, size_y, size_z)
+    self.driver: Access2Driver = Access2Driver(
       device_id=device_id,
     )
-    ResourceHolder.__init__(
-      self,
-      name=name,
-      size_x=size_x,
-      size_y=size_y,
-      size_z=size_z,
+    self._vspin = vspin
+    self.store = store or vspin.store
+    self._body: Optional[handles.ResourceHolder] = None
+
+  def definition(self) -> pb.ResourceDefinition:
+    """The loader's stage: a holder that takes one plate at its origin."""
+    return build.resource(
+      self.name,
+      self.size,
+      kind=pb.RESOURCE_KIND_RESOURCE_HOLDER,
       model="Agilent Access2",
       category="loader",
-      child_location=Coordinate.zero(),
+      holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero())),
     )
-    self.driver: Access2Driver = driver
-    self._vspin = vspin
 
-  @evented_operation("centrifuge_loader.setup", _loader_lifecycle_event_context)
+  async def create_resources(self) -> handles.ResourceHolder:
+    """Find the loader's stage in the store by name, or make it there, a root.
+
+    Called by `setup`.
+    """
+    self._body = await find_or_create_holder(self.store, self.definition())
+    return self._body
+
+  async def get_resources(self) -> handles.ResourceHolder:
+    """Find the loader's stage in the store by name; never make it.
+
+    Raises:
+      LookupError: The store has no holder of its name.
+    """
+    self._body = await find_or_create_holder(self.store, self.definition(), create=False)
+    return self._body
+
+  @property
+  def body(self) -> handles.ResourceHolder:
+    """The loader's stage in the store.
+
+    Raises:
+      RuntimeError: It is not found or made yet: call `create_resources` or `setup` first.
+    """
+    if self._body is None:
+      raise devices.not_in_store(self.name)
+    return self._body
+
+  async def get_resource_held(self) -> Optional[handles.Resource]:
+    """The plate on the loader's stage; None when it is empty."""
+    return await self.body.get_resource_held()
+
+  async def assign_child_resource(
+    self, resource: handles.Resource, location: Optional[Coordinate] = None
+  ) -> None:
+    """Put a plate on the loader's stage, as a person does."""
+    await self.body.assign_child_resource(resource, location=location)
+
   async def setup(self) -> None:
-    """Connect, initialize, home, and park the loader through its driver."""
+    """Make or find the loader's stage in the store, then connect, initialize, home, and park
+    the loader through its driver."""
+    await self.create_resources()
+    await self._setup()
+
+  @_evented("centrifuge_loader.setup", _loader_lifecycle_event_context)
+  async def _setup(self) -> None:
     await self.driver.setup()
 
-  @evented_operation("centrifuge_loader.stop", _loader_lifecycle_event_context)
+  @_evented("centrifuge_loader.stop", _loader_lifecycle_event_context)
   async def stop(self) -> None:
     """Close the loader transport and invalidate session-scoped driver state."""
     await self.driver.stop()
 
-  def _teachpoint_for_bucket(self, bucket: ResourceHolder) -> int:
+  def _teachpoint_for_bucket(self, bucket: handles.ResourceHolder) -> int:
     """Map a VSpin bucket resource to its Access2 protocol teachpoint."""
-    if bucket is self._vspin.bucket1:
+    if bucket == self._vspin.bucket1:
       return protocol.TEACHPOINT_BUCKET_1
-    if bucket is self._vspin.bucket2:
+    if bucket == self._vspin.bucket2:
       return protocol.TEACHPOINT_BUCKET_2
     raise NotAtBucketError("Unknown VSpin bucket")
+
+  async def _load_state(
+    self, bucket: handles.ResourceHolder
+  ) -> tuple[Optional[handles.Resource], bool]:
+    """The plate on the loader's stage, and whether `bucket` holds anything, in one read."""
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[self.body.ref, bucket.ref], depth=0)
+    )
+    stage, held = response.nodes[0], response.nodes[1]
+    if not stage.child_ids:
+      return None, bool(held.child_ids)
+    return await self.store.get_by_id(stage.child_ids[0]), bool(held.child_ids)
 
   async def _run_driver_transfer(
     self,
     direction: TransferDirection,
-    bucket: ResourceHolder,
+    bucket: handles.ResourceHolder,
     *,
     plate_height: float,
     source_z_offset: float,
@@ -1060,7 +1154,7 @@ class Access2(ResourceHolder):
           vspin_transition.mark_actuated()
         raise
 
-  @evented_operation("centrifuge_loader.load", _loader_load_event_context)
+  @_evented("centrifuge_loader.load", _loader_load_event_context)
   async def load(
     self,
     *,
@@ -1104,9 +1198,10 @@ class Access2(ResourceHolder):
         "Centrifuge must be at a bucket to load a plate. "
         "Use vspin.go_to_bucket1() or vspin.go_to_bucket2()."
       )
-    if self.resource is None:
+    plate, bucket_occupied = await self._load_state(bucket)
+    if plate is None:
       raise LoaderNoPlateError("Loader must have a plate to load.")
-    if bucket.resource is not None:
+    if bucket_occupied:
       raise BucketHasPlateError("Bucket must be empty to load a plate.")
 
     await self._run_driver_transfer(
@@ -1127,9 +1222,9 @@ class Access2(ResourceHolder):
       gripper_release_speed=gripper_release_speed,
     )
 
-    bucket.assign_child_resource(self.resource, location=Coordinate.zero())
+    await bucket.assign_child_resource(plate, location=Coordinate.zero())
 
-  @evented_operation("centrifuge_loader.unload", _loader_unload_event_context)
+  @_evented("centrifuge_loader.unload", _loader_unload_event_context)
   async def unload(
     self,
     *,
@@ -1173,7 +1268,8 @@ class Access2(ResourceHolder):
         "Centrifuge must be at a bucket to unload a plate. "
         "Use vspin.go_to_bucket1() or vspin.go_to_bucket2()."
       )
-    if bucket.resource is None:
+    plate = await bucket.get_resource_held()
+    if plate is None:
       raise BucketNoPlateError("Bucket must have a plate to unload.")
 
     await self._run_driver_transfer(
@@ -1194,4 +1290,4 @@ class Access2(ResourceHolder):
       gripper_release_speed=gripper_release_speed,
     )
 
-    self.assign_child_resource(bucket.resource)
+    await self.body.assign_child_resource(plate)

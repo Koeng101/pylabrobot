@@ -1,0 +1,642 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        {
+          "request": "GET /health"
+        },
+        {
+          "request": "GET /deck_configuration"
+        },
+        {
+          "request": "POST /runs"
+        },
+        {
+          "request": "POST /runs/run-1/commands",
+          "body": {
+            "data": {
+              "commandType": "home",
+              "params": {},
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-1/commands/command-1"
+        },
+        {
+          "request": "GET /instruments"
+        },
+        {
+          "request": "POST /runs/run-1/commands",
+          "body": {
+            "data": {
+              "commandType": "loadPipette",
+              "params": {
+                "pipetteName": "p50_single_flex",
+                "mount": "left"
+              },
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-1/commands/command-2"
+        },
+        {
+          "request": "POST /runs/run-1/commands",
+          "body": {
+            "data": {
+              "commandType": "loadPipette",
+              "params": {
+                "pipetteName": "p50_multi_flex",
+                "mount": "right"
+              },
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-1/commands/command-3"
+        }
+      ],
+      "resources": [
+        {
+          "name": "trash",
+          "parent": "flex_deck_slot_A3",
+          "kind": "RESOURCE_KIND_TRASH",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "flex_deck_left_pipette",
+          "parent": "flex_deck",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_left_pipette_channel_0",
+          "parent": "flex_deck_left_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette",
+          "parent": "flex_deck",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_0",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            63.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_1",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            54.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_2",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            45.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_3",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            36.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_4",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            27.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_5",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            18.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_6",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            9.0,
+            0.0
+          ]
+        },
+        {
+          "name": "flex_deck_right_pipette_channel_7",
+          "parent": "flex_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "mounted": {
+        "left/1": {},
+        "right/8": {}
+      }
+    },
+    {
+      "call": "create_run()",
+      "result": null,
+      "sent": [
+        {
+          "request": "POST /runs/run-1/actions",
+          "body": {
+            "data": {
+              "actionType": "stop"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-1"
+        },
+        {
+          "request": "POST /runs"
+        }
+      ],
+      "mounted": {}
+    },
+    {
+      "call": "initialize()",
+      "result": null,
+      "sent": [
+        {
+          "request": "GET /instruments"
+        },
+        {
+          "request": "POST /runs/run-2/commands",
+          "body": {
+            "data": {
+              "commandType": "loadPipette",
+              "params": {
+                "pipetteName": "p50_single_flex",
+                "mount": "left"
+              },
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-2/commands/command-4"
+        },
+        {
+          "request": "POST /runs/run-2/commands",
+          "body": {
+            "data": {
+              "commandType": "loadPipette",
+              "params": {
+                "pipetteName": "p50_multi_flex",
+                "mount": "right"
+              },
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-2/commands/command-5"
+        }
+      ],
+      "mounted": {
+        "left/1": {},
+        "right/8": {}
+      }
+    },
+    {
+      "call": "home()",
+      "result": {
+        "id": "command-6",
+        "status": "succeeded",
+        "result": {},
+        "error": {}
+      },
+      "sent": [
+        {
+          "request": "POST /runs/run-2/commands",
+          "body": {
+            "data": {
+              "commandType": "home",
+              "params": {},
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-2/commands/command-6"
+        }
+      ],
+      "mounted": {
+        "left/1": {},
+        "right/8": {}
+      }
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        {
+          "request": "POST /runs/run-2/commands",
+          "body": {
+            "data": {
+              "commandType": "getTipPresence",
+              "params": {
+                "pipetteId": "pipette-right"
+              },
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-2/commands/command-7"
+        },
+        {
+          "request": "POST /runs/run-2/commands",
+          "body": {
+            "data": {
+              "commandType": "getTipPresence",
+              "params": {
+                "pipetteId": "pipette-left"
+              },
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-2/commands/command-8"
+        },
+        {
+          "request": "POST /runs/run-2/commands",
+          "body": {
+            "data": {
+              "commandType": "home",
+              "params": {},
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-2/commands/command-9"
+        },
+        {
+          "request": "POST /runs/run-2/actions",
+          "body": {
+            "data": {
+              "actionType": "stop"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-2"
+        }
+      ],
+      "mounted": {}
+    }
+  ],
+  "resources": [
+    {
+      "name": "flex_deck",
+      "parent": "",
+      "kind": "RESOURCE_KIND_DECK",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_D1",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_D2",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        164.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_D3",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        328.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_C1",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        107.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_C2",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        164.0,
+        107.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_C3",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        328.0,
+        107.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_B1",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        214.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_B2",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        164.0,
+        214.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_B3",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        328.0,
+        214.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_A1",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        321.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_A2",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        164.0,
+        321.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_slot_A3",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        328.0,
+        321.0,
+        0.0
+      ]
+    },
+    {
+      "name": "trash",
+      "parent": "flex_deck_slot_A3",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "flex_deck_slot_D4",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        492.0,
+        0.0,
+        14.5
+      ]
+    },
+    {
+      "name": "flex_deck_slot_C4",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        492.0,
+        107.0,
+        14.5
+      ]
+    },
+    {
+      "name": "flex_deck_slot_B4",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        492.0,
+        214.0,
+        14.5
+      ]
+    },
+    {
+      "name": "flex_deck_slot_A4",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        492.0,
+        321.0,
+        14.5
+      ]
+    },
+    {
+      "name": "flex_deck_left_pipette",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_left_pipette_channel_0",
+      "parent": "flex_deck_left_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette",
+      "parent": "flex_deck",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_0",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        63.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_1",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        54.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_2",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        45.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_3",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        36.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_4",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        27.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_5",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        18.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_6",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "name": "flex_deck_right_pipette_channel_7",
+      "parent": "flex_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}

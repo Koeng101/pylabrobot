@@ -1,0 +1,37 @@
+{
+  "name": "hamilton_tip_1000uL_filter_wide",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "model": "hamilton_tip_1000uL_filter_wide",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 91.95
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "hasFilter": true,
+        "maximalVolume": 1065.0,
+        "nominalVolume": 1000.0,
+        "collarHeight": 10.0,
+        "hamilton": {
+          "tipSize": "HIGH_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton 1000 uL wide bore (1.20 mm) tip with filter\n\nHamilton P/N 235677"
+}

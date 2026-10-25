@@ -14,11 +14,13 @@ out against a tracked rack. Picking up does not: an untracked spot hands out a f
 as it is.
 """
 
-from typing import List, Optional, Tuple, TypeVar
+from dataclasses import dataclass
+from typing import AbstractSet, List, Mapping, Optional, Tuple, TypeVar
 
 from pylabrobot.resources import Coordinate, ItemizedResource, Resource, TipRack, TipSpot
 from pylabrobot.resources.n_channel_pipettes import NChannelPipette, TipMountingShaft
-from pylabrobot.resources.utils import label_to_row_index, split_identifier
+from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.utils import label_to_row_index, row_index_to_label, split_identifier
 
 T = TypeVar("T", bound=Resource)
 
@@ -35,19 +37,74 @@ _DECK_STEPS = {
 }
 
 
+@dataclass(frozen=True)
+class HeadLayout:
+  """A head's channels: rows, columns, and the pitch between neighbours, in mm."""
+
+  num_items_x: int
+  num_items_y: int
+  channel_pitch: float
+
+  @property
+  def num_items(self) -> int:
+    return self.num_items_x * self.num_items_y
+
+
+@dataclass(frozen=True)
+class GridLayout:
+  """A grid of items: its name, rows, columns, pitches in mm, and its rotation in its root."""
+
+  name: str
+  num_items_x: int
+  num_items_y: int
+  item_dx: float
+  item_dy: float
+  absolute_rotation: Rotation
+
+
+@dataclass(frozen=True)
+class SpotTip:
+  """A tip spot as a tip command needs it: whether it tracks tips, and whether it holds one."""
+
+  tracks_tips: bool
+  has_tip: bool
+
+
+def head_layout_of(head: NChannelPipette) -> HeadLayout:
+  """A head's layout, read from PLR's `Resource` classes."""
+  return HeadLayout(head.num_items_x, head.num_items_y, head.channel_pitch)
+
+
+def grid_layout_of(grid: ItemizedResource) -> GridLayout:
+  """A grid's layout, read from PLR's `Resource` classes."""
+  return GridLayout(
+    name=grid.name,
+    num_items_x=grid.num_items_x,
+    num_items_y=grid.num_items_y,
+    item_dx=grid.item_dx,
+    item_dy=grid.item_dy,
+    absolute_rotation=grid.get_absolute_rotation(),
+  )
+
+
 def _parse_identifier(identifier: str) -> Tuple[int, int]:
   """'D6' as (row, column), zero-based: (3, 5)."""
   row_label, column_label = split_identifier(identifier)
   return label_to_row_index(row_label), int(column_label) - 1
 
 
-def get_items_under_channels(
-  head: NChannelPipette, grid: ItemizedResource[T], channel: str, item: str
-) -> List[List[Optional[T]]]:
-  """The item of `grid` under each head channel with `channel` over `item`; None past its edge.
+def _identifier(row: int, column: int) -> str:
+  return f"{row_index_to_label(row)}{column + 1}"
+
+
+def identifiers_under_channels(
+  head: HeadLayout, grid: GridLayout, channel: str, item: str
+) -> List[List[Optional[str]]]:
+  """The identifier of the item of `grid` under each head channel with `channel` over `item`;
+  None past its edge.
 
   Args:
-    head: the head, whose rows, columns and channel pitch are read.
+    head: the head's rows, columns and channel pitch.
     grid: a tip rack or a plate on the head's pitch, or a whole fraction of it.
     channel: the head channel placed over `item`, e.g. "H12".
     item: the item it is placed over, e.g. "D6".
@@ -59,12 +116,11 @@ def get_items_under_channels(
     ValueError: If the grid is turned by other than a multiple of 90 degrees about z, or tilted,
       or its pitch does not match the head's within `PITCH_TOLERANCE`.
   """
-  rotation = grid.get_absolute_rotation()
+  rotation = grid.absolute_rotation
   if rotation.x % 360 or rotation.y % 360 or rotation.z % 90:
     raise ValueError(f"{grid.name} is not square to the deck: rotation {rotation}")
   row_step, column_step = _DECK_STEPS[round(rotation.z / 90) % 4]
 
-  # Each of these reads walks the whole grid, so they are read once.
   head_rows, head_columns = head.num_items_y, head.num_items_x
   grid_rows, grid_columns = grid.num_items_y, grid.num_items_x
   head_span = max(head_rows, head_columns) - 1
@@ -81,9 +137,9 @@ def get_items_under_channels(
 
   channel_row, channel_column = _parse_identifier(channel)
   item_row, item_column = _parse_identifier(item)
-  under: List[List[Optional[T]]] = []
+  under: List[List[Optional[str]]] = []
   for head_row in range(head_rows):
-    row: List[Optional[T]] = []
+    row: List[Optional[str]] = []
     for head_column in range(head_columns):
       # How far this channel is from `channel` on the deck, turned back into the grid's own rows
       # and columns: the steps are unit vectors, so turning back is a dot product with each.
@@ -92,9 +148,25 @@ def get_items_under_channels(
       r = item_row + deck_rows * row_step[0] + deck_columns * row_step[1]
       c = item_column + deck_rows * column_step[0] + deck_columns * column_step[1]
       inside = 0 <= r < grid_rows and 0 <= c < grid_columns
-      row.append(grid.get_item((r, c)) if inside else None)
+      row.append(_identifier(r, c) if inside else None)
     under.append(row)
   return under
+
+
+def get_items_under_channels(
+  head: NChannelPipette, grid: ItemizedResource[T], channel: str, item: str
+) -> List[List[Optional[T]]]:
+  """`identifiers_under_channels` for a head and a grid held in this process, as items."""
+  under = identifiers_under_channels(head_layout_of(head), grid_layout_of(grid), channel, item)
+  return [[None if i is None else grid.get_item(i) for i in row] for row in under]
+
+
+def a1_coordinate(head: HeadLayout, channel: str, centre: Coordinate) -> Coordinate:
+  """Where head channel A1 goes with `channel` over `centre`; Z is `centre`'s."""
+  row, column = _parse_identifier(channel)
+  return Coordinate(
+    centre.x - column * head.channel_pitch, centre.y + row * head.channel_pitch, centre.z
+  )
 
 
 def get_a1_coordinate(
@@ -105,29 +177,14 @@ def get_a1_coordinate(
   The Z is the item's bottom.
   """
   centre = grid.get_item(item).get_location_wrt(deck, "c", "c", "b")
-  row, column = _parse_identifier(channel)
-  return Coordinate(
-    centre.x - column * head.channel_pitch, centre.y + row * head.channel_pitch, centre.z
-  )
+  return a1_coordinate(head_layout_of(head), channel, centre)
 
 
-def _get_spots_under_shafts(
-  head: NChannelPipette, rack: TipRack, channel: str, tip_spot: str
-) -> List[Tuple[TipMountingShaft, Optional[TipSpot]]]:
-  """Each head channel with the spot under it, None past the rack's edge."""
-  under = get_items_under_channels(head, rack, channel, tip_spot)
-  return [
-    (head.get_item((row, column)), spot)
-    for row, spots in enumerate(under)
-    for column, spot in enumerate(spots)
-  ]
-
-
-def _channels(head: NChannelPipette, shafts: List[TipMountingShaft]) -> str:
+def _channels(head: HeadLayout, channels: List[str]) -> str:
   """The channels, for a message: "all channels", or "channels ['H11', 'H12']"."""
-  if len(shafts) == head.num_items:
+  if len(channels) == head.num_items:
     return "all channels"
-  return f"channels {[head.get_child_identifier(shaft) for shaft in shafts]}"
+  return f"channels {channels}"
 
 
 def _refuse_if(action: str, problems: List[str]) -> None:
@@ -140,33 +197,59 @@ def _refuse_if(action: str, problems: List[str]) -> None:
     raise ValueError(f"{action} refused: " + "; ".join(problems))
 
 
-def plan_pick_up(
-  head: NChannelPipette, rack: TipRack, channel: str, tip_spot: str
-) -> List[Tuple[TipMountingShaft, TipSpot]]:
+def _under(
+  head: HeadLayout, rack: GridLayout, channel: str, tip_spot: str
+) -> List[Tuple[str, Optional[str]]]:
+  """Each head channel with the spot under it, None past the rack's edge."""
+  under = identifiers_under_channels(head, rack, channel, tip_spot)
+  return [
+    (_identifier(row, column), spot)
+    for row, spots in enumerate(under)
+    for column, spot in enumerate(spots)
+  ]
+
+
+def plan_tip_pick_up(
+  head: HeadLayout,
+  rack: GridLayout,
+  frame_height: float,
+  channel: str,
+  tip_spot: str,
+  carrying: AbstractSet[str],
+  spots: Mapping[str, SpotTip],
+) -> List[Tuple[str, str]]:
   """Check picking up from `rack` with head `channel` over `tip_spot`; each channel and its spot.
 
   Tip tracking is not needed: an untracked spot gives a tip whatever the model holds.
 
+  Args:
+    head: the head's layout.
+    rack: the rack's layout.
+    frame_height: the rack's frame height; 0 when it has no frame around its spots.
+    channel: the head channel placed over `tip_spot`.
+    tip_spot: the spot it is placed over.
+    carrying: the head channels that carry a tip.
+    spots: each spot of the rack, by identifier.
+
   Returns:
-    Each channel that takes a tip, with the spot it takes it from.
+    Each channel that takes a tip, with the spot it takes it from, by identifier.
 
   Raises:
     ValueError: Naming every problem: tips already on the head, no channel over a tip, or the head
-      coming down on the rack's frame; or if a channel stands past the rack's edge and the rack
-      does not declare its `frame_height`.
+      coming down on the rack's frame.
   """
-  under = _get_spots_under_shafts(head, rack, channel, tip_spot)
+  under = _under(head, rack, channel, tip_spot)
   problems: List[str] = []
   # Only a channel past the rack's edge brings the head down beside the spots, onto any frame.
-  if any(spot is None for _, spot in under) and rack.frame_height != 0:
+  if any(spot is None for _, spot in under) and frame_height != 0:
     problems.append(f"the head would come down on the frame of {rack.name}")
-  carrying = [shaft for shaft, _ in under if shaft.has_tip()]
-  if carrying:
-    problems.append(f"{_channels(head, carrying)} already carry a tip")
+  loaded = [shaft for shaft, _ in under if shaft in carrying]
+  if loaded:
+    problems.append(f"{_channels(head, loaded)} already carry a tip")
   pairs = [
     (shaft, spot)
     for shaft, spot in under
-    if spot is not None and (not spot.tracks_tips or spot.tip is not None)
+    if spot is not None and (not spots[spot].tracks_tips or spots[spot].has_tip)
   ]
   if not pairs:
     problems.append("no channel stands over a tip")
@@ -174,34 +257,39 @@ def plan_pick_up(
   return pairs
 
 
-def plan_drop(
-  head: NChannelPipette, rack: TipRack, channel: str, tip_spot: str
-) -> List[Tuple[TipMountingShaft, TipSpot]]:
+def plan_tip_drop(
+  head: HeadLayout,
+  rack: GridLayout,
+  frame_height: float,
+  channel: str,
+  tip_spot: str,
+  carrying: AbstractSet[str],
+  spots: Mapping[str, SpotTip],
+) -> List[Tuple[str, str]]:
   """Check dropping the head's tips into `rack` with head `channel` over `tip_spot`.
 
-  Needs tip tracking on every spot that would take a tip.
+  Needs tip tracking on every spot that would take a tip. Arguments as `plan_tip_pick_up`.
 
   Returns:
-    Each channel that carries a tip, with the spot its tip goes into.
+    Each channel that carries a tip, with the spot its tip goes into, by identifier.
 
   Raises:
     ValueError: Naming every problem: no tips on the head, a tip over a spot that does not track
-      tips, a tip on a tip, a tip beside the rack, or the head coming down on the rack's frame; or
-      if a channel stands past the rack's edge and the rack does not declare its `frame_height`.
+      tips, a tip on a tip, a tip beside the rack, or the head coming down on the rack's frame.
   """
-  under = _get_spots_under_shafts(head, rack, channel, tip_spot)
+  under = _under(head, rack, channel, tip_spot)
   problems: List[str] = []
   # Only a channel past the rack's edge brings the head down beside the spots, onto any frame.
-  if any(spot is None for _, spot in under) and rack.frame_height != 0:
+  if any(spot is None for _, spot in under) and frame_height != 0:
     problems.append(f"the head would come down on the frame of {rack.name}")
-  carrying = [(shaft, spot) for shaft, spot in under if shaft.has_tip()]
-  if not carrying:
+  loaded = [(shaft, spot) for shaft, spot in under if shaft in carrying]
+  if not loaded:
     problems.append("the head carries no tips")
-  untracked = [s for s, spot in carrying if spot is not None and not spot.tracks_tips]
+  untracked = [s for s, spot in loaded if spot is not None and not spots[spot].tracks_tips]
   on_tip = [
-    s for s, spot in carrying if spot is not None and spot.tracks_tips and spot.tip is not None
+    s for s, spot in loaded if spot is not None and spots[spot].tracks_tips and spots[spot].has_tip
   ]
-  beside = [s for s, spot in carrying if spot is None]
+  beside = [s for s, spot in loaded if spot is None]
   if untracked:
     problems.append(
       f"{_channels(head, untracked)} are over spots of {rack.name} that do not track tips;"
@@ -212,4 +300,55 @@ def plan_drop(
   if beside:
     problems.append(f"{_channels(head, beside)} would drop a tip beside {rack.name}")
   _refuse_if("drop", problems)
-  return [(shaft, spot) for shaft, spot in carrying if spot is not None]
+  return [(shaft, spot) for shaft, spot in loaded if spot is not None]
+
+
+def _tip_state(
+  head: NChannelPipette, rack: TipRack
+) -> Tuple[AbstractSet[str], Mapping[str, SpotTip]]:
+  """Which head channels carry a tip, and each spot of `rack`, read from PLR's classes."""
+  carrying = {head.get_child_identifier(shaft) for shaft in head.get_all_items() if shaft.has_tip()}
+  spots = {
+    rack.get_child_identifier(spot): SpotTip(spot.tracks_tips, spot.tip is not None)
+    for spot in rack.get_all_items()
+  }
+  return carrying, spots
+
+
+def plan_pick_up(
+  head: NChannelPipette, rack: TipRack, channel: str, tip_spot: str
+) -> List[Tuple[TipMountingShaft, TipSpot]]:
+  """`plan_tip_pick_up` for a head and a rack held in this process, as shafts and spots.
+
+  Raises:
+    ValueError: As `plan_tip_pick_up`; or if a channel stands past the rack's edge and the rack
+      does not declare its `frame_height`.
+  """
+  carrying, spots = _tip_state(head, rack)
+  layout = grid_layout_of(rack)
+  # Read only when a channel stands past the edge, as reading an undeclared one raises.
+  under = identifiers_under_channels(head_layout_of(head), layout, channel, tip_spot)
+  frame_height = rack.frame_height if any(None in row for row in under) else 0
+  pairs = plan_tip_pick_up(
+    head_layout_of(head), layout, frame_height, channel, tip_spot, carrying, spots
+  )
+  return [(head.get_item(shaft), rack.get_item(spot)) for shaft, spot in pairs]
+
+
+def plan_drop(
+  head: NChannelPipette, rack: TipRack, channel: str, tip_spot: str
+) -> List[Tuple[TipMountingShaft, TipSpot]]:
+  """`plan_tip_drop` for a head and a rack held in this process, as shafts and spots.
+
+  Raises:
+    ValueError: As `plan_tip_drop`; or if a channel stands past the rack's edge and the rack does
+      not declare its `frame_height`.
+  """
+  carrying, spots = _tip_state(head, rack)
+  layout = grid_layout_of(rack)
+  under = identifiers_under_channels(head_layout_of(head), layout, channel, tip_spot)
+  frame_height = rack.frame_height if any(None in row for row in under) else 0
+  pairs = plan_tip_drop(
+    head_layout_of(head), layout, frame_height, channel, tip_spot, carrying, spots
+  )
+  return [(head.get_item(shaft), rack.get_item(spot)) for shaft, spot in pairs]

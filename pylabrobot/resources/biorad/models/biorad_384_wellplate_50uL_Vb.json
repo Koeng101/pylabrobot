@@ -1,0 +1,57 @@
+{
+  "name": "biorad_384_wellplate_50uL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "biorad_384_wellplate_50uL_Vb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 10.4
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 24,
+        "numItemsY": 16,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 3.1,
+                "y": 3.1,
+                "z": 9.35
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 70.57077387483262,
+                "materialZThickness": 1.0,
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.58,
+            "y": 7.44,
+            "z": 1.05
+          },
+          "itemDx": 4.5,
+          "itemDy": 4.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  }
+}

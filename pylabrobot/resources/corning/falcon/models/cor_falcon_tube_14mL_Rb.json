@@ -1,0 +1,27 @@
+{
+  "name": "cor_falcon_tube_14mL_Rb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE",
+      "model": "cor_falcon_tube_14mL_Rb",
+      "category": "tube",
+      "size": {
+        "x": 17.0,
+        "y": 17.0,
+        "z": 95.0
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": 14000.0,
+        "materialZThickness": 1.19
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Corning cat. no.: 352059\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2b/UK/en/General-Labware/Tubes/Tubes%2C-Round-Bottom/Falcon%C2%AE-Round-Bottom-High-clarity-Polypropylene-Tube/p/highClarityPolypropyleneRoundBottomTubes\n- distributor: (Fisher Scientific, 10110101)\n- brand: Falcon\n- material: Polypropylene\n- tech_drawing: tech_drawings/Cor_Falcon_tube_14mL_Rb.pdf\n- cap_style: snap-cap"
+}

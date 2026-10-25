@@ -1,0 +1,98 @@
+{
+  "name": "eppendorf_tube_5mL_Vb_snapcap",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE",
+      "model": "eppendorf_tube_5mL_Vb_snapcap",
+      "category": "tube",
+      "size": {
+        "x": 16.7,
+        "y": 16.7,
+        "z": 56.7
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": 5000.0,
+        "materialZThickness": 1.2,
+        "heightVolumeData": [
+          {},
+          {
+            "height": 1.342,
+            "volume": 5.0
+          },
+          {
+            "height": 1.875,
+            "volume": 10.0
+          },
+          {
+            "height": 4.975,
+            "volume": 50.0
+          },
+          {
+            "height": 6.975,
+            "volume": 100.0
+          },
+          {
+            "height": 9.909,
+            "volume": 200.0
+          },
+          {
+            "height": 13.742,
+            "volume": 400.0
+          },
+          {
+            "height": 16.242,
+            "volume": 600.0
+          },
+          {
+            "height": 18.375,
+            "volume": 800.0
+          },
+          {
+            "height": 20.142,
+            "volume": 1000.0
+          },
+          {
+            "height": 21.809,
+            "volume": 1200.0
+          },
+          {
+            "height": 23.842,
+            "volume": 1500.0
+          },
+          {
+            "height": 27.242,
+            "volume": 2000.0
+          },
+          {
+            "height": 34.242,
+            "volume": 3000.0
+          },
+          {
+            "height": 41.009,
+            "volume": 4000.0
+          },
+          {
+            "height": 44.175,
+            "volume": 4500.0
+          },
+          {
+            "height": 47.509,
+            "volume": 5000.0
+          },
+          {
+            "height": 50.675,
+            "volume": 5500.0
+          }
+        ]
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Eppendorf cat. no.: 0030119401\n\n5 mL snap-cap Eppendorf tube with V-bottom.\n\n- Colour: transparent\n- Material: Polypropylene\n- Sterilized: No\n- Autoclavable: No\n- Chemical resistance:?\n- Thermal resistance: ?\n- Surface treatment: available as LoBind\u2122 version\n- Sealing options: na\n- Centrifugation safety: Maximum safety and stability for centrifugation up to 25,000 x g\n- Total volume = 5_000 ul\n- URL: https://www.eppendorf.com/se-en/Products/Lab-Consumables/Lab-Tubes/EppendorfTubes-50mL-p-0030119401\n- technical drawing: ./engineering_diagrams/Eppendorf_5mL_snapcap_tube.pdf"
+}

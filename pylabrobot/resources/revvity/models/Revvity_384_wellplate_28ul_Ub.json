@@ -1,0 +1,133 @@
+{
+  "name": "Revvity_384_wellplate_28ul_Ub",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Revvity_384_wellplate_28ul_Ub",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 14.35
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 24,
+        "numItemsY": 16,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 3.3,
+                "y": 3.3,
+                "z": 5.3
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 28.22485379801409,
+                "materialZThickness": 1.0,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 0.43,
+                    "volume": 0.025186
+                  },
+                  {
+                    "height": 0.7,
+                    "volume": 0.108655
+                  },
+                  {
+                    "height": 0.925,
+                    "volume": 0.250714
+                  },
+                  {
+                    "height": 1.125,
+                    "volume": 0.451036
+                  },
+                  {
+                    "height": 1.31,
+                    "volume": 0.712144
+                  },
+                  {
+                    "height": 1.48,
+                    "volume": 1.026926
+                  },
+                  {
+                    "height": 1.64,
+                    "volume": 1.397287
+                  },
+                  {
+                    "height": 1.795,
+                    "volume": 1.832092
+                  },
+                  {
+                    "height": 1.945,
+                    "volume": 2.330842
+                  },
+                  {
+                    "height": 2.085,
+                    "volume": 2.871258
+                  },
+                  {
+                    "height": 2.22,
+                    "volume": 3.465875
+                  },
+                  {
+                    "height": 2.355,
+                    "volume": 4.137393
+                  },
+                  {
+                    "height": 2.485,
+                    "volume": 4.861085
+                  },
+                  {
+                    "height": 2.61,
+                    "volume": 5.632167
+                  },
+                  {
+                    "height": 2.735,
+                    "volume": 6.480761
+                  },
+                  {
+                    "height": 2.855,
+                    "volume": 7.371779
+                  },
+                  {
+                    "height": 2.975,
+                    "volume": 8.340938
+                  },
+                  {
+                    "height": 5.3,
+                    "volume": 28.224854
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_U",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 8.83,
+            "y": 5.69,
+            "z": 8.2
+          },
+          "itemDx": 4.5,
+          "itemDy": 4.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Revvity cat. no.: 6008280. nickname \"ProxiPlate-384 Plus\"\n- Material: Polystyrene\n- Colour: white\n- \"shallow-well\"\n- Sterilization compatibility: ?\n- Chemical resistance:?\n- Thermal resistance: ?\n- Surface treatment: non-treated\n- Sealing options: ?\n- Cleanliness: non-sterile\n- Automation compatibility: not specifically declared\n- Total volume = 28 ul"
+}

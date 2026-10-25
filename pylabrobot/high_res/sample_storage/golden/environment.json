@@ -1,0 +1,1389 @@
+{
+  "steps": [
+    {
+      "call": "setup()",
+      "sent": [
+        "<setup>",
+        "version",
+        "getstackerdimensions",
+        "environmentstatus",
+        "neststatus"
+      ],
+      "events": [
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_1_slot_1",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_1",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_1",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 10.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_1_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_1",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_1",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 40.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_1_slot_3",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_1",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_1",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 70.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_1",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2_slot_1",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_2",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_2",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 20.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2_slot_3",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_2",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 40.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2_slot_4",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_2",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 60.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_2",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_5_slot_1",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_5",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_5",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 5.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_5_slot_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store_stacker_5",
+                  "type": "Carrier",
+                  "model": "high_res_stacker"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store_stacker_5",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 13.41,
+              "y": 9.42,
+              "z": 21.0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_stacker_5",
+              "type": "Carrier",
+              "model": "high_res_stacker",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_nest_1",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "store_nest_2",
+              "type": "PlateHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "store",
+                  "type": "Resource",
+                  "model": "SteriStore"
+                }
+              ]
+            },
+            "parent": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": null
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null,
+      "resources": [
+        {
+          "name": "store",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "store_stacker_1",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "store_stacker_1_slot_1",
+          "parent": "store_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            10.0
+          ]
+        },
+        {
+          "name": "store_stacker_1_slot_2",
+          "parent": "store_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            40.0
+          ]
+        },
+        {
+          "name": "store_stacker_1_slot_3",
+          "parent": "store_stacker_1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            70.0
+          ]
+        },
+        {
+          "name": "store_stacker_2",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "store_stacker_2_slot_1",
+          "parent": "store_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            0.0
+          ]
+        },
+        {
+          "name": "store_stacker_2_slot_2",
+          "parent": "store_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            20.0
+          ]
+        },
+        {
+          "name": "store_stacker_2_slot_3",
+          "parent": "store_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            40.0
+          ]
+        },
+        {
+          "name": "store_stacker_2_slot_4",
+          "parent": "store_stacker_2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            60.0
+          ]
+        },
+        {
+          "name": "store_stacker_5",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_CARRIER"
+        },
+        {
+          "name": "store_stacker_5_slot_1",
+          "parent": "store_stacker_5",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            5.0
+          ]
+        },
+        {
+          "name": "store_stacker_5_slot_2",
+          "parent": "store_stacker_5",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "location": [
+            13.41,
+            9.42,
+            21.0
+          ]
+        },
+        {
+          "name": "store_nest_1",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER"
+        },
+        {
+          "name": "store_nest_2",
+          "parent": "store",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER"
+        }
+      ]
+    },
+    {
+      "call": "request_environment()",
+      "sent": [
+        "environmentstatus"
+      ],
+      "events": [],
+      "result": {
+        "TEMP": {
+          "name": "TEMP",
+          "current": 21.9,
+          "setpoint": 22.0,
+          "limit": 100.0
+        },
+        "RH": {
+          "name": "RH",
+          "current": 54.7,
+          "setpoint": 0.0,
+          "limit": -100.0
+        },
+        "CO2": {
+          "name": "CO2",
+          "current": 0.0,
+          "setpoint": 5.0,
+          "limit": 100.0
+        },
+        "O2": {
+          "name": "O2",
+          "current": 20.5,
+          "setpoint": 5.0,
+          "limit": 100.0
+        },
+        "TANK1": {
+          "name": "TANK1",
+          "current": 135.0,
+          "setpoint": null,
+          "limit": null
+        },
+        "TANK2": {
+          "name": "TANK2",
+          "current": 135.0,
+          "setpoint": null,
+          "limit": null
+        }
+      },
+      "unresolved_transfer": null
+    },
+    {
+      "call": "request_current_temperature()",
+      "sent": [
+        "environmentstatus"
+      ],
+      "events": [],
+      "result": 21.9,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "request_target_humidity()",
+      "sent": [
+        "environmentstatus"
+      ],
+      "events": [],
+      "result": 0.0,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "set_temperature(37)",
+      "sent": [
+        "environmentstatus",
+        "environmentset TEMP 37"
+      ],
+      "events": [
+        {
+          "name": "temperature_controller.set_temperature.started",
+          "context": {
+            "operation": "temperature_controller.set_temperature",
+            "operation_id": "op1",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_temperature": 37.0,
+            "passive": false
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_temperature": 37.0,
+            "passive": false
+          }
+        },
+        {
+          "name": "temperature_controller.set_temperature.completed",
+          "context": {
+            "operation": "temperature_controller.set_temperature",
+            "operation_id": "op1",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_temperature": 37.0,
+            "passive": false
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_temperature": 37.0,
+            "passive": false
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "set_temperature(101)",
+      "sent": [],
+      "events": [
+        {
+          "name": "temperature_controller.set_temperature.started",
+          "context": {
+            "operation": "temperature_controller.set_temperature",
+            "operation_id": "op2",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_temperature": 101.0,
+            "passive": false
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_temperature": 101.0,
+            "passive": false
+          }
+        },
+        {
+          "name": "temperature_controller.set_temperature.failed",
+          "context": {
+            "operation": "temperature_controller.set_temperature",
+            "operation_id": "op2",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_temperature": 101.0,
+            "passive": false
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_temperature": 101.0,
+            "passive": false,
+            "error_type": "ValueError",
+            "error_message": "temperature must be between 4 and 100 C for SteriStore."
+          }
+        }
+      ],
+      "result": {
+        "error": "ValueError",
+        "message": "temperature must be between 4 and 100 C for SteriStore."
+      },
+      "unresolved_transfer": null
+    },
+    {
+      "call": "set_humidity(0.9)",
+      "sent": [
+        "environmentstatus",
+        "environmentset RH 90"
+      ],
+      "events": [
+        {
+          "name": "humidity_controller.set_humidity.started",
+          "context": {
+            "operation": "humidity_controller.set_humidity",
+            "operation_id": "op3",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_humidity": 0.9
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_humidity": 0.9
+          }
+        },
+        {
+          "name": "humidity_controller.set_humidity.completed",
+          "context": {
+            "operation": "humidity_controller.set_humidity",
+            "operation_id": "op3",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_humidity": 0.9
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_humidity": 0.9
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "set_co2(0.05)",
+      "sent": [
+        "environmentstatus",
+        "environmentset CO2 5"
+      ],
+      "events": [
+        {
+          "name": "co2_controller.set_co2.started",
+          "context": {
+            "operation": "co2_controller.set_co2",
+            "operation_id": "op4",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_co2": 0.05
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_co2": 0.05
+          }
+        },
+        {
+          "name": "co2_controller.set_co2.completed",
+          "context": {
+            "operation": "co2_controller.set_co2",
+            "operation_id": "op4",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_co2": 0.05
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_co2": 0.05
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "set_o2(0.1)",
+      "sent": [
+        "environmentstatus",
+        "environmentset O2 10"
+      ],
+      "events": [
+        {
+          "name": "o2_controller.set_o2.started",
+          "context": {
+            "operation": "o2_controller.set_o2",
+            "operation_id": "op5",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_o2": 0.1
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_o2": 0.1
+          }
+        },
+        {
+          "name": "o2_controller.set_o2.completed",
+          "context": {
+            "operation": "o2_controller.set_o2",
+            "operation_id": "op5",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_o2": 0.1
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [],
+            "target_o2": 0.1
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "start_temperature_control()",
+      "sent": [
+        "environmentstatus",
+        "environment enable temp"
+      ],
+      "events": [
+        {
+          "name": "temperature_controller.activate.started",
+          "context": {
+            "operation": "temperature_controller.activate",
+            "operation_id": "op6",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": []
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": []
+          }
+        },
+        {
+          "name": "temperature_controller.activate.completed",
+          "context": {
+            "operation": "temperature_controller.activate",
+            "operation_id": "op6",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": []
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": []
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "stop_co2_control()",
+      "sent": [
+        "environmentstatus",
+        "environment disable co2"
+      ],
+      "events": [
+        {
+          "name": "co2_controller.deactivate.started",
+          "context": {
+            "operation": "co2_controller.deactivate",
+            "operation_id": "op7",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": []
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": []
+          }
+        },
+        {
+          "name": "co2_controller.deactivate.completed",
+          "context": {
+            "operation": "co2_controller.deactivate",
+            "operation_id": "op7",
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": []
+          },
+          "data": {
+            "device": {
+              "name": "store",
+              "type": "Resource",
+              "model": "SteriStore",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": []
+          }
+        }
+      ],
+      "result": null,
+      "unresolved_transfer": null
+    },
+    {
+      "call": "request_tank_pressures()",
+      "sent": [
+        "environmentstatus"
+      ],
+      "events": [],
+      "result": {
+        "TANK1": 135.0,
+        "TANK2": 135.0
+      },
+      "unresolved_transfer": null
+    }
+  ],
+  "resources": [
+    {
+      "name": "store",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "store_stacker_1",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_CARRIER"
+    },
+    {
+      "name": "store_stacker_1_slot_1",
+      "parent": "store_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        10.0
+      ]
+    },
+    {
+      "name": "store_stacker_1_slot_2",
+      "parent": "store_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        40.0
+      ]
+    },
+    {
+      "name": "store_stacker_1_slot_3",
+      "parent": "store_stacker_1",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        70.0
+      ]
+    },
+    {
+      "name": "store_stacker_2",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_CARRIER"
+    },
+    {
+      "name": "store_stacker_2_slot_1",
+      "parent": "store_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        0.0
+      ]
+    },
+    {
+      "name": "store_stacker_2_slot_2",
+      "parent": "store_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        20.0
+      ]
+    },
+    {
+      "name": "store_stacker_2_slot_3",
+      "parent": "store_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        40.0
+      ]
+    },
+    {
+      "name": "store_stacker_2_slot_4",
+      "parent": "store_stacker_2",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        60.0
+      ]
+    },
+    {
+      "name": "store_stacker_5",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_CARRIER"
+    },
+    {
+      "name": "store_stacker_5_slot_1",
+      "parent": "store_stacker_5",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        5.0
+      ]
+    },
+    {
+      "name": "store_stacker_5_slot_2",
+      "parent": "store_stacker_5",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        13.41,
+        9.42,
+        21.0
+      ]
+    },
+    {
+      "name": "store_nest_1",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    },
+    {
+      "name": "store_nest_2",
+      "parent": "store",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    }
+  ]
+}

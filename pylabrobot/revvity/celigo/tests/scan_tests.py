@@ -11,7 +11,6 @@ from typing import List, Optional
 from unittest.mock import AsyncMock, patch
 from weakref import ReferenceType, ref
 
-from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
 from pylabrobot.revvity.celigo.camera import CameraFrame
 from pylabrobot.revvity.celigo.config import IlluminationChannelConfig
 from pylabrobot.revvity.celigo.navigation import well_to_sample_mm
@@ -28,6 +27,7 @@ from pylabrobot.revvity.celigo.tests.helpers import (
   make_calibration_config,
   make_celigo,
   make_navigation_config,
+  make_plate,
   make_test_config,
 )
 
@@ -107,9 +107,9 @@ class TestScanRegion(unittest.TestCase):
       ScanRegion.from_bounds_mm(left=5, top=float("nan"), right=122, bottom=81)
 
 
-class TestScanSpec(unittest.TestCase):
-  def setUp(self):
-    self.plate = cor_96_wellplate_360uL_Fb(name="imaging_plate")
+class TestScanSpec(unittest.IsolatedAsyncioTestCase):
+  async def asyncSetUp(self):
+    self.plate = await make_plate()
 
   def test_single_capture_shorthand_is_normalized(self):
     spec = ScanSpec.points(
@@ -166,8 +166,8 @@ class TestScanSpec(unittest.TestCase):
     self.assertAlmostEqual(plan.blocks[0].center_x_mm, 250.0)
     self.assertAlmostEqual(plan.blocks[0].center_y_mm, -10.0)
 
-  def test_wells_are_normalized_and_converted_once(self):
-    spec = ScanSpec.wells(
+  async def test_wells_are_normalized_and_converted_once(self):
+    spec = await ScanSpec.wells(
       self.plate,
       ["a1", " B2 "],
       block_shape=(2, 3),
@@ -177,7 +177,7 @@ class TestScanSpec(unittest.TestCase):
 
     self.assertFalse(hasattr(spec.geometry, "plate"))
     self.assertEqual([block.label for block in plan.blocks], ["A1", "B2"])
-    expected_x_mm, expected_y_mm = well_to_sample_mm(self.plate, "A1")
+    expected_x_mm, expected_y_mm = await well_to_sample_mm(self.plate, "A1")
     self.assertAlmostEqual(plan.blocks[0].center_x_mm, expected_x_mm)
     self.assertAlmostEqual(plan.blocks[0].center_y_mm, expected_y_mm)
 
@@ -347,12 +347,12 @@ class TestScanPlanning(unittest.TestCase):
 
 
 class TestCeligoScanMethods(unittest.IsolatedAsyncioTestCase):
-  def setUp(self):
+  async def asyncSetUp(self):
     self.celigo = make_celigo(config=_config())
-    self.plate = cor_96_wellplate_360uL_Fb(name="imaging_plate")
+    self.plate = await make_plate()
 
   async def test_execute_runs_the_exact_plan_and_moves_stage_once_per_block(self):
-    spec = ScanSpec.wells(
+    spec = await ScanSpec.wells(
       self.plate,
       ["A1", "B2"],
       block_shape=(2, 3),

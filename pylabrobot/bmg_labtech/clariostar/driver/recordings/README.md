@@ -5,7 +5,7 @@ What a real CLARIOstar reported about itself, kept as data so a simulated one ca
 A recording is written by the driver, not by hand:
 
 ```python
-reader = CLARIOstarPlus()
+reader = await CLARIOstarPlus()
 await reader.setup()
 reader.driver.save_configuration(compute_recording_name(reader.driver.configuration))
 ```

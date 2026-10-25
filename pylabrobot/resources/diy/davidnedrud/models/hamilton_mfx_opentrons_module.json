@@ -1,0 +1,26 @@
+{
+  "name": "hamilton_mfx_opentrons_module",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "model": "hamilton_mfx_opentrons_module",
+      "category": "resource_holder",
+      "size": {
+        "x": 134.0,
+        "y": 94.0,
+        "z": 7.0
+      },
+      "rotation": {},
+      "holder": {
+        "childLocation": {
+          "x": 2.0,
+          "y": 5.0,
+          "z": 6.0
+        },
+        "capacity": 1
+      }
+    }
+  },
+  "description": "3D printed part\nModule to hold an opentrons module on an MFX carrier. Bolts into carrier\nsee STL file for printing\nhttps://cad.onshape.com/documents/71f70c40910fd15876f75d76/w/81912f5001c1f8dcb28dfd3b/e/da8c964d83d158897c596d21"
+}

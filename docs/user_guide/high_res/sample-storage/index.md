@@ -58,30 +58,52 @@ Use `ip -brief link` to find `<interface>`. Verify the isolated link with
 
 ## Setup
 
-Pass the storage racks as a mapping from one-based physical stacker numbers to their PLR resources,
-then instantiate the appropriate model. Stacker numbers may be sparse. For example:
+Pass the storage racks as a mapping from one-based physical stacker numbers to their definitions
+(plate carriers whose sites are the stacker's slots, such as `high_res_stacker` builds), then
+instantiate the appropriate model. Stacker numbers may be sparse. For example:
 
 ```python
-from pylabrobot.high_res.sample_storage import SteriStore
+from pylabrobot.high_res.sample_storage import SteriStore, high_res_stacker
 
-racks = {1: rack_1, 3: rack_3}
+racks = {
+  1: high_res_stacker("stacker_1", zero_offset=0.0, slot_height=22.867, slot_count=24),
+  3: high_res_stacker("stacker_3", zero_offset=0.0, slot_height=22.867, slot_count=24),
+}
 store = SteriStore(host="192.168.127.60", name="steristore", racks=racks)
 await store.setup()
 ```
 
-Each mapping key is the rack's one-based device stacker number. Within a rack, the zero-based
-carrier `spot` maps to the one-based physical slot: spot 0 is device slot 1, spot 1 is slot 2, and
-so on. Mapping insertion order does not affect this relationship.
+Each mapping key is the rack's one-based device stacker number. Within a rack, the sites are the
+slots in order: site 0 is device slot 1, site 1 is slot 2, and so on. A rack whose sites are other
+slots gives each site's zero-based spot with `rack_spots={stacker: [spot, ...]}`. Mapping insertion
+order does not affect this relationship.
 
 Alternatively, omit `racks` to select device-discovery mode. During `setup()`, the driver reads the
 configured zero offset, slot height, and slot count with the read-only `getstackerdimensions`
-command and creates empty stacker resources. Passing `racks={}` explicitly represents a store with
-no configured racks and does not enable discovery.
+command and defines empty stackers. Passing `racks={}` explicitly represents a store with no
+configured racks and does not enable discovery.
+
+The store's racks and nests live in a resource store: `store.store`, a new in-memory store unless
+one is passed with `store=`. `await store.create_resources()` finds the store's body there by
+name, or creates it with the racks given as `racks`; `setup()` calls it first, and again once it
+has read the device's stackers and transfer nests, adding those the body does not hold yet. For a
+body the resource store already holds, `await store.get_resources()` finds it without creating
+anything. `store.body`, `store.racks` and `store.nests` are handles to them, and plates are
+handles too:
+
+```python
+plate = await store.store.create(
+  "cor_96_wellplate_360uL_Fb", name="plate_1", parent=store.racks[0][0]
+)
+```
 
 During setup, the device-reported transfer nests become `store.nests`. Their locations relative to
 the store are left undefined because they depend on the surrounding robot installation. Setup does
 not invent plate resources for occupied nests; assign any already-present plates to the matching
 nest after setup.
+
+`serialize()` and `deserialize()` are coroutines: the inventory is read from, and restored into, the
+resource store.
 
 ## Plate transfers
 
@@ -91,14 +113,14 @@ Fetch a known plate from its stacker slot to a transfer nest:
 plate = await store.fetch_plate_to_loading_tray("plate_1", tray_index=0)
 ```
 
-Move the plate on a transfer nest back into storage, choosing either a specific `PlateHolder`, the
+Move the plate on a transfer nest back into storage, choosing either a specific stacker site, the
 smallest available site, or a random available site:
 
 ```python
 await store.take_in_plate(tray_index=0, site="smallest")
 ```
 
-Both operations update the PLR resource tree only after successful hardware motion. See
+Both operations move the plate in the resource store only after successful hardware motion. See
 [Sample-storage events](events.md) for their structured execution events.
 
 Move a plate directly between two transfer nests using their zero-based tray indices:
@@ -112,7 +134,7 @@ plate = await store.transfer_plate_between_nests(
 
 The driver verifies every transfer-nest endpoint with its live presence sensor before motion. The
 stacker itself has no non-destructive per-slot presence query: fetching detects an empty source only
-during the pick, while storing relies on the PLR resource tree to determine that the destination
+during the pick, while storing relies on the resource store to determine that the destination
 slot is free. Keep the modeled stacker inventory synchronized with the physical store; barcode
 `EMPTY` is not a plate-presence result.
 

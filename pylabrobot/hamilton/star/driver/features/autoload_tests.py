@@ -2,6 +2,7 @@ import unittest
 from typing import Any, List, Optional, Set, Tuple
 from unittest.mock import AsyncMock, patch
 
+from pylabrobot.hamilton.star.conftest import make_deck
 from pylabrobot.hamilton.star.device import (
   RECORDING_STAR,
   RECORDING_STAR_HEAD384,
@@ -10,7 +11,6 @@ from pylabrobot.hamilton.star.device import (
 )
 from pylabrobot.hamilton.star.driver.features.autoload import Autoload, AutoloadConfiguration
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
-from pylabrobot.resources.hamilton import PLT_CAR_L5AC_A00, STARDeck
 
 # Where the simulated wheel reads, in mm, when a test wants it standing below its safe Z.
 LOWERED = "pylabrobot.hamilton.star.driver.simulator.SIMULATED_AUTOLOAD_Z_POSITION"
@@ -29,7 +29,7 @@ async def autoload(failing: Set[str]) -> Tuple[Autoload, List[str]]:
   Returns:
     The feature, and every command it sends from here on, in the same form.
   """
-  driver = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+  driver = STARSimulationDriver(deck=await make_deck(), declared_configuration_json=RECORDING_STAR)
   await driver.setup()
   feature = driver.autoload
   assert feature is not None
@@ -136,7 +136,9 @@ class TestDiscovery(unittest.IsolatedAsyncioTestCase):
   """Discovery reads what a saved configuration has to carry for a device to be simulated from it."""
 
   async def test_it_reads_the_initialization_track_and_the_adjustment(self):
-    driver = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+    driver = STARSimulationDriver(
+      deck=await make_deck(), declared_configuration_json=RECORDING_STAR
+    )
     sent: List[str] = []
     answer = driver.send_command
 
@@ -151,7 +153,9 @@ class TestDiscovery(unittest.IsolatedAsyncioTestCase):
     self.assertIn("I0RJ", sent)
 
   async def test_a_device_declared_without_them_still_sets_up(self):
-    driver = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+    driver = STARSimulationDriver(
+      deck=await make_deck(), declared_configuration_json=RECORDING_STAR
+    )
     declared = driver.simulated_autoload
     declared.initialization_track = None
     declared.adjustment_date = None
@@ -172,8 +176,9 @@ class TestLoadCarrier(unittest.IsolatedAsyncioTestCase):
     feature, _ = await autoload(failing=set())
     deck = feature._driver.deck
     assert deck is not None
-    carrier = PLT_CAR_L5AC_A00(name="carrier")
-    deck.assign_child_resource(carrier, track=20)
+    carrier = await deck.store.create(
+      "hamilton_plate_carrier_L5_ac", name="carrier", parent=deck, track=20
+    )
 
     on_the_tray = AsyncMock(return_value=True)
     for wanted in (True, False):
@@ -221,7 +226,7 @@ class TestTheRecordingsSled(unittest.IsolatedAsyncioTestCase):
       RECORDING_STARLET,
       RECORDING_STARLET_HEAD384,
     ):
-      driver = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=recording)
+      driver = STARSimulationDriver(deck=await make_deck(), declared_configuration_json=recording)
       with self.subTest(recording=recording):
         self.assertEqual(driver.simulated_autoload.reference_point_from_sled_left_edge, default)
 

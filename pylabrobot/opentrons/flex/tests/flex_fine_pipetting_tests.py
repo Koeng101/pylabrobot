@@ -1,27 +1,55 @@
 """Fine-pipetting command arguments, response handling, and resource bookkeeping."""
 
 import unittest
+from typing import Tuple
 from unittest.mock import AsyncMock, call, patch
 
 from pylabrobot.io.http import HTTP
+from pylabrobot.opentrons.decks import get_trash_area
 from pylabrobot.opentrons.flex.errors import OpentronsCommandError, OpentronsError
 from pylabrobot.opentrons.flex.flex import Flex
-from pylabrobot.opentrons.flex.flex_head import FlexHead1, FlexHead8
-from pylabrobot.opentrons.flex.tests.flex_tests import _flex_head1, _flex_head8, _flex_head96
+from pylabrobot.opentrons.flex.flex_head import FlexHead1, FlexHead8, FlexHead96
 from pylabrobot.opentrons.flex.tests.liquid_test_utils import pipetting_location
-from pylabrobot.opentrons.flex.tests.mock_utils import make_api, make_flex
+from pylabrobot.opentrons.flex.tests.mock_utils import make_api, make_deck, make_flex, place
+from pylabrobot.opentrons.heads import PipetteShafts
 from pylabrobot.opentrons.run import OpentronsRun
 from pylabrobot.opentrons.types import CommandInfo
-from pylabrobot.resources import (
-  biorad_384_wellplate_50uL_Vb,
-  cor_96_wellplate_360uL_Fb,
-  cor_cos_24_wellplate_3470uL_Fb,
-  set_tip_tracking,
-  set_volume_tracking,
-)
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.opentrons.flex_deck import FlexDeck
-from pylabrobot.resources.opentrons.flex_tip_racks import flex_96_tiprack_50ul
+
+
+async def _flex_with(
+  test_case: unittest.IsolatedAsyncioTestCase, pipette: Tuple[str, int, float, float, str], **kw
+) -> Tuple[Flex, AsyncMock]:
+  """A set-up Flex, on a fresh deck, with fixed API replies and the mock for assertions."""
+  api = make_api(pipettes=[pipette], **kw)
+  flex = make_flex(deck=await make_deck(), host="localhost", api=api)
+  test_case.addAsyncCleanup(flex.disconnect)
+  await flex.setup()
+  return flex, api
+
+
+async def _flex_head1(
+  test_case: unittest.IsolatedAsyncioTestCase, **kw
+) -> Tuple[Flex, AsyncMock, FlexHead1]:
+  flex, api = await _flex_with(test_case, ("p1000_single_flex", 1, 1.0, 1000.0, "right"), **kw)
+  assert isinstance(flex.right, FlexHead1)
+  return flex, api, flex.right
+
+
+async def _flex_head8(
+  test_case: unittest.IsolatedAsyncioTestCase, **kw
+) -> Tuple[Flex, AsyncMock, FlexHead8]:
+  flex, api = await _flex_with(test_case, ("p50_multi_flex", 8, 1.0, 50.0, "left"), **kw)
+  assert isinstance(flex.left, FlexHead8)
+  return flex, api, flex.left
+
+
+async def _flex_head96(
+  test_case: unittest.IsolatedAsyncioTestCase, **kw
+) -> Tuple[Flex, AsyncMock, FlexHead96]:
+  flex, api = await _flex_with(test_case, ("p1000_96", 96, 1.0, 1000.0, "left"), **kw)
+  assert isinstance(flex.head96, FlexHead96)
+  return flex, api, flex.head96
 
 
 class TestBlowOut(unittest.IsolatedAsyncioTestCase):
@@ -31,18 +59,9 @@ class TestBlowOut(unittest.IsolatedAsyncioTestCase):
   prepareToAspirate to fix that: a following well-addressed aspirate names a
   well, so the driver primes in air before descent."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def test_head8_sends_blow_out_in_place_with_dispense_default_flow_rate(self):
     flex, api, head = await _flex_head8(self)
-    rack = flex_96_tiprack_50ul(name="rack")
-    flex.deck.assign_child_at_slot(rack, "C1")
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
 
     await head.pick_up_tips(rack, column=0)
     await head.blow_out()
@@ -57,8 +76,7 @@ class TestBlowOut(unittest.IsolatedAsyncioTestCase):
 
   async def test_head8_accepts_flow_rate_override(self):
     flex, api, head = await _flex_head8(self)
-    rack = flex_96_tiprack_50ul(name="rack")
-    flex.deck.assign_child_at_slot(rack, "C1")
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
 
     await head.pick_up_tips(rack, column=0)
     await head.blow_out(flow_rate=12.5)
@@ -68,12 +86,9 @@ class TestBlowOut(unittest.IsolatedAsyncioTestCase):
 
   async def test_head8_next_aspirate_after_blow_out_primes_before_descent(self):
     flex, api, head = await _flex_head8(self)
-    rack = flex_96_tiprack_50ul(name="rack")
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    flex.deck.assign_child_at_slot(rack, "C1")
-    flex.deck.assign_child_at_slot(plate, "C2")
-    for well in plate.get_all_items():
-      well.tracker.set_volume(100.0)
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
+    plate = await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
+    await plate.set_well_volumes(100.0)
 
     await head.pick_up_tips(rack, column=0)
     await head.aspirate(plate, column=0, volume=10)
@@ -86,12 +101,10 @@ class TestBlowOut(unittest.IsolatedAsyncioTestCase):
 
   async def test_head1_blow_out_then_aspirate_primes_before_descent(self):
     flex, api, head = await _flex_head1(self)
-    rack = flex_96_tiprack_50ul(name="rack1")
-    plate = cor_96_wellplate_360uL_Fb(name="plate1")
-    flex.deck.assign_child_at_slot(rack, "C1")
-    flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack1", "C1")
+    plate = await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate1", "C2")
     well = plate.get_item("B3")
-    well.tracker.set_volume(100.0)
+    await well.set_volume(100.0)
 
     await head.pick_up_tips(rack.get_item("A1"))
     await head.aspirate(well, volume=10)
@@ -112,12 +125,9 @@ class TestBlowOut(unittest.IsolatedAsyncioTestCase):
 
   async def test_head96_blow_out_then_aspirate_primes_before_descent(self):
     flex, api, head = await _flex_head96(self)
-    rack = flex_96_tiprack_50ul(name="rack96")
-    plate = cor_96_wellplate_360uL_Fb(name="plate96")
-    flex.deck.assign_child_at_slot(rack, "C1")
-    flex.deck.assign_child_at_slot(plate, "C2")
-    for well in plate.get_all_items():
-      well.tracker.set_volume(100.0)
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack96", "C1")
+    plate = await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate96", "C2")
+    await plate.set_well_volumes(100.0)
 
     await head.pick_up_tips(rack)
     await head.aspirate(plate, volume=10)
@@ -138,22 +148,12 @@ class TestTouchTipHead1(unittest.IsolatedAsyncioTestCase):
   offset replaces it, also top-relative); a missing tip rejects before any
   wire command."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head1(self)
 
   async def test_touch_tip_sends_one_command_with_radius_offset_and_well(self):
-    rack = flex_96_tiprack_50ul(name="rack1")
-    plate = cor_96_wellplate_360uL_Fb(name="plate1")
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(self.flex.deck, "flex_96_tiprack_50ul", "rack1", "C1")
+    plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate1", "C2")
 
     await self.head.pick_up_tips(rack.get_item("A1"))
     await self.head.touch_tip(plate.get_item("B3"), radius=0.75, offset=Coordinate(1, 2, 3))
@@ -167,10 +167,8 @@ class TestTouchTipHead1(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(params["wellLocation"], {"origin": "top", "offset": {"x": 1, "y": 2, "z": 3}})
 
   async def test_touch_tip_defaults_radius_one_and_1mm_below_rim(self):
-    rack = flex_96_tiprack_50ul(name="rack1")
-    plate = cor_96_wellplate_360uL_Fb(name="plate1")
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(self.flex.deck, "flex_96_tiprack_50ul", "rack1", "C1")
+    plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate1", "C2")
 
     await self.head.pick_up_tips(rack.get_item("A1"))
     await self.head.touch_tip(plate.get_item("B3"))
@@ -183,8 +181,7 @@ class TestTouchTipHead1(unittest.IsolatedAsyncioTestCase):
     )
 
   async def test_touch_tip_without_tip_raises_and_sends_nothing(self):
-    plate = cor_96_wellplate_360uL_Fb(name="plate1")
-    self.flex.deck.assign_child_at_slot(plate, "C2")
+    plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate1", "C2")
 
     n_before = self.api.submit_command.await_count
     with self.assertRaises(OpentronsError):
@@ -199,22 +196,12 @@ class TestTouchTipHead8(unittest.IsolatedAsyncioTestCase):
   """FlexHead8.touch_tip is column-addressed: one touchTip command anchored at
   the column's A-row well; a missing tip rejects before any wire command."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head8(self)
 
   async def test_touch_tip_anchors_at_column_a_row_well(self):
-    rack = flex_96_tiprack_50ul(name="rack")
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(self.flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
+    plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
 
     await self.head.pick_up_tips(rack, column=0)
     await self.head.touch_tip(plate, column=2)
@@ -225,8 +212,7 @@ class TestTouchTipHead8(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(touch_cmds[0].args[2]["radius"], 1.0)
 
   async def test_touch_tip_without_tips_raises_and_sends_nothing(self):
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    self.flex.deck.assign_child_at_slot(plate, "C2")
+    plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
 
     n_before = self.api.submit_command.await_count
     with self.assertRaises(OpentronsError):
@@ -242,22 +228,12 @@ class TestTouchTipHead96(unittest.IsolatedAsyncioTestCase):
   all 96 channels; a non-96-position labware or a missing tip rejects before
   any wire command."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head96(self)
 
   async def test_touch_tip_anchors_at_a1(self):
-    rack = flex_96_tiprack_50ul(name="rack96")
-    plate = cor_96_wellplate_360uL_Fb(name="plate96")
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(self.flex.deck, "flex_96_tiprack_50ul", "rack96", "C1")
+    plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate96", "C2")
 
     await self.head.pick_up_tips(rack)
     await self.head.touch_tip(plate)
@@ -267,10 +243,8 @@ class TestTouchTipHead96(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(touch_cmds[0].args[2]["wellName"], "A1")
 
   async def test_touch_tip_rejects_non_96_labware(self):
-    rack = flex_96_tiprack_50ul(name="rack96")
-    plate_384 = biorad_384_wellplate_50uL_Vb(name="plate384")
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(plate_384, "C3")
+    rack = await place(self.flex.deck, "flex_96_tiprack_50ul", "rack96", "C1")
+    plate_384 = await place(self.flex.deck, "biorad_384_wellplate_50uL_Vb", "plate384", "C3")
 
     await self.head.pick_up_tips(rack)
     n_before = self.api.submit_command.await_count
@@ -282,8 +256,7 @@ class TestTouchTipHead96(unittest.IsolatedAsyncioTestCase):
     )
 
   async def test_touch_tip_without_tips_raises_and_sends_nothing(self):
-    plate = cor_96_wellplate_360uL_Fb(name="plate96")
-    self.flex.deck.assign_child_at_slot(plate, "C2")
+    plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate96", "C2")
 
     n_before = self.api.submit_command.await_count
     with self.assertRaises(OpentronsError):
@@ -300,20 +273,10 @@ class TestLiquidProbeHead1(unittest.IsolatedAsyncioTestCase):
   no liquid is found -- probe_liquid_heights raises on absence, try_probe_liquid_heights
   returns None."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def _bench(self, **api_kwargs):
     flex, api, head = await _flex_head1(self, **api_kwargs)
-    rack = flex_96_tiprack_50ul(name="rack1")
-    plate = cor_96_wellplate_360uL_Fb(name="plate1")
-    flex.deck.assign_child_at_slot(rack, "C1")
-    flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack1", "C1")
+    plate = await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate1", "C2")
     return flex, api, head, rack, plate
 
   async def test_liquid_probe_returns_configured_z_and_sends_probe_command(self):
@@ -408,15 +371,13 @@ class TestLiquidProbeHead1(unittest.IsolatedAsyncioTestCase):
   async def test_liquid_probe_other_wire_failure_reraises_untranslated(self):
 
     api = make_api(pipettes=[("p1000_single_flex", 1, 1.0, 1000.0, "right")])
-    flex = make_flex(deck=FlexDeck(), host="localhost", api=api)
+    flex = make_flex(deck=await make_deck(), host="localhost", api=api)
     self.addAsyncCleanup(flex.disconnect)
     await flex.setup()
     head = flex.right
     assert isinstance(head, FlexHead1)
-    rack = flex_96_tiprack_50ul(name="rack1")
-    plate = cor_96_wellplate_360uL_Fb(name="plate1")
-    flex.deck.assign_child_at_slot(rack, "C1")
-    flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack1", "C1")
+    plate = await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate1", "C2")
 
     await head.pick_up_tips(rack.get_item("A1"))
     with (
@@ -442,15 +403,13 @@ class TestLiquidProbeHead1(unittest.IsolatedAsyncioTestCase):
     draw rather than letting the raw wire error through."""
 
     api = make_api(pipettes=[("p1000_single_flex", 1, 1.0, 1000.0, "right")])
-    flex = make_flex(deck=FlexDeck(), host="localhost", api=api)
+    flex = make_flex(deck=await make_deck(), host="localhost", api=api)
     self.addAsyncCleanup(flex.disconnect)
     await flex.setup()
     head = flex.right
     assert isinstance(head, FlexHead1)
-    rack = flex_96_tiprack_50ul(name="rack1")
-    plate = cor_96_wellplate_360uL_Fb(name="plate1")
-    flex.deck.assign_child_at_slot(rack, "C1")
-    flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack1", "C1")
+    plate = await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate1", "C2")
 
     await head.pick_up_tips(rack.get_item("A1"))
     with (
@@ -479,20 +438,10 @@ class TestLiquidProbeHead8(unittest.IsolatedAsyncioTestCase):
   """FlexHead8 liquid probing is column-addressed: one probe command anchored
   at the column's A-row well."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def _bench(self, **api_kwargs):
     flex, api, head = await _flex_head8(self, **api_kwargs)
-    rack = flex_96_tiprack_50ul(name="rack")
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    flex.deck.assign_child_at_slot(rack, "C1")
-    flex.deck.assign_child_at_slot(plate, "C2")
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
+    plate = await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
     return flex, api, head, rack, plate
 
   async def test_liquid_probe_anchors_at_column_a_row_well_and_returns_z(self):
@@ -529,20 +478,10 @@ class TestHead8ColumnValidation(unittest.IsolatedAsyncioTestCase):
   real grid BEFORE any wire command (including configureNozzleLayout and
   loadLabware), so a rejected op ships nothing."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head8(self)
-    self.rack = flex_96_tiprack_50ul(name="rack")
-    self.plate = cor_96_wellplate_360uL_Fb(name="plate")
-    self.flex.deck.assign_child_at_slot(self.rack, "C1")
-    self.flex.deck.assign_child_at_slot(self.plate, "C2")
+    self.rack = await place(self.flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
+    self.plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
 
   async def test_out_of_range_columns_reject_every_op_with_zero_wire_commands(self):
     await self.head.pick_up_tips(self.rack, column=0)  # the trio needs mounted tips
@@ -573,14 +512,13 @@ class TestHead8ColumnValidation(unittest.IsolatedAsyncioTestCase):
     with self.assertRaises(ValueError):
       await self.head.pick_up_tips(self.rack, column=-1)
     self.assertEqual(self.api.submit_command.await_count, n_before)
-    for spot in self.rack.get_all_items():
-      self.assertTrue(spot.has_tip(), spot.name)
+    for spot in self.rack.items:
+      self.assertTrue(await spot.has_tip(), spot.name)
 
   async def test_384_well_plate_addresses_two_interleaved_row_sets_per_physical_column(self):
     # The nozzles hold their 9 mm pitch, so on a 16-row plate they cover
     # every other row: two sets of 8 per physical column, indexed in turn.
-    plate_384 = biorad_384_wellplate_50uL_Vb(name="plate384")
-    self.flex.deck.assign_child_at_slot(plate_384, "C3")
+    plate_384 = await place(self.flex.deck, "biorad_384_wellplate_50uL_Vb", "plate384", "C3")
     await self.head.pick_up_tips(self.rack, column=0)
 
     for column, expected in ((0, "A1"), (1, "B1"), (2, "A2"), (47, "B24")):
@@ -591,20 +529,18 @@ class TestHead8ColumnValidation(unittest.IsolatedAsyncioTestCase):
     # reports for a full 8-channel configuration anchored at A1.
     _anchor, items = self.head._column_anchor_and_items(plate_384, 0)
     self.assertEqual(
-      [plate_384.get_child_identifier(item) for item in items],
+      [(await item.attributes()).identifier for item in items],
       ["A1", "C1", "E1", "G1", "I1", "K1", "M1", "O1"],
     )
     _anchor, items = self.head._column_anchor_and_items(plate_384, 1)
     self.assertEqual(
-      [plate_384.get_child_identifier(item) for item in items],
+      [(await item.attributes()).identifier for item in items],
       ["B1", "D1", "F1", "H1", "J1", "L1", "N1", "P1"],
     )
 
   async def test_384_well_plate_column_op_reaches_the_wire_at_its_anchor_well(self):
-    plate_384 = biorad_384_wellplate_50uL_Vb(name="plate384")
-    self.flex.deck.assign_child_at_slot(plate_384, "C3")
-    for well in plate_384.get_all_items():
-      well.tracker.set_volume(40.0)
+    plate_384 = await place(self.flex.deck, "biorad_384_wellplate_50uL_Vb", "plate384", "C3")
+    await plate_384.set_well_volumes(40.0)
     await self.head.pick_up_tips(self.rack, column=0)
 
     await self.head.aspirate(plate_384, column=3, volume=10)
@@ -617,13 +553,12 @@ class TestHead8ColumnValidation(unittest.IsolatedAsyncioTestCase):
     # Only the 8 wells the nozzles actually reach lose liquid.
     touched = ["B2", "D2", "F2", "H2", "J2", "L2", "N2", "P2"]
     for name in touched:
-      self.assertAlmostEqual(plate_384.get_item(name).tracker.volume, 30.0, msg=name)
-    self.assertAlmostEqual(plate_384.get_item("A2").tracker.volume, 40.0)
-    self.assertAlmostEqual(plate_384.get_item("C2").tracker.volume, 40.0)
+      self.assertAlmostEqual(await plate_384.get_well(name).get_volume(), 30.0, msg=name)
+    self.assertAlmostEqual(await plate_384.get_well("A2").get_volume(), 40.0)
+    self.assertAlmostEqual(await plate_384.get_well("C2").get_volume(), 40.0)
 
   async def test_384_well_plate_rejects_out_of_range_column_pre_wire(self):
-    plate_384 = biorad_384_wellplate_50uL_Vb(name="plate384")
-    self.flex.deck.assign_child_at_slot(plate_384, "C3")
+    plate_384 = await place(self.flex.deck, "biorad_384_wellplate_50uL_Vb", "plate384", "C3")
     await self.head.pick_up_tips(self.rack, column=0)
 
     n_before = self.api.submit_command.await_count
@@ -641,8 +576,7 @@ class TestHead8ColumnValidation(unittest.IsolatedAsyncioTestCase):
   async def test_row_count_that_is_not_a_multiple_of_eight_still_rejects_pre_wire(self):
     # A 4-row (24-well) plate has no set of 8 evenly spaced rows, so the
     # narrowing that protects hardware survives the 384 widening.
-    plate_24 = cor_cos_24_wellplate_3470uL_Fb(name="plate24")
-    self.flex.deck.assign_child_at_slot(plate_24, "C3")
+    plate_24 = await place(self.flex.deck, "cor_cos_24_wellplate_3470uL_Fb", "plate24", "C3")
     await self.head.pick_up_tips(self.rack, column=0)
 
     n_before = self.api.submit_command.await_count
@@ -659,43 +593,32 @@ class TestWellPositionOffsets(unittest.IsolatedAsyncioTestCase):
   a Coordinate carries z=0 when the caller only meant to nudge x/y, so a
   replacing offset would put the tip on the well floor."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head8(self)
-    rack = flex_96_tiprack_50ul(name="rack")
-    self.plate = cor_96_wellplate_360uL_Fb(name="plate")
-    self.flex.deck.assign_child_at_slot(rack, "C1")
-    self.flex.deck.assign_child_at_slot(self.plate, "C2")
-    for well in self.plate.get_all_items():
-      well.tracker.set_volume(100.0)
+    rack = await place(self.flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
+    self.plate = await place(self.flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
+    await self.plate.set_well_volumes(100.0)
     await self.head.pick_up_tips(rack, column=0)
 
-  def _aspirate_well_location(self, api: AsyncMock, plate) -> dict:
+  async def _aspirate_well_location(self, api: AsyncMock, plate) -> dict:
     aspirate_cmds = [
       c for c in api.submit_command.await_args_list if c.args[1] == "aspirateInPlace"
     ]
     self.assertEqual(len(aspirate_cmds), 1)
-    well_location = pipetting_location(api, plate.get_item("A1"))
+    well_location = await pipetting_location(api, plate.get_item("A1"))
     return well_location
 
   async def test_lateral_offset_on_a_plate_column_keeps_the_bottom_clearance(self):
     await self.head.aspirate(self.plate, column=0, volume=10, offset=Coordinate(x=1, y=2))
     self.assertEqual(
-      self._aspirate_well_location(self.api, self.plate),
+      await self._aspirate_well_location(self.api, self.plate),
       {"origin": "bottom", "offset": {"x": 1, "y": 2, "z": 1.0}},
     )
 
   async def test_zero_offset_keeps_the_bottom_clearance(self):
     await self.head.aspirate(self.plate, column=0, volume=10, offset=Coordinate.zero())
     self.assertEqual(
-      self._aspirate_well_location(self.api, self.plate),
+      await self._aspirate_well_location(self.api, self.plate),
       {"origin": "bottom", "offset": {"x": 0, "y": 0, "z": 1.0}},
     )
 
@@ -706,7 +629,7 @@ class TestWellPositionOffsets(unittest.IsolatedAsyncioTestCase):
       self.plate, column=0, volume=10, offset=Coordinate(x=2, z=0.5), liquid_height=3
     )
     self.assertEqual(
-      self._aspirate_well_location(self.api, self.plate),
+      await self._aspirate_well_location(self.api, self.plate),
       {"origin": "bottom", "offset": {"x": 2, "y": 0, "z": 3.5}},
     )
 
@@ -718,7 +641,7 @@ class TestWellPositionOffsets(unittest.IsolatedAsyncioTestCase):
     await self.head.touch_tip(self.plate, column=0, offset=Coordinate(x=1))
     touch_cmds = [c for c in self.api.submit_command.await_args_list if c.args[1] == "touchTip"]
     self.assertEqual(
-      self._aspirate_well_location(self.api, self.plate),
+      await self._aspirate_well_location(self.api, self.plate),
       {"origin": "bottom", "offset": {"x": 1, "y": 0, "z": 1.0}},
     )
     self.assertEqual(
@@ -734,16 +657,9 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
   validNozzleMaps carry only SingleA1/SingleH1. The engine also refuses ANY
   nozzle reconfiguration, "ALL" included, while a tip is attached."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-
   async def _bench(self, slot="C1"):
     flex, api, head = await _flex_head8(self)
-    rack = flex_96_tiprack_50ul(name="rack")
-    flex.deck.assign_child_at_slot(rack, slot)
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack", slot)
     return flex, api, head, rack
 
   def _nozzle_params(self, api: AsyncMock) -> list:
@@ -762,7 +678,7 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self._nozzle_params(api)[-1]["primaryNozzle"], "A1")
     pickups = [c for c in api.submit_command.await_args_list if c.args[1] == "pickUpTip"]
     self.assertEqual(pickups[-1].args[2]["wellName"], "H3")
-    self.assertIsNotNone(head.get_mounted_tips()[0])
+    self.assertIsNotNone((await head.get_mounted_tips())[0])
 
   async def test_the_anchor_nozzle_decides_the_channel_not_the_wells_row(self):
     # In a SINGLE layout the engine moves the chosen nozzle over whatever well
@@ -774,8 +690,10 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self._nozzle_params(api)[-1]["primaryNozzle"], "H1")
     pickups = [c for c in api.submit_command.await_args_list if c.args[1] == "pickUpTip"]
     self.assertEqual(pickups[-1].args[2]["wellName"], "A3")
-    self.assertIsNotNone(head.get_mounted_tips()[7])
-    self.assertTrue(all(tip is None for i, tip in enumerate(head.get_mounted_tips()) if i != 7))
+    self.assertIsNotNone((await head.get_mounted_tips())[7])
+    self.assertTrue(
+      all(tip is None for i, tip in enumerate((await head.get_mounted_tips())) if i != 7)
+    )
 
   async def test_the_rear_anchor_on_a_rear_row_refuses_and_names_the_front_one(self):
     # Ganged nozzles descend together, so the REAR anchor on a rear row puts the
@@ -788,7 +706,7 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
 
     await head.pick_up_single_tip(rack, well="A2", primary_nozzle="H1")
     self.assertEqual(self._nozzle_params(api)[-1]["primaryNozzle"], "H1")
-    self.assertIsNotNone(head.get_mounted_tips()[7])
+    self.assertIsNotNone((await head.get_mounted_tips())[7])
 
   async def test_the_default_anchor_is_the_front_nozzle_whatever_the_rack_holds(self):
     # The default anchor is H1, the FRONT nozzle: its idle seven trail off the
@@ -797,12 +715,10 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     for empty_the_rest in (False, True):
       flex, api, head, rack = await self._bench()
       if empty_the_rest:
-        for spot in rack.get_all_items():
-          if spot.name != rack.get_item("A3").name and spot.has_tip():
-            spot.tracker.remove_tip(commit=True)
+        await rack.set_tip_state([identifier == "A3" for identifier in rack.identifiers])
       await head.pick_up_single_tip(rack, well="A3")
       self.assertEqual(self._nozzle_params(api)[-1]["primaryNozzle"], "H1")
-      self.assertIsNotNone(head.get_mounted_tips()[7])
+      self.assertIsNotNone((await head.get_mounted_tips())[7])
 
   async def test_a_full_rack_middle_row_is_refused_rather_than_taking_a_handful_of_tips(self):
     # No anchor clears a middle row of a full rack: whichever end you pick,
@@ -816,9 +732,7 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     # Same well, but with the rest of the column consumed the idle nozzles have
     # nothing to engage, so the pick really is single.
     flex, api, head, rack = await self._bench()
-    for spot in rack.get_all_items():
-      if spot.name != rack.get_item("D2").name and spot.has_tip():
-        spot.tracker.remove_tip(commit=True)
+    await rack.set_tip_state([identifier == "D2" for identifier in rack.identifiers])
     await head.pick_up_single_tip(rack, well="D2")
     self.assertEqual(self._nozzle_params(api)[-1]["primaryNozzle"], "H1")
 
@@ -831,7 +745,7 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self._nozzle_params(api)[-1]["primaryNozzle"], "H1")
     pickups = [c for c in api.submit_command.await_args_list if c.args[1] == "pickUpTip"]
     self.assertEqual(pickups[-1].args[2]["wellName"], "A1")
-    self.assertIsNotNone(head.get_mounted_tips()[7])
+    self.assertIsNotNone((await head.get_mounted_tips())[7])
 
   async def test_an_omitted_well_on_the_rear_anchor_takes_the_front_most_tip(self):
     # The A1 anchor consumes front-to-back, so with no well it takes the
@@ -841,7 +755,7 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self._nozzle_params(api)[-1]["primaryNozzle"], "A1")
     pickups = [c for c in api.submit_command.await_args_list if c.args[1] == "pickUpTip"]
     self.assertEqual(pickups[-1].args[2]["wellName"], "H1")
-    self.assertIsNotNone(head.get_mounted_tips()[0])
+    self.assertIsNotNone((await head.get_mounted_tips())[0])
 
   async def test_an_unanchorable_nozzle_is_rejected_pre_wire(self):
     flex, api, head, rack = await self._bench()
@@ -852,8 +766,7 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
 
   async def test_reconfiguring_the_layout_while_a_tip_is_mounted_is_refused(self):
     flex, api, head, rack = await self._bench()
-    plate = cor_96_wellplate_360uL_Fb(name="plate")
-    flex.deck.assign_child_at_slot(plate, "C2")
+    plate = await place(flex.deck, "cor_96_wellplate_360uL_Fb", "plate", "C2")
     await head.pick_up_single_tip(rack, well="A1", primary_nozzle="H1")
     commands_before = api.submit_command.await_count
 
@@ -867,19 +780,19 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
   async def test_dropping_the_single_tip_restores_all_mode(self):
     flex, api, head, rack = await self._bench()
     await head.pick_up_single_tip(rack, well="A1", primary_nozzle="H1")
-    await head.drop_single_tip(flex.deck.get_trash_area())
+    await head.drop_single_tip(await get_trash_area(flex.deck))
 
     self.assertEqual(self._nozzle_params(api)[-1], {"style": "ALL"})
-    self.assertTrue(all(tip is None for tip in head.get_mounted_tips()))
+    self.assertTrue(all(tip is None for tip in (await head.get_mounted_tips())))
 
   async def test_discarding_a_cherry_picked_tip_drops_it_then_restores_all_mode(self):
     # A trash drop addresses no channel, so it must not wait on a layout
     # reset the robot refuses while the tip is still on.
     flex, api, head, rack = await self._bench()
     await head.pick_up_single_tip(rack, well="A1", primary_nozzle="H1")
-    await head.discard_tips(flex.deck.get_trash_area())
+    await head.discard_tips(await get_trash_area(flex.deck))
 
-    self.assertTrue(all(tip is None for tip in head.get_mounted_tips()))
+    self.assertTrue(all(tip is None for tip in (await head.get_mounted_tips())))
     sent = [c.args[1] for c in api.submit_command.await_args_list]
     self.assertLess(sent.index("dropTipInPlace"), len(sent) - 1)
     self.assertEqual(sent[-1], "configureNozzleLayout")
@@ -895,15 +808,15 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     self.assertIn("drop_single_tip", str(caught.exception))
     self.assertEqual(api.submit_command.await_count, commands_before)
 
-    await head.drop_single_tip(flex.deck.get_trash_area())
+    await head.drop_single_tip(await get_trash_area(flex.deck))
 
   async def test_a_front_row_slot_puts_the_rear_anchor_out_of_reach(self):
     # Anchoring A1 over D1's front rows leaves the mount ahead of the robot's
     # own front limit: the pipette body reaches 95mm forward of it.
     flex, _, head, rack = await self._bench(slot="D1")
-    self.assertEqual(head.reachable_single_nozzles(rack, "A1"), ("A1", "H1"))
-    self.assertEqual(head.reachable_single_nozzles(rack, "F1"), ("H1",))
-    self.assertEqual(head.reachable_single_nozzles(rack, "H1"), ("H1",))
+    self.assertEqual(await head.reachable_single_nozzles(rack, "A1"), ("A1", "H1"))
+    self.assertEqual(await head.reachable_single_nozzles(rack, "F1"), ("H1",))
+    self.assertEqual(await head.reachable_single_nozzles(rack, "H1"), ("H1",))
 
   async def test_on_a_front_slot_one_anchor_cannot_reach_and_the_other_cannot_clear(self):
     # On a front slot the rear anchor overruns the robot's front limit and the
@@ -934,7 +847,7 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     for slot in [f"{row}{col}" for row in "ABCD" for col in "123" if f"{row}{col}" != "A3"]:
       flex, _, head, rack = await self._bench(slot=slot)
       for well_row in "ABCDEFGH":
-        reachable = head.reachable_single_nozzles(rack, f"{well_row}1")
+        reachable = await head.reachable_single_nozzles(rack, f"{well_row}1")
         self.assertTrue(reachable, f"{slot} {well_row}1 unreachable both ways")
 
   async def test_stop_leaves_no_cherry_picked_tip_on_the_pipette(self):
@@ -944,7 +857,7 @@ class TestSingleNozzleLayout(unittest.IsolatedAsyncioTestCase):
     await flex.stop()
 
     self.assertIn("dropTipInPlace", [c.args[1] for c in api.submit_command.await_args_list])
-    self.assertTrue(all(tip is None for tip in head.get_mounted_tips()))
+    self.assertTrue(all(tip is None for tip in (await head.get_mounted_tips())))
 
 
 class TestInPlaceLiquidOps(unittest.IsolatedAsyncioTestCase):
@@ -959,18 +872,9 @@ class TestInPlaceLiquidOps(unittest.IsolatedAsyncioTestCase):
   safe height to do that at, so it refuses instead of guessing, and the driver
   passes the refusal on rather than priming blind."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def _bench(self):
     flex, api, head = await _flex_head8(self)
-    rack = flex_96_tiprack_50ul(name="rack")
-    flex.deck.assign_child_at_slot(rack, "C1")
+    rack = await place(flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
     return flex, api, head, rack
 
   def _params(self, api: AsyncMock, command_type: str) -> dict:
@@ -1256,8 +1160,7 @@ class TestInPlaceLiquidOps(unittest.IsolatedAsyncioTestCase):
   async def test_head1_and_head96_inherit_the_in_place_ops(self):
     # They live on the base class, so every head issues them identically.
     flex1, transport1, head1 = await _flex_head1(self)
-    rack1 = flex_96_tiprack_50ul(name="rack1")
-    flex1.deck.assign_child_at_slot(rack1, "C1")
+    rack1 = await place(flex1.deck, "flex_96_tiprack_50ul", "rack1", "C1")
     await head1.pick_up_tips(rack1.get_item("A1"))
     await head1.aspirate_in_place(volume=15)
     await head1.dispense_in_place(volume=15)
@@ -1271,8 +1174,7 @@ class TestInPlaceLiquidOps(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self._params(transport1, "dispenseInPlace")["volume"], 15)
 
     flex96, transport96, head96 = await _flex_head96(self)
-    rack96 = flex_96_tiprack_50ul(name="rack96")
-    flex96.deck.assign_child_at_slot(rack96, "C1")
+    rack96 = await place(flex96.deck, "flex_96_tiprack_50ul", "rack96", "C1")
     await head96.pick_up_tips(rack96)
     await head96.air_gap_in_place(volume=5)
 
@@ -1285,11 +1187,13 @@ class TestInPlaceLiquidOps(unittest.IsolatedAsyncioTestCase):
 class TestTipPresenceCommands(unittest.IsolatedAsyncioTestCase):
   """Tip queries and volume configuration preserve their HTTP command payloads."""
 
-  def setUp(self):
+  async def asyncSetUp(self):
     self.io = AsyncMock(spec=HTTP)
-    self.flex = Flex("robot.test", io=self.io, command_poll_interval=0)
+    deck = await make_deck()
+    self.flex = Flex("robot.test", deck=deck, io=self.io, command_poll_interval=0)
     self.flex._run = OpentronsRun(self.flex._api, "run", "9.1.2", command_poll_interval=0)
-    self.head = FlexHead8(self.flex, "left", "pipette", 8, "p1000_multi_v3.5", 1000)
+    shafts = await PipetteShafts.create(deck, "flex_deck_left_pipette", 8)
+    self.head = FlexHead8(self.flex, "left", "pipette", 8, "p1000_multi_v3.5", 1000, shafts)
 
   async def test_request_tip_presence_returns_the_reported_status(self):
     self.io.request.side_effect = [
@@ -1395,18 +1299,9 @@ class TestUnsafeRecoveryOps(unittest.IsolatedAsyncioTestCase):
   goes back to no rack), and the blow-out leaves the plunger unprimed the way
   the ordinary blow_out does. Both require a mounted tip."""
 
-  def setUp(self):
-    set_tip_tracking(True)
-    set_volume_tracking(True)
-
-  def tearDown(self):
-    set_tip_tracking(False)
-    set_volume_tracking(False)
-
   async def asyncSetUp(self):
     self.flex, self.api, self.head = await _flex_head8(self)
-    self.rack = flex_96_tiprack_50ul(name="rack")
-    self.flex.deck.assign_child_at_slot(self.rack, "C1")
+    self.rack = await place(self.flex.deck, "flex_96_tiprack_50ul", "rack", "C1")
 
   async def test_unsafe_drop_tip_in_place_sends_pipette_id_and_clears_mounted_tips(self):
     await self.head.pick_up_tips(self.rack, column=0)
@@ -1417,14 +1312,14 @@ class TestUnsafeRecoveryOps(unittest.IsolatedAsyncioTestCase):
     ]
     self.assertEqual(len(drop_cmds), 1)
     self.assertEqual(drop_cmds[0].args[2], {"pipetteId": self.head.pipette_id})
-    self.assertTrue(all(tip is None for tip in self.head.get_mounted_tips()))
+    self.assertTrue(all(tip is None for tip in (await self.head.get_mounted_tips())))
 
   async def test_unsafe_drop_tip_in_place_returns_no_tip_to_the_rack(self):
     # The tip falls where the head is, so the spot it came from stays empty.
     await self.head.pick_up_tips(self.rack, column=0)
     await self.head.unsafe_drop_tip_in_place()
 
-    self.assertFalse(self.rack.get_item("A1").has_tip())
+    self.assertFalse(await self.rack.get_tip_spot("A1").has_tip())
 
   async def test_unsafe_blow_out_in_place_sends_the_given_flow_rate(self):
     await self.head.pick_up_tips(self.rack, column=0)
@@ -1483,7 +1378,7 @@ class TestUnsafeRecoveryOps(unittest.IsolatedAsyncioTestCase):
     # exactly when a tip is stranded on the nozzle and these calls are the only
     # way off it. Guarding on it made the escape hatch refuse in the one
     # situation it exists for, so the guard is gone and the commands go out.
-    self.assertTrue(all(tip is None for tip in self.head.get_mounted_tips()))
+    self.assertTrue(all(tip is None for tip in (await self.head.get_mounted_tips())))
     for op, expected in (
       (self.head.unsafe_drop_tip_in_place, "unsafe/dropTipInPlace"),
       (lambda: self.head.unsafe_blow_out_in_place(flow_rate=20.0), "unsafe/blowOutInPlace"),

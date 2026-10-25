@@ -1,0 +1,54 @@
+{
+  "name": "Plate_portrait_384_Well",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Plate_portrait_384_Well",
+      "category": "tecan_plate",
+      "size": {
+        "x": 85.5,
+        "y": 127.7,
+        "z": 11.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 16,
+        "numItemsY": 24,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 4.5,
+                "y": 4.5,
+                "z": 11.0
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 174.9474408967816,
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 6.75,
+            "y": 9.85
+          },
+          "itemDx": 4.5,
+          "itemDy": 4.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  }
+}

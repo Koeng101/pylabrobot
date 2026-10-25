@@ -1,0 +1,7440 @@
+{
+  "steps": [
+    {
+      "call": "plate['A1'].tracker.set_volume(100)",
+      "result": [],
+      "sent": []
+    },
+    {
+      "call": "tips['A1'].unassign_tip()",
+      "result": null,
+      "sent": [
+        {
+          "sequence": 1,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A1#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "call": "tips['A1'].assign_tip(tips['A1'].make_tip())",
+      "result": null,
+      "sent": [
+        {
+          "sequence": 2,
+          "name": "resource.assigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A1#1",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips_tipspot_A1",
+                  "type": "TipSpot"
+                },
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "parent": {
+              "name": "tips_tipspot_A1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "call": "plate.set_well_volumes([50] * 96)",
+      "result": null,
+      "sent": []
+    },
+    {
+      "call": "unassign_tip() on every spot holding one",
+      "result": null,
+      "sent": [
+        {
+          "sequence": 3,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A1#1",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 4,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B1#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 5,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C1#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 6,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D1#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 7,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E1#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 8,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F1#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 9,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G1#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 10,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H1#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H1",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 11,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A2#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A2",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 12,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B2#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B2",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 13,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C2#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C2",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 14,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D2#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D2",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 15,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E2#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E2",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 16,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F2#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F2",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 17,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G2#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G2",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 18,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H2#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H2",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 19,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A3#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A3",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 20,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B3#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B3",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 21,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C3#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C3",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 22,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D3#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D3",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 23,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E3#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E3",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 24,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F3#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F3",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 25,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G3#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G3",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 26,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H3#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H3",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 27,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A4#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A4",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 28,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B4#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B4",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 29,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C4#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C4",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 30,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D4#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D4",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 31,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E4#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E4",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 32,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F4#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F4",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 33,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G4#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G4",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 34,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H4#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H4",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 35,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A5#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A5",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 36,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B5#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B5",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 37,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C5#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C5",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 38,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D5#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D5",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 39,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E5#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E5",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 40,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F5#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F5",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 41,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G5#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G5",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 42,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H5#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H5",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 43,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A6#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A6",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 44,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B6#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B6",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 45,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C6#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C6",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 46,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D6#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D6",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 47,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E6#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E6",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 48,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F6#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F6",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 49,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G6#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G6",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 50,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H6#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H6",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 51,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A7#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A7",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 52,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B7#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B7",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 53,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C7#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C7",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 54,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D7#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D7",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 55,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E7#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E7",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 56,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F7#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F7",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 57,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G7#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G7",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 58,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H7#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H7",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 59,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A8#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A8",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 60,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B8#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B8",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 61,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C8#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C8",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 62,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D8#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D8",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 63,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E8#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E8",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 64,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F8#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F8",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 65,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G8#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G8",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 66,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H8#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H8",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 67,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A9#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A9",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 68,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B9#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B9",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 69,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C9#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C9",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 70,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D9#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D9",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 71,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E9#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E9",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 72,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F9#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F9",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 73,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G9#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G9",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 74,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H9#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H9",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 75,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A10#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A10",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 76,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B10#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B10",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 77,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C10#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C10",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 78,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D10#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D10",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 79,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E10#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E10",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 80,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F10#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F10",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 81,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G10#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G10",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 82,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H10#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H10",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 83,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A11#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A11",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 84,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B11#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B11",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 85,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C11#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C11",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 86,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D11#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D11",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 87,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E11#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E11",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 88,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F11#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F11",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 89,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G11#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G11",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 90,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H11#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H11",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 91,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_A12#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_A12",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 92,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_B12#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_B12",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 93,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_C12#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_C12",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 94,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_D12#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_D12",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 95,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_E12#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_E12",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 96,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_F12#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_F12",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 97,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_G12#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_G12",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "sequence": 98,
+          "name": "resource.unassigned",
+          "context": {},
+          "data": {
+            "resource": {
+              "name": "tips_tipspot_H12#0",
+              "type": "Tip",
+              "model": "hamilton_tip_300uL",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "tips_tipspot_H12",
+              "type": "TipSpot",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "tips",
+                  "type": "TipRack",
+                  "model": "hamilton_96_tiprack_standard"
+                },
+                {
+                  "name": "tip_carrier-0",
+                  "type": "EmbeddedTipRackHolder"
+                },
+                {
+                  "name": "tip_carrier",
+                  "type": "Carrier",
+                  "model": "hamilton_tip_carrier_L5"
+                },
+                {
+                  "name": "deck",
+                  "type": "Deck",
+                  "model": "starlet_deck_front_top_cover"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": -0.5,
+              "y": -0.5,
+              "z": -51.9,
+              "type": "Coordinate"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "deck",
+      "parent": "",
+      "kind": "RESOURCE_KIND_DECK",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "waste_block",
+      "parent": "deck",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        775.0,
+        115.0,
+        100.0
+      ]
+    },
+    {
+      "name": "trash",
+      "parent": "deck",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        800.0,
+        190.6,
+        137.1
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_carrier",
+      "parent": "deck",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "location": [
+        100.0,
+        63.0,
+        100.0
+      ]
+    },
+    {
+      "name": "plate_carrier-0",
+      "parent": "plate_carrier",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        4.0,
+        8.5,
+        86.15
+      ]
+    },
+    {
+      "name": "plate",
+      "parent": "plate_carrier-0",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        -3.03
+      ]
+    },
+    {
+      "name": "plate_well_A1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        37.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        46.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        55.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H7",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        64.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H8",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        73.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H9",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        82.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H10",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        91.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H11",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        100.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_A12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        70.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_B12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        61.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_C12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        52.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_D12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        43.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_E12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        34.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_F12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        25.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_G12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        16.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_well_H12",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        109.87,
+        7.77,
+        3.03
+      ],
+      "volume": 50.0
+    },
+    {
+      "name": "plate_carrier-1",
+      "parent": "plate_carrier",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        4.0,
+        104.5,
+        86.15
+      ]
+    },
+    {
+      "name": "plate_carrier-2",
+      "parent": "plate_carrier",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        4.0,
+        200.5,
+        86.15
+      ]
+    },
+    {
+      "name": "plate_carrier-3",
+      "parent": "plate_carrier",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        4.0,
+        296.5,
+        86.15
+      ]
+    },
+    {
+      "name": "plate_carrier-4",
+      "parent": "plate_carrier",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        4.0,
+        392.5,
+        86.15
+      ]
+    },
+    {
+      "name": "tip_carrier",
+      "parent": "deck",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "location": [
+        257.5,
+        63.0,
+        100.0
+      ]
+    },
+    {
+      "name": "tip_carrier-0",
+      "parent": "tip_carrier",
+      "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+      "location": [
+        10.15,
+        14.3,
+        114.95
+      ]
+    },
+    {
+      "name": "tips",
+      "parent": "tip_carrier-0",
+      "kind": "RESOURCE_KIND_TIP_RACK",
+      "location": [
+        -3.95,
+        -4.3,
+        -6.0
+      ]
+    },
+    {
+      "name": "tips_tipspot_A1",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        8.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B1",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        8.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C1",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        8.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D1",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        8.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E1",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        8.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F1",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        8.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G1",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        8.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H1",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        8.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A2",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        17.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B2",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        17.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C2",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        17.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D2",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        17.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E2",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        17.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F2",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        17.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G2",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        17.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H2",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        17.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A3",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        26.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B3",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        26.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C3",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        26.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D3",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        26.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E3",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        26.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F3",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        26.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G3",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        26.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H3",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        26.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A4",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        35.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B4",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        35.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C4",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        35.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D4",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        35.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E4",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        35.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F4",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        35.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G4",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        35.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H4",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        35.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A5",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        44.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B5",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        44.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C5",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        44.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D5",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        44.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E5",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        44.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F5",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        44.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G5",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        44.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H5",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        44.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A6",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        53.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B6",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        53.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C6",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        53.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D6",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        53.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E6",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        53.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F6",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        53.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G6",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        53.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H6",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        53.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A7",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        62.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B7",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        62.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C7",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        62.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D7",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        62.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E7",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        62.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F7",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        62.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G7",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        62.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H7",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        62.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A8",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        71.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B8",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        71.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C8",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        71.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D8",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        71.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E8",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        71.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F8",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        71.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G8",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        71.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H8",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        71.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A9",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        80.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B9",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        80.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C9",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        80.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D9",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        80.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E9",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        80.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F9",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        80.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G9",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        80.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H9",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        80.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A10",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        89.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B10",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        89.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C10",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        89.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D10",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        89.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E10",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        89.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F10",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        89.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G10",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        89.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H10",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        89.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A11",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        98.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B11",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        98.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C11",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        98.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D11",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        98.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E11",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        98.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F11",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        98.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G11",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        98.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H11",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        98.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_A12",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        107.1,
+        69.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_B12",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        107.1,
+        60.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_C12",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        107.1,
+        51.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_D12",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        107.1,
+        42.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_E12",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        107.1,
+        33.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_F12",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        107.1,
+        24.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_G12",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        107.1,
+        15.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tips_tipspot_H12",
+      "parent": "tips",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        107.1,
+        6.2,
+        7.5
+      ]
+    },
+    {
+      "name": "tip_carrier-1",
+      "parent": "tip_carrier",
+      "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+      "location": [
+        10.15,
+        110.3,
+        114.95
+      ]
+    },
+    {
+      "name": "tip_carrier-2",
+      "parent": "tip_carrier",
+      "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+      "location": [
+        10.15,
+        206.3,
+        114.95
+      ]
+    },
+    {
+      "name": "tip_carrier-3",
+      "parent": "tip_carrier",
+      "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+      "location": [
+        10.15,
+        302.3,
+        114.95
+      ]
+    },
+    {
+      "name": "tip_carrier-4",
+      "parent": "tip_carrier",
+      "kind": "RESOURCE_KIND_EMBEDDED_TIP_RACK_HOLDER",
+      "location": [
+        10.15,
+        398.3,
+        114.95
+      ]
+    }
+  ]
+}

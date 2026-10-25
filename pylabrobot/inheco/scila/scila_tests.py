@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, patch
 
 from pylabrobot.inheco.scila.scila import SCILA, SCILADrawerLoadingTray
 from pylabrobot.inheco.transport.sila import InhecoSiLAInterface
+from pylabrobot.resources import Coordinate
+from pylabrobot.resources.store import handles
 
 _TEMPERATURE_RESPONSE = (
   "<Response>"
@@ -35,6 +37,42 @@ class TestSCILA(_SCILATestCase):
   async def test_setup(self):
     await self.scila.setup()
     self.mock_sila_interface.setup.assert_called_once()
+
+  async def test_setup_makes_the_body_and_drawers(self):
+    with self.assertRaises(RuntimeError):
+      self.scila.body  # noqa: B018
+    await self.scila.setup()
+    self.assertEqual(self.scila.body.name, "scila")
+    self.assertEqual((await self.scila.body.attributes()).model, "Inheco SCILA")
+    holders = await self.scila.body.get_children()
+    self.assertEqual([h.name for h in holders], [f"scila_drawer_{i}" for i in range(1, 5)])
+    for drawer_id, drawer in self.scila.drawers.items():
+      self.assertIsInstance(drawer.resource, handles.ResourceHolder)
+      self.assertEqual(drawer.resource.name, f"scila_drawer_{drawer_id}")
+
+  async def test_setup_again_finds_the_body(self):
+    await self.scila.setup()
+    again = SCILA(name="scila", scila_ip="127.0.0.1", store=self.scila.store)
+    await again.setup()
+    self.assertEqual(again.body, self.scila.body)
+    self.assertEqual(again.drawers[3].resource, self.scila.drawers[3].resource)
+    self.assertEqual(len(await self.scila.store.roots()), 1)
+
+  async def test_get_resources_finds_but_never_makes(self):
+    with self.assertRaises(LookupError):
+      await self.scila.get_resources()
+    await self.scila.create_resources()
+    again = SCILA(name="scila", scila_ip="127.0.0.1", store=self.scila.store)
+    self.assertEqual(await again.get_resources(), self.scila.body)
+    self.assertEqual(again.drawers[1].resource, self.scila.drawers[1].resource)
+
+  async def test_a_plate_put_in_a_drawer_is_held_there(self):
+    await self.scila.setup()
+    plate = await self.scila.store.create("cor_96_wellplate_360uL_Fb", name="plate")
+    await self.scila.drawers[2].assign_child_resource(plate)
+    self.assertEqual(await self.scila.drawers[2].get_resource_held(), plate)
+    self.assertIsNone(await self.scila.drawers[1].get_resource_held())
+    self.assertEqual(await plate.get_location(), Coordinate.zero())
 
   async def test_stop(self):
     await self.scila.stop()

@@ -1,0 +1,502 @@
+{
+  "steps": [
+    {
+      "call": "connect()",
+      "result": null,
+      "sent": [],
+      "mounted": {}
+    },
+    {
+      "call": "get_mounted_pipettes()",
+      "result": [
+        "MountedPipette(mount='left', name='p20_single_gen2', model='p20_single_v2.0', serial_number='left-serial')",
+        "MountedPipette(mount='right', name='p20_multi_gen2', model='p20_multi_v2.0', serial_number='right-serial')"
+      ],
+      "sent": [
+        {
+          "request": "GET /pipettes"
+        }
+      ],
+      "mounted": {}
+    },
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        {
+          "request": "GET /health"
+        },
+        {
+          "request": "GET /pipettes"
+        },
+        {
+          "request": "POST /runs"
+        },
+        {
+          "request": "POST /runs/run-1/commands",
+          "body": {
+            "data": {
+              "commandType": "loadPipette",
+              "params": {
+                "pipetteName": "p20_single_gen2",
+                "mount": "left"
+              },
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-1/commands/command-1"
+        },
+        {
+          "request": "POST /runs/run-1/commands",
+          "body": {
+            "data": {
+              "commandType": "loadPipette",
+              "params": {
+                "pipetteName": "p20_multi_gen2",
+                "mount": "right"
+              },
+              "intent": "setup"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-1/commands/command-2"
+        },
+        {
+          "request": "POST /robot/home",
+          "body": {
+            "target": "robot"
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "ot2_deck_left_pipette",
+          "parent": "ot2_deck",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_left_pipette_channel_0",
+          "parent": "ot2_deck_left_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette",
+          "parent": "ot2_deck",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_0",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            63.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_1",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            54.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_2",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            45.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_3",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            36.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_4",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            27.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_5",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            18.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_6",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            9.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ot2_deck_right_pipette_channel_7",
+          "parent": "ot2_deck_right_pipette",
+          "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "mounted": {
+        "left": {
+          "tips": [],
+          "origins": []
+        },
+        "right": {
+          "tips": [],
+          "origins": []
+        }
+      }
+    },
+    {
+      "call": "home()",
+      "result": null,
+      "sent": [
+        {
+          "request": "POST /robot/home",
+          "body": {
+            "target": "robot"
+          }
+        }
+      ],
+      "mounted": {
+        "left": {
+          "tips": [],
+          "origins": []
+        },
+        "right": {
+          "tips": [],
+          "origins": []
+        }
+      }
+    },
+    {
+      "call": "stop()",
+      "result": null,
+      "sent": [
+        {
+          "request": "POST /runs/run-1/actions",
+          "body": {
+            "data": {
+              "actionType": "stop"
+            }
+          }
+        },
+        {
+          "request": "GET /runs/run-1"
+        }
+      ],
+      "mounted": {}
+    }
+  ],
+  "resources": [
+    {
+      "name": "ot2_deck",
+      "parent": "",
+      "kind": "RESOURCE_KIND_DECK",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_1",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        115.65,
+        68.03,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_2",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        248.15,
+        68.03,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_3",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        380.65,
+        68.03,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_4",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        115.65,
+        158.53,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_5",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        248.15,
+        158.53,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_6",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        380.65,
+        158.53,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_7",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        115.65,
+        249.03,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_8",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        248.15,
+        249.03,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_9",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        380.65,
+        249.03,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_10",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        115.65,
+        339.53,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_11",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        248.15,
+        339.53,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_slot_12",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        380.65,
+        339.53,
+        0.0
+      ]
+    },
+    {
+      "name": "trash_container",
+      "parent": "ot2_deck_slot_12",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "trash",
+      "parent": "trash_container",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "ot2_deck_left_pipette",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_left_pipette_channel_0",
+      "parent": "ot2_deck_left_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette",
+      "parent": "ot2_deck",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_0",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        63.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_1",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        54.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_2",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        45.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_3",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        36.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_4",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        27.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_5",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        18.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_6",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ot2_deck_right_pipette_channel_7",
+      "parent": "ot2_deck_right_pipette",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}

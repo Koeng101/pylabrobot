@@ -1,0 +1,83 @@
+{
+  "name": "DiTi_SBS_2P_Waste_MCA96",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "model": "DiTi_SBS_2P_Waste_MCA96",
+      "category": "tecan_tip_carrier",
+      "size": {
+        "x": 159.0,
+        "y": 374.0,
+        "z": 6.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 138.0,
+            "y": 155.0
+          },
+          "location": {
+            "x": 20.0,
+            "y": -41.0,
+            "z": 125.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 184.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 88.5
+          },
+          "location": {
+            "x": 23.5,
+            "y": 280.0,
+            "z": 6.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Tecan part no. 30020045"
+}

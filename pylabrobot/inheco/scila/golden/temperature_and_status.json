@@ -1,0 +1,215 @@
+{
+  "transport": {
+    "client_ip": "169.254.1.2",
+    "machine_ip": "169.254.1.117"
+  },
+  "initial_resources": [
+    {
+      "name": "scila",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "scila_drawer_1",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_2",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_3",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_4",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "call": "set_temperature(37.0)",
+      "result": null,
+      "sent": [
+        {
+          "command": "SetTemperature",
+          "parameters": {
+            "targetTemperature": 37.0,
+            "temperatureControl": true
+          }
+        }
+      ]
+    },
+    {
+      "call": "request_temperature_information()",
+      "result": {
+        "CurrentTemperature": 36.5,
+        "TargetTemperature": 37.0,
+        "TemperatureControl": true
+      },
+      "sent": [
+        {
+          "command": "GetTemperature",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_current_temperature()",
+      "result": 36.5,
+      "sent": [
+        {
+          "command": "GetTemperature",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_target_temperature()",
+      "result": 37.0,
+      "sent": [
+        {
+          "command": "GetTemperature",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "is_temperature_control_enabled()",
+      "result": true,
+      "sent": [
+        {
+          "command": "GetTemperature",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "deactivate()",
+      "result": null,
+      "sent": [
+        {
+          "command": "SetTemperature",
+          "parameters": {
+            "temperatureControl": false
+          }
+        }
+      ]
+    },
+    {
+      "call": "is_temperature_control_enabled()",
+      "result": false,
+      "sent": [
+        {
+          "command": "GetTemperature",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_liquid_level()",
+      "result": "Ok",
+      "sent": [
+        {
+          "command": "GetLiquidLevel",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_co2_flow_status()",
+      "result": "Ok",
+      "sent": [
+        {
+          "command": "GetCO2FlowStatus",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_valve_status()",
+      "result": {
+        "H2O": "Closed",
+        "CO2 Normal": "Opened",
+        "CO2 Boost": "Closed"
+      },
+      "sent": [
+        {
+          "command": "GetValveStatus",
+          "parameters": {}
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "scila",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "scila_drawer_1",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_2",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_3",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_4",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,795 @@
+{
+  "initial_resources": [
+    {
+      "name": "loader",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+    },
+    {
+      "name": "centrifuge_bucket1",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+    },
+    {
+      "name": "centrifuge_bucket2",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+    }
+  ],
+  "steps": [
+    {
+      "call": "loader.setup()",
+      "result": null,
+      "sent": [
+        "access2 open",
+        "access2 baudrate 115384",
+        "access2 11050003002000006bd4",
+        "access2 110500030014000072b1",
+        "access2 1105000300100000ae71",
+        "access2 1105000300400000f0bf",
+        "access2 11050003002000006bd4",
+        "access2 1105000a004607000100000000020235bf",
+        "access2 11050003002000006bd4",
+        "access2 1105000e00440b00000000000000007041020203c7",
+        "access2 11050003002000006bd4",
+        "access2 11050003002000006bd4"
+      ],
+      "events": [
+        {
+          "name": "centrifuge_loader.setup.started",
+          "operation": "centrifuge_loader.setup",
+          "operation_id": "op-1",
+          "data": {
+            "device": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          }
+        },
+        {
+          "name": "centrifuge_loader.setup.completed",
+          "operation": "centrifuge_loader.setup",
+          "operation_id": "op-1",
+          "data": {
+            "device": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "call": "vspin.go_to_bucket1()",
+      "result": null,
+      "sent": [
+        "vspin aa010e0f",
+        "vspin aa010e0f",
+        "vspin aa020e10",
+        "vspin aa020e10",
+        "vspin aa020e10",
+        "vspin aa020e10",
+        "vspin aa0117021a",
+        "vspin aa01e6c800b00496000f004b00a00f050007",
+        "vspin aa0117041c",
+        "vspin aa01170119",
+        "vspin aa010b0c",
+        "vspin aa01e6c800b00496000f004b00a00f050007",
+        "vspin aa01d4972efbffffc3f52800d71a000064",
+        "vspin aa010e0f",
+        "vspin aa0117021a",
+        "vspin aa020e10",
+        "vspin aa010e0f",
+        "vspin aa020e10",
+        "vspin aa0226000129",
+        "vspin aa020e10",
+        "vspin aa020e10",
+        "vspin aa010e0f",
+        "vspin aa020e10",
+        "vspin aa022600052d",
+        "vspin aa020e10",
+        "vspin aa020e10",
+        "vspin aa010e0f",
+        "vspin aa020e10",
+        "vspin aa022600072f",
+        "vspin aa020e10"
+      ],
+      "events": []
+    },
+    {
+      "call": "bucket1.assign_child_resource(spun_plate) by hand",
+      "result": null,
+      "sent": [],
+      "events": [
+        {
+          "name": "resource.assigned",
+          "operation": null,
+          "operation_id": null,
+          "data": {
+            "resource": {
+              "name": "spun_plate",
+              "type": "Plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "centrifuge_bucket1",
+                  "type": "ResourceHolder"
+                }
+              ]
+            },
+            "parent": {
+              "name": "centrifuge_bucket1",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "loader",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        },
+        {
+          "name": "centrifuge_bucket1",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        },
+        {
+          "name": "spun_plate",
+          "parent": "centrifuge_bucket1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "spun_plate_well_A1",
+          "parent": "spun_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "spun_plate_well_A2",
+          "parent": "spun_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "centrifuge_bucket2",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        }
+      ]
+    },
+    {
+      "call": "loader.unload() no plate sensed",
+      "result": {
+        "error": "RuntimeError",
+        "message": "no plate found on centrifuge"
+      },
+      "sent": [
+        "vspin aa020e10",
+        "vspin aa020e10",
+        "vspin aa010e0f",
+        "vspin aa020e10",
+        "access2 11050003002000006bd4",
+        "access2 1105000a004607000100000000020235bf",
+        "access2 11050003002000006bd4",
+        "access2 1105000e00440b000200004040000020410200dd31",
+        "access2 11050003002000006bd4",
+        "access2 1105000300500000b3dc"
+      ],
+      "events": [
+        {
+          "name": "centrifuge_loader.unload.started",
+          "operation": "centrifuge_loader.unload",
+          "operation_id": "op-2",
+          "data": {
+            "device": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "spun_plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "centrifuge_bucket1",
+                    "type": "ResourceHolder"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "centrifuge_bucket1",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "destination": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "parameters": {}
+          }
+        },
+        {
+          "name": "centrifuge_loader.unload.failed",
+          "operation": "centrifuge_loader.unload",
+          "operation_id": "op-2",
+          "data": {
+            "device": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "spun_plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "centrifuge_bucket1",
+                    "type": "ResourceHolder"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "centrifuge_bucket1",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "destination": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "parameters": {},
+            "error_type": "RuntimeError",
+            "error_message": "no plate found on centrifuge"
+          }
+        }
+      ]
+    },
+    {
+      "call": "loader.assign_child_resource(plate) by hand",
+      "result": null,
+      "sent": [],
+      "events": [
+        {
+          "name": "resource.assigned",
+          "operation": null,
+          "operation_id": null,
+          "data": {
+            "resource": {
+              "name": "sample_plate",
+              "type": "Plate",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "loader",
+                  "type": "ResourceHolder",
+                  "model": "Agilent Access2"
+                }
+              ]
+            },
+            "parent": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "location": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "loader",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        },
+        {
+          "name": "sample_plate",
+          "parent": "loader",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "sample_plate_well_A1",
+          "parent": "sample_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "sample_plate_well_A2",
+          "parent": "sample_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "centrifuge_bucket1",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        },
+        {
+          "name": "spun_plate",
+          "parent": "centrifuge_bucket1",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "spun_plate_well_A1",
+          "parent": "spun_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            10.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "spun_plate_well_A2",
+          "parent": "spun_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            19.0,
+            40.0,
+            1.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "centrifuge_bucket2",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        }
+      ]
+    },
+    {
+      "call": "vspin.go_to_bucket2() after the loader fault",
+      "result": {
+        "error": "RuntimeError",
+        "message": "VSpin requires recovery"
+      },
+      "sent": [],
+      "events": []
+    },
+    {
+      "call": "loader.load() after the loader fault",
+      "result": {
+        "error": "BucketHasPlateError",
+        "message": "Bucket must be empty to load a plate."
+      },
+      "sent": [],
+      "events": [
+        {
+          "name": "centrifuge_loader.load.started",
+          "operation": "centrifuge_loader.load",
+          "operation_id": "op-3",
+          "data": {
+            "device": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "sample_plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "loader",
+                    "type": "ResourceHolder",
+                    "model": "Agilent Access2"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "destination": {
+              "name": "centrifuge_bucket1",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "parameters": {}
+          }
+        },
+        {
+          "name": "centrifuge_loader.load.failed",
+          "operation": "centrifuge_loader.load",
+          "operation_id": "op-3",
+          "data": {
+            "device": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "sample_plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "loader",
+                    "type": "ResourceHolder",
+                    "model": "Agilent Access2"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "destination": {
+              "name": "centrifuge_bucket1",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "parameters": {},
+            "error_type": "BucketHasPlateError",
+            "error_message": "Bucket must be empty to load a plate."
+          }
+        }
+      ]
+    },
+    {
+      "call": "loader.unload() after the loader fault",
+      "result": {
+        "error": "RuntimeError",
+        "message": "Access2 requires recovery"
+      },
+      "sent": [],
+      "events": [
+        {
+          "name": "centrifuge_loader.unload.started",
+          "operation": "centrifuge_loader.unload",
+          "operation_id": "op-4",
+          "data": {
+            "device": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "spun_plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "centrifuge_bucket1",
+                    "type": "ResourceHolder"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "centrifuge_bucket1",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "destination": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "parameters": {}
+          }
+        },
+        {
+          "name": "centrifuge_loader.unload.failed",
+          "operation": "centrifuge_loader.unload",
+          "operation_id": "op-4",
+          "data": {
+            "device": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "resources": [
+              {
+                "name": "spun_plate",
+                "type": "Plate",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "centrifuge_bucket1",
+                    "type": "ResourceHolder"
+                  }
+                ]
+              }
+            ],
+            "source": {
+              "name": "centrifuge_bucket1",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "destination": {
+              "name": "loader",
+              "type": "ResourceHolder",
+              "model": "Agilent Access2",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "parameters": {},
+            "error_type": "RuntimeError",
+            "error_message": "Access2 requires recovery"
+          }
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "loader",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+    },
+    {
+      "name": "sample_plate",
+      "parent": "loader",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "sample_plate_well_A1",
+      "parent": "sample_plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "sample_plate_well_A2",
+      "parent": "sample_plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "centrifuge_bucket1",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+    },
+    {
+      "name": "spun_plate",
+      "parent": "centrifuge_bucket1",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "spun_plate_well_A1",
+      "parent": "spun_plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        10.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "spun_plate_well_A2",
+      "parent": "spun_plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        19.0,
+        40.0,
+        1.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "centrifuge_bucket2",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+    }
+  ]
+}

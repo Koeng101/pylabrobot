@@ -1,5 +1,3 @@
-from pylabrobot.resources import Coordinate, PlateHolder
-
 from .base import MolecularDevicesPlateReader, MolecularDevicesSettings
 
 
@@ -11,14 +9,7 @@ class SpectraMax384Plus(MolecularDevicesPlateReader):
 
   def __init__(self, name: str, port: str):
     super().__init__(port=port, human_readable_device_name="Molecular Devices SpectraMax 384 Plus")
-    self.loading_tray = PlateHolder(
-      name=name + "_loading_tray",
-      size_x=127.76,
-      size_y=85.48,
-      size_z=0,  # TODO: measure
-      pedestal_size_z=0,  # TODO: measure
-      child_location=Coordinate.zero(),  # TODO: measure
-    )
+    self.name = name
 
   async def _set_readtype(self, settings: MolecularDevicesSettings) -> None:
     cmd = f"!READTYPE {'CUV' if settings.cuvette else 'PLA'}"

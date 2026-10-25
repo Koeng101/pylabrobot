@@ -1,0 +1,249 @@
+{
+  "name": "opentrons_10_tuberack_falcon_4x50ml_6x15ml_conical",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "model": "Opentrons 10 Tube Rack with Falcon 4x50 mL, 6x15 mL Conical",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.5,
+        "z": 124.35
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}_A1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 10.536,
+            "y": 10.536,
+            "z": 117.5
+          },
+          "location": {
+            "x": 8.612,
+            "y": 62.482,
+            "z": 6.85
+          },
+          "rotation": {},
+          "identifier": "A1",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_B1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 10.536,
+            "y": 10.536,
+            "z": 117.5
+          },
+          "location": {
+            "x": 8.612,
+            "y": 37.482,
+            "z": 6.85
+          },
+          "rotation": {},
+          "identifier": "B1",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_C1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 10.536,
+            "y": 10.536,
+            "z": 117.5
+          },
+          "location": {
+            "x": 8.612,
+            "y": 12.482,
+            "z": 6.85
+          },
+          "rotation": {},
+          "identifier": "C1",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_A2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 10.536,
+            "y": 10.536,
+            "z": 117.5
+          },
+          "location": {
+            "x": 33.612,
+            "y": 62.482,
+            "z": 6.85
+          },
+          "rotation": {},
+          "identifier": "A2",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_B2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 10.536,
+            "y": 10.536,
+            "z": 117.5
+          },
+          "location": {
+            "x": 33.612,
+            "y": 37.482,
+            "z": 6.85
+          },
+          "rotation": {},
+          "identifier": "B2",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_C2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 10.536,
+            "y": 10.536,
+            "z": 117.5
+          },
+          "location": {
+            "x": 33.612,
+            "y": 12.482,
+            "z": 6.85
+          },
+          "rotation": {},
+          "identifier": "C2",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_A3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 19.665,
+            "y": 19.665,
+            "z": 113.0
+          },
+          "location": {
+            "x": 61.5475,
+            "y": 50.4175,
+            "z": 7.3
+          },
+          "rotation": {},
+          "identifier": "A3",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_B3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 19.665,
+            "y": 19.665,
+            "z": 113.0
+          },
+          "location": {
+            "x": 61.5475,
+            "y": 15.4175,
+            "z": 7.3
+          },
+          "rotation": {},
+          "identifier": "B3",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_A4",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 19.665,
+            "y": 19.665,
+            "z": 113.0
+          },
+          "location": {
+            "x": 96.5475,
+            "y": 50.4175,
+            "z": 7.3
+          },
+          "rotation": {},
+          "identifier": "A4",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}_B4",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 19.665,
+            "y": 19.665,
+            "z": 113.0
+          },
+          "location": {
+            "x": 96.5475,
+            "y": 15.4175,
+            "z": 7.3
+          },
+          "rotation": {},
+          "identifier": "B4",
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  }
+}

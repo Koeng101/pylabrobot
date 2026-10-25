@@ -34,33 +34,26 @@ from pylabrobot.hamilton.transport.tcp.session import TCPSession
 from pylabrobot.hamilton.transport.tcp.tcp import HamiltonTCPClient
 from pylabrobot.hamilton.transport.tcp.wire_types import HamiltonDataType, HcResultEntry
 from pylabrobot.io.socket import Socket
-from pylabrobot.resources.carrier import PlateHolder
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.deck import Deck
-from pylabrobot.resources.hamilton.core_grippers import HamiltonCoreGrippers
-from pylabrobot.resources.hamilton.prep_decks import PrepDeck
-from pylabrobot.resources.hamilton.tip_creators import (
-  HamiltonTip,
-  TipPickupMethod,
-  TipSize,
-  hamilton_tip_10uL,
-  hamilton_tip_10uL_filter,
-  hamilton_tip_50uL,
-  hamilton_tip_50uL_filter,
-  hamilton_tip_300uL,
-  hamilton_tip_300uL_filter,
-  hamilton_tip_1000uL,
-  hamilton_tip_1000uL_filter,
-)
-from pylabrobot.resources.n_channel_pipettes import NChannelPipette
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store import build, handles, library
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
+from ..deck import (
+  PrepDeckParts,
+  is_prep_deck,
+  name_prefix_of,
+  prep_deck,
+  read_prep_deck,
+  warn_of_resources_above_safe_height,
+)
 from . import prep_commands as PrepCmd
 from .configuration import DeviceConfiguration, read_configuration, to_jsonable
 from .errors import PREP_ERROR_CODES, PrepMethodNotFoundError
 from .features.calibration import Calibration
 from .features.core_grippers import CoreGrippers
-from .features.head8 import Head8
+from .features.head8 import Head8, head8_pipette
 from .features.heater_shaker import (
   HEATER_SHAKER_FROM_SPOT,
   HEATER_SHAKER_PLATE_XY,
@@ -71,8 +64,9 @@ from .features.heater_shaker import (
 )
 from .features.lights import Lights
 from .features.method import MethodLifecycle
-from .features.pipettes import TIP_FITTING_DEPTH, Pipettes, channels_named
+from .features.pipettes import TIP_FITTING_DEPTH, Pipettes, channels_named, pipette_channel
 from .features.x_arm import XArm
+from .model import get_nodes, locate, ref
 from .prep_commands import (
   _UNRESOLVED,
   DECK_CONFIGURATION_OBJECT_PATH,
@@ -156,30 +150,60 @@ class _PrepTCPClient(HamiltonTCPClient):
     )
 
 
-def _hamilton_tip_for_reach(reach: float, has_filter: bool, name: str) -> Optional[HamiltonTip]:
+# The Hamilton tips a tip found on a channel at setup may be, by model: plain and filtered of each
+# volume.
+_HAMILTON_TIP_MODELS = (
+  "hamilton_tip_10uL",
+  "hamilton_tip_10uL_filter",
+  "hamilton_tip_50uL",
+  "hamilton_tip_50uL_filter",
+  "hamilton_tip_300uL",
+  "hamilton_tip_300uL_filter",
+  "hamilton_tip_1000uL",
+  "hamilton_tip_1000uL_filter",
+)
+
+
+def _hamilton_tip_for_reach(
+  reach: float, has_filter: bool, name: str
+) -> Optional[pb.ResourceDefinition]:
   """The Hamilton tip whose reach below the stop disc is `reach`, or None when none is within 0.3 mm.
 
   A drop needs the tip's collar height, which only a known tip has. The filter flag breaks a tie
   between the plain and filtered tip of one length, which share every other dimension.
+
+  Returns:
+    Its definition, called `name`.
   """
-  candidates = (
-    hamilton_tip_10uL,
-    hamilton_tip_10uL_filter,
-    hamilton_tip_50uL,
-    hamilton_tip_50uL_filter,
-    hamilton_tip_300uL,
-    hamilton_tip_300uL_filter,
-    hamilton_tip_1000uL,
-    hamilton_tip_1000uL_filter,
-  )
-  matching = [
-    tip
-    for tip in (make(name) for make in candidates)
-    if abs(tip.get_size_z() - tip.fitting_depth - reach) <= 0.3
-  ]
+  matching = []
+  for model in _HAMILTON_TIP_MODELS:
+    definition = pb.ResourceDefinition()
+    definition.CopyFrom(library.get_model(model).definition)
+    attributes = definition.attributes
+    if abs(attributes.size.z - attributes.head_tool.fitting_depth - reach) <= 0.3:
+      attributes.name = name
+      matching.append(definition)
   if not matching:
     return None
-  return next((tip for tip in matching if tip.has_filter == has_filter), matching[0])
+  return next((tip for tip in matching if tip.attributes.tip.has_filter == has_filter), matching[0])
+
+
+def _unknown_tip(
+  name: str, has_filter: bool, length: float, volume: float
+) -> pb.ResourceDefinition:
+  """A standard volume tip of the length and volume the firmware describes, with no collar height:
+  only a known tip has one."""
+  definition = pb.ResourceDefinition()
+  definition.CopyFrom(library.get_model("hamilton_tip_300uL").definition)
+  attributes = definition.attributes
+  attributes.name = name
+  attributes.model = ""
+  attributes.size.z = length + TIP_FITTING_DEPTH
+  attributes.tip.has_filter = has_filter
+  attributes.tip.maximal_volume = volume
+  attributes.tip.nominal_volume = volume
+  attributes.tip.ClearField("collar_height")
+  return definition
 
 
 def _refused_with(error: BaseException, code: int) -> bool:
@@ -330,7 +354,7 @@ class PrepDriver:
 
   def __init__(
     self,
-    deck: Deck,
+    deck: Optional[handles.Deck] = None,
     host: Optional[str] = None,
     port: int = 2000,
     declared_configuration_json: Optional[str] = None,
@@ -339,7 +363,8 @@ class PrepDriver:
   ):
     """
     Args:
-      deck: the deck positions are measured from.
+      deck: the deck positions are measured from, in its resource store. None makes an in-memory
+        store at setup, with a Prep deck in it.
       host: the address the Prep answers on. Required unless `io` is given. Opens two connections
         so each channel can receive a command while the other's is in flight.
       port: the port it answers on.
@@ -367,7 +392,11 @@ class PrepDriver:
       self._second_io = _PrepTCPClient(host=host, port=port)
     self.io: HamiltonTCPClient = io
     self._mlprep_address: Optional[Address] = None
-    self.deck = deck
+    self.deck: Optional[handles.Deck] = deck
+    # What setup read of the deck: whether it is a Prep's, what its parts' names start with, and
+    # the parts themselves. A deck that is not a Prep's has none.
+    self.name_prefix: Optional[str] = None
+    self.parts: Optional[PrepDeckParts] = None
     self.liquid_class_lookup: LiquidClassLookup = liquid_class_lookup or get_star_liquid_class
     # What the device reports about itself, read by `discover`. None until setup has run.
     self.configuration: Optional[DeviceConfiguration] = None
@@ -390,9 +419,43 @@ class PrepDriver:
 
   def get_component_name(self, name: str) -> str:
     """Resolve a built-in resource name using the Prep deck's naming prefix."""
-    if isinstance(self.deck, PrepDeck):
-      return self.deck.get_component_name(name)
-    return name
+    return name if self.name_prefix is None else f"{self.name_prefix}_{name}"
+
+  @property
+  def store(self) -> ResourceStore:
+    """The resource store the deck is in.
+
+    Raises:
+      RuntimeError: If there is no deck yet; setup makes one.
+    """
+    if self.deck is None:
+      raise RuntimeError("no deck to model into; have you called `prep.setup()`?")
+    return self.deck.store
+
+  @property
+  def deck_ref(self) -> pb.ResourceRef:
+    """The deck, as a request names it: the frame positions are measured in."""
+    if self.deck is None:
+      raise RuntimeError("no deck to model into; have you called `prep.setup()`?")
+    return ref(self.deck.id)
+
+  async def _open_deck(self) -> None:
+    """Make a Prep deck in an in-memory store when there is none, and read what the deck is."""
+    if self.deck is None:
+      store = ResourceStore.in_memory()
+      made = await store.create(prep_deck("deck"), name="deck")
+      assert isinstance(made, handles.Deck)
+      self.deck = made
+    attributes = await self.deck.attributes()
+    self.name_prefix = name_prefix_of(attributes)
+    self.parts = await read_prep_deck(self.deck) if is_prep_deck(attributes) else None
+
+  async def request_parts(self) -> Optional[PrepDeckParts]:
+    """The Prep deck's parts as they stand in the store now; None on a deck that is not a Prep's."""
+    if self.parts is None or self.deck is None:
+      return None
+    self.parts = await read_prep_deck(self.deck)
+    return self.parts
 
   # ----------------------------------------
   # Connection and lifecycle
@@ -430,6 +493,7 @@ class PrepDriver:
         does not confirm the grippers may open.
     """
     logger.debug("Setting up Prep on %s ...", self.describe_link())
+    await self._open_deck()
     try:
       await self._open()
 
@@ -535,11 +599,12 @@ class PrepDriver:
       if await self.request_x_speed_scale() != x_scale:
         await self.set_x_speed_scale(x_scale)
       # What was found, as resources on the deck - when the driver was given a Prep deck to reflect into.
-      if self.deck is not None:
-        logger.debug("[PHASE 4] Feature resources")
-        self._place_reported_sites()
-        await self._create_capability_resources()
-        self._seat_heater_shaker()
+      logger.debug("[PHASE 4] Feature resources")
+      await self._place_reported_sites()
+      await self._create_capability_resources()
+      await self._seat_heater_shaker()
+      if self.parts is not None and self.deck is not None:
+        await warn_of_resources_above_safe_height(self.deck)
 
       if any(tips) and plate_held:
         attached = await self.pipettes.request_attached_tip_information(tips.index(True))
@@ -1347,13 +1412,12 @@ class PrepDriver:
     """
     if self.pipettes is None or self.x_arm is None:
       raise RuntimeError("the pipettes and the arm are needed to release over the waste")
-    if not isinstance(self.deck, PrepDeck):
-      raise RuntimeError("the waste sites are placed on a PrepDeck; this driver has another deck")
+    if self.parts is None:
+      raise RuntimeError("the waste sites are placed on a Prep deck; this driver has another deck")
     names = ["waste_rear", "waste_front", "waste_mph"]
-    targets = {
-      ch: self.deck.waste_positions[names[ch]].get_location_wrt(self.deck, "c", "c", "t")
-      for ch in carrying
-    }
+    wastes = {ch: self.parts.waste_positions[names[ch]] for ch in carrying}
+    placed = await locate(self.store, self.deck_ref, [w.id for w in wastes.values()])
+    targets = {ch: placed[waste.id].top for ch, waste in wastes.items()}
     await self.x_arm.move_to_x_position(next(iter(targets.values())).x)
     at = await self.pipettes.request_locations()
     # The smaller target first, so a channel never has to pass the one ahead of it.
@@ -1559,7 +1623,7 @@ class PrepDriver:
     elif attached.is_tool:
       logger.warning("it is a tool, but there is nothing here to put it back with")
       return
-    waste = self.deck.waste_block if isinstance(self.deck, PrepDeck) else None
+    waste = None if self.parts is None else self.parts.waste_block
     if waste is None:
       logger.warning("this deck has no waste, so it stays on: take it off before running anything")
       return
@@ -1568,10 +1632,11 @@ class PrepDriver:
     # describes. The definition gives how far the tip reaches below the stop disc, not its fitting
     # depth, which is 8 mm for every Hamilton tip but the 5 mL family's 10.
     traverse = self.pipettes.default_minimum_traverse_height
+    mounted = await self.pipettes.get_mounted_tips()
     for channel in carrying:
       # A model that already knows keeps what it has; a fresh one adopts what the firmware describes.
       # One tip per channel: a resource has one parent, so a shared one would leave all but the last.
-      if self.pipettes.get_mounted_tip(channel) is None:
+      if channel < len(mounted) and mounted[channel] is None:
         # The Z window the device reports is shifted by what is physically on; the definition can
         # be another thing's. The window wins where the two disagree.
         length = attached.length
@@ -1588,16 +1653,10 @@ class PrepDriver:
             )
             length = physical
         name = f"attached at setup ({attached.label}) on channel {channel}"
-        found = _hamilton_tip_for_reach(length, attached.has_filter, name) or HamiltonTip(
-          name=name,
-          has_filter=attached.has_filter,
-          size_z=length + TIP_FITTING_DEPTH,
-          maximal_volume=attached.volume,
-          nominal_volume=attached.volume,
-          tip_size=TipSize.STANDARD_VOLUME,
-          pickup_method=TipPickupMethod.OUT_OF_RACK,
+        found = _hamilton_tip_for_reach(length, attached.has_filter, name) or _unknown_tip(
+          name, attached.has_filter, length, attached.volume
         )
-        self.pipettes._mount_tip(channel, found)
+        await self.pipettes._adopt_tip(channel, found)
     try:
       await self.pipettes.drop_tips([waste] * len(carrying), use_channels=carrying)
     except (HoiError, ValueError) as e:
@@ -1607,81 +1666,131 @@ class PrepDriver:
       logger.warning("the device refused to drop it (%s): releasing it over the waste instead", e)
       await self._release_attached_over_waste(carrying)
 
-  def _place_reported_sites(self) -> None:
+  async def _place_reported_sites(self) -> None:
     """Move the teaching needle and the waste positions to where the device reports them.
 
-    Only on a `PrepDeck`. The teaching needle goes to the deck site whose footprint matches the deck's
+    Only on a Prep deck. The teaching needle goes to the deck site whose footprint matches the deck's
     teaching spot, keeping the spot's height: a site's height is not where a needle is picked up. Each waste
     position goes to the waste site for its channel. Whatever the device does not report keeps the deck's
-    default.
+    default. Each keeps its place among its parent's children.
     """
-    if not isinstance(self.deck, PrepDeck) or self.configuration is None:
+    if self.parts is None or self.configuration is None:
       return
     c = self.configuration
-    spot = self.deck.teaching_needle_spot
+    spot = self.parts.teaching_needle_spot
+    wastes: Dict[int, handles.Trash] = {}
+    for waste_site in c.waste_sites:
+      name = _WASTE_SITE_NAMES.get(waste_site.index)
+      if name is not None and name in self.parts.waste_positions:
+        wastes[waste_site.index] = self.parts.waste_positions[name]
+    moved: List[handles.Resource] = [] if spot is None else [spot]
+    moved.extend(wastes.values())
+    nodes = {node.id: node for node in await get_nodes(self.store, [ref(r.id) for r in moved])}
+    assignments: List[pb.AssignChild] = []
     if spot is not None:
-      footprint = (spot.get_size_x(), spot.get_size_y())
-      site = next((s for s in c.deck_sites if (s.length, s.width) == footprint), None)
-      if site is not None and spot.location is not None and spot.parent is not None:
-        parent = spot.parent.get_location_wrt(self.deck)
-        spot.location = Coordinate(
-          site.left_bottom_front_x - parent.x, site.left_bottom_front_y - parent.y, spot.location.z
+      node = nodes[spot.id]
+      size = node.attributes.size
+      site = next((s for s in c.deck_sites if (s.length, s.width) == (size.x, size.y)), None)
+      if site is not None and node.attributes.HasField("location") and node.parent_id:
+        parent = (await locate(self.store, self.deck_ref, [node.parent_id]))[node.parent_id].origin
+        assignments.append(
+          pb.AssignChild(
+            child=ref(spot.id),
+            parent=ref(node.parent_id),
+            location=pb.Vec3(
+              x=site.left_bottom_front_x - parent.x,
+              y=site.left_bottom_front_y - parent.y,
+              z=node.attributes.location.z,
+            ),
+            index=node.index,
+          )
         )
         logger.debug("teaching needle at deck site %d", site.id)
     for waste_site in c.waste_sites:
-      name = _WASTE_SITE_NAMES.get(waste_site.index)
-      waste = self.deck.waste_positions.get(name) if name is not None else None
+      waste = wastes.get(waste_site.index)
       if waste is None:
         continue
-      waste.location = Coordinate(
-        waste_site.x_position, waste_site.y_position, waste_site.z_position
+      node = nodes[waste.id]
+      assignments.append(
+        pb.AssignChild(
+          child=ref(waste.id),
+          parent=ref(node.parent_id),
+          location=pb.Vec3(
+            x=waste_site.x_position, y=waste_site.y_position, z=waste_site.z_position
+          ),
+          index=node.index,
+        )
       )
-      logger.debug("%s at waste site %d", name, waste_site.index)
+      logger.debug("%s at waste site %d", waste.name, waste_site.index)
+    if assignments:
+      await self.store.commands.assign_resources(
+        spb.AssignResourcesRequest(lock_tokens=self.store.lock_tokens, assignments=assignments)
+      )
 
-  def _seat_heater_shaker(self) -> None:
+  async def _seat_heater_shaker(self) -> None:
     """Make the spot the heater shaker stands in its plate holder: what it holds sits on the heater shaker.
 
     The spot keeps its name; it takes the heater shaker's footprint and place, is as tall as where a
     plate sits on it, and has no clips or pedestal. Whatever it held moves onto the heater shaker.
     """
-    if self.hs is None or not isinstance(self.deck, PrepDeck):
+    if self.hs is None or self.parts is None:
       return
     name = self.get_component_name(HEATER_SHAKER_SPOT)
-    if not self.deck.has_resource(name):
+    spot = next((s for s in self.parts.spots if s.name == name), None)
+    if spot is None:
       return
-    spot = self.deck.get_resource(name)
-    if spot.location is None:
+    node, *below = await get_nodes(self.store, [ref(spot.id)], depth=1)
+    if not node.attributes.HasField("location"):
       return
-    if isinstance(spot, PlateHolder) and spot.get_size_z() == HEATER_SHAKER_PLATE_Z:
+    if isinstance(spot, handles.PlateHolder) and node.attributes.size.z == HEATER_SHAKER_PLATE_Z:
       self.hs.resource = spot
       return
-    held = list(spot.children)
-    for child in held:
-      spot.unassign_child_resource(child)
+    held = [ref(child.id) for child in below if child.parent_id == node.id]
+    commands, tokens = self.store.commands, self.store.lock_tokens
+    if held:
+      await commands.unassign_resources(
+        spb.UnassignResourcesRequest(lock_tokens=tokens, resources=held)
+      )
+    await commands.delete_resources(
+      spb.DeleteResourcesRequest(lock_tokens=tokens, resources=[ref(spot.id)])
+    )
     size_x, size_y = HEATER_SHAKER_SIZE
     plate_x, plate_y = HEATER_SHAKER_PLATE_XY
-    holder = PlateHolder(
+    at = node.attributes.location
+    holder = await self.store.create(
+      build.resource(
+        name,
+        Coordinate(size_x, size_y, HEATER_SHAKER_PLATE_Z),
+        kind=pb.RESOURCE_KIND_PLATE_HOLDER,
+        category="plate_holder",
+        holder=pb.HolderSpec(
+          child_location=build.vec3(Coordinate(plate_x, plate_y, HEATER_SHAKER_PLATE_Z)),
+          pedestal_size_z=0.0,
+          capacity=1,
+        ),
+      ),
       name=name,
-      size_x=size_x,
-      size_y=size_y,
-      size_z=HEATER_SHAKER_PLATE_Z,
-      pedestal_size_z=0,
-      child_location=Coordinate(plate_x, plate_y, HEATER_SHAKER_PLATE_Z),
+      parent=self.deck,
+      location=Coordinate(at.x, at.y, at.z) + HEATER_SHAKER_FROM_SPOT,
     )
-    location = spot.location + HEATER_SHAKER_FROM_SPOT
-    self.deck.unassign_child_resource(spot)
-    self.deck.assign_child_resource(holder, location=location)
-    for child in held:
-      holder.assign_child_resource(child)
+    if held:
+      await commands.assign_resources(
+        spb.AssignResourcesRequest(
+          lock_tokens=tokens,
+          assignments=[pb.AssignChild(child=child, parent=ref(holder.id)) for child in held],
+        )
+      )
+    assert isinstance(holder, handles.PlateHolder)
     self.hs.resource = holder
+    self.parts.spots = [holder if s.name == name else s for s in self.parts.spots]
 
   async def _create_capability_resources(self) -> None:
     """Put the X-arm on the deck where it is, and hang a resource for each pipetting channel from it.
 
-    As the STAR driver does. Only on a `PrepDeck`, which is what knows where a Prep's arm goes. What is
+    As the STAR driver does. Only on a Prep deck, which is what knows where a Prep's arm goes. What is
     already on the deck is reused, and repeated setups do not duplicate it.
     """
-    if not isinstance(self.deck, PrepDeck) or self.x_arm is None or self.pipettes is None:
+    if self.parts is None or self.x_arm is None or self.pipettes is None:
       return
     positions, head_at = await self.pipettes._unchecked_fw_request_positions_and_head()
     if not positions:
@@ -1689,68 +1798,104 @@ class PrepDriver:
       return
     arm, c = self.x_arm, self.x_arm.configuration
     pipettes = self.pipettes.configuration
-    # The arm rides at the height it was measured at, not at the top of the channels' travel: what
-    # the channels report is how far they travel, not where the arm sits.
-    z = c.ride_height
-    # The Y the channels reach between them, which the arm's reference line spans.
-    y_ranges = [c.y_range for c in pipettes.channels if c.y_range is not None]
-    reach = (min(r[0] for r in y_ranges), max(r[1] for r in y_ranges)) if y_ranges else None
-    arm.resource = self.deck.get_or_create_x_arm(
-      name=self.get_component_name("x_arm"),
-      x=positions[0].x,
-      z=z,
-      size_x=c.size_x,
-      size_y=c.size_y,
-      size_z=c.size_z,
-      reference_point_from_left=c.reference_point_from_left,
-      model=c.model,
-      appearance=c.appearance,
-      reference_y_range=reach,
-    )
+    arm_name = self.get_component_name("x_arm")
+    channel_names = [
+      self.get_component_name(f"pipette_channel_{channel}") for channel in range(len(positions))
+    ]
+    head_name = self.get_component_name("head8")
+    found = {
+      r.name: r
+      for r in await self.store.find_resources(
+        scope=self.deck,
+        filter=spb.ResourceFilter(names=[arm_name, *channel_names, head_name]),
+      )
+    }
 
     # One resource per channel, a child of the arm's as on the STAR: the channels share the arm's X,
     # and each has its own Y and Z.
-    self.pipettes.resources = []
-    for channel in range(len(positions)):
-      name = self.get_component_name(f"pipette_channel_{channel}")
-      resource = next((child for child in arm.resource.children if child.name == name), None)
-      if resource is None:
-        resource = Resource(
-          name=name,
-          size_x=pipettes.channel_width,
-          size_y=pipettes.channel_width,
-          size_z=pipettes.channel_size_z,
-          category="pipette_channel",
-          model=pipettes.channel_model,
-        )
-        anchor = resource.get_anchor(x=pipettes.x_reference_anchor)
-        arm.resource.assign_child_resource(
-          resource, location=Coordinate(c.reference_point_from_left - anchor.x, 0.0, 0.0)
-        )
-      self.pipettes.add_tip_mounting_shaft(resource)
-      self.pipettes.resources.append(resource)
+    missing = [
+      pipette_channel(name, pipettes, c.reference_point_from_left)
+      for name in channel_names
+      if name not in found
+    ]
     # The 8-channel head rides the arm too, where the same read reports it; one there is reused.
-    if self.head8 is not None and head_at is not None:
-      head = next((c for c in arm.resource.children if c.name == self.head8.resource.name), None)
-      if isinstance(head, NChannelPipette):
-        self.head8.resource = head
-      elif head is None:
-        arm.resource.assign_child_resource(self.head8.resource, location=Coordinate.zero())
+    if self.head8 is not None and head_at is not None and head_name not in found:
+      head = head8_pipette(head_name)
+      head.attributes.location.CopyFrom(pb.Vec3())
+      missing.append(head)
+    if arm_name not in found:
+      # The arm rides at the height it was measured at, not at the top of the channels' travel:
+      # what the channels report is how far they travel, not where the arm sits.
+      z = c.ride_height
+      # The back of the arm at the back of the device carrying the deck, which being deeper than
+      # the deck puts its front at a negative y. A deck standing on its own keeps its own back edge.
+      deck_node, *above = await get_nodes(self.store, [self.deck_ref], ancestors=True)
+      device = next((n for n in above if n.id == deck_node.parent_id), None)
+      if device is None or not deck_node.attributes.HasField("location"):
+        y = deck_node.attributes.size.y - c.size_y
+      else:
+        y = device.attributes.size.y - deck_node.attributes.location.y - c.size_y
+      reference: Dict[str, Any] = {"x": c.reference_point_from_left}
+      # The Y the channels reach between them, which the arm's reference line spans: its reach as
+      # the viewer draws it, from the arm's front edge.
+      y_ranges = [r.y_range for r in pipettes.channels if r.y_range is not None]
+      if y_ranges:
+        low, high = min(r[0] for r in y_ranges), max(r[1] for r in y_ranges)
+        reference["y_range"] = [low - y, high - y]
+      metadata: Dict[str, Any] = {"reference_point": reference}
+      if c.appearance is not None:
+        metadata["appearance"] = dict(c.appearance)
+      await self.store.create(
+        build.resource(
+          arm_name,
+          Coordinate(c.size_x, c.size_y, c.size_z),
+          category="x_arm",
+          model=c.model,
+          metadata=metadata,
+          children=missing,
+        ),
+        name=arm_name,
+        parent=self.deck,
+        location=Coordinate(positions[0].x - c.reference_point_from_left, y, z),
+      )
+    elif missing:
+      await self.store.commands.create_resources(
+        spb.CreateResourcesRequest(
+          lock_tokens=self.store.lock_tokens,
+          resources=[
+            spb.CreateResource(definition=d, assign=pb.AssignChild(parent=ref(found[arm_name].id)))
+            for d in missing
+          ],
+        )
+      )
+    shaft_names = [f"{name}_tip_mounting_shaft" for name in channel_names]
+    parts = {
+      r.name: r
+      for r in await self.store.find_resources(
+        scope=self.deck,
+        filter=spb.ResourceFilter(names=[arm_name, *channel_names, *shaft_names, head_name]),
+      )
+    }
+    arm.resource = parts[arm_name]
+    self.pipettes.resources = [parts[name] for name in channel_names]
+    self.pipettes.shafts = [parts[name] for name in shaft_names]
+    if self.head8 is not None and head_name in parts:
+      await self.head8._attach_model(parts[head_name])
     # Seat each where it was read, now that there is something to record it on.
-    self.pipettes._record_positions(positions, head=head_at)
+    await self.pipettes._record_positions(positions, head=head_at)
 
   # ----------------------------------------
   # CoRe grippers
   # ----------------------------------------
 
-  @property
-  def core_gripper_holder(self) -> Optional[HamiltonCoreGrippers]:
-    """The holder this Prep's deck parks its CO-RE grip tools in, by type, or None."""
+  async def request_core_gripper_holder(self) -> Optional[handles.Resource]:
+    """The holder this Prep's deck parks its CO-RE grip tools in, found by its category, or None."""
     if self.deck is None:
       return None
-    return next(
-      (r for r in self.deck.get_all_children() if isinstance(r, HamiltonCoreGrippers)), None
+    found = await self.store.find_resources(
+      scope=self.deck, filter=spb.ResourceFilter(categories=["core_grippers"])
     )
+    return found[0] if found else None
 
   @property
   def core_grippers_mounted(self) -> bool:

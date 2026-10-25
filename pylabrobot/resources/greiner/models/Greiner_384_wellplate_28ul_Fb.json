@@ -1,0 +1,58 @@
+{
+  "name": "Greiner_384_wellplate_28ul_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Greiner_384_wellplate_28ul_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 14.4
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 24,
+        "numItemsY": 16,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 3.3,
+                "y": 3.3,
+                "z": 5.5
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 47.04142299669016,
+                "materialZThickness": 0.9,
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.28,
+            "y": 7.34,
+            "z": 8.9
+          },
+          "itemDx": 4.5,
+          "itemDy": 4.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Greiner cat. no.: 784075.\n- Colour: white\n- alternative cat. no.: 784075-25: white; 784076, 784076-25: black; 784101: clear.\n- Material: Polystyrene\n- \"shallow-well\"\n- Sterilized: No\n- Autoclavable: No\n- Chemical resistance:?\n- Thermal resistance: ?\n- Surface treatment: non-treated\n- Sealing options: ?\n- Cleanliness: \"Free of detectable DNase, RNase, human DNA\"\n- Automation compatibility: not specifically declared\n- Total volume = 28 ul\n- URL: https://shop.gbo.com/en/england/products/bioscience/microplates/384-well-microplates/384-well-small-volume-hibase-microplates/784075.html"
+}

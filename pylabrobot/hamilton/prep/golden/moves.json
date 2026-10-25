@@ -1,0 +1,686 @@
+{
+  "steps": [
+    {
+      "call": "x_arm.move_to_x_position(150)",
+      "sent": [
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000",
+        "PrepXAxisGetCommandedPosition 20000630000002000100ffff010001000030000002101c0000000000010007000000",
+        "PrepXAxisGetVelocity 20000630000002000100ffff010001000030000002101c000000000001000a000000",
+        "PrepXAxisGetAcceleration 20000630000002000100ffff010001000030000002101c000000000001000c000000",
+        "PrepXAxisSetVelocity 2c000630000002000100ffff01000100003000000213280000000000010309000001290008000000000000006e40",
+        "PrepXAxisSetAcceleration 2c000630000002000100ffff0100010000300000021328000000000001030b000001290008000000000000209c40",
+        "PrepXAxisMoveAbsolute 2c000630000002000100ffff010001000030000002132800000000000103030000012900080030dd2406d3b96240",
+        "PrepXAxisSetVelocity 2c000630000002000100ffff01000100003000000213280000000000010309000001290008000000000000007940",
+        "PrepXAxisSetAcceleration 2c000630000002000100ffff0100010000300000021328000000000001030b00000129000800000000000094a140",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": null,
+      "resources": [
+        {
+          "name": "Prep_x_arm",
+          "parent": "Prep_deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            230.0,
+            -45.02,
+            248.5
+          ]
+        }
+      ]
+    },
+    {
+      "call": "pipettes.move_to_xy_positions(120, {0: 250, 1: 200})",
+      "sent": [
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000",
+        "PrepGetXSpeedScale 20000630000002000100ffff010001000015000002101c0000000000010006000000",
+        "PrepSetXSpeedScale 26000630000002000100ffff01000100001500000213220000000000010305000001040102003500",
+        "PrepMoveToPosition 7a000630000002000100ffff00e0010000100000021376000000000001031a0000011e005600170102000000280004000000f0421f0044001e001e0017010200000020000400020000002800040000007a4328000400008027431e001e00170102000000200004000100000028000400000048432800040000802743",
+        "PrepSetXSpeedScale 26000630000002000100ffff01000100001500000213220000000000010305000001040102006400",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": null,
+      "resources": [
+        {
+          "name": "Prep_x_arm",
+          "parent": "Prep_deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            200.0,
+            -45.02,
+            248.5
+          ]
+        },
+        {
+          "name": "Prep_pipette_channel_0",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            290.5287,
+            -73.0
+          ]
+        },
+        {
+          "name": "Prep_pipette_channel_1",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            240.5287,
+            -73.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "pipettes.move_tool_bottom_to_z_positions({0: 120, 1: 130})",
+      "sent": [
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000",
+        "GetObjectCommand 20000630000002000100ffff0100010000bf000002101c0000000000000001000000",
+        "GetObjectCommand 20000630000002000100ffff010001000020000002101c0000000000000001000000",
+        "GetObjectCommand 20000630000002000100ffff010001000020000002101c0000000000000001000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040000000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040001000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040002000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040003000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040004000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040005000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040006000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040007000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040008000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040009000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004000a000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004000b000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004000c000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004000d000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004000e000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004000f000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040010000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040011000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040012000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040013000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040014000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040015000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040016000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040017000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040018000000",
+        "GetMethodCommand 28000630000002000100ffff010001000020000002102400000000000000020000010600040019000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004001a000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004001b000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004001c000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004001d000000",
+        "GetMethodCommand 28000630000002000100ffff01000100002000000210240000000000000002000001060004001e000000",
+        "GetSubobjectAddressCommand 26000630000002000100ffff01000100002000000210220000000000000003000001050002000000",
+        "GetObjectCommand 20000630000002000100ffff010001000022000002101c0000000000000001000000",
+        "PrepMoveZAbsolute 60000630000002000100ffff010001000022000002135c000000000001030c0000021f0034001e0016001701020000002000040002000000280004000000f0421e00160017010200000020000400010000002800040000000243280004000000fa42",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": null,
+      "resources": [
+        {
+          "name": "Prep_pipette_channel_0",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            290.5287,
+            -120.5
+          ]
+        },
+        {
+          "name": "Prep_pipette_channel_1",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            240.5287,
+            -110.5
+          ]
+        }
+      ]
+    },
+    {
+      "call": "pipettes.move_to_safe_z()",
+      "sent": [
+        "PrepMoveZUpToSafe 2c000630000002000100ffff00e0010000100000021328000000000001031c000001230008000200000001000000",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": null,
+      "resources": [
+        {
+          "name": "Prep_pipette_channel_0",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            290.5287,
+            -73.0
+          ]
+        },
+        {
+          "name": "Prep_pipette_channel_1",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            240.5287,
+            -73.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "pipettes.move_to_location([Coordinate(100, 300, 150), Coordinate(100, 150, 140)], [0, 1])",
+      "sent": [
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000",
+        "PrepGetXSpeedScale 20000630000002000100ffff010001000015000002101c0000000000010006000000",
+        "PrepSetXSpeedScale 26000630000002000100ffff01000100001500000213220000000000010305000001040102003500",
+        "PrepMoveToPosition 7a000630000002000100ffff00e0010000100000021376000000000001031a0000011e005600170102000000280004000000c8421f0044001e001e001701020000002000040002000000280004000000964328000400008027431e001e00170102000000200004000100000028000400000016432800040000802743",
+        "PrepSetXSpeedScale 26000630000002000100ffff01000100001500000213220000000000010305000001040102006400",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000",
+        "PrepMoveZAbsolute 60000630000002000100ffff010001000022000002135c000000000001030c0000021f0034001e001600170102000000200004000200000028000400000016431e00160017010200000020000400010000002800040000000c43280004000000fa42",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": null,
+      "resources": [
+        {
+          "name": "Prep_x_arm",
+          "parent": "Prep_deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            180.0,
+            -45.02,
+            248.5
+          ]
+        },
+        {
+          "name": "Prep_pipette_channel_0",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            340.5287,
+            -90.5
+          ]
+        },
+        {
+          "name": "Prep_pipette_channel_1",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            190.5287,
+            -100.5
+          ]
+        }
+      ]
+    },
+    {
+      "call": "pipettes.request_locations()",
+      "sent": [
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": [
+        [
+          100.0,
+          300.0,
+          150.0
+        ],
+        [
+          100.0,
+          150.0,
+          140.0
+        ]
+      ]
+    },
+    {
+      "call": "head8.move_to_position(200, 150, 160)",
+      "sent": [
+        "MphMoveToPosition 38000630000002000100ffff01e00100001100000213340000000000010311000003280004000000484328000400000016432800040000002043",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": null,
+      "resources": [
+        {
+          "name": "Prep_x_arm",
+          "parent": "Prep_deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            277.3,
+            -45.02,
+            248.5
+          ]
+        },
+        {
+          "name": "Prep_pipette_channel_0",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            117.5287,
+            -90.5
+          ]
+        },
+        {
+          "name": "Prep_pipette_channel_1",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -84.4913,
+            108.5287,
+            -100.5
+          ]
+        },
+        {
+          "name": "Prep_head8",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            -80.8,
+            128.52,
+            -80.5
+          ]
+        }
+      ]
+    },
+    {
+      "call": "head8.move_to_safe_z()",
+      "sent": [
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000",
+        "MphMoveToPosition 38000630000002000100ffff01e00100001100000213340000000000010311000003280004000000484328000400000016432800040000802743",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": 167.5,
+      "resources": [
+        {
+          "name": "Prep_head8",
+          "parent": "Prep_x_arm",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            -80.8,
+            128.52,
+            -73.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "park_device()",
+      "sent": [
+        "PrepPark 20000630000002000100ffff010001000015000002131c0000000000010303000000",
+        "PrepGetPositions 20000630000002000100ffff00e001000010000002101c0000000000010019000000"
+      ],
+      "result": null
+    }
+  ],
+  "resources": [
+    {
+      "name": "Prep",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "Prep_deck",
+      "parent": "Prep",
+      "kind": "RESOURCE_KIND_DECK",
+      "location": [
+        29.2,
+        88.02,
+        50.0
+      ]
+    },
+    {
+      "name": "Prep_spot_0_0",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        -4.2,
+        -1.52,
+        0.0
+      ]
+    },
+    {
+      "name": "Prep_spot_0_1",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        -4.2,
+        93.48,
+        0.0
+      ]
+    },
+    {
+      "name": "Prep_spot_0_2",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        -4.2,
+        188.48,
+        0.0
+      ]
+    },
+    {
+      "name": "Prep_spot_1_0",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        135.8,
+        -1.52,
+        0.0
+      ]
+    },
+    {
+      "name": "Prep_spot_1_1",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        135.8,
+        93.48,
+        0.0
+      ]
+    },
+    {
+      "name": "Prep_spot_1_2",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        135.8,
+        188.48,
+        0.0
+      ]
+    },
+    {
+      "name": "Prep_spot_1_3",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        135.8,
+        283.48,
+        0.0
+      ]
+    },
+    {
+      "name": "Prep_calibration_block",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        129.55,
+        183.73,
+        0.0
+      ]
+    },
+    {
+      "name": "Prep_waste_block",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        282.25,
+        -4.25,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "Prep_liquid_waste_container",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TROUGH",
+      "location": [
+        0.0,
+        132.7,
+        50.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "Prep_teaching_needle",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_TIP_SPOT",
+      "location": [
+        2.51,
+        218.54,
+        75.75
+      ]
+    },
+    {
+      "name": "Prep_teaching_needle#0",
+      "parent": "Prep_teaching_needle",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -1.1,
+        -1.1,
+        -51.9
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "Prep_core_grippers",
+      "parent": "Prep_waste_block",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        -4.0,
+        249.5,
+        37.0
+      ]
+    },
+    {
+      "name": "Prep_core_grippers_front",
+      "parent": "Prep_core_grippers",
+      "kind": "RESOURCE_KIND_HEAD_TOOL",
+      "location": [
+        -6.25,
+        8.0,
+        1.0
+      ]
+    },
+    {
+      "name": "Prep_core_grippers_back",
+      "parent": "Prep_core_grippers",
+      "kind": "RESOURCE_KIND_HEAD_TOOL",
+      "location": [
+        29.75,
+        34.5,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        180.0
+      ]
+    },
+    {
+      "name": "Prep_waste_bin",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        294.75,
+        -39.25,
+        -51.0
+      ]
+    },
+    {
+      "name": "Prep_waste_rear",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        286.8,
+        30.0,
+        68.4
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "Prep_waste_front",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        286.8,
+        10.0,
+        68.4
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "Prep_waste_mph",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_TRASH",
+      "location": [
+        286.8,
+        112.0,
+        68.4
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "Prep_x_arm",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        277.3,
+        -45.02,
+        248.5
+      ]
+    },
+    {
+      "name": "Prep_pipette_channel_0",
+      "parent": "Prep_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        -84.4913,
+        117.5287,
+        -90.5
+      ]
+    },
+    {
+      "name": "Prep_pipette_channel_0_tip_mounting_shaft",
+      "parent": "Prep_pipette_channel_0",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.9913,
+        0.9913,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_pipette_channel_1",
+      "parent": "Prep_x_arm",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        -84.4913,
+        108.5287,
+        -100.5
+      ]
+    },
+    {
+      "name": "Prep_pipette_channel_1_tip_mounting_shaft",
+      "parent": "Prep_pipette_channel_1",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.9913,
+        0.9913,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_head8",
+      "parent": "Prep_x_arm",
+      "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+      "location": [
+        -80.8,
+        128.52,
+        -73.0
+      ]
+    },
+    {
+      "name": "Prep_head8_tipmountingshaft_A1",
+      "parent": "Prep_head8",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        63.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_head8_tipmountingshaft_B1",
+      "parent": "Prep_head8",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        54.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_head8_tipmountingshaft_C1",
+      "parent": "Prep_head8",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        45.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_head8_tipmountingshaft_D1",
+      "parent": "Prep_head8",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        36.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_head8_tipmountingshaft_E1",
+      "parent": "Prep_head8",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        27.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_head8_tipmountingshaft_F1",
+      "parent": "Prep_head8",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        18.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_head8_tipmountingshaft_G1",
+      "parent": "Prep_head8",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        9.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_head8_tipmountingshaft_H1",
+      "parent": "Prep_head8",
+      "kind": "RESOURCE_KIND_TIP_MOUNTING_SHAFT",
+      "location": [
+        0.0,
+        0.0,
+        -8.0
+      ]
+    },
+    {
+      "name": "Prep_spot_0_3",
+      "parent": "Prep_deck",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "location": [
+        -13.2,
+        291.48,
+        0.0
+      ]
+    }
+  ]
+}

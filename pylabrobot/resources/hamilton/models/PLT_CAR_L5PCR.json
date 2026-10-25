@@ -1,0 +1,130 @@
+{
+  "name": "PLT_CAR_L5PCR",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "model": "PLT_CAR_L5PCR",
+      "category": "plate_carrier",
+      "size": {
+        "x": 135.0,
+        "y": 497.0,
+        "z": 130.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "category": "plate_holder",
+          "size": {
+            "x": 110.0,
+            "y": 75.0
+          },
+          "location": {
+            "x": 12.0,
+            "y": 14.6,
+            "z": 105.7
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "category": "plate_holder",
+          "size": {
+            "x": 110.0,
+            "y": 75.0
+          },
+          "location": {
+            "x": 12.0,
+            "y": 110.6,
+            "z": 105.7
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "category": "plate_holder",
+          "size": {
+            "x": 110.0,
+            "y": 75.0
+          },
+          "location": {
+            "x": 12.0,
+            "y": 206.6,
+            "z": 105.7
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "category": "plate_holder",
+          "size": {
+            "x": 110.0,
+            "y": 75.0
+          },
+          "location": {
+            "x": 12.0,
+            "y": 302.6,
+            "z": 105.7
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-4",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "category": "plate_holder",
+          "size": {
+            "x": 110.0,
+            "y": 75.0
+          },
+          "location": {
+            "x": 12.0,
+            "y": 398.6,
+            "z": 105.7
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 0.0,
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Hamilton 182070 carrier for five 96-well PCR plates in landscape orientation (6 tracks).\n\nhttps://www.hamiltoncompany.com/other-robotics/182070\n\nGeometry:\nHamilton's VENUS template specifies a 135 x 497 x 130 mm carrier envelope and\n96 mm site pitch. Its 130 mm height and clearance describe the envelope, not the insert\nsupport surface. The 75 mm inserts have 21 mm clear gaps.\n\nInsert locations are derived from the five 182531_RNO meshes in Hamilton's 3D model.\nCoordinates are referenced to the main body's left/front edges and the rail underside,\nexcluding the projecting front latch. In the model's stored axes, the reference\nis lateral X = -67, longitudinal Z = -244, and vertical Y = -12 mm. Subtracting\nthese from the first insert's minimum coordinates (-55, -229.4, 93.7 mm,\nrespectively) gives these carrier-relative locations:\n\nSite | Insert X (mm) | Insert Y (mm) | Support Z (mm)\n   0 |         12.00 |         14.60 |         105.70\n   1 |         12.00 |        110.60 |         105.70\n   2 |         12.00 |        206.60 |         105.70\n   3 |         12.00 |        302.60 |         105.70\n   4 |         12.00 |        398.60 |         105.70\n\nEach site is a 110 x 75 mm support plane with no additional offset or sinking.\nEach insert is 15 mm high, with H1 at 5.5/6.0 mm from its left/front edges and a\n9 x 9 mm hole grid. The first H1 center is therefore 17.5/20.6 mm from the carrier\nbody edges. STARlet track placement adds a 100 mm Z datum, giving insert bottoms\nat Z = 205.7 mm and tops at Z = 220.7 mm.\n\nThe template also declares 127 x 86 mm plate sites at X = 5, Y = 9.5 + 96i,\nZ = 109.2 mm. These are separate VENUS plate-placement references, not insert-base\ncoordinates, and are not added to the insert locations above. VENUS site IDs run\n5 through 1 from front to back; PyLabRobot indices run 0 through 4.\n\nThe insert model gives an approximately 7.732 mm top opening and 13.049 mm cavity\ndepth, with the cavity bottom 1.951 mm above the insert base. The adapter's dz uses\nthis modeled bottom. Automatic plate placement aligns the plate origin to that\nreference; it does not calculate how a particular plate contacts the tapered\ncavities. Supply an explicit plate location when its seating height differs.\n\nArgs:\n  name: The carrier name.\n  with_adapters: Mount five independent 182531 inserts. Defaults to empty sites."
+}

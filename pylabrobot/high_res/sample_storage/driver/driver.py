@@ -12,26 +12,30 @@ from typing import (
   Mapping,
   Optional,
   Sequence,
+  Set,
   Tuple,
   Union,
   cast,
 )
 
-from pylabrobot.events import event_operation, resource_reference
-from pylabrobot.io.socket import Socket
-from pylabrobot.resources import (
-  Coordinate,
-  Plate,
-  PlateCarrier,
-  PlateHolder,
-  Resource,
-  ResourceNotFoundError,
-  Rotation,
+from pylabrobot.events import (
+  ResourceReference,
+  event_operation,
+  handle_reference,
+  is_event_bus_active,
 )
+from pylabrobot.io.socket import Socket
 from pylabrobot.resources.barcode import Barcode
-from pylabrobot.serializer import deserialize as deserialize_value
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.errors import ResourceNotFoundError
+from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.store import build, devices, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
-from ..stackers import high_res_stacker
+from ..stackers import high_res_stacker, plate_holder
+from . import tree_events
 from .environment import EnvironmentControl
 from .errors import (
   HighResSampleStorageAbortedError,
@@ -51,6 +55,12 @@ from .protocol import (
   COMPLETION_TOKENS,
   parse_kv,
 )
+from .serialization import (
+  definition_from_nodes,
+  definition_from_serialized,
+  serialize_definition,
+  without_children,
+)
 from .settings import HighResSampleStorageSettings
 from .types import (
   DOOR_STATES,
@@ -64,24 +74,36 @@ from .types import (
 
 logger = logging.getLogger(__name__)
 
+K = pb.ResourceKind
+
+# The transfer nests the device reports are modeled as plate holders of this size.
+_NEST_SIZE = Coordinate(127.76, 85.48, 0)
+
 
 @dataclass(frozen=True)
 class UnresolvedPlateTransfer:
   """A plate move whose physical result and PLR state are not reconciled.
 
-  The resource tree remains at its last confirmed state until
+  The resource store keeps the plate at its last confirmed location until
   :meth:`HighResSampleStorage.resolve_unresolved_transfer` reconciles it.
   """
 
-  plate: Plate
-  source: PlateHolder
-  destination: PlateHolder
+  plate: handles.Plate
+  source: handles.PlateHolder
+  destination: handles.PlateHolder
   command: str
   error_type: str
   error_message: str
 
 
-class HighResSampleStorage(Resource):
+def _drop_refusal(resource_name: str, holder_name: str) -> RuntimeError:
+  return RuntimeError(
+    f"Cannot drop resource {resource_name} onto resource holder {holder_name} while it already "
+    "has a resource. Please remove the resource before dropping a new one."
+  )
+
+
+class HighResSampleStorage:
   """Base device for HighRes Biosolutions sample stores.
 
   The TundraStore, SteriStore and AmbiStore are the same machine family behind a
@@ -91,10 +113,18 @@ class HighResSampleStorage(Resource):
   (transfer stations). Fetch and store operations address a particular nest
   with a 0-based ``tray_index``.
 
+  The store's racks and nests are resources in a resource store: :attr:`body` is
+  the device in the store, holding one plate carrier per stacker (its sites are
+  the stacker's slots) and one plate holder per nest. :meth:`create_resources`
+  finds the body by name when the store already holds it, or creates it, with
+  the racks and nests known so far; ``setup()`` calls it first, and again once it
+  has read the stackers and nests the device reports. :meth:`get_resources` only
+  finds them.
+
   If a plate move is interrupted without a definitive outcome, the driver
   exposes it through :attr:`unresolved_transfer` and blocks further plate moves,
   homing, and barcode scans until :meth:`resolve_unresolved_transfer` reconciles
-  the physical and PLR locations. :meth:`recover` remains available to park an
+  the physical and modeled locations. :meth:`recover` remains available to park an
   unsafe mechanism before reconciliation.
 
   Subclasses set :attr:`_model_name`; callers can override it with ``model``.
@@ -115,7 +145,7 @@ class HighResSampleStorage(Resource):
     self,
     host: str,
     name: str,
-    racks: Optional[Mapping[int, PlateCarrier]] = None,
+    racks: Optional[Mapping[int, pb.ResourceDefinition]] = None,
     size_x: float = 0,
     size_y: float = 0,
     size_z: float = 0,
@@ -125,63 +155,79 @@ class HighResSampleStorage(Resource):
     port: int = 1000,
     read_timeout: float = 30.0,
     motion_timeout: float = 240.0,
-    nests: Optional[Sequence[PlateHolder]] = None,
+    nests: Optional[Sequence[pb.ResourceDefinition]] = None,
     barcode: Optional[Barcode] = None,
     preferred_pickup_location: Optional[Coordinate] = None,
     metadata: Optional[Mapping[str, Any]] = None,
+    store: Optional[ResourceStore] = None,
+    rack_spots: Optional[Mapping[int, Sequence[int]]] = None,
   ) -> None:
-    """Create a HighRes sample-store resource and configure its TCP transport.
+    """Create a HighRes sample-store driver and configure its TCP transport.
 
     Args:
       host: IP address of the store. The factory default is ``192.168.127.60``;
         all HighRes devices also answer on the backdoor ``10.253.253.253``.
-      racks: Mapping of physical stacker numbers to stacker resources. When omitted,
-        ``setup()`` reads the configured dimensions from the device and creates empty
-        stackers. Passing an empty mapping explicitly configures no stackers and disables
-        discovery.
+      name: The name of the device's body in the resource store.
+      racks: Mapping of physical stacker numbers to stacker definitions: plate
+        carriers whose sites are the stacker's slots (see :func:`high_res_stacker`).
+        When omitted, ``setup()`` reads the configured dimensions from the device and
+        creates empty stackers. Passing an empty mapping explicitly configures no
+        stackers and disables discovery.
+      size_x: The body's size in x.
+      size_y: The body's size in y.
+      size_z: The body's size in z.
+      rotation: The body's rotation.
+      category: The body's category.
       port: Remote-control server port (always 1000).
       read_timeout: Timeout (s) for query/status commands.
       motion_timeout: Timeout (s) for long-running motion commands
         (``home``, ``pick``, ``place``, door moves).
       model: Model used for model-specific behavior. Defaults to the concrete
         class's model and is never replaced with the device-reported product name.
-      nests: Existing transfer-nest resources when restoring serialized state.
-      barcode: Optional barcode identifying the store resource.
-      preferred_pickup_location: Optional gripper pickup coordinate for the store resource.
-      metadata: Free-form resource metadata.
+      nests: Transfer-nest definitions when restoring serialized state.
+      barcode: Optional barcode identifying the store's body.
+      preferred_pickup_location: Optional gripper pickup coordinate for the body.
+      metadata: Free-form metadata of the body.
+      store: The resource store the body is in; a new in-memory store when omitted.
+      rack_spots: For a rack whose sites are not spots 0, 1, 2..., each site's
+        zero-based spot, in the order of the rack's sites, by stacker number. A
+        site's slot on the device is its spot plus one.
     """
     configured_model = model if model is not None else self._model_name
     model_info = get_model_info(configured_model)
-    Resource.__init__(
-      self,
-      name=name,
-      size_x=size_x,
-      size_y=size_y,
-      size_z=size_z,
-      rotation=rotation,
-      category=category,
-      model=configured_model,
-      barcode=barcode,
-      preferred_pickup_location=preferred_pickup_location,
-      metadata=metadata,
-    )
+    self.name = name
+    self.model = configured_model
+    self.store = store if store is not None else ResourceStore.in_memory()
+    self._body: Optional[handles.Resource] = None
+    self._size = Coordinate(size_x, size_y, size_z)
+    self._rotation = rotation
+    self._category = category
+    self._barcode = barcode
+    self._preferred_pickup_location = preferred_pickup_location
+    self._metadata = dict(metadata) if metadata else None
 
     # The device reports its configured nest numbers during setup. Their
     # robot-facing coordinates are intentionally undefined relative to the
-    # store, so the corresponding resources are attached with location=None.
-    self.nests: List[PlateHolder] = []
-    if nests is not None:
-      for nest in nests:
-        self.assign_child_resource(nest, location=None)
-        self.nests.append(nest)
+    # store, so the nests are in the body without locations.
+    self.nests: List[handles.PlateHolder] = []
+    self._nest_definitions: List[pb.ResourceDefinition] = list(nests or [])
+    # Nests given at construction come before the racks in the body; nests read from the device
+    # come after them.
+    self._nests_restored = bool(self._nest_definitions)
 
-    self._racks_by_number: Dict[int, PlateCarrier] = {}
+    self._rack_definitions: Dict[int, pb.ResourceDefinition] = {}
+    self._rack_spots: Dict[int, List[int]] = {}
+    self._racks_by_number: Dict[int, handles.Carrier] = {}
+    # Each slot of a configured rack, by the id of its site: (stacker, slot).
+    self._slots: Dict[bytes, Tuple[int, int]] = {}
+    # Stackers read from the device, whose creation is reported as PLR builds them.
+    self._discovered: Set[int] = set()
     self._racks_loaded = racks is not None
     if racks is not None:
       for stacker in racks:
         self._validate_stacker_number(stacker)
       for stacker in sorted(racks):
-        self._add_rack(racks[stacker], stacker=stacker)
+        self._add_rack(racks[stacker], stacker, (rack_spots or {}).get(stacker))
 
     # Slide (Y) and lift (Z) positions near zero are retracted. Faulted moves
     # can leave either axis extended even when firmware still reports homed.
@@ -228,65 +274,321 @@ class HighResSampleStorage(Resource):
     """The plate move whose physical outcome must be reconciled, if any."""
     return self._unresolved_transfer
 
-  def serialize(self) -> dict:
+  # --- the body in the resource store -----------------------------------------
+
+  def _body_attributes(self) -> pb.ResourceAttributes:
+    """What the body is, without its racks and nests."""
+    attributes = build.resource(
+      self.name,
+      self._size,
+      rotation=self._rotation,
+      category=self._category or "",
+      model=self.model,
+      metadata=self._metadata,
+    ).attributes
+    if self._barcode is not None:
+      attributes.barcode.CopyFrom(
+        pb.Barcode(
+          data=self._barcode.data,
+          symbology=self._barcode.symbology,
+          position_on_resource=self._barcode.position_on_resource,
+        )
+      )
+    if self._preferred_pickup_location is not None:
+      attributes.preferred_pickup_location.CopyFrom(build.vec3(self._preferred_pickup_location))
+    return attributes
+
+  def _body_definition(self) -> pb.ResourceDefinition:
+    """The body with its racks and nests, as setup creates it."""
+    racks = list(self._rack_definitions.values())
+    nests = self._nest_definitions
+    children = nests + racks if self._nests_restored else racks + nests
+    return pb.ResourceDefinition(attributes=self._body_attributes(), children=children)
+
+  def _emit_part_events(self, part: pb.ResourceDefinition, body: pb.ResourceAttributes) -> None:
+    """Report a rack or nest assigned to the body, as PLR reports it: a stacker read from the
+    device as built with its slots, then attached; a stacker given at construction, or a nest,
+    attached."""
+    stackers = {rack.attributes.name: n for n, rack in self._rack_definitions.items()}
+    stacker = stackers.get(part.attributes.name)
+    if stacker is not None and stacker in self._discovered:
+      tree_events.emit_built(part)
+    tree_events.emit_attached(part, body)
+
+  async def _create_body(self, restoring: bool = False) -> None:
+    """Create the body with the racks and nests known so far, and report what was assigned as PLR
+    would.
+
+    Args:
+      restoring: Report it as `deserialize` builds it, rather than as setup does.
+    """
+    definition = self._body_definition()
+    response = await self.store.commands.create_resources(
+      spb.CreateResourcesRequest(
+        lock_tokens=self.store.lock_tokens,
+        resources=[spb.CreateResource(definition=definition, name=self.name)],
+      )
+    )
+    await self._attach_body(response.nodes)
+
+    attributes = definition.attributes
+    if restoring:
+      for rack in self._rack_definitions.values():
+        tree_events.emit_built(rack)
+      for nest in self._nest_definitions:
+        tree_events.emit_built(nest)
+      for nest in self._nest_definitions:
+        tree_events.emit_attached(nest, attributes)
+      for rack in self._rack_definitions.values():
+        tree_events.emit_attached(rack, attributes)
+      return
+    for part in definition.children:
+      self._emit_part_events(part, attributes)
+
+  async def _add_missing_parts(
+    self, body_id: bytes, nodes: Sequence[pb.ResourceNode]
+  ) -> Sequence[pb.ResourceNode]:
+    """Create in the body the racks and nests it does not hold yet, reporting each assigned; the
+    body's nodes as they are then."""
+    held = {node.attributes.name for node in nodes if node.parent_id == body_id}
+    missing = [
+      part for part in self._body_definition().children if part.attributes.name not in held
+    ]
+    if not missing:
+      return nodes
+    body = pb.ResourceRef(id=body_id)
+    await self.store.commands.create_resources(
+      spb.CreateResourcesRequest(
+        lock_tokens=self.store.lock_tokens,
+        resources=[
+          spb.CreateResource(
+            definition=part,
+            name=part.attributes.name,
+            assign=(
+              pb.AssignChild(parent=body, location=part.attributes.location)
+              if part.attributes.HasField("location")
+              else pb.AssignChild(parent=body, no_location=True)
+            ),
+          )
+          for part in missing
+        ],
+      )
+    )
+    attributes = self._body_attributes()
+    for part in missing:
+      self._emit_part_events(part, attributes)
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[body], depth=2)
+    )
+    return response.nodes
+
+  async def _find_resources(self, create: bool) -> handles.Resource:
+    if self._body is None:
+      found = await devices.find_resource(
+        self.store, self.name, K.RESOURCE_KIND_RESOURCE, self.model
+      )
+      if found is None:
+        if not create:
+          raise LookupError(f"the store has no sample store '{self.name}'")
+        await self._create_body()
+        return self.body
+      body_id = found.id
+    else:
+      body_id = self._body.id
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[pb.ResourceRef(id=body_id)], depth=2)
+    )
+    nodes: Sequence[pb.ResourceNode] = response.nodes
+    if create:
+      nodes = await self._add_missing_parts(body_id, nodes)
+    await self._attach_body(nodes)
+    return self.body
+
+  async def create_resources(self) -> handles.Resource:
+    """Find the body in the store by name, with its racks and nests, creating the body and any
+    rack or nest it does not hold yet.
+
+    Racks given at construction are created with the body; stackers read from the device and the
+    transfer nests are added once `setup` has read them.
+
+    Raises:
+      ValueError: The store's resource of this name is not this sample store.
+    """
+    return await self._find_resources(create=True)
+
+  async def get_resources(self) -> handles.Resource:
+    """Find the body in the store by name, with its racks and nests; never create them.
+
+    Raises:
+      LookupError: The store has no sample store of this name.
+      RuntimeError: The body holds no stacker named as a configured rack is.
+    """
+    return await self._find_resources(create=False)
+
+  @property
+  def body(self) -> handles.Resource:
+    """The device's body in the resource store.
+
+    Raises:
+      RuntimeError: It is not found or created yet: call `create_resources` or `setup` first.
+    """
+    if self._body is None:
+      raise devices.not_in_store(self.name)
+    return self._body
+
+  async def _attach_body(self, nodes: Sequence[pb.ResourceNode]) -> None:
+    """Hold handles to the body, its racks and its nests, from the body's nodes, body first."""
+    body_node = nodes[0]
+    children = [node for node in nodes if node.parent_id == body_node.id]
+    made = await self.store.make_handles([body_node, *children], nodes)
+    body, parts = made[0], made[1:]
+    by_name = {part.name: part for part in parts}
+    racks: Dict[int, handles.Carrier] = {}
+    for stacker, definition in self._rack_definitions.items():
+      rack = by_name.get(definition.attributes.name)
+      if not isinstance(rack, handles.Carrier):
+        raise RuntimeError(
+          f"'{self.name}' in the resource store holds no stacker "
+          f"'{definition.attributes.name}' for stacker {stacker}."
+        )
+      racks[stacker] = rack
+    self._body = body
+    self._racks_by_number = racks
+    self.nests = [part for part in parts if isinstance(part, handles.PlateHolder)]
+    self._slots = {}
+    for stacker, rack in racks.items():
+      spots = self._rack_spots.get(stacker, list(range(rack.capacity)))
+      for site, spot in zip(rack.sites, spots):
+        # PLR carrier spots are zero-based; HighRes stacker slots are one-based.
+        self._slots[site.id] = (stacker, spot + 1)
+
+  async def _device_reference(self) -> Optional[ResourceReference]:
+    """The body as events refer to the device."""
+    if self._body is not None:
+      return await handle_reference(self._body)
+    return tree_events.reference(self._body_attributes())
+
+  async def _operation_data(
+    self,
+    plate: handles.Resource,
+    source: handles.Resource,
+    destination: handles.Resource,
+  ) -> Dict[str, Any]:
+    """What a plate move's operation events carry; nothing when no one listens."""
+    if not is_event_bus_active():
+      return {}
+    return {
+      "device": await self._device_reference(),
+      "resources": [await handle_reference(plate)],
+      "source": await handle_reference(source),
+      "destination": await handle_reference(destination),
+    }
+
+  async def serialize(self) -> dict:
     """Serialize the connection configuration and modeled inventory.
 
     An unresolved transfer cannot be serialized safely because restoring only
     the last confirmed resource assignment would discard the recovery block.
     """
     self._require_no_unresolved_transfer()
-    resource_data = Resource.serialize(self)
+    parent_name: Optional[str] = None
+    if self._body is None:
+      definition = self._body_definition()
+    else:
+      response = await self.store.commands.get_resources(
+        spb.GetResourcesRequest(resources=[self._body.ref], depth=-1, ancestors=True)
+      )
+      definition = definition_from_nodes(self._body.id, response.nodes)
+      body_node = next(node for node in response.nodes if node.id == self._body.id)
+      parent = next((node for node in response.nodes if node.id == body_node.parent_id), None)
+      parent_name = parent.attributes.name if parent is not None else None
+    children = {child.attributes.name: child for child in definition.children}
+    rack_names = {stacker: rack.attributes.name for stacker, rack in self._rack_definitions.items()}
+    nest_names = (
+      [nest.name for nest in self.nests]
+      if self._body is not None
+      else [nest.attributes.name for nest in self._nest_definitions]
+    )
     # These fields preserve physical stacker numbers and transfer-nest ordering.
-    resource_data.pop("children", None)
     return {
-      **resource_data,
+      **serialize_definition(without_children(definition), parent_name),
       "host": self._host,
       "port": self._port,
       "read_timeout": self.read_timeout,
       "motion_timeout": self.motion_timeout,
-      "racks": {str(stacker): rack.serialize() for stacker, rack in self._racks_by_number.items()},
-      "nests": [nest.serialize() for nest in self.nests],
+      "racks": {
+        str(stacker): serialize_definition(children[name], self.name)
+        for stacker, name in rack_names.items()
+      },
+      "nests": [serialize_definition(children[name], self.name) for name in nest_names],
     }
 
   @classmethod
-  def deserialize(cls, data: dict, allow_marshal: bool = False) -> "HighResSampleStorage":
-    """Restore a sample store and its modeled racks and transfer nests."""
+  async def deserialize(
+    cls, data: dict, store: Optional[ResourceStore] = None
+  ) -> "HighResSampleStorage":
+    """Restore a sample store and its modeled racks and transfer nests.
+
+    A store serialized after setup is restored with its body in the resource store, as setup
+    left it; one serialized before setup is restored as it was constructed.
+
+    Args:
+      data: What :meth:`serialize` returned.
+      store: The resource store to restore the body in; a new in-memory store when omitted.
+    """
     racks_data = cast(Dict[str, dict], data.get("racks", {}))
-    racks = {
-      int(stacker): PlateCarrier.deserialize(rack_data, allow_marshal=allow_marshal)
-      for stacker, rack_data in racks_data.items()
-    }
     barcode_data = cast(Optional[dict], data.get("barcode"))
-    store = cls(
+    rotation_data = cast(Optional[dict], data.get("rotation"))
+    location_data = cast(Optional[dict], data.get("preferred_pickup_location"))
+    nests = [definition_from_serialized(nest) for nest in cast(List[dict], data.get("nests", []))]
+    device = cls(
       host=cast(str, data["host"]),
       name=cast(str, data["name"]),
-      racks=racks,
+      racks={
+        int(stacker): definition_from_serialized(rack_data)
+        for stacker, rack_data in racks_data.items()
+      },
       size_x=cast(float, data.get("size_x", 0)),
       size_y=cast(float, data.get("size_y", 0)),
       size_z=cast(float, data.get("size_z", 0)),
-      rotation=cast(Optional[Rotation], deserialize_value(data.get("rotation"))),
+      rotation=(
+        Rotation(rotation_data["x"], rotation_data["y"], rotation_data["z"])
+        if rotation_data is not None
+        else None
+      ),
       category=cast(Optional[str], data.get("category")),
       model=cast(Optional[str], data.get("model")),
       port=cast(int, data.get("port", 1000)),
       read_timeout=cast(float, data.get("read_timeout", 30.0)),
       motion_timeout=cast(float, data.get("motion_timeout", 240.0)),
-      nests=[
-        PlateHolder.deserialize(nest_data, allow_marshal=allow_marshal)
-        for nest_data in cast(List[dict], data.get("nests", []))
-      ],
-      barcode=Barcode(**barcode_data) if barcode_data is not None else None,
-      preferred_pickup_location=cast(
-        Optional[Coordinate], deserialize_value(data.get("preferred_pickup_location"))
+      nests=nests,
+      barcode=(
+        Barcode(
+          data=barcode_data["data"],
+          symbology=barcode_data["symbology"],
+          position_on_resource=barcode_data["position_on_resource"],
+        )
+        if barcode_data is not None
+        else None
+      ),
+      preferred_pickup_location=(
+        Coordinate(location_data["x"], location_data["y"], location_data["z"])
+        if location_data is not None
+        else None
       ),
       metadata=cast(Optional[Mapping[str, Any]], data.get("metadata")),
+      store=store,
     )
-    return store
+    if nests:
+      await device._create_body(restoring=True)
+    return device
 
   # --- lifecycle ------------------------------------------------------------
 
   async def setup(self, home: bool = False) -> None:
     if self._verification_warning is not None:
       logger.warning("%s", self._verification_warning)
+    await self.create_resources()
     await self.io.setup()
     self._transport_invalidated = False
     try:
@@ -321,29 +623,43 @@ class HighResSampleStorage(Resource):
         raise RuntimeError(
           f"The sample store must report contiguous nest numbers starting at 1; got {nest_numbers}."
         )
-      for nest_number in nest_numbers:
-        nest = PlateHolder(
-          name=f"{self.name}_nest_{nest_number}",
-          size_x=127.76,
-          size_y=85.48,
-          size_z=0,
-          pedestal_size_z=0,
-        )
-        self.assign_child_resource(nest, location=None)
-        self.nests.append(nest)
+      self._nest_definitions = [
+        plate_holder(f"{self.name}_nest_{nest_number}", _NEST_SIZE) for nest_number in nest_numbers
+      ]
+    await self.create_resources()
     if home:
       await self.home()
 
-  def _add_rack(self, rack: PlateCarrier, stacker: int) -> None:
-    """Attach one rack under its physical stacker number."""
+  def _add_rack(
+    self, rack: pb.ResourceDefinition, stacker: int, spots: Optional[Sequence[int]] = None
+  ) -> None:
+    """Configure one rack under its physical stacker number.
+
+    Args:
+      rack: The rack's definition: a plate carrier whose sites are the stacker's slots.
+      stacker: Its physical stacker number.
+      spots: Each site's zero-based spot, in the order of the rack's sites; unset numbers them
+        from 0.
+    """
     self._validate_stacker_number(stacker)
-    if stacker in self._racks_by_number:
+    if stacker in self._rack_definitions:
       raise ValueError(f"Stacker {stacker} is already configured.")
-    for spot, site in rack.sites.items():
+    if rack.attributes.kind != K.RESOURCE_KIND_CARRIER:
+      raise ValueError(f"Rack {rack.attributes.name!r} must be a plate carrier.")
+    sites = [site.attributes.name for site in rack.children]
+    spot_list = list(spots) if spots is not None else list(range(len(sites)))
+    if len(spot_list) != len(sites):
+      raise ValueError(
+        f"Rack {rack.attributes.name!r} has {len(sites)} sites but {len(spot_list)} spots."
+      )
+    if len(set(spot_list)) != len(spot_list):
+      raise ValueError(f"Rack {rack.attributes.name!r} has a spot more than once: {spot_list}.")
+    for spot, site in zip(spot_list, sites):
       if spot < 0:
-        raise ValueError(f"Rack site spot must be non-negative; got {spot} for {site.name!r}.")
-    self.assign_child_resource(rack, location=None)
-    self._racks_by_number[stacker] = rack
+        raise ValueError(f"Rack site spot must be non-negative; got {spot} for {site!r}.")
+    self._rack_definitions[stacker] = rack
+    if spots is not None:
+      self._rack_spots[stacker] = spot_list
 
   @staticmethod
   def _validate_stacker_number(stacker: int) -> None:
@@ -351,7 +667,7 @@ class HighResSampleStorage(Resource):
       raise ValueError(f"Stacker number must be a positive integer; got {stacker!r}.")
 
   async def _load_racks_from_device(self) -> None:
-    """Create empty stacker resources from ``getstackerdimensions``."""
+    """Define empty stackers from ``getstackerdimensions``."""
     dimensions = await self.request_stacker_dimensions()
     if not dimensions:
       raise RuntimeError("The sample store did not report any stacker dimensions.")
@@ -371,9 +687,10 @@ class HighResSampleStorage(Resource):
         slot_count=stacker_dimensions.slot_count,
       )
       self._add_rack(rack, stacker=stacker)
+      self._discovered.add(stacker)
 
     self._racks_loaded = True
-    logger.info("Loaded %d configured stackers for %s", len(self._racks_by_number), self.name)
+    logger.info("Loaded %d configured stackers for %s", len(self._rack_definitions), self.name)
 
   async def stop(self) -> None:
     logger.info("Stopping %s", self.name)
@@ -877,35 +1194,83 @@ class HighResSampleStorage(Resource):
   # --- plate retrieval -------------------------------------------------------
 
   @property
-  def racks(self) -> List[PlateCarrier]:
+  def racks(self) -> List[handles.Carrier]:
     return list(self._racks_by_number.values())
 
-  def get_num_free_sites(self) -> int:
-    return sum(len(rack.get_free_sites()) for rack in self._racks_by_number.values())
+  async def _read(
+    self, resources: Sequence[handles.Resource], depth: int = 0, ancestors: bool = False
+  ) -> Dict[bytes, pb.ResourceNode]:
+    """Resources, as the store holds them now, by id; in one call."""
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(
+        resources=[resource.ref for resource in resources], depth=depth, ancestors=ancestors
+      )
+    )
+    return {node.id: node for node in response.nodes}
 
-  def get_site_by_plate_name(self, plate_name: str) -> PlateHolder:
-    for rack in self._racks_by_number.values():
-      for site in rack.sites.values():
-        if site.resource is not None and site.resource.name == plate_name:
-          return site
+  async def _given_racks(self) -> None:
+    """Find or create the body when racks were given at construction and it is not found yet, so
+    their slots are known before `setup`."""
+    if self._body is None and self._rack_definitions:
+      await self.create_resources()
+
+  def _sites(self) -> List[handles.Resource]:
+    """Every configured stacker slot, by stacker and then by site."""
+    return [site for rack in self._racks_by_number.values() for site in rack.sites]
+
+  async def get_num_free_sites(self) -> int:
+    await self._given_racks()
+    nodes = await self._read(self.racks, depth=1)
+    return sum(1 for site in self._sites() if not nodes[site.id].child_ids)
+
+  async def _find_stored(
+    self, plate_name: str
+  ) -> Tuple[handles.PlateHolder, pb.ResourceNode, Dict[bytes, pb.ResourceNode]]:
+    """The slot holding a plate of this name, what it holds, and the racks' nodes they were read
+    from.
+
+    Raises:
+      ResourceNotFoundError: No slot holds a resource of that name.
+    """
+    await self._given_racks()
+    nodes = await self._read(self.racks, depth=2)
+    for site in self._sites():
+      held = nodes[site.id].child_ids
+      if held and nodes[held[0]].attributes.name == plate_name:
+        return cast(handles.PlateHolder, site), nodes[held[0]], nodes
     raise ResourceNotFoundError(f"Plate {plate_name!r} not found in {self.name!r}.")
 
-  def _find_available_sites_sorted(self, plate: Plate) -> List[PlateHolder]:
-    plate_height = plate.get_size_z()
-    if plate.lid is not None:
-      lid_location = plate.get_lid_location(plate.lid)
-      plate_height = max(plate_height, lid_location.z + plate.lid.get_size_z())
+  async def get_site_by_plate_name(self, plate_name: str) -> handles.PlateHolder:
+    site, _, _ = await self._find_stored(plate_name)
+    return site
+
+  async def _find_available_sites_sorted(
+    self, plate: handles.Resource
+  ) -> List[handles.PlateHolder]:
+    await self._given_racks()
+    nodes = await self._read([plate, *self.racks], depth=1)
+    plate_node = nodes[plate.id]
+    plate_height = plate_node.attributes.size.z
+    lid = next(
+      (
+        nodes[child]
+        for child in plate_node.child_ids
+        if nodes[child].attributes.kind == K.RESOURCE_KIND_LID
+      ),
+      None,
+    )
+    if lid is not None and lid.attributes.HasField("location"):
+      plate_height = max(plate_height, lid.attributes.location.z + lid.attributes.size.z)
     available = [
-      site
-      for rack in self._racks_by_number.values()
-      for site in rack.get_free_sites()
-      if site.get_size_z() >= plate_height
+      cast(handles.PlateHolder, site)
+      for site in self._sites()
+      if not nodes[site.id].child_ids and nodes[site.id].attributes.size.z >= plate_height
     ]
     if not available:
       raise NoFreeSiteError(
         f"No free site at least {plate_height:g} mm high found for plate {plate.name!r}."
       )
-    return sorted(available, key=lambda site: site.get_size_z())
+    return sorted(available, key=lambda site: nodes[site.id].attributes.size.z)
 
   async def _require_nest_states(self, expected: Dict[int, NestState]) -> None:
     """Require exact live sensor states before issuing a transfer command."""
@@ -930,9 +1295,9 @@ class HighResSampleStorage(Resource):
   def _record_unresolved_transfer(
     self,
     *,
-    plate: Plate,
-    source: PlateHolder,
-    destination: PlateHolder,
+    plate: handles.Plate,
+    source: handles.PlateHolder,
+    destination: handles.PlateHolder,
     command: str,
     error: BaseException,
   ) -> None:
@@ -953,17 +1318,37 @@ class HighResSampleStorage(Resource):
       error,
     )
 
+  @staticmethod
+  def _require_can_drop(
+    holder: handles.Resource, holder_node: pb.ResourceNode, resource: handles.Resource
+  ) -> None:
+    """Refuse to put `resource` in a holder that holds something else."""
+    held = holder_node.child_ids
+    if held and held[0] != resource.id:
+      raise _drop_refusal(resource.name, holder.name)
+
+  async def _move_plate(self, plate: handles.Plate, destination: handles.PlateHolder) -> None:
+    """Assign a plate to `destination`, as the device moved it; the handle reports the move."""
+    await destination.assign_child_resource(plate)
+
+  async def _unassign_plate(self, plate: handles.Plate) -> None:
+    """Take a plate out of the store's resources; the handle reports it."""
+    previous = await plate.node()
+    if not previous.parent_id:
+      return
+    await plate.unassign()
+
   async def _execute_plate_transfer(
     self,
     *,
-    plate: Plate,
-    source: PlateHolder,
-    destination: PlateHolder,
+    plate: handles.Plate,
+    source: handles.PlateHolder,
+    destination: handles.PlateHolder,
     command: str,
     move: Callable[[], Awaitable[object]],
     plate_not_found_is_definitive: bool = False,
-  ) -> Plate:
-    """Execute one physical move and commit its resource-tree transition."""
+  ) -> handles.Plate:
+    """Execute one physical move and commit it to the resource store."""
     self._require_no_unresolved_transfer()
     try:
       await move()
@@ -979,10 +1364,9 @@ class HighResSampleStorage(Resource):
       raise
 
     try:
-      plate.unassign()
-      destination.assign_child_resource(plate)
+      await self._move_plate(plate, destination)
     except BaseException as error:
-      # The device completed the move, but PLR could not commit the same state.
+      # The device completed the move, but the store could not commit the same state.
       # Keep the transfer unresolved so a caller must reconcile both views.
       self._record_unresolved_transfer(
         plate=plate,
@@ -996,7 +1380,7 @@ class HighResSampleStorage(Resource):
 
   async def resolve_unresolved_transfer(
     self, location: Literal["source", "destination", "unassigned"]
-  ) -> Plate:
+  ) -> handles.Plate:
     """Reconcile an ambiguous plate move without issuing further motion.
 
     The spatula must be empty. Any source or destination nest is checked against
@@ -1023,8 +1407,12 @@ class HighResSampleStorage(Resource):
         if location == "destination"
         else None
       )
-      if target is not None and transfer.plate.parent is not target:
-        target.check_can_drop_resource_here(transfer.plate)
+      in_target = False
+      if target is not None:
+        nodes = await self._read([transfer.plate, target])
+        in_target = nodes[transfer.plate.id].parent_id == target.id
+        if not in_target:
+          self._require_can_drop(target, nodes[target.id], transfer.plate)
 
       if await self.request_spatula_is_holding():
         raise RuntimeError(
@@ -1033,16 +1421,15 @@ class HighResSampleStorage(Resource):
 
       expected_nests: Dict[int, NestState] = {}
       for tray_index, nest in enumerate(self.nests):
-        if nest is transfer.source or nest is transfer.destination:
-          expected_nests[tray_index + 1] = "occupied" if nest is target else "clear"
+        if nest in (transfer.source, transfer.destination):
+          expected_nests[tray_index + 1] = "occupied" if nest == target else "clear"
       if expected_nests:
         await self._require_nest_states(expected_nests)
 
       if target is None:
-        transfer.plate.unassign()
-      elif transfer.plate.parent is not target:
-        transfer.plate.unassign()
-        target.assign_child_resource(transfer.plate)
+        await self._unassign_plate(transfer.plate)
+      elif not in_target:
+        await self._move_plate(transfer.plate, target)
 
       self._unresolved_transfer = None
       logger.info(
@@ -1053,35 +1440,31 @@ class HighResSampleStorage(Resource):
       )
       return transfer.plate
 
-  def find_smallest_site_for_plate(self, plate: Plate) -> PlateHolder:
-    return self._find_available_sites_sorted(plate)[0]
+  async def find_smallest_site_for_plate(self, plate: handles.Plate) -> handles.PlateHolder:
+    return (await self._find_available_sites_sorted(plate))[0]
 
-  def find_random_site(self, plate: Plate) -> PlateHolder:
-    return random.choice(self._find_available_sites_sorted(plate))
+  async def find_random_site(self, plate: handles.Plate) -> handles.PlateHolder:
+    return random.choice(await self._find_available_sites_sorted(plate))
 
-  def _locate(self, site: PlateHolder) -> Tuple[int, int]:
-    rack = site.parent
-    if not isinstance(rack, PlateCarrier):
+  async def _locate(self, site: handles.Resource) -> Tuple[int, int]:
+    """The (stacker, one-based slot) of a configured stacker site.
+
+    Raises:
+      ValueError: It is not a slot of a configured stacker.
+    """
+    slot = self._slots.get(site.id)
+    if slot is not None:
+      return slot
+    nodes = await self._read([site], ancestors=True)
+    rack = nodes.get(nodes[site.id].parent_id)
+    if rack is None or rack.attributes.kind != K.RESOURCE_KIND_CARRIER:
       raise ValueError(f"Site '{site.name}' is not attached to a plate carrier.")
-
     stacker = next(
-      (
-        number
-        for number, configured_rack in self._racks_by_number.items()
-        if configured_rack is rack
-      ),
-      None,
+      (number for number, known in self._racks_by_number.items() if known.id == rack.id), None
     )
     if stacker is None:
       raise ValueError(f"Site '{site.name}' is not in a known stacker.")
-
-    spot = next(
-      (spot for spot, configured_site in rack.sites.items() if configured_site is site), None
-    )
-    if spot is None:
-      raise ValueError(f"Site '{site.name}' is not a known slot in stacker {stacker}.")
-    # PLR carrier spots are zero-based; HighRes stacker slots are one-based.
-    return stacker, spot + 1
+    raise ValueError(f"Site '{site.name}' is not a known slot in stacker {stacker}.")
 
   def _nest_for_tray(self, tray_index: int) -> int:
     """Map a 0-based tray index to its one-based device nest number."""
@@ -1093,31 +1476,35 @@ class HighResSampleStorage(Resource):
       )
     return tray_index + 1
 
-  async def fetch_plate_to_loading_tray(self, plate: Union[Plate, str], tray_index: int) -> Plate:
+  async def _plate_handle(
+    self, node: pb.ResourceNode, nodes: Dict[bytes, pb.ResourceNode]
+  ) -> handles.Plate:
+    return cast(handles.Plate, (await self.store.make_handles([node], list(nodes.values())))[0])
+
+  async def fetch_plate_to_loading_tray(
+    self, plate: Union[handles.Plate, str], tray_index: int
+  ) -> handles.Plate:
     async with self._transfer_lock:
       self._require_no_unresolved_transfer()
       if isinstance(plate, str):
-        stored_site = self.get_site_by_plate_name(plate)
-        stored_resource = stored_site.resource
-        if not isinstance(stored_resource, Plate):
+        _, stored, stored_nodes = await self._find_stored(plate)
+        if stored.attributes.kind != K.RESOURCE_KIND_PLATE:
           raise ResourceNotFoundError(f"Plate {plate!r} not found in {self.name!r}.")
-        plate = stored_resource
-      parent = plate.parent
-      if not isinstance(parent, PlateHolder):
+        plate = await self._plate_handle(stored, stored_nodes)
+      nodes = await self._read([plate], ancestors=True)
+      parent_node = nodes.get(nodes[plate.id].parent_id)
+      if parent_node is None or parent_node.attributes.kind != K.RESOURCE_KIND_PLATE_HOLDER:
         raise ValueError(f"Plate '{plate.name}' is not in a stacker slot.")
-      stacker, slot = self._locate(parent)
+      parent = cast(handles.PlateHolder, self.store.handle_from_node(parent_node, ()))
+      stacker, slot = await self._locate(parent)
       nest_number = self._nest_for_tray(tray_index)
       nest = self.nests[tray_index]
-      nest.check_can_drop_resource_here(plate)
+      self._require_can_drop(nest, (await self._read([nest]))[nest.id], plate)
       await self._require_nest_states({nest_number: "clear"})
       command = f"pick {stacker} {slot} {nest_number}"
 
       with event_operation(
-        "incubator.fetch_plate",
-        device=resource_reference(self),
-        resources=[resource_reference(plate)],
-        source=resource_reference(parent),
-        destination=resource_reference(nest),
+        "incubator.fetch_plate", **await self._operation_data(plate, parent, nest)
       ):
         return await self._execute_plate_transfer(
           plate=plate,
@@ -1128,24 +1515,35 @@ class HighResSampleStorage(Resource):
           plate_not_found_is_definitive=True,
         )
 
+  async def _plate_on_tray(self, tray_index: int) -> handles.Plate:
+    """The plate on a transfer nest.
+
+    Raises:
+      ResourceNotFoundError: The nest holds no plate.
+    """
+    nest = self.nests[tray_index]
+    nodes = await self._read([nest], depth=2)
+    held = nodes[nest.id].child_ids
+    if not held or nodes[held[0]].attributes.kind != K.RESOURCE_KIND_PLATE:
+      raise ResourceNotFoundError(f"No plate on tray {tray_index}.")
+    return await self._plate_handle(nodes[held[0]], nodes)
+
   async def take_in_plate(
     self,
     tray_index: int,
-    site: Union[PlateHolder, Literal["random", "smallest"]] = "smallest",
-  ) -> Plate:
+    site: Union[handles.PlateHolder, Literal["random", "smallest"]] = "smallest",
+  ) -> handles.Plate:
     async with self._transfer_lock:
       self._require_no_unresolved_transfer()
       self._nest_for_tray(tray_index)
-      plate = self.nests[tray_index].resource
-      if not isinstance(plate, Plate):
-        raise ResourceNotFoundError(f"No plate on tray {tray_index}.")
+      plate = await self._plate_on_tray(tray_index)
 
       if site == "random":
-        destination = self.find_random_site(plate)
+        destination = await self.find_random_site(plate)
       elif site == "smallest":
-        destination = self.find_smallest_site_for_plate(plate)
-      elif isinstance(site, PlateHolder):
-        if site not in self._find_available_sites_sorted(plate):
+        destination = await self.find_smallest_site_for_plate(plate)
+      elif isinstance(site, handles.Resource):
+        if site not in await self._find_available_sites_sorted(plate):
           raise ValueError(f"Site {site.name!r} is not available for plate {plate.name!r}.")
         destination = site
       else:
@@ -1153,32 +1551,26 @@ class HighResSampleStorage(Resource):
 
       nest = self.nests[tray_index]
       with event_operation(
-        "incubator.take_in_plate",
-        device=resource_reference(self),
-        resources=[resource_reference(plate)],
-        source=resource_reference(nest),
-        destination=resource_reference(destination),
+        "incubator.take_in_plate", **await self._operation_data(plate, nest, destination)
       ):
         await self._store_plate(plate, destination, tray_index)
         return plate
 
-  async def store_plate(self, plate: Plate, site: PlateHolder, tray_index: int) -> None:
+  async def store_plate(
+    self, plate: handles.Plate, site: handles.PlateHolder, tray_index: int
+  ) -> None:
     async with self._transfer_lock:
       self._require_no_unresolved_transfer()
       self._nest_for_tray(tray_index)
       nest = self.nests[tray_index]
       with event_operation(
-        "incubator.take_in_plate",
-        device=resource_reference(self),
-        resources=[resource_reference(plate)],
-        source=resource_reference(nest),
-        destination=resource_reference(site),
+        "incubator.take_in_plate", **await self._operation_data(plate, nest, site)
       ):
         await self._store_plate(plate, site, tray_index)
 
   async def transfer_plate_between_nests(
     self, source_tray_index: int, destination_tray_index: int
-  ) -> Plate:
+  ) -> handles.Plate:
     """Move a plate between two transfer nests.
 
     Tray indices are zero-based and map to the sorted nest numbers reported by
@@ -1192,19 +1584,13 @@ class HighResSampleStorage(Resource):
       destination_number = self._nest_for_tray(destination_tray_index)
       source = self.nests[source_tray_index]
       destination = self.nests[destination_tray_index]
-      plate = source.resource
-      if not isinstance(plate, Plate):
-        raise ResourceNotFoundError(f"No plate on tray {source_tray_index}.")
-      destination.check_can_drop_resource_here(plate)
+      plate = await self._plate_on_tray(source_tray_index)
+      self._require_can_drop(destination, (await self._read([destination]))[destination.id], plate)
       await self._require_nest_states({source_number: "occupied", destination_number: "clear"})
       command = f"nesttransfer {source_number} {destination_number}"
 
       with event_operation(
-        "incubator.transfer_plate",
-        device=resource_reference(self),
-        resources=[resource_reference(plate)],
-        source=resource_reference(source),
-        destination=resource_reference(destination),
+        "incubator.transfer_plate", **await self._operation_data(plate, source, destination)
       ):
         logger.info(
           "Moving plate %s in %s from nest %d to nest %d",
@@ -1221,13 +1607,16 @@ class HighResSampleStorage(Resource):
           move=lambda: self._send_command(command, timeout=self.motion_timeout),
         )
 
-  async def _store_plate(self, plate: Plate, site: PlateHolder, tray_index: int) -> None:
-    stacker, slot = self._locate(site)
+  async def _store_plate(
+    self, plate: handles.Plate, site: handles.PlateHolder, tray_index: int
+  ) -> None:
+    stacker, slot = await self._locate(site)
     nest_number = self._nest_for_tray(tray_index)
     nest = self.nests[tray_index]
-    if plate.parent is not nest:
+    nodes = await self._read([plate, site])
+    if nodes[plate.id].parent_id != nest.id:
       raise ValueError(f"Plate '{plate.name}' is not on tray {tray_index}.")
-    site.check_can_drop_resource_here(plate)
+    self._require_can_drop(site, nodes[site.id], plate)
     await self._require_nest_states({nest_number: "occupied"})
     command = f"place {stacker} {slot} {nest_number}"
 

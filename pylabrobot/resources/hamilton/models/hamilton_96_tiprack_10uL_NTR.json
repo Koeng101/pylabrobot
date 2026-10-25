@@ -1,0 +1,118 @@
+{
+  "name": "hamilton_96_tiprack_10uL_NTR",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP_RACK",
+      "model": "hamilton_96_tiprack_ntr",
+      "category": "tip_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 55.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_tipspot_{identifier}",
+              "kind": "RESOURCE_KIND_TIP_SPOT",
+              "category": "tip_spot",
+              "size": {
+                "x": 7.2,
+                "y": 7.2
+              },
+              "rotation": {},
+              "tipSpot": {
+                "prototypeTip": {
+                  "name": "{name}_tipspot_{identifier}",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "model": "hamilton_tip_10uL",
+                  "category": "tip",
+                  "size": {
+                    "x": 8.2,
+                    "y": 8.2,
+                    "z": 29.9
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 8.0
+                  },
+                  "tip": {
+                    "diameter": 8.2,
+                    "maximalVolume": 15.0,
+                    "nominalVolume": 10.0,
+                    "collarHeight": 6.0,
+                    "hamilton": {
+                      "tipSize": "LOW_VOLUME",
+                      "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                    }
+                  }
+                }
+              }
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "{name}_tipspot_{identifier}#0",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "model": "hamilton_tip_10uL",
+                  "category": "tip",
+                  "size": {
+                    "x": 8.2,
+                    "y": 8.2,
+                    "z": 29.9
+                  },
+                  "location": {
+                    "x": -0.5,
+                    "y": -0.5,
+                    "z": -23.9
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 8.0
+                  },
+                  "tip": {
+                    "diameter": 8.2,
+                    "maximalVolume": 15.0,
+                    "nominalVolume": 10.0,
+                    "collarHeight": 6.0,
+                    "hamilton": {
+                      "tipSize": "LOW_VOLUME",
+                      "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                    }
+                  }
+                },
+                "initialState": {
+                  "volume": {
+                    "trackingEnabled": true
+                  }
+                }
+              }
+            ],
+            "initialState": {
+              "tipTrackingEnabled": true,
+              "tipsMade": 1
+            }
+          },
+          "offset": {
+            "x": 10.78,
+            "y": 7.64,
+            "z": 55.0
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "tipRack": {
+        "style": "TIP_RACK_STYLE_STANDING",
+        "frameHeight": 0.0,
+        "stackingZHeight": 16.0
+      }
+    }
+  },
+  "description": "Hamilton cat. no.: 235949 (non-sterile), 235971 (clear, non-sterile), 235983 (sterile)\nHamilton name: 'LT_L_NE_stack'\nNested Tip Rack with 96x 10ul Low Volume Tip"
+}

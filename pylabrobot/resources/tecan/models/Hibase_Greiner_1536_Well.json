@@ -1,0 +1,54 @@
+{
+  "name": "Hibase_Greiner_1536_Well",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Hibase_Greiner_1536_Well",
+      "category": "tecan_plate",
+      "size": {
+        "x": 127.8,
+        "y": 85.5,
+        "z": 5.4
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 48,
+        "numItemsY": 32,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 2.3,
+                "y": 2.3,
+                "z": 5.4
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 22.435683935611504,
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.85,
+            "y": 6.75
+          },
+          "itemDx": 2.3,
+          "itemDy": 2.3
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  }
+}

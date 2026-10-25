@@ -1,0 +1,58 @@
+{
+  "name": "cellvis_96_wellplate_350uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "cellvis_96_wellplate_350uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.6,
+        "y": 85.75,
+        "z": 13.83
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 6.8,
+                "y": 6.8,
+                "z": 11.93
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 433.2595561306912,
+                "materialZThickness": 0.17,
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.9,
+            "y": 7.96,
+            "z": 1.9
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "p/n P96-1.5H-N\n\nhttps://www.cellvis.com/_96-well-glass-bottom-plate-with-high-performance-number-1.5-cover-glass_/product_detail.php?product_id=50"
+}

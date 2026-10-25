@@ -1,0 +1,65 @@
+{
+  "name": "cor_cos_12_wellplate_6900uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "cor_cos_12_wellplate_6900uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.6,
+        "z": 20.02
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 4,
+        "numItemsY": 3,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 22.73,
+                "y": 22.73,
+                "z": 17.5
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 6900.0,
+                "materialZThickness": 1.27,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 17.5,
+                    "volume": 6909.185016
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 13.885,
+            "y": 5.735,
+            "z": 2.16
+          },
+          "itemDx": 26.01,
+          "itemDy": 26.01
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Corning cat. no.s: 3336, 3512, 3513\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2b/UK/en/Microplates/Assay-Microplates/96-Well-Microplates/Costar%C2%AE-Multiple-Well-Cell-Culture-Plates/p/3336\n- brand: Costar\n- distributor: (Fisher Scientific, 10739864)\n- material: Polystyrene\n- tc_treated: Yes\n- tech_drawing: tech_drawings/Cor_Cos_24_wellplate_3470ul_Fb.pdf\n- notes: not validated"
+}

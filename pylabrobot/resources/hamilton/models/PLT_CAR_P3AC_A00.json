@@ -1,0 +1,86 @@
+{
+  "name": "PLT_CAR_P3AC_A00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "model": "PLT_CAR_P3AC_A00",
+      "category": "plate_carrier",
+      "size": {
+        "x": 135.0,
+        "y": 497.0,
+        "z": 130.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "category": "plate_holder",
+          "size": {
+            "x": 86.0,
+            "y": 127.0
+          },
+          "location": {
+            "x": 43.85,
+            "y": 37.5,
+            "z": 86.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 6.55,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "category": "plate_holder",
+          "size": {
+            "x": 86.0,
+            "y": 127.0
+          },
+          "location": {
+            "x": 43.85,
+            "y": 183.5,
+            "z": 86.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 6.55,
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_PLATE_HOLDER",
+          "category": "plate_holder",
+          "size": {
+            "x": 86.0,
+            "y": 127.0
+          },
+          "location": {
+            "x": 43.85,
+            "y": 329.5,
+            "z": 86.15
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "pedestalSizeZ": 6.55,
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Carrier for 3 96 Deep Well Plates (portrait). PN: 182065"
+}

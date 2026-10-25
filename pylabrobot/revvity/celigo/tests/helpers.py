@@ -4,6 +4,8 @@ from dataclasses import replace
 from typing import Any, Optional, Tuple
 from unittest.mock import patch
 
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.revvity.celigo.camera import CameraFrame
 from pylabrobot.revvity.celigo.celigo import Celigo
 from pylabrobot.revvity.celigo.config import (
@@ -19,6 +21,15 @@ from pylabrobot.revvity.celigo.config import (
   LinearAxisConfig,
   NavigationConfig,
 )
+
+
+async def make_plate(
+  model: str = "cor_96_wellplate_360uL_Fb", name: str = "imaging_plate"
+) -> handles.Plate:
+  """A plate of a PLR model, in a new in-memory resource store."""
+  plate = await ResourceStore.in_memory().create(model, name=name)
+  assert isinstance(plate, handles.Plate)
+  return plate
 
 
 class FakeCamera:

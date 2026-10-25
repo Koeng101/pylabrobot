@@ -1,0 +1,27 @@
+{
+  "name": "cor_falcon_tube_15mL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE",
+      "model": "cor_falcon_tube_15mL_Vb",
+      "category": "tube",
+      "size": {
+        "x": 17.0,
+        "y": 17.0,
+        "z": 120.0
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": 15000.0,
+        "materialZThickness": 1.47
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Corning cat. no.: 352196\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2b/UK/en/Liquid-Handling/Tubes%2C-Liquid-Handling/Centrifuge-Tubes/Falcon%C2%AE-Conical-Centrifuge-Tubes/p/falconConicalTubes\n- distributor: (Fisher Scientific, 14-959-53A)\n- brand: Falcon\n- material: Polypropylene\n- tech_drawing: tech_drawings/Cor_Falcon_tube_15mL_Vb.pdf\n- cap_style: screw-cap"
+}

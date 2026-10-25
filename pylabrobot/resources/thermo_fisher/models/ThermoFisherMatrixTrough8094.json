@@ -1,0 +1,27 @@
+{
+  "name": "ThermoFisherMatrixTrough8094",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TROUGH",
+      "model": "Thermo Fisher 8094",
+      "category": "trough",
+      "size": {
+        "x": 147.0,
+        "y": 58.0,
+        "z": 27.0
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": 25000.0,
+        "throughBaseToContainerBase": 0.0
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Thermo Fisher Trough 8094 - 25mL. Part number 8094.\nhttps://www.thermofisher.com/order/catalog/product/8094"
+}

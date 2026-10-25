@@ -1,0 +1,47 @@
+{
+  "name": "opentrons_24_tuberack_eppendorf_2ml_safelock_snapcap",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "model": "Opentrons 24 Tube Rack with Eppendorf 2 mL Safe-Lock Snapcap",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.75,
+        "y": 85.5,
+        "z": 79.85
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "category": "resource_holder",
+              "size": {
+                "x": 6.223,
+                "y": 6.223,
+                "z": 39.1
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 15.0985,
+            "y": 14.4785,
+            "z": 41.27
+          },
+          "itemDx": 19.89,
+          "itemDy": 19.28
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1144 @@
+{
+  "steps": [
+    {
+      "call": "box.setup()",
+      "result": null,
+      "sent": [
+        "setup"
+      ]
+    },
+    {
+      "call": "cpac.assign_child_resource(pcr_plate)",
+      "result": null,
+      "sent": [],
+      "resources": [
+        {
+          "name": "cpac",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        },
+        {
+          "name": "pcr_plate",
+          "parent": "cpac",
+          "kind": "RESOURCE_KIND_PLATE",
+          "location": [
+            8.0,
+            11.0,
+            77.0
+          ]
+        },
+        {
+          "name": "pcr_plate_well_A1",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            6.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B1",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            6.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C1",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            6.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D1",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            6.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E1",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            6.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F1",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            6.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G1",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            6.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H1",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            6.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A2",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            15.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B2",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            15.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C2",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            15.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D2",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            15.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E2",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            15.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F2",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            15.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G2",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            15.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H2",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            15.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A3",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            24.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B3",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            24.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C3",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            24.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D3",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            24.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E3",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            24.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F3",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            24.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G3",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            24.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H3",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            24.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A4",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            33.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B4",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            33.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C4",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            33.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D4",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            33.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E4",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            33.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F4",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            33.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G4",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            33.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H4",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            33.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A5",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            42.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B5",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            42.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C5",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            42.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D5",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            42.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E5",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            42.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F5",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            42.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G5",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            42.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H5",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            42.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A6",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            51.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B6",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            51.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C6",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            51.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D6",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            51.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E6",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            51.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F6",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            51.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G6",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            51.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H6",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            51.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A7",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            60.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B7",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            60.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C7",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            60.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D7",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            60.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E7",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            60.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F7",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            60.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G7",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            60.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H7",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            60.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A8",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            69.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B8",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            69.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C8",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            69.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D8",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            69.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E8",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            69.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F8",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            69.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G8",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            69.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H8",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            69.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A9",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            78.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B9",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            78.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C9",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            78.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D9",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            78.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E9",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            78.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F9",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            78.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G9",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            78.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H9",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            78.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A10",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            87.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B10",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            87.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C10",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            87.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D10",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            87.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E10",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            87.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F10",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            87.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G10",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            87.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H10",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            87.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A11",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            96.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B11",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            96.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C11",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            96.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D11",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            96.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E11",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            96.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F11",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            96.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G11",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            96.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H11",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            96.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_A12",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            105.76,
+            71.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_B12",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            105.76,
+            62.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_C12",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            105.76,
+            53.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_D12",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            105.76,
+            44.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_E12",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            105.76,
+            35.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_F12",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            105.76,
+            26.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_G12",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            105.76,
+            17.26,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "pcr_plate_well_H12",
+          "parent": "pcr_plate",
+          "kind": "RESOURCE_KIND_WELL",
+          "location": [
+            105.76,
+            8.26,
+            0.0
+          ],
+          "volume": 0.0
+        }
+      ]
+    },
+    {
+      "call": "set_temperature(4)",
+      "result": null,
+      "sent": [
+        "write report_id= data=315354543430f100",
+        "write report_id= data=3141544531b90000"
+      ]
+    },
+    {
+      "call": "request_current_temperature()",
+      "result": 37.0,
+      "sent": [
+        "write report_id= data=3152415430770000"
+      ]
+    },
+    {
+      "call": "request_device_info(1)",
+      "result": "SN-0042",
+      "sent": [
+        "write report_id= data=3152465631b50000"
+      ]
+    },
+    {
+      "call": "stop_temperature_control()",
+      "result": "",
+      "sent": [
+        "write report_id= data=3141544530e70000"
+      ]
+    },
+    {
+      "call": "cpac.unassign_child_resource(pcr_plate)",
+      "result": null,
+      "sent": [],
+      "resources": [
+        {
+          "name": "cpac",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+        }
+      ]
+    },
+    {
+      "call": "box.stop()",
+      "result": null,
+      "sent": [
+        "stop"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "cpac",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER"
+    }
+  ]
+}

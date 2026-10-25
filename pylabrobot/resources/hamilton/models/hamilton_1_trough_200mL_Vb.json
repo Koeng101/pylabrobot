@@ -1,0 +1,81 @@
+{
+  "name": "hamilton_1_trough_200mL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TROUGH",
+      "model": "hamilton_1_trough_200mL_Vb",
+      "category": "trough",
+      "size": {
+        "x": 37.0,
+        "y": 118.0,
+        "z": 95.0
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": 200000.0,
+        "materialZThickness": 1.5,
+        "heightVolumeData": [
+          {},
+          {
+            "height": 5.8,
+            "volume": 6000.0
+          },
+          {
+            "height": 7.4,
+            "volume": 10000.0
+          },
+          {
+            "height": 10.1,
+            "volume": 20000.0
+          },
+          {
+            "height": 18.5,
+            "volume": 50000.0
+          },
+          {
+            "height": 32.9,
+            "volume": 100000.0
+          },
+          {
+            "height": 47.8,
+            "volume": 150000.0
+          },
+          {
+            "height": 61.7,
+            "volume": 200000.0
+          },
+          {
+            "height": 72.6,
+            "volume": 240000.0
+          },
+          {
+            "height": 88.4,
+            "volume": 300000.0
+          }
+        ],
+        "noGoZones": [
+          {
+            "min": {
+              "y": 60.0,
+              "z": 8.0
+            },
+            "max": {
+              "x": 37.0,
+              "y": 61.7,
+              "z": 60.0
+            }
+          }
+        ],
+        "bottomType": "WELL_BOTTOM_TYPE_V",
+        "throughBaseToContainerBase": 1.2
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton cat. no.: 56695-01 (white/translucent), 56695-02 (black/conductive)\nTrough 200 mL, w lid, self standing (V-bottom).\nTrue maximal volume capacity ~300 mL.\nCompatible with Trough_CAR_4R200_A00 (185436).\nHas a center support wall (~1.2mm wide at Y=59-61mm) which is open at the bottom."
+}

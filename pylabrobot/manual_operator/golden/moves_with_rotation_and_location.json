@@ -1,0 +1,1112 @@
+{
+  "steps": [
+    {
+      "call": "move_resource(plate, module -> nest, destination_rotation=z0)",
+      "result": {
+        "status": "completed",
+        "message": "Moved",
+        "confirmed_by": "operator-1"
+      },
+      "sent": [
+        {
+          "operator_name": "bench_operator",
+          "action": "resource.move",
+          "title": "Move plate",
+          "instructions": "Move plate from plate_module to handover_nest.",
+          "confirmation_text": "Confirm resource moved",
+          "details": {
+            "destination_rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "type": "Rotation"
+            }
+          },
+          "resources": [
+            "plate"
+          ],
+          "source": "plate_module",
+          "destination": "handover_nest"
+        }
+      ],
+      "events": [
+        {
+          "name": "manual_operator.resource.move.started",
+          "operation": "manual_operator.resource.move",
+          "operation_id": "op-1",
+          "data": {
+            "device": {
+              "name": "bench_operator",
+              "type": "ManualOperator"
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Resource",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 90
+                },
+                "ancestors": [
+                  {
+                    "name": "plate_module",
+                    "type": "ResourceHolder"
+                  },
+                  {
+                    "name": "deck",
+                    "type": "Resource"
+                  }
+                ]
+              }
+            ],
+            "manual_action": "resource.move",
+            "title": "Move plate",
+            "instructions": "Move plate from plate_module to handover_nest.",
+            "confirmation_text": "Confirm resource moved",
+            "details": {
+              "destination_rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "type": "Rotation"
+              }
+            },
+            "source": {
+              "name": "plate_module",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "destination": {
+              "name": "handover_nest",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "manual_operator.resource.move.completed",
+          "operation": "manual_operator.resource.move",
+          "operation_id": "op-1",
+          "data": {
+            "device": {
+              "name": "bench_operator",
+              "type": "ManualOperator"
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Resource",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 90
+                },
+                "ancestors": [
+                  {
+                    "name": "plate_module",
+                    "type": "ResourceHolder"
+                  },
+                  {
+                    "name": "deck",
+                    "type": "Resource"
+                  }
+                ]
+              }
+            ],
+            "manual_action": "resource.move",
+            "title": "Move plate",
+            "instructions": "Move plate from plate_module to handover_nest.",
+            "confirmation_text": "Confirm resource moved",
+            "details": {
+              "destination_rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "type": "Rotation"
+              }
+            },
+            "source": {
+              "name": "plate_module",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "destination": {
+              "name": "handover_nest",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "result_message": "Moved",
+            "confirmed_by": "operator-1"
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "operation": null,
+          "operation_id": null,
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 90
+              }
+            },
+            "previous_parent": {
+              "name": "plate_module",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 85.48,
+              "y": 0,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "operation": null,
+          "operation_id": null,
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "handover_nest",
+                  "type": "ResourceHolder"
+                },
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "parent": {
+              "name": "handover_nest",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "location": {
+              "x": 1.5,
+              "y": 2.5,
+              "z": 3,
+              "type": "Coordinate"
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "deck",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "plate_module",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            100.0,
+            100.0,
+            0.0
+          ]
+        },
+        {
+          "name": "handover_nest",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            400.0,
+            100.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate",
+          "parent": "handover_nest",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            1.5,
+            2.5,
+            3.0
+          ]
+        },
+        {
+          "name": "shelf",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            600.0,
+            300.0,
+            50.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "move_resource(plate, nest -> shelf, destination_location=(20, 5, 0), z180, details)",
+      "result": {
+        "status": "completed",
+        "message": null,
+        "confirmed_by": null
+      },
+      "sent": [
+        {
+          "operator_name": "bench_operator",
+          "action": "resource.move",
+          "title": "Park the plate",
+          "instructions": "Put the plate on the shelf, A1 back right.",
+          "confirmation_text": "Plate parked",
+          "details": {
+            "reason": "manual handoff",
+            "destination_location": {
+              "x": 20,
+              "y": 5,
+              "z": 0,
+              "type": "Coordinate"
+            },
+            "destination_rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 180,
+              "type": "Rotation"
+            }
+          },
+          "resources": [
+            "plate"
+          ],
+          "source": "handover_nest",
+          "destination": "shelf"
+        }
+      ],
+      "events": [
+        {
+          "name": "manual_operator.resource.move.started",
+          "operation": "manual_operator.resource.move",
+          "operation_id": "op-2",
+          "data": {
+            "device": {
+              "name": "bench_operator",
+              "type": "ManualOperator"
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Resource",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "handover_nest",
+                    "type": "ResourceHolder"
+                  },
+                  {
+                    "name": "deck",
+                    "type": "Resource"
+                  }
+                ]
+              }
+            ],
+            "manual_action": "resource.move",
+            "title": "Park the plate",
+            "instructions": "Put the plate on the shelf, A1 back right.",
+            "confirmation_text": "Plate parked",
+            "details": {
+              "reason": "manual handoff",
+              "destination_location": {
+                "x": 20,
+                "y": 5,
+                "z": 0,
+                "type": "Coordinate"
+              },
+              "destination_rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 180,
+                "type": "Rotation"
+              }
+            },
+            "source": {
+              "name": "handover_nest",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "destination": {
+              "name": "shelf",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "manual_operator.resource.move.completed",
+          "operation": "manual_operator.resource.move",
+          "operation_id": "op-2",
+          "data": {
+            "device": {
+              "name": "bench_operator",
+              "type": "ManualOperator"
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Resource",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "ancestors": [
+                  {
+                    "name": "handover_nest",
+                    "type": "ResourceHolder"
+                  },
+                  {
+                    "name": "deck",
+                    "type": "Resource"
+                  }
+                ]
+              }
+            ],
+            "manual_action": "resource.move",
+            "title": "Park the plate",
+            "instructions": "Put the plate on the shelf, A1 back right.",
+            "confirmation_text": "Plate parked",
+            "details": {
+              "reason": "manual handoff",
+              "destination_location": {
+                "x": 20,
+                "y": 5,
+                "z": 0,
+                "type": "Coordinate"
+              },
+              "destination_rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 180,
+                "type": "Rotation"
+              }
+            },
+            "source": {
+              "name": "handover_nest",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "destination": {
+              "name": "shelf",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "operation": null,
+          "operation_id": null,
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            },
+            "previous_parent": {
+              "name": "handover_nest",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 1.5,
+              "y": 2.5,
+              "z": 3,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "operation": null,
+          "operation_id": null,
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 180
+              },
+              "ancestors": [
+                {
+                  "name": "shelf",
+                  "type": "Resource"
+                },
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "parent": {
+              "name": "shelf",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "location": {
+              "x": 20,
+              "y": 5,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "deck",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "plate_module",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            100.0,
+            100.0,
+            0.0
+          ]
+        },
+        {
+          "name": "handover_nest",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            400.0,
+            100.0,
+            0.0
+          ]
+        },
+        {
+          "name": "shelf",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            600.0,
+            300.0,
+            50.0
+          ]
+        },
+        {
+          "name": "plate",
+          "parent": "shelf",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            20.0,
+            5.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            180.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "move_resource(plate, shelf -> module)",
+      "result": {
+        "status": "completed",
+        "message": null,
+        "confirmed_by": "operator-2"
+      },
+      "sent": [
+        {
+          "operator_name": "bench_operator",
+          "action": "resource.move",
+          "title": "Move plate",
+          "instructions": "Move plate from shelf to plate_module.",
+          "confirmation_text": "Confirm resource moved",
+          "details": {},
+          "resources": [
+            "plate"
+          ],
+          "source": "shelf",
+          "destination": "plate_module"
+        }
+      ],
+      "events": [
+        {
+          "name": "manual_operator.resource.move.started",
+          "operation": "manual_operator.resource.move",
+          "operation_id": "op-3",
+          "data": {
+            "device": {
+              "name": "bench_operator",
+              "type": "ManualOperator"
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Resource",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 180
+                },
+                "ancestors": [
+                  {
+                    "name": "shelf",
+                    "type": "Resource"
+                  },
+                  {
+                    "name": "deck",
+                    "type": "Resource"
+                  }
+                ]
+              }
+            ],
+            "manual_action": "resource.move",
+            "title": "Move plate",
+            "instructions": "Move plate from shelf to plate_module.",
+            "confirmation_text": "Confirm resource moved",
+            "details": {},
+            "source": {
+              "name": "shelf",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "destination": {
+              "name": "plate_module",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "manual_operator.resource.move.completed",
+          "operation": "manual_operator.resource.move",
+          "operation_id": "op-3",
+          "data": {
+            "device": {
+              "name": "bench_operator",
+              "type": "ManualOperator"
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Resource",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 180
+                },
+                "ancestors": [
+                  {
+                    "name": "shelf",
+                    "type": "Resource"
+                  },
+                  {
+                    "name": "deck",
+                    "type": "Resource"
+                  }
+                ]
+              }
+            ],
+            "manual_action": "resource.move",
+            "title": "Move plate",
+            "instructions": "Move plate from shelf to plate_module.",
+            "confirmation_text": "Confirm resource moved",
+            "details": {},
+            "source": {
+              "name": "shelf",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "destination": {
+              "name": "plate_module",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "confirmed_by": "operator-2"
+          }
+        },
+        {
+          "name": "resource.unassigned",
+          "operation": null,
+          "operation_id": null,
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 180
+              }
+            },
+            "previous_parent": {
+              "name": "shelf",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "previous_location": {
+              "x": 20,
+              "y": 5,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        },
+        {
+          "name": "resource.assigned",
+          "operation": null,
+          "operation_id": null,
+          "data": {
+            "resource": {
+              "name": "plate",
+              "type": "Resource",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 180
+              },
+              "ancestors": [
+                {
+                  "name": "plate_module",
+                  "type": "ResourceHolder"
+                },
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "parent": {
+              "name": "plate_module",
+              "type": "ResourceHolder",
+              "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "ancestors": [
+                {
+                  "name": "deck",
+                  "type": "Resource"
+                }
+              ]
+            },
+            "location": {
+              "x": 127.76,
+              "y": 85.48,
+              "z": 0,
+              "type": "Coordinate"
+            }
+          }
+        }
+      ],
+      "resources": [
+        {
+          "name": "deck",
+          "parent": "",
+          "kind": "RESOURCE_KIND_RESOURCE"
+        },
+        {
+          "name": "plate_module",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            100.0,
+            100.0,
+            0.0
+          ]
+        },
+        {
+          "name": "plate",
+          "parent": "plate_module",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            127.76,
+            85.48,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            180.0
+          ]
+        },
+        {
+          "name": "handover_nest",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "location": [
+            400.0,
+            100.0,
+            0.0
+          ]
+        },
+        {
+          "name": "shelf",
+          "parent": "deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            600.0,
+            300.0,
+            50.0
+          ]
+        }
+      ]
+    },
+    {
+      "call": "perform(centrifuge.spin, resources=[plate])",
+      "result": {
+        "status": "completed",
+        "message": "Spun",
+        "confirmed_by": "operator-1"
+      },
+      "sent": [
+        {
+          "operator_name": "bench_operator",
+          "action": "centrifuge.spin",
+          "title": "Spin the plate",
+          "instructions": "Spin the plate at 300 x g for 180 seconds.",
+          "confirmation_text": "Confirm action completed",
+          "details": {
+            "relative_centrifugal_force": 300,
+            "duration": 180
+          },
+          "resources": [
+            "plate"
+          ],
+          "source": null,
+          "destination": null
+        }
+      ],
+      "events": [
+        {
+          "name": "manual_operator.centrifuge.spin.started",
+          "operation": "manual_operator.centrifuge.spin",
+          "operation_id": "op-4",
+          "data": {
+            "device": {
+              "name": "bench_operator",
+              "type": "ManualOperator"
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Resource",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 180
+                },
+                "ancestors": [
+                  {
+                    "name": "plate_module",
+                    "type": "ResourceHolder"
+                  },
+                  {
+                    "name": "deck",
+                    "type": "Resource"
+                  }
+                ]
+              }
+            ],
+            "manual_action": "centrifuge.spin",
+            "title": "Spin the plate",
+            "instructions": "Spin the plate at 300 x g for 180 seconds.",
+            "confirmation_text": "Confirm action completed",
+            "details": {
+              "relative_centrifugal_force": 300,
+              "duration": 180
+            }
+          }
+        },
+        {
+          "name": "manual_operator.centrifuge.spin.completed",
+          "operation": "manual_operator.centrifuge.spin",
+          "operation_id": "op-4",
+          "data": {
+            "device": {
+              "name": "bench_operator",
+              "type": "ManualOperator"
+            },
+            "resources": [
+              {
+                "name": "plate",
+                "type": "Resource",
+                "rotation": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 180
+                },
+                "ancestors": [
+                  {
+                    "name": "plate_module",
+                    "type": "ResourceHolder"
+                  },
+                  {
+                    "name": "deck",
+                    "type": "Resource"
+                  }
+                ]
+              }
+            ],
+            "manual_action": "centrifuge.spin",
+            "title": "Spin the plate",
+            "instructions": "Spin the plate at 300 x g for 180 seconds.",
+            "confirmation_text": "Confirm action completed",
+            "details": {
+              "relative_centrifugal_force": 300,
+              "duration": 180
+            },
+            "result_message": "Spun",
+            "confirmed_by": "operator-1"
+          }
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "deck",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "plate_module",
+      "parent": "deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        100.0,
+        100.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate",
+      "parent": "plate_module",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        127.76,
+        85.48,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        180.0
+      ]
+    },
+    {
+      "name": "handover_nest",
+      "parent": "deck",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        400.0,
+        100.0,
+        0.0
+      ]
+    },
+    {
+      "name": "shelf",
+      "parent": "deck",
+      "kind": "RESOURCE_KIND_RESOURCE",
+      "location": [
+        600.0,
+        300.0,
+        50.0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "name": "agenbio_96_wellplate_Ub_2200uL",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "agenbio_96_wellplate_Ub_2200uL",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 42.5
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 8.0,
+                "y": 8.0,
+                "z": 38.2
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 2444.8,
+                "materialZThickness": 1.0,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 38.2,
+                    "volume": 2444.8
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.38,
+            "y": 6.24,
+            "z": 3.8
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "AGenBio Catalog No. P-2.2-SQG-96\n- Material: Polypropylene\n- Max. volume: 2200 uL"
+}

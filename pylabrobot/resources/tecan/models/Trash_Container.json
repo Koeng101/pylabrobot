@@ -1,0 +1,27 @@
+{
+  "name": "Trash_Container",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TRASH",
+      "model": "Trash_Container",
+      "category": "tecan_trash",
+      "size": {
+        "x": 25.0,
+        "y": 390.0,
+        "z": 140.0
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": "Infinity",
+        "materialZThickness": 0.0
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Tecan trash container."
+}

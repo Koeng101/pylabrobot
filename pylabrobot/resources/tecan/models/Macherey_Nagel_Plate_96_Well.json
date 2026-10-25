@@ -1,0 +1,54 @@
+{
+  "name": "Macherey_Nagel_Plate_96_Well",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Macherey_Nagel_Plate_96_Well",
+      "category": "tecan_plate",
+      "size": {
+        "x": 151.6,
+        "y": 131.1,
+        "z": 29.9
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 8.9,
+                "y": 8.9,
+                "z": 29.9
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 1860.1205168290853,
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 22.25,
+            "y": 29.75
+          },
+          "itemDx": 8.9,
+          "itemDy": 8.9
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  }
+}

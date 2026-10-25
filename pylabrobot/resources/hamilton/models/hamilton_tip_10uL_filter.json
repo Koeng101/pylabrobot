@@ -1,0 +1,37 @@
+{
+  "name": "hamilton_tip_10uL_filter",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "model": "hamilton_tip_10uL_filter",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 29.9
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "hasFilter": true,
+        "maximalVolume": 10.0,
+        "nominalVolume": 10.0,
+        "collarHeight": 6.0,
+        "hamilton": {
+          "tipSize": "LOW_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton 10 uL tip with filter (`tt03` in venus)\n\nVariants:\n  - Hamilton cat. no.: 235936 - transparent, framed EmbeddedTipRack, sterile\n  - Hamilton cat. no.: 235901 - transparent, framed EmbeddedTipRack, non-sterile"
+}

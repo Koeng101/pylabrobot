@@ -11,9 +11,8 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from pylabrobot.hamilton.liquid_classes import HamiltonLiquidClass
 from pylabrobot.hamilton.star.liquid_classes.mapping import get_star_liquid_class
-from pylabrobot.resources.container import Container
 from pylabrobot.resources.liquid import Liquid
-from pylabrobot.resources.tip import Tip
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 
 # Finds a class, with `get_star_liquid_class`'s keywords.
 LiquidClassLookup = Callable[..., Optional[HamiltonLiquidClass]]
@@ -78,9 +77,9 @@ def check_volume_arguments(
 
 
 def get_volumes_and_classes(
-  containers: Sequence[Container],
+  container_names: Sequence[str],
   channel_of: Sequence[int],
-  tips: Sequence[Tip],
+  tips: Sequence[pb.TipSpec],
   volumes: Optional[Sequence[float]],
   piston_volumes: Optional[Sequence[float]],
   hamilton_liquid_classes: Optional[Sequence[HamiltonLiquidClass]],
@@ -91,9 +90,9 @@ def get_volumes_and_classes(
   """The liquid asked per container, the piston volume that moves it, and the classes used.
 
   Args:
-    containers: per job.
+    container_names: per job, the container's name.
     channel_of: the channel of each container, per job.
-    tips: per job, the tip on its channel.
+    tips: per job, what the tip on its channel is, as the store states it.
     volumes: liquid per container, corrected by a class; or None.
     piston_volumes: piston travel per container, as given, the liquid counting the same; or None.
     hamilton_liquid_classes: one per container; looked up for the tip, water, `jets` and
@@ -109,7 +108,7 @@ def get_volumes_and_classes(
   Raises:
     ValueError: Lists not one per container, or no class known for a channel's tip.
   """
-  n = len(containers)
+  n = len(container_names)
   if volumes is None:
     assert piston_volumes is not None
     piston = per_container("piston_volumes", piston_volumes, n) or []
@@ -133,7 +132,7 @@ def get_volumes_and_classes(
         other = not blow_outs[job] and lookup(**keys, blow_out=True) is not None
         raise ValueError(
           f"no liquid class is known for channel {channel_of[job]}'s tip on "
-          f"{containers[job].name}: {tip.maximal_volume} uL, "
+          f"{container_names[job]}: {tip.maximal_volume} uL, "
           f"{'with' if tip.has_filter else 'without'} filter, water, jet={jets[job]}, "
           f"blow_out={blow_outs[job]}. Give hamilton_liquid_classes, "
           f"{'blow_out=True, which has one, ' if other else ''}or piston_volumes"

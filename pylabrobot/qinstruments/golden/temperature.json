@@ -1,0 +1,143 @@
+{
+  "transport": {
+    "human_readable_device_name": "QInstruments BioShake",
+    "port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "bytesize": 8,
+    "parity": "N",
+    "stopbits": 1,
+    "write_timeout": 10,
+    "timeout": 60
+  },
+  "steps": [
+    {
+      "call": "setup()",
+      "result": null,
+      "sent": [
+        "setup",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write resetDevice\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write shakeGoHome\r"
+      ],
+      "waits": [
+        0.1,
+        4,
+        5
+      ]
+    },
+    {
+      "call": "set_temperature(37)",
+      "result": null,
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempMin\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempMax\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write setTempTarget370\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write tempOn\r"
+      ],
+      "waits": [
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "set_temperature(37.5)",
+      "result": null,
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempMin\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempMax\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write setTempTarget375\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write tempOn\r"
+      ],
+      "waits": [
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "set_temperature(37.55)",
+      "error": "ValueError: Temperature must be a whole number in 1/10 C, not 375.5",
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempMin\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempMax\r"
+      ],
+      "waits": [
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "set_temperature(120)",
+      "error": "ValueError: Temperature 120 C is out of range. Allowed range is 0-99 C.",
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempMin\r",
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempMax\r"
+      ],
+      "waits": [
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "call": "request_current_temperature()",
+      "result": 36.9,
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write getTempActual\r"
+      ],
+      "waits": [
+        0.2
+      ]
+    },
+    {
+      "call": "deactivate()",
+      "result": null,
+      "sent": [
+        "reset_input_buffer",
+        "reset_output_buffer",
+        "write tempOff\r"
+      ],
+      "waits": [
+        0.2
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "bioshake",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    }
+  ]
+}

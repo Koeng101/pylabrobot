@@ -27,16 +27,17 @@ import websockets
 from websockets.asyncio.server import Server, ServerConnection
 from websockets.http11 import Request, Response
 
-from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store import handles
+from pylabrobot.visualizer.mirror import Change, ChangeKind, TreeMirror
+from pylabrobot.visualizer.nodes import serialize_node_state
 
 from .scene import (
   STATE_DECIMALS,
   Scene,
-  all_names,
   build_scene,
   collect_state,
   legacy_size,
+  local_transform,
   pack_state,
   state_signature,
 )
@@ -155,8 +156,12 @@ def _signature(cleaned: Dict[str, Any], key: str) -> str:
 class Viewer3D:
   """A visualizer that takes any resource as its world.
 
+  It follows the resource store the root is in: every change any client of the store makes to the
+  root or anything under it is drawn.
+
   Args:
-    root: the resource that is the world; every descendant is placed in its cartesian space.
+    root: a handle to the resource that is the world; every descendant is placed in its cartesian
+      space.
     host: interface to bind both servers to.
     fs_port: static file server port.
     ws_port: websocket port.
@@ -173,7 +178,7 @@ class Viewer3D:
   `Origin`; an IP literal is always accepted, since it cannot be rebound.
   """
 
-  root: Resource
+  root: handles.Resource
   host: str
   fs_port: int
   ws_port: int
@@ -204,7 +209,9 @@ class Viewer3D:
   _browser_drawing: Optional[asyncio.Event]
   _moved: Set[str]
   _scene_timer: Optional[asyncio.TimerHandle]
-  _subscribed: Dict[int, Tuple[Resource, Callable[[Dict[str, Any]], None]]]
+  _subscribed: Set[bytes]
+  _tree: TreeMirror
+  _unsubscribe_tree: Optional[Callable[[], None]]
 
   # -- packing -----------------------------------------------------------------
 
@@ -299,7 +306,7 @@ class Viewer3D:
     this is the only message that will correct it.
     """
     states = {}
-    for name, (cleaned, key) in collect_state(self.root).items():
+    for name, (cleaned, key) in collect_state(self._tree).items():
       if name not in self._moved:
         cleaned.pop("location", None)
       if cleaned:
@@ -407,7 +414,7 @@ class Viewer3D:
     if self._scene_payload is not None and not rebuild:
       return self._scene_payload
 
-    scene = build_scene(self.root, known=self._known_models, known_names=self._known_names)
+    scene = build_scene(self._tree, known=self._known_models, known_names=self._known_names)
     self._known_names = frozenset(scene.names)
     self._known_models = scene.derived
     scene.legacy_bytes = self._legacy_bytes
@@ -436,23 +443,17 @@ class Viewer3D:
     parent, location, rotation}`. A name appearing or disappearing needs a rebuild.
     """
     scene = self._scene
-    if scene is None or frozenset(all_names(self.root)) != self._known_names:
+    tree = self._tree
+    if scene is None or frozenset(tree.names()) != self._known_names:
       return None
     moves: List[Dict[str, Any]] = []
-
-    def walk(resource: Resource, parent: Optional[str]) -> None:
-      index = self._index_of[resource.name]
-      location = resource.location or Coordinate.zero()
-      rotation = resource.rotation
-      local = [
-        float(location.x),
-        float(location.y),
-        float(location.z),
-        float(rotation.x),
-        float(rotation.y),
-        float(rotation.z),
-      ]
-      parent_index = -1 if parent is None else self._index_of[parent]
+    for node in tree.walk():
+      name = node.attributes.name
+      index = self._index_of[name]
+      local = local_transform(node)
+      parent = tree.nodes.get(node.parent_id) if node.id != tree.root_id else None
+      parent_name = parent.attributes.name if parent is not None else None
+      parent_index = -1 if parent_name is None else self._index_of[parent_name]
       if (
         parent_index != scene.parent_of_instance[index]
         or local != scene.transforms[6 * index : 6 * index + 6]
@@ -461,16 +462,13 @@ class Viewer3D:
         scene.transforms[6 * index : 6 * index + 6] = local
         moves.append(
           {
-            "name": resource.name,
-            "parent": parent,
+            "name": name,
+            "parent": parent_name,
             "location": {"x": local[0], "y": local[1], "z": local[2]},
             "rotation": {"x": local[3], "y": local[4], "z": local[5]},
           }
         )
-      for child in resource.children:
-        walk(child, resource.name)
 
-    walk(self.root, None)
     if moves and self._scene_payload is not None:
       self._scene_payload = {**self._scene_payload, **scene.serialize()}
     # Every place the kept scene knows is current again, so a snapshot need not carry any of them.
@@ -520,39 +518,47 @@ class Viewer3D:
       return
     loop.call_soon_threadsafe(self._mark_scene_dirty)
 
-  # -- subscriptions -----------------------------------------------------------
+  # -- following the store ---------------------------------------------------
 
-  def _subscribe(self, resource: Resource) -> None:
-    # A resource put back after being taken out is still listened to: one callback, not one more.
-    if id(resource) in self._subscribed:
+  def _on_changes(self, changes: List[Change]) -> None:
+    """Take one store revision: a resource that arrives starts publishing and one that leaves
+    stops, and either costs one rebuild for the burst; a changed state is batched, so a
+    96-channel operation is one message, not ninety-six.
+
+    In the order PLR's callbacks report a move to another parent - unassigned, location set,
+    assigned - the new location is set while the resource publishes nothing.
+    """
+    live = self._live_loop() is not None
+    for change in changes:
+      if change.kind == ChangeKind.ASSIGNED:
+        self._subscribed.update(change.subtree)
+        self._resend()
+      elif change.kind == ChangeKind.UNASSIGNED:
+        self._subscribed.difference_update(change.subtree)
+        self._resend()
+      elif live and change.node_id in self._subscribed and change.node_id in self._tree.nodes:
+        self._enqueue(
+          change.name, serialize_node_state(self._tree.node(change.node_id), self._tree)
+        )
+
+  async def follow(self) -> None:
+    """Read the tree, and follow every change the store makes to it after. `start` does this."""
+    if self._tree.following:
       return
+    await self._tree.start()
+    self._subscribed = set(self._tree.nodes)
+    self._unsubscribe_tree = self._tree.subscribe(self._on_changes)
 
-    def on_update(state: Dict[str, Any], r: Resource = resource) -> None:
-      # Batched on the loop, so a 96-channel operation is one message, not ninety-six.
-      loop = self._live_loop()
-      if loop is not None:
-        loop.call_soon_threadsafe(self._enqueue, r.name, state)
+  async def caught_up(self, timeout: float = 5.0) -> None:
+    """Wait until every change the store has made by now has been taken, or `timeout` s pass."""
+    await self._tree.caught_up(timeout)
 
-    resource.register_state_update_callback(on_update)
-    self._subscribed[id(resource)] = (resource, on_update)
-    for child in resource.children:
-      self._subscribe(child)
-
-  def _unsubscribe(self, resource: Resource) -> None:
-    """Stop listening to `resource` and everything under it: out of the tree, it has no viewer."""
-    subscribed = self._subscribed.pop(id(resource), None)
-    if subscribed is not None:
-      subscribed[0].deregister_state_update_callback(subscribed[1])
-    for child in resource.children:
-      self._unsubscribe(child)
-
-  def _on_assign(self, resource: Resource) -> None:
-    self._subscribe(resource)
-    self._resend()
-
-  def _on_unassign(self, resource: Resource) -> None:
-    self._unsubscribe(resource)
-    self._resend()
+  async def _stop_following(self) -> None:
+    if self._unsubscribe_tree is not None:
+      self._unsubscribe_tree()
+      self._unsubscribe_tree = None
+    self._subscribed = set()
+    await self._tree.stop()
 
   # -- clients -----------------------------------------------------------------
 
@@ -710,7 +716,7 @@ class Viewer3D:
 
   def __init__(
     self,
-    root: Resource,
+    root: handles.Resource,
     host: str = "127.0.0.1",
     fs_port: int = 1338,
     ws_port: int = 2122,
@@ -774,21 +780,21 @@ class Viewer3D:
     self.clients_seen = []  # what each page said it draws with
     self._browser_drawing = None  # made on the loop `start` runs on
 
-    # Every resource this viewer listens to, with the callback it gave, so `stop` can take it back.
-    # By identity: a tip compares by value and is not hashable.
-    self._subscribed = {}
-    self._subscribe(root)
-    # A newly assigned resource has to start publishing too, or its state never reaches the viewer.
-    root.register_did_assign_resource_callback(self._on_assign)
-    root.register_did_unassign_resource_callback(self._on_unassign)
+    # The tree as the store holds it, kept current by following the store from `start`.
+    self._tree = TreeMirror(root)
+    self._unsubscribe_tree = None
+    # The ids of every resource whose state changes are published: what was in the tree when it
+    # was read, and what has arrived since, less what has left.
+    self._subscribed = set()
 
   async def start(self) -> None:
     self._loop = asyncio.get_running_loop()
     self._browser_drawing = asyncio.Event()
+    await self.follow()
     # Off the loop, before a client can connect: the package walk for model files, and the size of
     # the tree as one node per resource, which the stats panel compares against.
     self._legacy_bytes, _ = await asyncio.gather(
-      asyncio.to_thread(legacy_size, self.root), asyncio.to_thread(_models_on_disk, PACKAGE_ROOT)
+      asyncio.to_thread(legacy_size, self._tree), asyncio.to_thread(_models_on_disk, PACKAGE_ROOT)
     )
 
     # The websocket first: the file server bakes its port into the page. The other way round, a
@@ -831,9 +837,7 @@ class Viewer3D:
 
     The ports are free for the next viewer, and no change is handed to a loop that is gone.
     """
-    self._unsubscribe(self.root)
-    self.root.deregister_did_assign_resource_callback(self._on_assign)
-    self.root.deregister_did_unassign_resource_callback(self._on_unassign)
+    await self._stop_following()
     self._loop = None
     if self._scene_timer is not None:
       self._scene_timer.cancel()

@@ -5,10 +5,7 @@ from pylabrobot.molecular_devices.spectramax.results import (
   FluorescenceResult,
   LuminescenceResult,
 )
-from pylabrobot.resources import Coordinate
-from pylabrobot.resources.carrier import PlateHolder
-from pylabrobot.resources.plate import Plate
-from pylabrobot.resources.well import Well
+from pylabrobot.resources.store import handles
 
 from .base import (
   Calibrate,
@@ -33,19 +30,12 @@ class SpectraMaxM5(MolecularDevicesPlateReader):
     port: str,
   ):
     super().__init__(port=port, human_readable_device_name="Molecular Devices SpectraMax M5")
-    self.loading_tray = PlateHolder(
-      name=name + "_loading_tray",
-      size_x=127.76,
-      size_y=85.48,
-      size_z=0,  # TODO: measure
-      pedestal_size_z=0,  # TODO: measure
-      child_location=Coordinate.zero(),  # TODO: measure
-    )
+    self.name = name
 
   async def read_fluorescence(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: handles.Plate,
+    wells: List[handles.Well],
     excitation_wavelength: int,
     emission_wavelength: int,
     focal_height: float,
@@ -164,7 +154,7 @@ class SpectraMaxM5(MolecularDevicesPlateReader):
 
   async def read_fluorescence_polarization(
     self,
-    plate: Plate,
+    plate: handles.Plate,
     excitation_wavelengths: List[int],
     emission_wavelengths: List[int],
     cutoff_filters: List[int],
@@ -235,7 +225,7 @@ class SpectraMaxM5(MolecularDevicesPlateReader):
 
   async def read_time_resolved_fluorescence(
     self,
-    plate: Plate,
+    plate: handles.Plate,
     excitation_wavelengths: List[int],
     emission_wavelengths: List[int],
     cutoff_filters: List[int],
@@ -310,8 +300,8 @@ class SpectraMaxM5(MolecularDevicesPlateReader):
 
   async def read_luminescence(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: handles.Plate,
+    wells: List[handles.Well],
     focal_height: float,
     emission_wavelengths: Optional[List[int]] = None,
     read_type: ReadType = "endpoint",

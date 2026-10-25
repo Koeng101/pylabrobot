@@ -1,0 +1,273 @@
+{
+  "name": "azenta_96_wellplate_200uL_Vb_4titudeframestar",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "azenta_96_wellplate_200uL_Vb_4titudeframestar",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 16.1
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 5.5,
+                "y": 5.5,
+                "z": 15.1
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 203.52938905975373,
+                "materialZThickness": 0.73,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 0.68,
+                    "volume": 0.025928
+                  },
+                  {
+                    "height": 1.105,
+                    "volume": 0.111257
+                  },
+                  {
+                    "height": 1.455,
+                    "volume": 0.253998
+                  },
+                  {
+                    "height": 1.77,
+                    "volume": 0.457258
+                  },
+                  {
+                    "height": 2.06,
+                    "volume": 0.720848
+                  },
+                  {
+                    "height": 2.33,
+                    "volume": 1.043061
+                  },
+                  {
+                    "height": 2.585,
+                    "volume": 1.424372
+                  },
+                  {
+                    "height": 2.825,
+                    "volume": 1.859076
+                  },
+                  {
+                    "height": 3.055,
+                    "volume": 2.351124
+                  },
+                  {
+                    "height": 3.28,
+                    "volume": 2.909802
+                  },
+                  {
+                    "height": 3.495,
+                    "volume": 3.52033
+                  },
+                  {
+                    "height": 3.705,
+                    "volume": 4.193788
+                  },
+                  {
+                    "height": 3.91,
+                    "volume": 4.929151
+                  },
+                  {
+                    "height": 4.11,
+                    "volume": 5.724892
+                  },
+                  {
+                    "height": 4.305,
+                    "volume": 6.579022
+                  },
+                  {
+                    "height": 4.495,
+                    "volume": 7.489123
+                  },
+                  {
+                    "height": 4.68,
+                    "volume": 8.452388
+                  },
+                  {
+                    "height": 4.86,
+                    "volume": 9.465655
+                  },
+                  {
+                    "height": 5.04,
+                    "volume": 10.556828
+                  },
+                  {
+                    "height": 5.215,
+                    "volume": 11.695123
+                  },
+                  {
+                    "height": 5.385,
+                    "volume": 12.876534
+                  },
+                  {
+                    "height": 5.555,
+                    "volume": 14.134942
+                  },
+                  {
+                    "height": 5.72,
+                    "volume": 15.432275
+                  },
+                  {
+                    "height": 5.885,
+                    "volume": 16.806654
+                  },
+                  {
+                    "height": 6.045,
+                    "volume": 18.215067
+                  },
+                  {
+                    "height": 6.205,
+                    "volume": 19.700045
+                  },
+                  {
+                    "height": 6.365,
+                    "volume": 21.263614
+                  },
+                  {
+                    "height": 6.52,
+                    "volume": 22.85518
+                  },
+                  {
+                    "height": 6.675,
+                    "volume": 24.524246
+                  },
+                  {
+                    "height": 6.825,
+                    "volume": 26.214998
+                  },
+                  {
+                    "height": 6.975,
+                    "volume": 27.981725
+                  },
+                  {
+                    "height": 7.125,
+                    "volume": 29.826099
+                  },
+                  {
+                    "height": 7.27,
+                    "volume": 31.684371
+                  },
+                  {
+                    "height": 7.415,
+                    "volume": 33.618267
+                  },
+                  {
+                    "height": 7.56,
+                    "volume": 35.629296
+                  },
+                  {
+                    "height": 7.705,
+                    "volume": 37.718966
+                  },
+                  {
+                    "height": 7.845,
+                    "volume": 39.812614
+                  },
+                  {
+                    "height": 7.985,
+                    "volume": 41.982338
+                  },
+                  {
+                    "height": 8.125,
+                    "volume": 44.229493
+                  },
+                  {
+                    "height": 8.265,
+                    "volume": 46.555439
+                  },
+                  {
+                    "height": 8.4,
+                    "volume": 48.874206
+                  },
+                  {
+                    "height": 8.535,
+                    "volume": 51.268715
+                  },
+                  {
+                    "height": 8.67,
+                    "volume": 53.740184
+                  },
+                  {
+                    "height": 8.805,
+                    "volume": 56.28983
+                  },
+                  {
+                    "height": 8.935,
+                    "volume": 58.820068
+                  },
+                  {
+                    "height": 9.065,
+                    "volume": 61.425016
+                  },
+                  {
+                    "height": 9.195,
+                    "volume": 64.10576
+                  },
+                  {
+                    "height": 9.325,
+                    "volume": 66.863388
+                  },
+                  {
+                    "height": 9.455,
+                    "volume": 69.698985
+                  },
+                  {
+                    "height": 9.585,
+                    "volume": 72.61364
+                  },
+                  {
+                    "height": 9.71,
+                    "volume": 75.491759
+                  },
+                  {
+                    "height": 9.865,
+                    "volume": 79.154718
+                  },
+                  {
+                    "height": 15.1,
+                    "volume": 203.52939
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 11.0,
+            "y": 8.49,
+            "z": 0.8
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Azenta cat. no.: 4ti-0960.\n- Material: Polypropylene wells, polycarbonate frame\n- Sterilization compatibility: ?\n- Chemical resistance: ?\n- Thermal resistance: ?\n- Sealing options: ?\n- Cleanliness: ?\n- Automation compatibility: \"Rigid frame eliminates warping and distortion during PCR. Ideal for use with robotic systems.' -> extra  rigid skirt option (4ti-0960/RIG) available."
+}

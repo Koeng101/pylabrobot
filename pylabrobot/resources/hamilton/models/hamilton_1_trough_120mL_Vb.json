@@ -1,0 +1,127 @@
+{
+  "name": "hamilton_1_trough_120mL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TROUGH",
+      "model": "hamilton_1_trough_120mL_Vb",
+      "category": "trough",
+      "size": {
+        "x": 19.0,
+        "y": 142.5,
+        "z": 80.0
+      },
+      "rotation": {},
+      "container": {
+        "maxVolume": 120000.0,
+        "materialZThickness": 1.54,
+        "heightVolumeData": [
+          {},
+          {
+            "height": 5.85,
+            "volume": 4000.0
+          },
+          {
+            "height": 6.3,
+            "volume": 6000.0
+          },
+          {
+            "height": 6.98,
+            "volume": 8000.0
+          },
+          {
+            "height": 7.72,
+            "volume": 10000.0
+          },
+          {
+            "height": 8.48,
+            "volume": 12000.0
+          },
+          {
+            "height": 9.82,
+            "volume": 15000.0
+          },
+          {
+            "height": 13.05,
+            "volume": 20000.0
+          },
+          {
+            "height": 18.25,
+            "volume": 30000.0
+          },
+          {
+            "height": 23.29,
+            "volume": 40000.0
+          },
+          {
+            "height": 33.07,
+            "volume": 60000.0
+          },
+          {
+            "height": 42.42,
+            "volume": 80000.0
+          },
+          {
+            "height": 51.55,
+            "volume": 100000.0
+          },
+          {
+            "height": 61.87,
+            "volume": 120000.0
+          },
+          {
+            "height": 70.62,
+            "volume": 140000.0
+          },
+          {
+            "height": 80.0,
+            "volume": 160000.0
+          }
+        ],
+        "noGoZones": [
+          {
+            "min": {
+              "y": 39.7,
+              "z": 12.0
+            },
+            "max": {
+              "x": 19.0,
+              "y": 42.2,
+              "z": 70.0
+            }
+          },
+          {
+            "min": {
+              "y": 73.5,
+              "z": 12.0
+            },
+            "max": {
+              "x": 19.0,
+              "y": 76.0,
+              "z": 70.0
+            }
+          },
+          {
+            "min": {
+              "y": 107.3,
+              "z": 12.0
+            },
+            "max": {
+              "x": 19.0,
+              "y": 109.8,
+              "z": 70.0
+            }
+          }
+        ],
+        "bottomType": "WELL_BOTTOM_TYPE_V",
+        "throughBaseToContainerBase": 1.1
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "Hamilton cat. no.: 194052 (white/translucent)\nTrough 120 mL, without lid, self standing (V-bottom).\nTrue maximal volume capacity ~120 mL.\nCompatible with Trough_CAR_?? (194058 <- not yet integrated into PLR!).\nHas 3 in-container support beams (~2.5mm wide at base, ~0.8mm at top, tapered)\nbut is still open at the bottom."
+}

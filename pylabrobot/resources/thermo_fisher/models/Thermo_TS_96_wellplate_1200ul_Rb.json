@@ -1,0 +1,257 @@
+{
+  "name": "Thermo_TS_96_wellplate_1200ul_Rb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Thermo_TS_96_wellplate_1200ul_Rb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 24.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 8.3,
+                "y": 8.3,
+                "z": 20.5
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 1232.7129266641255,
+                "materialZThickness": 1.15,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 0.015,
+                    "volume": 0.00287691
+                  },
+                  {
+                    "height": 0.045,
+                    "volume": 0.0258286
+                  },
+                  {
+                    "height": 0.095,
+                    "volume": 0.11464
+                  },
+                  {
+                    "height": 0.155,
+                    "volume": 0.303668
+                  },
+                  {
+                    "height": 0.215,
+                    "volume": 0.581365
+                  },
+                  {
+                    "height": 0.275,
+                    "volume": 0.946372
+                  },
+                  {
+                    "height": 0.335,
+                    "volume": 1.397334
+                  },
+                  {
+                    "height": 0.4,
+                    "volume": 1.981298
+                  },
+                  {
+                    "height": 0.465,
+                    "volume": 2.66282
+                  },
+                  {
+                    "height": 0.53,
+                    "volume": 3.440175
+                  },
+                  {
+                    "height": 0.595,
+                    "volume": 4.311638
+                  },
+                  {
+                    "height": 0.66,
+                    "volume": 5.275482
+                  },
+                  {
+                    "height": 0.725,
+                    "volume": 6.329982
+                  },
+                  {
+                    "height": 0.79,
+                    "volume": 7.473413
+                  },
+                  {
+                    "height": 0.855,
+                    "volume": 8.704049
+                  },
+                  {
+                    "height": 0.925,
+                    "volume": 10.124895
+                  },
+                  {
+                    "height": 0.995,
+                    "volume": 11.642722
+                  },
+                  {
+                    "height": 1.065,
+                    "volume": 13.255375
+                  },
+                  {
+                    "height": 1.135,
+                    "volume": 14.960699
+                  },
+                  {
+                    "height": 1.205,
+                    "volume": 16.756538
+                  },
+                  {
+                    "height": 1.275,
+                    "volume": 18.640738
+                  },
+                  {
+                    "height": 1.35,
+                    "volume": 20.755128
+                  },
+                  {
+                    "height": 1.425,
+                    "volume": 22.965828
+                  },
+                  {
+                    "height": 1.5,
+                    "volume": 25.270186
+                  },
+                  {
+                    "height": 1.575,
+                    "volume": 27.665552
+                  },
+                  {
+                    "height": 1.65,
+                    "volume": 30.149276
+                  },
+                  {
+                    "height": 1.73,
+                    "volume": 32.892983
+                  },
+                  {
+                    "height": 1.81,
+                    "volume": 35.730989
+                  },
+                  {
+                    "height": 1.89,
+                    "volume": 38.660076
+                  },
+                  {
+                    "height": 1.975,
+                    "volume": 41.868431
+                  },
+                  {
+                    "height": 2.06,
+                    "volume": 45.172117
+                  },
+                  {
+                    "height": 2.145,
+                    "volume": 48.567276
+                  },
+                  {
+                    "height": 2.235,
+                    "volume": 52.257564
+                  },
+                  {
+                    "height": 2.325,
+                    "volume": 56.041497
+                  },
+                  {
+                    "height": 2.42,
+                    "volume": 60.13218
+                  },
+                  {
+                    "height": 2.515,
+                    "volume": 64.316711
+                  },
+                  {
+                    "height": 2.615,
+                    "volume": 68.816945
+                  },
+                  {
+                    "height": 2.72,
+                    "volume": 73.640808
+                  },
+                  {
+                    "height": 2.825,
+                    "volume": 78.558535
+                  },
+                  {
+                    "height": 2.935,
+                    "volume": 83.803189
+                  },
+                  {
+                    "height": 3.055,
+                    "volume": 89.623187
+                  },
+                  {
+                    "height": 3.18,
+                    "volume": 95.78366
+                  },
+                  {
+                    "height": 3.315,
+                    "volume": 102.535296
+                  },
+                  {
+                    "height": 3.465,
+                    "volume": 110.138511
+                  },
+                  {
+                    "height": 3.635,
+                    "volume": 118.8586
+                  },
+                  {
+                    "height": 3.85,
+                    "volume": 129.997468
+                  },
+                  {
+                    "height": 4.075,
+                    "volume": 141.723364
+                  },
+                  {
+                    "height": 20.5,
+                    "volume": 1232.712927
+                  },
+                  {
+                    "height": 20.525,
+                    "volume": 1234.37349
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_U",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.0,
+            "y": 7.3,
+            "z": 2.5
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Thermo Fisher Scientific/Fisher Scientific cat. no.: AB1127/10243223.\n- Material: Polypropylene (AB-1068, polystyrene).\n- Brand: Thermo Scientific.\n- Sterilization compatibility: Autoclaving (15 minutes at 121\u00b0C) or\n  Gamma Irradiation.\n- Chemical resistance: to DMSO (100%); Ethanol (100%); Isopropanol (100%).\n- Round well shape designed for optimal sample recovery or square shape to\n  maximize sample volume within ANSI footprint design.\n- Each well has an independent sealing rim to prevent cross-contamination\n- U-bottomed wells ideally suited for sample resuspension.\n- Sealing options: Adhesive Seals, Heat Seals, Storage Plate Caps and Cap\n  Strips, and Storage Plate Sealing Mats.\n- Cleanliness: 10243223/AB1127: Cleanroom manufacture.\n- ANSI/SLAS-format for compatibility with automated systems."
+}

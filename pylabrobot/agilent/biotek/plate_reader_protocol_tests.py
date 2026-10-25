@@ -70,18 +70,23 @@ def test_instrument_status() -> None:
 class TestReaderNegotiation(unittest.IsolatedAsyncioTestCase):
   """Exercise command sequencing with simulated FTDI reads and writes."""
 
-  def setUp(self) -> None:
+  async def asyncSetUp(self) -> None:
     """Replace the transport before any setup or device discovery."""
     pytest.importorskip("pylibftdi")
     from pylabrobot.agilent.biotek.plate_reader_base import BioTekPlateReaderDriver
     from pylabrobot.io.ftdi import FTDI
-    from pylabrobot.resources import cellvis_96_wellplate_350uL_Fb
+    from pylabrobot.resources.store import handles
+    from pylabrobot.resources.store.client import ResourceStore
 
     self.reader = BioTekPlateReaderDriver()
     self.io = create_autospec(FTDI, instance=True)
     self.io.write.side_effect = len
     self.reader.io = self.io
-    self.plate = cellvis_96_wellplate_350uL_Fb("plate")
+    store = ResourceStore.in_memory()
+    self.addAsyncCleanup(store.close)
+    plate = await store.create("cellvis_96_wellplate_350uL_Fb", name="plate")
+    assert isinstance(plate, handles.Plate)
+    self.plate = plate
 
   async def test_captured_legacy_reader(self) -> None:
     """A real firmware-2.24 reader reports no RDOP22; never send it D/O or y."""
@@ -93,7 +98,9 @@ class TestReaderNegotiation(unittest.IsolatedAsyncioTestCase):
     await self.reader.setup()
     assert self.reader.version == "2.24"
     with pytest.raises(NotImplementedError, match="Legacy BioTek V/S"):
-      await self.reader.read_absorbance(self.plate, self.plate.get_all_items(), 600)
+      await self.reader.read_absorbance(
+        self.plate, self.plate.get_wells(self.plate.identifiers), 600
+      )
     assert self.io.write.call_args_list == [call(b"e"), call(b"z"), call(b"2000\x03")]
 
   async def test_older_capability_layouts(self) -> None:
@@ -121,7 +128,7 @@ class TestReaderNegotiation(unittest.IsolatedAsyncioTestCase):
           b"\x062360000\x03",
         ]
         await self.reader.setup()
-        result = await self.reader.read_absorbance(self.plate, self.plate["A1"], 580)
+        result = await self.reader.read_absorbance(self.plate, self.plate.get_wells(["A1"]), 580)
         assert self.reader.version == "1.12"
         assert result[0].data[0][0] == 0.1917
         assert result[0].data[0][1] is None
@@ -150,7 +157,7 @@ class TestReaderNegotiation(unittest.IsolatedAsyncioTestCase):
           bad_reply,
         ]
         with pytest.raises((ValueError, RuntimeError)):
-          await self.reader.read_absorbance(self.plate, self.plate["A1"], 580)
+          await self.reader.read_absorbance(self.plate, self.plate.get_wells(["A1"]), 580)
         assert call(b"O") not in self.io.write.call_args_list
 
   async def test_capability_cache_resets_on_connection(self) -> None:
@@ -189,7 +196,7 @@ class TestReaderNegotiation(unittest.IsolatedAsyncioTestCase):
           reply,
         ]
         with pytest.raises((ValueError, RuntimeError)):
-          await self.reader.read_absorbance(self.plate, self.plate["A1"], 580)
+          await self.reader.read_absorbance(self.plate, self.plate.get_wells(["A1"]), 580)
         assert self.io.write.call_args_list[-1] == call(b"O")
 
   async def test_bad_capability_reply_is_not_cached(self) -> None:

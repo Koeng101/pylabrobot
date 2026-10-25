@@ -1,0 +1,27 @@
+{
+  "name": "hamilton_mfx_plateholder_DWP_metal_tapped",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "model": "hamilton_mfx_plateholder_DWP_metal_tapped",
+      "category": "plate_holder",
+      "size": {
+        "x": 135.0,
+        "y": 94.0,
+        "z": 76.4
+      },
+      "rotation": {},
+      "holder": {
+        "childLocation": {
+          "x": 4.0,
+          "y": 4.0,
+          "z": 65.75
+        },
+        "pedestalSizeZ": -4.74,
+        "capacity": 1
+      }
+    }
+  },
+  "description": "Hamilton MFX DWP Module (cat.-no. 188042 / 188042-00).\nHamilton name: 'MFX_DWP_rackbased_module'\nIt also contains metal clamps at the corners.\nhttps://www.hamiltoncompany.com/other-robotics/188042"
+}

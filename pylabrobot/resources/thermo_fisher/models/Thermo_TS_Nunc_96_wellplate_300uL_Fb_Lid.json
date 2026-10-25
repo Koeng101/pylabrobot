@@ -1,0 +1,20 @@
+{
+  "name": "Thermo_TS_Nunc_96_wellplate_300uL_Fb_Lid",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_LID",
+      "model": "Thermo_TS_Nunc_96_assay_300uL_Fb_Lid",
+      "category": "lid",
+      "size": {
+        "x": 127.25,
+        "y": 85.3,
+        "z": 9.1
+      },
+      "rotation": {},
+      "lid": {
+        "nestingZHeight": 1.8399999999999999
+      }
+    }
+  }
+}

@@ -146,13 +146,16 @@ For an initialized instrument, prepare and inspect a plan, then explicitly start
 its durable job:
 
 ```python
+from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.revvity.celigo import Capture, ScanSpec
 from pylabrobot.revvity.celigo.grpc.client import CeligoClient
 
 
-async def scan_wells(plate):
+async def scan_wells():
+  store = ResourceStore.in_memory()
+  plate = await store.create("cor_96_wellplate_360uL_Fb", name="plate-001")
   async with CeligoClient("127.0.0.1:50052", device_id="celigo-01") as client:
-    spec = ScanSpec.wells(
+    spec = await ScanSpec.wells(
       plate,
       ["A1", "B2"],
       block_shape=(2, 3),

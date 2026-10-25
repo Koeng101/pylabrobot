@@ -1,0 +1,56 @@
+{
+  "name": "thermo_TS_nalgene_1_troughplate_300mL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "thermo_TS_nalgene_1_troughplate_300mL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.8,
+        "y": 85.5,
+        "z": 39.9
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 1,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 123.8,
+                "y": 82.1,
+                "z": 35.45
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 360313.091,
+                "materialZThickness": 1.15,
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 2.0,
+            "y": 1.7,
+            "z": 3.3
+          }
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Thermo Fisher Scientific Nalgene 300mL Flat Bottom Reservoir\n- Product Number: 12001300 (non-sterile), 12001301 (sterile)\n- 1-well reservoir with SBS footprint\n- Max Volume: 300 mL\n- manufacturer_link: https://www.fishersci.com/shop/products/nalgene-disposable-polypropylene-robotic-reservoirs/12565572\n- Spec sheet info: https://assets.fishersci.com/TFS-Assets/LCD/Schematics-&-Diagrams/120013XX_0405.PDF"
+}

@@ -1,0 +1,168 @@
+{
+  "transport": {
+    "client_ip": "169.254.1.2",
+    "machine_ip": "169.254.1.117"
+  },
+  "initial_resources": [
+    {
+      "name": "scila",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "scila_drawer_1",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_2",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_3",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_4",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "call": "drawers[1].open() with a CO2 warning",
+      "result": null,
+      "sent": [
+        {
+          "command": "PrepareForInput",
+          "parameters": {
+            "position": 1
+          }
+        },
+        {
+          "command": "OpenDoor",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "drawers[1].close() with a CO2 warning, no gas mixer",
+      "result": null,
+      "sent": [
+        {
+          "command": "PrepareForOutput",
+          "parameters": {
+            "position": 1
+          }
+        },
+        {
+          "command": "CloseDoor",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "drawers[3].open() obstructed",
+      "result": {
+        "error": "RuntimeError",
+        "message": "command OpenDoor failed with code 4: 'Door obstructed'"
+      },
+      "sent": [
+        {
+          "command": "PrepareForInput",
+          "parameters": {
+            "position": 3
+          }
+        },
+        {
+          "command": "OpenDoor",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "call": "request_drawer_statuses()",
+      "result": {
+        "1": "Closed",
+        "2": "Closed",
+        "3": "Closed",
+        "4": "Closed"
+      },
+      "sent": [
+        {
+          "command": "GetDoorStatus",
+          "parameters": {}
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "scila",
+      "parent": "",
+      "kind": "RESOURCE_KIND_RESOURCE"
+    },
+    {
+      "name": "scila_drawer_1",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_2",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_3",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "scila_drawer_4",
+      "parent": "scila",
+      "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}

@@ -20,7 +20,6 @@ from pylabrobot.hamilton.prep.driver.simulator import (
   RECORDING_PREP,
   RECORDING_PREP_HEATER_SHAKER,
 )
-from pylabrobot.resources.hamilton import PrepDeck
 
 
 def _record_send(prep: PrepDriver) -> List[Any]:
@@ -50,13 +49,11 @@ async def _prep(heater_shaker: bool = True) -> PrepSimulationDriver:
   """The recorded device with a heater shaker, or the V3.0.20 one without."""
   if heater_shaker:
     p = PrepSimulationDriver(
-      deck=PrepDeck(),
       declared_configuration_json=RECORDING_PREP_HEATER_SHAKER,
       firmware_tree_json=FIRMWARE_TREE_V3_0_20_HEATER_SHAKER,
     )
   else:
     p = PrepSimulationDriver(
-      deck=PrepDeck(),
       declared_configuration_json=RECORDING_PREP,
       firmware_tree_json=FIRMWARE_TREE_V3_0_20,
     )
@@ -88,7 +85,6 @@ def test_setup_builds_it_reads_its_ranges_and_initializes_it():
 
   async def run():
     p = PrepSimulationDriver(
-      deck=PrepDeck(),
       declared_configuration_json=RECORDING_PREP_HEATER_SHAKER,
       firmware_tree_json=FIRMWARE_TREE_V3_0_20_HEATER_SHAKER,
     )
@@ -111,7 +107,6 @@ def test_a_heater_shaker_declared_on_a_tree_without_one_is_added():
 
   async def run():
     p = PrepSimulationDriver(
-      deck=PrepDeck(),
       declared_configuration_json=_declaration_with_heater_shaker(),
       firmware_tree_json=FIRMWARE_TREE_V1_2_2,
     )
@@ -325,31 +320,37 @@ def test_spot_0_3_becomes_the_heater_shakers_holder():
     HEATER_SHAKER_PLATE_Z,
     HEATER_SHAKER_SIZE,
   )
-  from pylabrobot.resources import PlateHolder, Resource
+  from pylabrobot.hamilton.prep.driver.test_helpers import make_prep_deck, parts_of
+  from pylabrobot.resources.coordinate import Coordinate
+  from pylabrobot.resources.store import build, handles
 
   async def run():
-    deck = PrepDeck()
-    before = deck[3]
+    deck = await make_prep_deck()
+    before = (await parts_of(deck))[3]
     assert before.name == "spot_0_3"
-    plate = Resource(name="plate", size_x=127.76, size_y=85.48, size_z=14.0)
-    before.assign_child_resource(plate)
-    assert before.location is not None
-    where = before.location
+    plate = await deck.store.create(
+      build.resource("plate", Coordinate(127.76, 85.48, 14.0)), name="plate", parent=before
+    )
+    where = await before.get_location()
+    assert where is not None
     p = PrepSimulationDriver(
       deck=deck,
       declared_configuration_json=RECORDING_PREP_HEATER_SHAKER,
       firmware_tree_json=FIRMWARE_TREE_V3_0_20_HEATER_SHAKER,
     )
     await p.setup()
-    spot = deck.get_resource("spot_0_3")
-    assert isinstance(spot, PlateHolder)
-    assert spot is _hs(p).resource and spot is not before
-    assert spot.location == where + HEATER_SHAKER_FROM_SPOT
-    assert (spot.get_size_x(), spot.get_size_y()) == HEATER_SHAKER_SIZE
-    assert spot.get_size_z() == HEATER_SHAKER_PLATE_Z
-    assert spot.model is None
-    assert plate.parent is spot
-    placed = plate.get_location_wrt(deck)
+    spot = await deck.get_resource("spot_0_3")
+    assert isinstance(spot, handles.PlateHolder)
+    held_by = _hs(p).resource
+    assert held_by is not None and held_by.id == spot.id and spot.id != before.id
+    assert await spot.get_location() == where + HEATER_SHAKER_FROM_SPOT
+    size = await spot.get_size()
+    assert (size.x, size.y) == HEATER_SHAKER_SIZE
+    assert size.z == HEATER_SHAKER_PLATE_Z
+    assert (await spot.attributes()).model == ""
+    parent = await plate.get_parent()
+    assert parent is not None and parent.id == spot.id
+    placed = await plate.get_location_wrt(deck)
     assert (placed.x, placed.y, placed.z) == pytest.approx(
       (
         where.x + HEATER_SHAKER_FROM_SPOT.x + HEATER_SHAKER_PLATE_XY[0],
@@ -359,24 +360,26 @@ def test_spot_0_3_becomes_the_heater_shakers_holder():
     )
     await p.stop()
     await p.setup()
-    assert deck.get_resource("spot_0_3") is spot
+    assert (await deck.get_resource("spot_0_3")).id == spot.id
     await p.stop()
 
   asyncio.run(run())
 
 
 def test_spot_0_3_stays_a_spot_without_a_heater_shaker():
+  from pylabrobot.hamilton.prep.driver.test_helpers import make_prep_deck
+
   async def run():
-    deck = PrepDeck()
-    before = deck.get_resource("spot_0_3")
+    deck = await make_prep_deck()
+    before = await deck.get_resource("spot_0_3")
     p = PrepSimulationDriver(
       deck=deck,
       declared_configuration_json=RECORDING_PREP,
       firmware_tree_json=FIRMWARE_TREE_V1_2_2,
     )
     await p.setup()
-    assert deck.get_resource("spot_0_3") is before
-    assert before.model == "hamilton_prep_resourceholder"
+    assert (await deck.get_resource("spot_0_3")).id == before.id
+    assert (await before.attributes()).model == "hamilton_prep_resourceholder"
     await p.stop()
 
   asyncio.run(run())

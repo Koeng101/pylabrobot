@@ -90,7 +90,8 @@ operations. When emitted inside a semantic operation, they inherit its event con
 
 Use `resource_reference()` for direct resources and resource endpoints. Its `ancestors` provide
 structural context without replacing a `Well`, `TipSpot`, plate, or holder with a more convenient
-display resource. Use `coordinate_reference()` for geometric endpoints and targets.
+display resource. For a resource in a resource store, `await handle_reference(handle)` gives the
+same reference from a handle in one call. Use `coordinate_reference()` for geometric endpoints and targets.
 
 Quantitative fields use PLR's [default units](../user_guide/getting-started/units.md). Add a suffix
 only when the value deliberately uses a different representation, such as `speed_rpm` or
@@ -138,6 +139,22 @@ These are state-transition records rather than semantic operation lifecycles.
 | --- | --- | --- |
 | `resource.assigned` | `resource`, `parent`, `location` | Emitted after assignment. `location` is the child's relative `CoordinateReference`, or `None`. |
 | `resource.unassigned` | `resource`, `previous_parent`, `previous_location` | Emitted after unassignment while preserving the former parent and relative location. |
+
+For resources in a resource store, a handle emits both when it changes the tree:
+`assign_child_resource` (an unassignment first when the resource had a parent), `unassign`,
+`delete`, `ResourceStore.create` with a parent, and `TipRack.set_tip_state`, `fill` and `empty`
+for each tip they make or remove, tips made first. A handle reads what the events carry only while a listener is
+installed. Changes a device stages through the store's command API (`BeginToolPickup` and the
+like), or makes with raw `store.commands`, emit neither from the client; code making such a change
+can emit them with `handles.read_for_events` before it and `handles.emit_assigned` /
+`handles.emit_unassigned` after it.
+
+`EventBridge(store)` publishes both from the store instead: it follows the store's `Watch` stream
+and emits, for every change - staged, raw, or made by another client - the events a handle emits
+for the same change, with the same payloads and `{"source": "store", "revision": ...}` as their
+context. While it runs, the client's own resource events are off (`ResourceStore.client_events`),
+so each change is published once. Its events come from its own task as the store reports each
+change; `await bridge.caught_up()` waits until every change made so far is published.
 
 ## Resource transfer
 

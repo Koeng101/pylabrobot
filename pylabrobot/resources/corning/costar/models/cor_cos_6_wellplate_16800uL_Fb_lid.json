@@ -1,0 +1,21 @@
+{
+  "name": "cor_cos_6_wellplate_16800uL_Fb_lid",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_LID",
+      "model": "cor_cos_6_wellplate_16800uL_Fb_lid",
+      "category": "lid",
+      "size": {
+        "x": 127.0,
+        "y": 86.0,
+        "z": 7.8
+      },
+      "rotation": {},
+      "lid": {
+        "nestingZHeight": 6.7
+      }
+    }
+  },
+  "description": "- brand: Costar"
+}

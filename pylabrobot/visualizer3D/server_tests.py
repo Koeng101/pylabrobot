@@ -19,16 +19,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import websockets
 from websockets.typing import Origin
 
-from pylabrobot.resources import does_volume_tracking, set_volume_tracking
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.corning import cor_96_wellplate_360uL_Fb
-from pylabrobot.resources.hamilton import hamilton_96_tiprack_1000uL
-from pylabrobot.resources.plate import Plate
-from pylabrobot.resources.resource import Resource
-from pylabrobot.resources.tip import Tip
-from pylabrobot.resources.tip_rack import TipRack
-from pylabrobot.visualizer3D.demo import build_facility, declare_channel_access, star_of
-from pylabrobot.visualizer3D.facility import Facility
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
+from pylabrobot.visualizer3D.facility import facility
 from pylabrobot.visualizer3D.server import Viewer3D
 
 
@@ -44,17 +40,43 @@ def free_ports(count: int) -> List[int]:
       sock.close()
 
 
-def empty_facility() -> Facility:
-  """A facility with nothing in it, of a size every test here can place things in."""
-  return Facility(name="facility", size_x=1000, size_y=1000, size_z=500)
+async def empty_facility(store: Optional[ResourceStore] = None) -> handles.Resource:
+  """A facility with nothing in it, of a size every test here can place things in, in a store of
+  its own unless one is given."""
+  store = store or ResourceStore.in_memory()
+  return await store.create(facility("facility", 1000, 1000, 500), name="facility")
 
 
-def track_volumes(test: unittest.TestCase) -> None:
-  """Turn volume tracking on for one test and put it back after."""
-  # It is global: left on, it breaks every other suite that aspirates from a well it never filled.
-  was_tracking = does_volume_tracking()
-  set_volume_tracking(True)
-  test.addCleanup(set_volume_tracking, was_tracking)
+async def part(
+  parent: handles.Resource,
+  name: str,
+  location: Coordinate = Coordinate.zero(),
+  size: Coordinate = Coordinate(10, 10, 10),
+  **definition: Any,
+) -> handles.Resource:
+  """A plain box put in `parent`; `definition` is what `build.resource` takes besides."""
+  return await parent.store.create(
+    build.resource(name, size, **definition), name=name, parent=parent, location=location
+  )
+
+
+async def move_to(resource: handles.Resource, location: Coordinate) -> None:
+  """Put a resource somewhere else in its parent, as setting `location` does."""
+  await resource.store.commands.record_device_positions(
+    spb.RecordDevicePositionsRequest(
+      positions=[
+        spb.DevicePosition(
+          resource=resource.ref,
+          location=pb.PartialVec3(x=location.x, y=location.y, z=location.z),
+        )
+      ]
+    )
+  )
+
+
+def volumes(plate: handles.Plate, **by_identifier: float) -> List[float]:
+  """Every well's volume for `set_well_volumes`: those named, and 0 for the rest."""
+  return [by_identifier.get(identifier, 0.0) for identifier in plate.identifiers]
 
 
 FS_PORT, WS_PORT = free_ports(2)
@@ -70,10 +92,16 @@ MESH_FILE = os.path.join(
 
 class StateChannelTests(unittest.IsolatedAsyncioTestCase):
   async def asyncSetUp(self):
-    track_volumes(self)
-    self.facility = empty_facility()
-    self.plate = cor_96_wellplate_360uL_Fb(name="plate")
-    self.facility.assign_child_resource(self.plate, location=Coordinate(10, 10, 0))
+    self.facility = await empty_facility()
+    self.store = self.facility.store
+    plate = await self.store.create(
+      "cor_96_wellplate_360uL_Fb",
+      name="plate",
+      parent=self.facility,
+      location=Coordinate(10, 10, 0),
+    )
+    assert isinstance(plate, handles.Plate)
+    self.plate = plate
     self.viewer = Viewer3D(
       self.facility, open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT, name="tests"
     )
@@ -81,6 +109,18 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
 
   async def asyncTearDown(self):
     await self.viewer.stop()
+    await self.store.close()
+
+  async def rack(self) -> handles.TipRack:
+    """A rack full of tips, beside the plate."""
+    rack = await self.store.create(
+      "hamilton_96_tiprack_1000uL",
+      name="rack",
+      parent=self.facility,
+      location=Coordinate(300, 10, 0),
+    )
+    assert isinstance(rack, handles.TipRack)
+    return rack
 
   async def connect(self):
     """Open a client and take the scene and the snapshot it is greeted with."""
@@ -121,11 +161,11 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
   async def test_full_tip_spots_share_one_state(self):
     """A spot's state embeds its tip, and the tip names the spot. That is identity, not state: a
     rack of the same tip is one state on the wire, not ninety-six."""
-    rack = hamilton_96_tiprack_1000uL(name="rack", with_tips=True)
-    self.facility.assign_child_resource(rack, location=Coordinate(300, 10, 0))
+    rack = await self.rack()
+    await self.viewer.caught_up(30)
     ws, _, snapshot = await self.connect()
     try:
-      spots = [spot.name for spot in rack.get_all_items()]
+      spots = [spot.name for spot in rack.items]
       self.assertEqual(len({snapshot["of"][name] for name in spots}), 1)
       self.assertEqual(len(snapshot["states"]), 3)  # the wells, the spots and the tips
     finally:
@@ -134,26 +174,28 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
   async def test_a_tip_in_a_rack_is_greeted_with_what_it_holds(self):
     """The info panel reads a tip's `volume` and `max_volume` from its state, so a client is
     greeted with both."""
-    rack = hamilton_96_tiprack_1000uL(name="rack", with_tips=True)
-    self.facility.assign_child_resource(rack, location=Coordinate(300, 10, 0))
-    tip = rack.get_item("A1").get_tip()
-    tip.tracker.set_volume(30.0)
+    rack = await self.rack()
+    tip = await rack.get_tip_spot("A1").get_tip()
+    assert tip is not None
+    await tip.set_volume(30.0)
+    await self.viewer.caught_up(30)
     ws, _, snapshot = await self.connect()
     try:
       state = snapshot["states"][snapshot["of"][tip.name]]
       self.assertEqual(state["volume"], 30.0)
-      self.assertEqual(state["max_volume"], tip.maximal_volume)
+      self.assertEqual(state["max_volume"], (await tip.attributes()).tip.maximal_volume)
     finally:
       await ws.close()
 
   async def test_a_tip_publishes_what_it_holds(self):
     """A tip's tracker was never published, so the channel panel drew every tip empty."""
-    rack = hamilton_96_tiprack_1000uL(name="rack", with_tips=True)
-    self.facility.assign_child_resource(rack, location=Coordinate(300, 10, 0))
-    tip = rack.get_item("A1").get_tip()
+    rack = await self.rack()
+    tip = await rack.get_tip_spot("A1").get_tip()
+    assert tip is not None
+    await self.viewer.caught_up(30)
     ws, _, _ = await self.connect()
     try:
-      tip.tracker.set_volume(12.5)
+      await tip.set_volume(12.5)
       update = await self.next_state(ws)
       self.assertIsNotNone(update)
       self.assertEqual(update["states"][update["of"][tip.name]]["volume"], 12.5)
@@ -163,7 +205,7 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
   async def test_a_change_names_only_what_changed(self):
     ws, _, _ = await self.connect()
     try:
-      self.plate.get_item("A1").tracker.set_volume(150.0)
+      await self.plate.get_well("A1").set_volume(150.0)
       update = await self.next_state(ws)
       self.assertIsNotNone(update)
       self.assertEqual(list(update["of"]), ["plate_well_A1"])
@@ -176,8 +218,7 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
     them."""
     first, _, _ = await self.connect()
     try:
-      for well in self.plate.get_all_items():
-        well.tracker.set_volume(100.0)
+      await self.plate.set_well_volumes(100.0)
       update = await self.next_state(first)
       self.assertIsNotNone(update)
       self.assertEqual(len(update["of"]), 96)
@@ -193,11 +234,10 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
   async def test_an_unchanged_value_is_not_sent_again(self):
     ws, _, _ = await self.connect()
     try:
-      self.plate.get_item("A1").tracker.set_volume(150.0)
+      await self.plate.get_well("A1").set_volume(150.0)
       self.assertIsNotNone(await self.next_state(ws))
       # A sentinel changed in the same batch: the message it arrives in is the one A1 would be in.
-      self.plate.get_item("A1").tracker.set_volume(150.0)
-      self.plate.get_item("B1").tracker.set_volume(10.0)
+      await self.plate.set_well_volumes(volumes(self.plate, A1=150.0, B1=10.0))
       update = await self.next_state(ws)
       self.assertIsNotNone(update)
       self.assertEqual(list(update["of"]), ["plate_well_B1"])
@@ -208,10 +248,9 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
     """State is rounded to what a viewer can show, so a hundredth of a microlitre is not news."""
     ws, _, _ = await self.connect()
     try:
-      self.plate.get_item("A1").tracker.set_volume(150.0)
+      await self.plate.get_well("A1").set_volume(150.0)
       self.assertIsNotNone(await self.next_state(ws))
-      self.plate.get_item("A1").tracker.set_volume(150.04)
-      self.plate.get_item("B1").tracker.set_volume(10.0)
+      await self.plate.set_well_volumes(volumes(self.plate, A1=150.04, B1=10.0))
       update = await self.next_state(ws)
       self.assertIsNotNone(update)
       self.assertEqual(list(update["of"]), ["plate_well_B1"])
@@ -221,16 +260,22 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
   async def test_a_discarded_resource_is_no_longer_listened_to(self):
     """A resource taken out of the tree kept its callback, so a discarded plate's every tracker
     change was still serialized and queued for a viewer that could never draw it."""
-    kept = cor_96_wellplate_360uL_Fb(name="kept")
-    self.facility.assign_child_resource(kept, location=Coordinate(300, 10, 0))
+    kept = await self.store.create(
+      "cor_96_wellplate_360uL_Fb",
+      name="kept",
+      parent=self.facility,
+      location=Coordinate(300, 10, 0),
+    )
+    assert isinstance(kept, handles.Plate)
+    await self.viewer.caught_up(30)
     ws, _, _ = await self.connect()
     try:
-      self.plate.unassign()
+      await self.plate.unassign()
       await self.next_of(ws, "scene")
       self.assertIsNotNone(await self.next_state(ws))  # the snapshot after the rebuild
-      self.assertEqual(self.plate.get_item("A1")._resource_state_updated_callbacks, [])
-      self.plate.get_item("A1").tracker.set_volume(150.0)
-      kept.get_item("A1").tracker.set_volume(150.0)
+      self.assertNotIn(self.plate.get_well("A1").id, self.viewer._subscribed)
+      await self.plate.get_well("A1").set_volume(150.0)
+      await kept.get_well("A1").set_volume(150.0)
       update = await self.next_state(ws)
       self.assertIsNotNone(update)
       self.assertEqual(list(update["of"]), ["kept_well_A1"])
@@ -242,7 +287,7 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
     however much the others have already been told."""
     first, _, _ = await self.connect()
     try:
-      self.plate.get_item("A1").tracker.set_volume(150.0)
+      await self.plate.get_well("A1").set_volume(150.0)
       await self.next_state(first)
       second, _, snapshot = await self.connect()
       try:
@@ -256,7 +301,7 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
     """Position reaches a subscriber the same way rotation always has."""
     ws, _, _ = await self.connect()
     try:
-      self.plate.location = Coordinate(400, 300, 0)
+      await move_to(self.plate, Coordinate(400, 300, 0))
       update = await self.next_state(ws)
       self.assertIsNotNone(update)
       self.assertIn("plate", update["of"])
@@ -268,14 +313,15 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
     """The same names are the same instances: a change of parent is a move, a parent index and six
     floats, applied to the scene the client has. Its new location travels in the move and in no
     state before it, which would be read against the old parent."""
-    holder = Resource(name="holder", size_x=200, size_y=200, size_z=50)
-    self.facility.assign_child_resource(holder, location=Coordinate(500, 500, 0))
+    holder = await part(
+      self.facility, "holder", Coordinate(500, 500, 0), size=Coordinate(200, 200, 50)
+    )
     # The holder is in the scene a client is greeted with, and the flush its assignment scheduled
     # finds nothing moved since, so it sends nothing: a rebuild was the old behaviour there too.
+    await self.viewer.caught_up(30)
     ws, _, _ = await self.connect()
     try:
-      self.plate.unassign()
-      holder.assign_child_resource(self.plate, location=Coordinate(5, 5, 50))
+      await holder.assign_child_resource(self.plate, location=Coordinate(5, 5, 50))
       states, moves = await self.next_of(ws, "moves")
       for state in states:
         self.assertNotIn("plate", state.get("locations", {}), state)
@@ -289,12 +335,13 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_a_client_arriving_after_a_move_sees_it_in_the_scene(self):
     """The kept scene is moved along with the clients', so a late client is handed it as it stands."""
-    holder = Resource(name="holder", size_x=200, size_y=200, size_z=50)
-    self.facility.assign_child_resource(holder, location=Coordinate(500, 500, 0))
+    holder = await part(
+      self.facility, "holder", Coordinate(500, 500, 0), size=Coordinate(200, 200, 50)
+    )
+    await self.viewer.caught_up(30)
     first, _, _ = await self.connect()
     try:
-      self.plate.unassign()
-      holder.assign_child_resource(self.plate, location=Coordinate(5, 5, 50))
+      await holder.assign_child_resource(self.plate, location=Coordinate(5, 5, 50))
       await self.next_of(first, "moves")
       second, scene, _ = await self.connect()
       try:
@@ -316,48 +363,40 @@ class StateChannelTests(unittest.IsolatedAsyncioTestCase):
         states.append(message["data"])
 
 
-class CommandFailed(Exception):
-  """What a held aspirate raises when it is told to fail."""
-
-
-class SimulatedAspirateTests(unittest.IsolatedAsyncioTestCase):
-  """A mounted tip's liquid on the simulated STAR, as the info panel reads it: committed."""
+class StagedAspirateTests(unittest.IsolatedAsyncioTestCase):
+  """A mounted tip's liquid while an aspirate is staged, as the info panel reads it: committed."""
 
   async def asyncSetUp(self):
-    track_volumes(self)
-    facility = build_facility()
-    self.star = star_of(facility)
-    await self.star.setup()
-    declare_channel_access(self.star)
-    assert self.star.pipettes is not None
-    self.pipettes = self.star.pipettes
-    source = self.star.deck.get_resource("source_0")
-    rack = self.star.deck.get_resource("tips_0")
-    assert isinstance(source, Plate) and isinstance(rack, TipRack)
-    self.well = source.get_item("A1")
-    self.well.tracker.set_volume(200.0)
+    self.facility = await empty_facility()
+    self.store = self.facility.store
+    source = await self.store.create(
+      "cor_96_wellplate_360uL_Fb",
+      name="source",
+      parent=self.facility,
+      location=Coordinate(10, 10, 0),
+    )
+    rack = await self.store.create(
+      "hamilton_96_tiprack_1000uL",
+      name="tips",
+      parent=self.facility,
+      location=Coordinate(300, 10, 0),
+    )
+    self.shaft = await part(
+      self.facility,
+      "shaft",
+      Coordinate(500, 500, 300),
+      size=Coordinate(8, 8, 50),
+      kind=pb.RESOURCE_KIND_TIP_MOUNTING_SHAFT,
+    )
+    assert isinstance(source, handles.Plate) and isinstance(rack, handles.TipRack)
+    self.well = source.get_well("A1")
+    await self.well.set_volume(200.0)
     self.rack = rack
     fs_port, ws_port = free_ports(2)
-    self.viewer = Viewer3D(facility, open_browser=False, fs_port=fs_port, ws_port=ws_port)
+    self.viewer = Viewer3D(self.facility, open_browser=False, fs_port=fs_port, ws_port=ws_port)
     await self.viewer.start()
+    self.addAsyncCleanup(self.store.close)
     self.addAsyncCleanup(self.viewer.stop)
-    self.drawing = asyncio.Event()
-    self.release = asyncio.Event()
-
-  def hold_the_command(self, fail: bool) -> None:
-    """Hold each aspirate at its command until `release` is set, then send it or raise."""
-    send = self.pipettes._aspirate_in_one_move
-
-    async def held(*args: Any, **kwargs: Any) -> None:
-      self.drawing.set()
-      await self.release.wait()
-      if fail:
-        raise CommandFailed()
-      await send(*args, **kwargs)
-
-    patcher = unittest.mock.patch.object(self.pipettes, "_aspirate_in_one_move", held)
-    patcher.start()
-    self.addCleanup(patcher.stop)
 
   async def told(self, ws, name: str, quiet: float = 0.5) -> List[Dict[str, Any]]:
     """Every state a client is told for `name` until the server stays quiet for `quiet` s."""
@@ -371,52 +410,64 @@ class SimulatedAspirateTests(unittest.IsolatedAsyncioTestCase):
     except asyncio.TimeoutError:
       return told
 
-  async def aspirate_held(self, ws) -> Tuple[Tip, List[Dict[str, Any]], "asyncio.Future[None]"]:
-    """Mount a tip, start an aspirate into it and hold it at its command.
+  async def aspirate_staged(self, ws) -> Tuple[str, List[Dict[str, Any]], pb.Operation]:
+    """Mount a tip and stage an aspirate of 50 uL into it, as a driver does before its command.
 
-    Returns the tip, what the client was told of it while held, and the aspirate.
+    Returns the tip's name, what the client was told of it while staged, and the operation.
     """
-    await self.pipettes.pick_up_tips([self.rack.get_item("A1")])
-    tip = self.pipettes.get_mounted_tip(0)
-    assert tip is not None
-    await self.told(ws, tip.name)  # the pick-up's scene and snapshot
-    aspirating = asyncio.ensure_future(self.pipettes.aspirate([self.well], [50.0]))
-    await asyncio.wait_for(self.drawing.wait(), 10)
-    return tip, await self.told(ws, tip.name), aspirating
+    commands = self.store.commands
+    pickup = await commands.begin_tool_pickup(
+      spb.BeginToolPickupRequest(
+        frame=self.facility.ref,
+        items=[spb.ToolPickupItem(source=self.rack.get_tip_spot("A1").ref, shaft=self.shaft.ref)],
+      )
+    )
+    await commands.resolve_operation(
+      spb.ResolveOperationRequest(
+        operation_id=pickup.operation.id, outcomes=[spb.ItemOutcome(item=0, succeeded=True)]
+      )
+    )
+    tip = pickup.items[0].tool.attributes.name
+    await self.told(ws, tip)  # the pick-up's scene and snapshot
+    transfer = await commands.begin_liquid_transfer(
+      spb.BeginLiquidTransferRequest(
+        frame=self.facility.ref,
+        direction=spb.TRANSFER_DIRECTION_ASPIRATE,
+        items=[spb.TransferItem(container=self.well.ref, shaft=self.shaft.ref, volume=50.0)],
+      )
+    )
+    return tip, await self.told(ws, tip), transfer.operation
+
+  async def resolve(self, operation: pb.Operation, succeeded: bool) -> None:
+    await self.store.commands.resolve_operation(
+      spb.ResolveOperationRequest(
+        operation_id=operation.id, outcomes=[spb.ItemOutcome(item=0, succeeded=succeeded)]
+      )
+    )
 
   async def test_a_mounted_tip_is_told_its_committed_volume(self):
     """While the command runs the tip's booking is pending, and the page shows `volume`: it
     reads the new volume only once the command is done."""
-    self.hold_the_command(fail=False)
     ws = await websockets.connect(self.viewer.ws_url, max_size=None)
     try:
-      tip, during, aspirating = await self.aspirate_held(ws)
-      self.release.set()
-      await aspirating
-      after = await self.told(ws, tip.name)
+      tip, during, operation = await self.aspirate_staged(ws)
+      await self.resolve(operation, succeeded=True)
+      after = await self.told(ws, tip)
     finally:
-      self.release.set()
       await ws.close()
-    drawn = round(tip.tracker.volume, 1)
-    self.assertGreater(drawn, 0)
-    self.assertEqual([(s["volume"], s["pending_volume"]) for s in during], [(0, drawn)])
-    self.assertEqual([s["volume"] for s in after], [drawn])
+    self.assertEqual([(s["volume"], s["pending_volume"]) for s in during], [(0, 50.0)])
+    self.assertEqual([s["volume"] for s in after], [50.0])
 
   async def test_a_failed_aspirate_leaves_a_mounted_tip_told_what_it_held(self):
     """A failed command rolls the tip's booking back, and the client is told it was: the last
     state it has for the tip is the committed one, pending included."""
-    self.hold_the_command(fail=True)
     ws = await websockets.connect(self.viewer.ws_url, max_size=None)
     try:
-      tip, during, aspirating = await self.aspirate_held(ws)
-      self.release.set()
-      with self.assertRaises(CommandFailed):
-        await aspirating
-      after = await self.told(ws, tip.name)
+      tip, during, operation = await self.aspirate_staged(ws)
+      await self.resolve(operation, succeeded=False)
+      after = await self.told(ws, tip)
     finally:
-      self.release.set()
       await ws.close()
-    self.assertEqual(tip.tracker.volume, 0)
     self.assertGreater(during[-1]["pending_volume"], 0)
     self.assertEqual([s["volume"] for s in during + after], [0] * len(during + after))
     self.assertTrue(after, "the rollback told the client nothing")
@@ -427,12 +478,13 @@ class FileServerTests(unittest.IsolatedAsyncioTestCase):
   """The file server keeps quiet about what is not its fault."""
 
   async def asyncSetUp(self):
-    self.facility = empty_facility()
+    self.facility = await empty_facility()
     self.viewer = Viewer3D(self.facility, open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT)
     await self.viewer.start()
 
   async def asyncTearDown(self):
     await self.viewer.stop()
+    await self.facility.store.close()
 
   async def test_static_files_are_kept_and_revalidated_while_the_page_is_not(self):
     """Every response said `no-store`, so a browser fetched three megabytes of scripts and
@@ -454,7 +506,11 @@ class FileServerTests(unittest.IsolatedAsyncioTestCase):
   async def test_the_name_in_the_header_is_text_not_markup(self):
     fs_port, ws_port = free_ports(2)
     viewer = Viewer3D(
-      empty_facility(), open_browser=False, fs_port=fs_port, ws_port=ws_port, name="<b>run</b>"
+      await empty_facility(),
+      open_browser=False,
+      fs_port=fs_port,
+      ws_port=ws_port,
+      name="<b>run</b>",
     )
     await viewer.start()
     try:
@@ -470,7 +526,7 @@ class FileServerTests(unittest.IsolatedAsyncioTestCase):
     """Keep-alive with no timeout held a thread per connection for as long as the other end liked:
     two hundred idle sockets were two hundred threads."""
     fs_port, ws_port = free_ports(2)
-    viewer = Viewer3D(empty_facility(), open_browser=False, fs_port=fs_port, ws_port=ws_port)
+    viewer = Viewer3D(await empty_facility(), open_browser=False, fs_port=fs_port, ws_port=ws_port)
     viewer.FS_TIMEOUT_S = 0.2
     await viewer.start()
 
@@ -514,7 +570,7 @@ class LifecycleTests(unittest.IsolatedAsyncioTestCase):
     """`stop` used to close the file server and leave the websocket server listening, so the next
     viewer in the same process found its port taken and moved up: the ports drifted by one on
     every restart, and a page served by the earlier viewer kept its stale token forever."""
-    facility = empty_facility()
+    facility = await empty_facility()
     first = Viewer3D(facility, open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT)
     await first.start()
     self.assertEqual((first.fs_port, first.ws_port), (FS_PORT, WS_PORT))
@@ -529,7 +585,7 @@ class LifecycleTests(unittest.IsolatedAsyncioTestCase):
   async def test_stop_does_not_hold_the_loop(self):
     """Shutting the file server down waited on its serving thread's half-second poll from the
     loop's own thread, so everything else on the loop stood still for that long."""
-    facility = empty_facility()
+    facility = await empty_facility()
     viewer = Viewer3D(facility, open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT)
     viewer.FS_POLL_S = 0.5  # a shutdown that waits on the loop would then hold it this long
     await viewer.start()
@@ -553,35 +609,42 @@ class LifecycleTests(unittest.IsolatedAsyncioTestCase):
     """`stop` used to leave every state and assignment callback in place, so a stopped viewer
     kept serializing every change for nobody, and each viewer started on a tree in one session
     added its own callbacks to every resource for the life of the tree."""
-    facility = empty_facility()
-    part = Resource(name="part", size_x=10, size_y=10, size_z=10)
-    facility.assign_child_resource(part, location=Coordinate(0, 0, 0))
-    before = len(part._resource_state_updated_callbacks)
+    facility = await empty_facility()
+    box = await part(facility, "part")
     viewer = Viewer3D(facility, open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT)
-    self.assertEqual(len(part._resource_state_updated_callbacks), before + 1)
     await viewer.start()
+    self.assertIn(box.id, viewer._subscribed)
     await viewer.stop()
-    self.assertEqual(len(part._resource_state_updated_callbacks), before)
-    part.location = Coordinate(1, 2, 3)
-    late = Resource(name="late", size_x=10, size_y=10, size_z=10)
-    facility.assign_child_resource(late, location=Coordinate(0, 0, 0))
-    self.assertEqual(len(late._resource_state_updated_callbacks), 0)
+    self.assertFalse(viewer._tree.following)
+    self.assertEqual(viewer._subscribed, set())
+    await move_to(box, Coordinate(1, 2, 3))
+    late = await part(facility, "late")
+    await asyncio.sleep(2 * viewer._tree.BATCH_WAIT_S)
+    self.assertNotIn(late.id, viewer._subscribed)
+    self.assertEqual(viewer._pending, {})
+    await facility.store.close()
 
   async def test_a_resource_put_back_is_listened_to_once(self):
     """Every assignment subscribed the resource again, so a tip picked up and put back twenty
     times carried twenty-one callbacks and its every change was serialized twenty-one times."""
-    facility = empty_facility()
-    part = Resource(name="part", size_x=10, size_y=10, size_z=10)
+    facility = await empty_facility()
+    box = await part(facility, "part")
     viewer = Viewer3D(facility, open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT)
     await viewer.start()
     try:
       for _ in range(20):
-        facility.assign_child_resource(part, location=Coordinate(0, 0, 0))
-        facility.unassign_child_resource(part)
-      facility.assign_child_resource(part, location=Coordinate(0, 0, 0))
-      self.assertEqual(len(part._resource_state_updated_callbacks), 1)
+        await box.unassign()
+        await facility.assign_child_resource(box, location=Coordinate(0, 0, 0))
+      await viewer.caught_up(30)
+      self.assertIn(box.id, viewer._subscribed)
+      sent: List[str] = []
+      viewer._enqueue = lambda name, state: sent.append(name)  # type: ignore[method-assign]
+      await move_to(box, Coordinate(1, 2, 3))
+      await viewer.caught_up(30)
+      self.assertEqual(sent, ["part"])
     finally:
       await viewer.stop()
+      await facility.store.close()
 
 
 class BindTests(unittest.IsolatedAsyncioTestCase):
@@ -590,7 +653,7 @@ class BindTests(unittest.IsolatedAsyncioTestCase):
   async def test_a_host_that_cannot_be_bound_is_raised_at_once(self):
     """Every bind error used to read as a taken port, so an address this machine does not have
     walked up through all sixty-five thousand ports, took seconds, and then overflowed."""
-    facility = empty_facility()
+    facility = await empty_facility()
     viewer = Viewer3D(
       facility, host="203.0.113.1", open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT
     )
@@ -601,7 +664,7 @@ class BindTests(unittest.IsolatedAsyncioTestCase):
   async def test_an_ipv6_host_serves_both_ports(self):
     """The file server was bound as IPv4 whatever the host, so `::1` bound the websocket and then
     hung forever walking ports for a file server that could never bind one."""
-    facility = empty_facility()
+    facility = await empty_facility()
     viewer = Viewer3D(facility, host="::1", open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT)
     await viewer.start()
     try:
@@ -617,20 +680,25 @@ class AbandonedLoopTests(unittest.TestCase):
     """A script that starts a viewer and returns from `asyncio.run` without stopping it used to
     turn every later location change into `RuntimeError: Event loop is closed`, raised out of the
     resource, and an assignment raised after the child was already attached."""
-    facility = empty_facility()
-    part = Resource(name="part", size_x=10, size_y=10, size_z=10)
-    facility.assign_child_resource(part, location=Coordinate(0, 0, 0))
 
-    async def start_and_forget() -> None:
+    async def start_and_forget() -> handles.Resource:
+      facility = await empty_facility()
+      await part(facility, "part")
       # Its ports stay bound in this process: nothing can stop it once its loop has gone.
       fs_port, ws_port = free_ports(2)
       await Viewer3D(facility, open_browser=False, fs_port=fs_port, ws_port=ws_port).start()
+      return facility
 
-    asyncio.run(start_and_forget())
-    part.location = Coordinate(1, 2, 3)
-    late = Resource(name="late", size_x=10, size_y=10, size_z=10)
-    facility.assign_child_resource(late, location=Coordinate(0, 0, 0))
-    self.assertIs(late.parent, facility)
+    facility = asyncio.run(start_and_forget())
+
+    async def change() -> Optional[str]:
+      box = await facility.store.get("part", root=facility)
+      await move_to(box, Coordinate(1, 2, 3))
+      late = await part(facility, "late")
+      parent = await late.get_parent()
+      return parent.name if parent is not None else None
+
+    self.assertEqual(asyncio.run(change()), "facility")
 
 
 class RebuildTests(unittest.IsolatedAsyncioTestCase):
@@ -641,13 +709,12 @@ class RebuildTests(unittest.IsolatedAsyncioTestCase):
     was no client to send them to: a third of a second on the demo facility, on every assignment
     of a deck laid out before the page was opened. The next client is greeted with a scene built
     for it then, and it holds what was assigned meanwhile."""
-    facility = empty_facility()
+    facility = await empty_facility()
     viewer = Viewer3D(facility, open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT)
     await viewer.start()
     try:
-      facility.assign_child_resource(
-        Resource(name="late", size_x=10, size_y=10, size_z=10), location=Coordinate(0, 0, 0)
-      )
+      await part(facility, "late")
+      await viewer.caught_up(30)
       # Twice the debounce: the rebuild the assignment scheduled has had its chance to run.
       await asyncio.sleep(2 * Viewer3D.SCENE_DEBOUNCE_S)
       self.assertEqual(viewer.rebuilds, 0)
@@ -658,74 +725,88 @@ class RebuildTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("late", scene["instances"]["names"])
     finally:
       await viewer.stop()
+      await facility.store.close()
 
   async def test_a_model_given_a_mesh_does_not_split_on_the_next_build(self):
     """Registering meshes used to write into the interned model dicts, so on the next build the
     one carrying a mesh no longer matched the twins the scene had kept, and every rebuild grew the
     model table: fifty-three models became sixty-seven on the demo facility."""
-    facility = empty_facility()
+    facility = await empty_facility()
     for i in range(3):
-      part = Resource(name=f"part_{i}", size_x=10, size_y=10, size_z=10, model="part")
-      # Declared the way a resource module declares it: a field the base class does not know.
-      setattr(part, "mesh", {"path": MESH_FILE, "units": "m", "up": "Z"})
-      facility.assign_child_resource(part, location=Coordinate(100 * i, 0, 0))
+      # Declared the way a resource declares what it is drawn with: in its metadata.
+      await part(
+        facility,
+        f"part_{i}",
+        Coordinate(100 * i, 0, 0),
+        model="part",
+        metadata={"mesh": {"path": MESH_FILE, "units": "m", "up": "Z"}},
+      )
     viewer = Viewer3D(facility, open_browser=False)
-    first = viewer._scene_message(rebuild=True)
-    second = viewer._scene_message(rebuild=True)
+    await viewer.follow()
+    try:
+      first = viewer._scene_message(rebuild=True)
+      second = viewer._scene_message(rebuild=True)
+    finally:
+      await viewer.stop()
+      await facility.store.close()
     self.assertEqual(len(first["models"]), 2)  # the facility and the one part they all share
     self.assertEqual(second["models"], first["models"])
 
 
-class MeshTests(unittest.TestCase):
+class MeshTests(unittest.IsolatedAsyncioTestCase):
   """The file server hands out a mesh without the token, so which files it will serve is narrow."""
 
-  def meshes(self, facility: Resource, models_root: Optional[str] = None) -> Dict[str, Any]:
+  async def asyncSetUp(self):
+    self.facility = await empty_facility()
+
+  async def asyncTearDown(self):
+    await self.facility.store.close()
+
+  async def meshes(self, models_root: Optional[str] = None) -> Dict[str, Any]:
     """Each part's mesh as the page is told it, by the part's model name; None drawn as a box."""
-    viewer = Viewer3D(facility, open_browser=False, models_root=models_root)
-    models = viewer._scene_message(rebuild=True)["models"]
+    viewer = Viewer3D(self.facility, open_browser=False, models_root=models_root)
+    await viewer.follow()
+    try:
+      models = viewer._scene_message(rebuild=True)["models"]
+    finally:
+      await viewer.stop()
     self.viewer = viewer
     return {m["model"]: m.get("mesh") for m in models if m.get("model")}
 
-  def part(self, facility: Resource, name: str, **declared: Any) -> None:
-    part = Resource(name=name, size_x=10, size_y=10, size_z=10, model=name)
-    for key, value in declared.items():
-      setattr(part, key, value)
-    facility.assign_child_resource(part, location=Coordinate(0, 0, 0))
+  async def part(self, name: str, **declared: Any) -> None:
+    await part(self.facility, name, model=name, metadata=declared)
 
-  def test_a_mesh_id_does_not_name_its_file(self):
+  async def test_a_mesh_id_does_not_name_its_file(self):
     """The id was the SHA-1 of the file's path, so anyone who could guess a path could fetch it."""
-    facility = empty_facility()
-    self.part(facility, "a", mesh={"path": MESH_FILE})
-    self.part(facility, "b", mesh={"path": MESH_FILE})
-    meshes = self.meshes(facility)
+    await self.part("a", mesh={"path": MESH_FILE})
+    await self.part("b", mesh={"path": MESH_FILE})
+    meshes = await self.meshes()
     mesh_id = meshes["a"]["url"][len("mesh/") :]
     self.assertEqual(meshes["b"]["url"], meshes["a"]["url"])  # one file, one id
     self.assertNotIn(hashlib.sha1(MESH_FILE.encode()).hexdigest()[:16], mesh_id)
     self.assertEqual(self.viewer._mesh_files[mesh_id], os.path.realpath(MESH_FILE))
 
-  def test_only_a_glb_is_served(self):
+  async def test_only_a_glb_is_served(self):
     with tempfile.TemporaryDirectory() as directory:
       secret = os.path.join(directory, "secret.txt")
       with open(secret, "w") as f:
         f.write("not a model")
-      facility = empty_facility()
-      self.part(facility, "text", mesh={"path": secret})
-      self.assertIsNone(self.meshes(facility)["text"])
+      await self.part("text", mesh={"path": secret})
+      self.assertIsNone((await self.meshes())["text"])
       self.assertEqual(self.viewer._mesh_files, {})
 
-  def test_a_reference_glb_outside_models_root_is_drawn_as_a_box(self):
+  async def test_a_reference_glb_outside_models_root_is_drawn_as_a_box(self):
     with tempfile.TemporaryDirectory() as directory:
       root = os.path.join(directory, "models")
       os.makedirs(root)
       shutil.copy(MESH_FILE, os.path.join(root, "inside.glb"))
       shutil.copy(MESH_FILE, os.path.join(directory, "outside.glb"))
       os.symlink(os.path.join(directory, "outside.glb"), os.path.join(root, "link.glb"))
-      facility = empty_facility()
-      self.part(facility, "inside", reference_glb="inside.glb")
-      self.part(facility, "absolute", reference_glb=os.path.join(directory, "outside.glb"))
-      self.part(facility, "dotdot", reference_glb="../outside.glb")
-      self.part(facility, "link", reference_glb="link.glb")
-      meshes = self.meshes(facility, models_root=root)
+      await self.part("inside", reference_glb="inside.glb")
+      await self.part("absolute", reference_glb=os.path.join(directory, "outside.glb"))
+      await self.part("dotdot", reference_glb="../outside.glb")
+      await self.part("link", reference_glb="link.glb")
+      meshes = await self.meshes(models_root=root)
       self.assertIsNotNone(meshes["inside"])
       for escaping in ("absolute", "dotdot", "link"):
         self.assertIsNone(meshes[escaping], escaping)
@@ -736,11 +817,13 @@ class WaitForBrowserTests(unittest.IsolatedAsyncioTestCase):
 
   async def asyncSetUp(self):
     fs_port, ws_port = free_ports(2)
-    self.viewer = Viewer3D(empty_facility(), open_browser=False, fs_port=fs_port, ws_port=ws_port)
+    self.facility = await empty_facility()
+    self.viewer = Viewer3D(self.facility, open_browser=False, fs_port=fs_port, ws_port=ws_port)
     await self.viewer.start()
 
   async def asyncTearDown(self):
     await self.viewer.stop()
+    await self.facility.store.close()
 
   async def say_hello(self, **data: Any) -> None:
     with contextlib.redirect_stdout(io.StringIO()):
@@ -762,14 +845,14 @@ class WaitForBrowserTests(unittest.IsolatedAsyncioTestCase):
 
   async def test_waiting_before_start_is_refused(self):
     with self.assertRaises(RuntimeError):
-      await Viewer3D(empty_facility(), open_browser=False).wait_for_browser(timeout=0.1)
+      await Viewer3D(self.facility, open_browser=False).wait_for_browser(timeout=0.1)
 
 
 class AccessTests(unittest.IsolatedAsyncioTestCase):
   """Only the page this viewer served, reached by a name this machine answers to, may watch."""
 
   async def asyncSetUp(self):
-    self.facility = empty_facility()
+    self.facility = await empty_facility()
     self.viewer = Viewer3D(
       self.facility, open_browser=False, fs_port=FS_PORT, ws_port=WS_PORT, name="tests"
     )
@@ -777,6 +860,7 @@ class AccessTests(unittest.IsolatedAsyncioTestCase):
 
   async def asyncTearDown(self):
     await self.viewer.stop()
+    await self.facility.store.close()
 
   def ws(self, token: Optional[str]) -> str:
     query = "" if token is None else f"?token={token}"

@@ -2,9 +2,6 @@
 
 import unittest
 
-from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
-from pylabrobot.resources.tecan.plates import DeepWell_Greiner_1536_Well
-from pylabrobot.resources.vwr.plates import VWR_1_troughplate_195000uL_Ub
 from pylabrobot.revvity.celigo.coordinates import CoordinateSystems
 from pylabrobot.revvity.celigo.navigation import (
   effective_fov_mm,
@@ -17,6 +14,7 @@ from pylabrobot.revvity.celigo.tests.helpers import (
   make_calibration_config,
   make_hardware_default_config,
   make_navigation_config,
+  make_plate,
 )
 
 
@@ -36,70 +34,72 @@ def _coords():
   return calib, hw, CoordinateSystems.from_config(calib, hw)
 
 
-class TestPlateNavigation(unittest.TestCase):
-  def test_well_sample_position_uses_plate_geometry_without_stage_calibration(self):
-    plate = cor_96_wellplate_360uL_Fb(name="imaging_plate")
-    x, y = well_to_sample_mm(plate, "A1")
+class TestPlateNavigation(unittest.IsolatedAsyncioTestCase):
+  async def test_well_sample_position_uses_plate_geometry_without_stage_calibration(self):
+    plate = await make_plate()
+    x, y = await well_to_sample_mm(plate, "A1")
     self.assertAlmostEqual(x, 14.3)
     self.assertAlmostEqual(y, 11.28)
 
-  def test_plr_plate_uses_its_resource_geometry(self):
+  async def test_plr_plate_uses_its_resource_geometry(self):
     _, _, cs = _coords()
-    plate = cor_96_wellplate_360uL_Fb(name="imaging_plate")
-    a1 = well_to_stage_mm(plate, "A1", cs)
-    a2 = well_to_stage_mm(plate, "A2", cs)
-    b1 = well_to_stage_mm(plate, "B1", cs)
+    plate = await make_plate()
+    a1 = await well_to_stage_mm(plate, "A1", cs)
+    a2 = await well_to_stage_mm(plate, "A2", cs)
+    b1 = await well_to_stage_mm(plate, "B1", cs)
     self.assertAlmostEqual(a1[0], 16.459)
     self.assertAlmostEqual(a1[1], 14.772)
     self.assertAlmostEqual(a2[0] - a1[0], 9.0)
     self.assertAlmostEqual(b1[1] - a1[1], 9.0)
 
-  def test_out_of_range(self):
+  async def test_out_of_range(self):
     _, _, cs = _coords()
-    plate = cor_96_wellplate_360uL_Fb(name="imaging_plate")
+    plate = await make_plate()
     with self.assertRaises(ValueError):
-      well_to_stage_mm(plate, "I1", cs)
+      await well_to_stage_mm(plate, "I1", cs)
 
-  def test_single_well_plate_uses_its_actual_well_center(self):
+  async def test_single_well_plate_uses_its_actual_well_center(self):
     _, _, cs = _coords()
-    plate = VWR_1_troughplate_195000uL_Ub(name="reservoir")
-    x, y = well_to_stage_mm(plate, "A1", cs)
+    plate = await make_plate("VWR_1_troughplate_195000uL_Ub", "reservoir")
+    x, y = await well_to_stage_mm(plate, "A1", cs)
     well = plate.get_well("A1")
-    location = well.location
+    location = await well.get_location()
     self.assertIsNotNone(location)
     assert location is not None
-    self.assertAlmostEqual(x, location.x + well.get_size_x() / 2 + 2.159)
+    well_size = await well.get_size()
+    plate_size = (await plate.attributes()).size
+    self.assertAlmostEqual(x, location.x + well_size.x / 2 + 2.159)
     self.assertAlmostEqual(
       y,
-      plate.get_size_y() - (location.y + well.get_size_y() / 2) + 3.492,
+      plate_size.y - (location.y + well_size.y / 2) + 3.492,
     )
 
-  def test_well_names_beyond_z_use_plr_lookup(self):
+  async def test_well_names_beyond_z_use_plr_lookup(self):
     _, _, cs = _coords()
-    plate = DeepWell_Greiner_1536_Well(name="plate")
-    aa1 = well_to_stage_mm(plate, "AA1", cs)
+    plate = await make_plate("DeepWell_Greiner_1536_Well", "plate")
+    aa1 = await well_to_stage_mm(plate, "AA1", cs)
     well = plate.get_well("AA1")
-    location = well.location
+    location = await well.get_location()
     self.assertIsNotNone(location)
     assert location is not None
-    self.assertAlmostEqual(aa1[0], location.x + well.get_size_x() / 2 + 2.159)
+    self.assertAlmostEqual(aa1[0], location.x + (await well.get_size()).x / 2 + 2.159)
 
 
-class TestWellToStage(unittest.TestCase):
-  def test_a1_stage_position(self):
+class TestWellToStage(unittest.IsolatedAsyncioTestCase):
+  async def test_a1_stage_position(self):
     _, _, cs = _coords()
-    plate = cor_96_wellplate_360uL_Fb(name="imaging_plate")
-    x, y = well_to_stage_mm(plate, "A1", cs)
+    plate = await make_plate()
+    x, y = await well_to_stage_mm(plate, "A1", cs)
     # this config has no calibrated corner offset, so stage = sample + default corner:
     self.assertAlmostEqual(x, 16.459)
     self.assertAlmostEqual(y, 14.772)
 
-  def test_adjacent_wells_differ_by_pitch(self):
+  async def test_adjacent_wells_differ_by_pitch(self):
     _, _, cs = _coords()
-    plate = cor_96_wellplate_360uL_Fb(name="imaging_plate")
-    a1 = well_to_stage_mm(plate, "A1", cs)
-    a2 = well_to_stage_mm(plate, "A2", cs)
-    b1 = well_to_stage_mm(plate, "B1", cs)
+    plate = await make_plate()
+    a1 = await well_to_stage_mm(plate, "A1", cs)
+    a2 = await well_to_stage_mm(plate, "A2", cs)
+    b1 = await well_to_stage_mm(plate, "B1", cs)
     self.assertAlmostEqual(a2[0] - a1[0], 9.0)
     self.assertAlmostEqual(b1[1] - a1[1], 9.0)
 

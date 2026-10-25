@@ -1,0 +1,57 @@
+{
+  "name": "cor_falcon_96_wellplate_250uL_Rb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "cor_falcon_96_wellplate_250uL_Rb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.11,
+        "z": 14.3
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 6.35,
+                "y": 6.35,
+                "z": 14.3
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 0.25,
+                "bottomType": "WELL_BOTTOM_TYPE_U",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.955,
+            "y": 7.965,
+            "z": 1.8
+          },
+          "itemDx": 8.99,
+          "itemDy": 8.99
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Corning cat. no.: 353077\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2b/UK/en/Microplates/\n  Assay-Microplates/96-Well-Microplates/Falcon%C2%AE-96-well-Polystyrene-Microplates/p/\n  falcon96WellPolystyreneMicroplates\n- brand: Falcon\n- distributor: (Fisher Scientific, 08-772-17)\n- material: Polystyrene\n- tc_treated: Yes\n- sterile: yes\n- tech_drawing: https://www.corning.com/catalog/cls/documents/drawings/LSR00181.pdf\n- max_volume: 250 uL"
+}

@@ -1,0 +1,58 @@
+{
+  "name": "celltreat_96_wellplate_350uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "celltreat_96_wellplate_350uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.61,
+        "y": 85.24,
+        "z": 14.3
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 6.96,
+                "y": 6.96,
+                "z": 10.04
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 300.0,
+                "materialZThickness": 1.75,
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 10.83,
+            "y": 7.67,
+            "z": 4.05
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "CellTreat cat. no.: 229195, 229196\n\n- Material: Polystyrene\n- Tissue culture treated: Yes (229195, 229196)\n\nhttps://www.celltreat.com/wp-content/uploads/96-Well-Plate.pdf"
+}

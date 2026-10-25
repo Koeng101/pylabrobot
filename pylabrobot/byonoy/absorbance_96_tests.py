@@ -3,10 +3,11 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from pylabrobot.byonoy import byonoy_a96a_illumination_unit, byonoy_a96a_parking_unit
-from pylabrobot.byonoy.absorbance_96 import ByonoyAbsorbance96
+from pylabrobot.byonoy.absorbance_96 import ByonoyAbsorbance96, ByonoyAbsorbanceBaseUnit
 from pylabrobot.io.binary import Writer
 from pylabrobot.io.hid import HID
 from pylabrobot.resources import Coordinate, Lid, Plate, Well
+from pylabrobot.resources.store.definitions import definition_from_resource
 
 
 class CalibrationErrorOverrideTests(unittest.IsolatedAsyncioTestCase):
@@ -136,23 +137,46 @@ def _plate(size_z: float) -> Plate:
   return Plate(name="plate", size_x=127.76, size_y=85.48, size_z=size_z, ordered_items={"A1": well})
 
 
-class IlluminationUnitHeightCheckTests(unittest.TestCase):
-  def _check_with(self, plate: Plate) -> None:
-    base = byonoy_a96a_parking_unit(name="base")
-    base.plate_holder.assign_child_resource(plate)
-    base.illumination_unit_holder.check_can_drop_resource_here(
-      byonoy_a96a_illumination_unit(name="illumination_unit")
+class IlluminationUnitHeightCheckTests(unittest.IsolatedAsyncioTestCase):
+  async def _check_with(self, plate: Plate) -> None:
+    base = await byonoy_a96a_parking_unit(name="base")
+    stored = await base.store.create(definition_from_resource(plate), plate.name)
+    await base.plate_holder.assign_child_resource(stored)
+    unit = byonoy_a96a_illumination_unit(name="illumination_unit")
+    await base.illumination_unit_holder.check_can_drop_resource_here(
+      await base.store.create(unit, "illumination_unit")
     )
 
-  def test_the_tallest_plate_that_clears_is_allowed_and_the_next_is_not(self):
-    self._check_with(_plate(16.0))
+  async def test_the_tallest_plate_that_clears_is_allowed_and_the_next_is_not(self):
+    await self._check_with(_plate(16.0))
     with self.assertRaises(RuntimeError):
-      self._check_with(_plate(16.01))
+      await self._check_with(_plate(16.01))
 
-  def test_a_lid_counts_towards_the_height(self):
+  async def test_a_lid_counts_towards_the_height(self):
     plate = _plate(14.0)
     plate.assign_child_resource(
       Lid(name="lid", size_x=127.76, size_y=85.48, size_z=4.0, nesting_z_height=1.0)
     )
     with self.assertRaises(RuntimeError):
-      self._check_with(plate)
+      await self._check_with(plate)
+
+
+class BodyInTheStoreTests(unittest.IsolatedAsyncioTestCase):
+  async def test_body_is_found_again_and_only_found_by_get_resources(self) -> None:
+    base = await byonoy_a96a_parking_unit(name="base")
+    again = ByonoyAbsorbanceBaseUnit(
+      name="base", model="byonoy_a96a_parking_unit", store=base.store
+    )
+    with self.assertRaises(RuntimeError):
+      again.body  # noqa: B018
+    self.assertEqual(await again.get_resources(), base.body)
+    self.assertEqual(again.plate_holder.handle, base.plate_holder.handle)
+    missing = ByonoyAbsorbanceBaseUnit(name="other", store=base.store)
+    with self.assertRaises(LookupError):
+      await missing.get_resources()
+
+  async def test_an_unrelated_resource_of_its_name_is_not_taken_over(self) -> None:
+    unit = ByonoyAbsorbanceBaseUnit(name="base", model="byonoy_a96a_parking_unit")
+    await unit.store.create("cor_96_wellplate_360uL_Fb", name="base")
+    with self.assertRaisesRegex(ValueError, "the store's 'base' is a RESOURCE_KIND_PLATE"):
+      await unit.create_resources()

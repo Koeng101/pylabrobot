@@ -12,14 +12,16 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
 
 from pylabrobot.lib.luminescence.results import LuminescenceResult
-from pylabrobot.resources import Plate, Well
+from pylabrobot.resources.store import handles
 
 from .fluorescence import Fluorescence, _compute_band_edges
 from .measurement import (
   Measurement,
   MeasurementConfiguration,
   MeasurementSettings,
+  PlateFacts,
   ShakeSettings,
+  WellFacts,
   _get_measured_identifiers,
   _get_readings_by_well,
 )
@@ -122,7 +124,7 @@ class Luminescence(Measurement):
     self._check_default_focal_height_percent(value)
     self._default_focal_height_percent_of_well_depth = value
 
-  def _get_default_focal_height(self, wells: Sequence[Well]) -> float:
+  def _get_default_focal_height(self, wells: Sequence[WellFacts]) -> float:
     """The focal height `default_focal_height_percent_of_well_depth` up `wells`, mm."""
     return self._compute_default_focal_height(
       wells, self._default_focal_height_percent_of_well_depth, self.configuration.focal_height_range
@@ -203,8 +205,8 @@ class Luminescence(Measurement):
 
   def _compute_run_parameters(
     self,
-    plate: Plate,
-    wells: List[Well],
+    plate: PlateFacts,
+    wells: List[WellFacts],
     measurement: MeasurementSettings,
     shake: Optional[ShakeSettings],
     *,
@@ -272,7 +274,7 @@ class Luminescence(Measurement):
   async def measure(
     self,
     *,
-    wells: Optional[List[Well]] = None,
+    wells: Optional[Sequence[handles.Resource]] = None,
     emission_wavelength: int = 580,
     emission_bandwidth: int = 80,
     gain: int = 3500,
@@ -332,12 +334,12 @@ class Luminescence(Measurement):
       measurement,
       timeout=timeout,
     )
-    plate, wells = self._get_plate_and_wells(measurement, shake_settings, wells)
+    plate, targets = await self._get_plate_and_wells(measurement, shake_settings, wells)
     if focal_height is None:
-      focal_height = self._get_default_focal_height(wells)
+      focal_height = self._get_default_focal_height(targets)
     parameters = self._compute_run_parameters(
       plate,
-      wells,
+      targets,
       measurement,
       shake_settings,
       emission_wavelength=emission_wavelength,
@@ -356,17 +358,17 @@ class Luminescence(Measurement):
       emission_bandwidth,
       gain,
       measurement_interval,
-      len(wells),
+      len(targets),
       plate.num_items,
       plate.name,
     )
     start_timestamp = datetime.now()
     replies, end_timestamp = await self._run_measurement(parameters, timeout)
-    identifiers = _get_measured_identifiers(plate, wells)
+    identifiers = _get_measured_identifiers(plate, targets)
     counts, ceiling, temperature = self._decode_data_reply(replies[0], len(identifiers))
     self._warn_saturated("luminescence", counts, ceiling)
     return CLARIOstarLuminescenceResult(
-      data=_get_readings_by_well(plate, wells, [float(count) for count in counts]),
+      data=_get_readings_by_well(plate, targets, [float(count) for count in counts]),
       emission_wavelength=emission_wavelength,
       emission_bandwidth=emission_bandwidth,
       gain=gain,

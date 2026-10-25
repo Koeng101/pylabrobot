@@ -1,0 +1,27 @@
+{
+  "name": "Hamilton_MFX_plateholder_DWP_metal_tapped_10mm_3dprint",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "model": "Hamilton_MFX_plateholder_DWP_metal_tapped_10mm_3dprint",
+      "category": "plate_holder",
+      "size": {
+        "x": 135.0,
+        "y": 94.0,
+        "z": 29.8
+      },
+      "rotation": {},
+      "holder": {
+        "childLocation": {
+          "x": 4.0,
+          "y": 4.0,
+          "z": 20.0
+        },
+        "pedestalSizeZ": -4.74,
+        "capacity": 1
+      }
+    }
+  },
+  "description": "A Hamilton module is screwed onto 3d printed adapters.\nHamilton MFX DWP Module (cat.-no. 188042 / 188042-00). It contains metal clamps at the corners.\nhttps://www.hamiltoncompany.com/other-robotics/188042\nThe 3D prints rest on the carrier base and are secured with 3mm screws onto which the module is screwed.\n3D prints located here: https://cad.onshape.com/documents/87b79aea22945656e1849b61/w/1d28384d184c23a6551facf8/e/3313021cc0b2fe3c5e005547\nSTL files can be found in this folder.\nInstructions found in post here: https://labautomation.io/t/adapters-for-hamilton-carrier-188039/6561"
+}

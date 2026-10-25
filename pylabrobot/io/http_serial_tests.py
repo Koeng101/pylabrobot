@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 from pylabrobot.io.capture import CaptureReader, start_capture, stop_capture
 from pylabrobot.io.http import HTTPError, HTTPValidator
 from pylabrobot.io.http_serial import HTTPSerial
+from pylabrobot.opentrons.decks import get_slot, get_trash_area
 from pylabrobot.opentrons.flex import Flex
 
 
@@ -196,7 +197,9 @@ class HTTPSerialTests(unittest.IsolatedAsyncioTestCase):
     self.addAsyncCleanup(flex.disconnect)
     self.assertEqual(flex.software_version, "9.1.2")
     self.assertIsNone(flex.run_id)
-    self.assertEqual(flex.deck.get_slot(flex.deck.get_trash_area()), "D3")
+    deck = flex.deck
+    assert deck is not None
+    self.assertEqual(await get_slot(deck, await get_trash_area(deck)), "D3")
     self.assertEqual(
       [request.split(b"\r\n", 1)[0] for request in peer.requests],
       [b"GET /health HTTP/1.1", b"GET /deck_configuration HTTP/1.1"],

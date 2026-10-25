@@ -1,11 +1,11 @@
 """A PyLabRobot visualizer whose world is any resource."""
 
-from .facility import Facility
+from .facility import facility
 from .scene import Scene, build_scene, collect_state, pack_state
 from .server import Viewer3D
 
 __all__ = [
-  "Facility",
+  "facility",
   "Scene",
   "build_scene",
   "collect_state",

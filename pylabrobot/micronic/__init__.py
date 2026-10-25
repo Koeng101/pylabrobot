@@ -6,4 +6,5 @@ from pylabrobot.micronic.code_reader import (
   SaneScanner,
   Scanner,
   TwainScanner,
+  rack_scan_reads,
 )

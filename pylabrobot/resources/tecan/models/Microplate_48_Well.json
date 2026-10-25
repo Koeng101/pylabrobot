@@ -1,0 +1,55 @@
+{
+  "name": "Microplate_48_Well",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Microplate_48_Well",
+      "category": "tecan_plate",
+      "size": {
+        "x": 131.1,
+        "y": 85.3,
+        "z": 17.3
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 8,
+        "numItemsY": 6,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 13.0,
+                "y": 13.0,
+                "z": 17.3
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 2296.26861032512,
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 13.5,
+            "y": 3.8
+          },
+          "itemDx": 13.0,
+          "itemDy": 13.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "cell culture/clear: pn 30122303"
+}

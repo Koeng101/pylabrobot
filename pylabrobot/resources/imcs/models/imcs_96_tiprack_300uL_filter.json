@@ -1,0 +1,114 @@
+{
+  "name": "imcs_96_tiprack_300uL_filter",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP_RACK",
+      "model": "imcs_96_tiprack_300uL_filter",
+      "category": "tip_rack",
+      "size": {
+        "x": 122.4,
+        "y": 82.6,
+        "z": 20.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 12,
+        "numItemsY": 8,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_tipspot_{identifier}",
+              "kind": "RESOURCE_KIND_TIP_SPOT",
+              "category": "tip_spot",
+              "size": {
+                "x": 9.0,
+                "y": 9.0
+              },
+              "rotation": {},
+              "tipSpot": {
+                "prototypeTip": {
+                  "name": "{name}_tipspot_{identifier}",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "model": "imcs_tip_300uL",
+                  "category": "tip",
+                  "size": {
+                    "x": 8.2,
+                    "y": 8.2,
+                    "z": 53.9
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 8.0
+                  },
+                  "tip": {
+                    "diameter": 8.2,
+                    "hasFilter": true,
+                    "maximalVolume": 360.0,
+                    "nominalVolume": 360.0,
+                    "hamilton": {
+                      "tipSize": "STANDARD_VOLUME",
+                      "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                    }
+                  }
+                }
+              }
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "{name}_tipspot_{identifier}#0",
+                  "kind": "RESOURCE_KIND_TIP",
+                  "model": "imcs_tip_300uL",
+                  "category": "tip",
+                  "size": {
+                    "x": 8.2,
+                    "y": 8.2,
+                    "z": 53.9
+                  },
+                  "location": {
+                    "x": 0.4,
+                    "y": 0.4,
+                    "z": -53.9
+                  },
+                  "rotation": {},
+                  "headTool": {
+                    "fittingDepth": 8.0
+                  },
+                  "tip": {
+                    "diameter": 8.2,
+                    "hasFilter": true,
+                    "maximalVolume": 360.0,
+                    "nominalVolume": 360.0,
+                    "hamilton": {
+                      "tipSize": "STANDARD_VOLUME",
+                      "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+                    }
+                  }
+                },
+                "initialState": {
+                  "volume": {
+                    "trackingEnabled": true
+                  }
+                }
+              }
+            ],
+            "initialState": {
+              "tipTrackingEnabled": true,
+              "tipsMade": 1
+            }
+          },
+          "offset": {
+            "x": 7.2,
+            "y": 5.3,
+            "z": -44.5
+          },
+          "itemDx": 9.0,
+          "itemDy": 9.0
+        }
+      },
+      "tipRack": {}
+    }
+  },
+  "description": "Tip racks for IMCS tips. Same as Hamilton 300 \u00b5L filter tip racks, but tips are 6mm shorter.\n\nrequires `\"full_blowout\"` pickup method from STARBackend.pick_up_tips96.\nNot available on pip channels...\n\nPart numbers:\n- 04T-H8R80A-1-5-96\n- 04T-H8R80A-1-10-96\n- 04T-H8R80P-1-5-96\n- 04T-H8R80P-1-10-96\n- 04T-H8R72-1-2-96\n- 04T-H8R72-1-5-96\n- 04T-H8R72-1-10-96\n- 04T-H8R72Q-1-10-96\n- 04T-H8R85P-1-5-96\n- 04T-H8R85P-1-10-96\n- 04T-H8R88F-1-2-96\n- 04T-H8R88F-1-5-96\n- 04T-H8R88F-1-10-96\n- 04T-H8R89-1-10-96\n- 04T-H8D20F-1A-3-96\n- 04T-H8CD20F-1A-3-96\n- 04T-H8R68-1-5-96\n- 04T-H8R73-1-10-96\n- 04T-H8R05-1-2-96\n- 04T-H8R05-1-5-96\n- 04T-H8R41-1-2-96\n- 04T-H8R53-1-2-96\n- 04T-H8R52-1-2-96\n- 04T-H8R52-1-5-96\n- 04T-H8R30-1-2-96\n- 04T-H8R30-1-5-96\n- 04T-H8R03R-1-5-96\n- 04T-H8R02R-1-2-96\n- 04T-H8R02R-1-5-96\n- 04T-I3R73-1-10-96"
+}

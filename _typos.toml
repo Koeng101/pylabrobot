@@ -69,4 +69,6 @@ extend-exclude = [
     "*.ipynb",
     # Third-party libraries, shipped as their authors minified them.
     "pylabrobot/visualizer3D/static/vendor/**",
+    # Golden records: what devices were sent, recorded as hex.
+    "pylabrobot/**/golden/*.json",
 ]

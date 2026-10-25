@@ -1,0 +1,47 @@
+{
+  "name": "opentrons_6_tuberack_falcon_50ml_conical",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "model": "Opentrons 6 Tube Rack with Falcon 50 mL Conical",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 120.3
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 3,
+        "numItemsY": 2,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "category": "resource_holder",
+              "size": {
+                "x": 19.665,
+                "y": 19.665,
+                "z": 113.0
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 25.6675,
+            "y": 15.4075,
+            "z": 7.3
+          },
+          "itemDx": 35.0,
+          "itemDy": 35.0
+        }
+      }
+    }
+  }
+}

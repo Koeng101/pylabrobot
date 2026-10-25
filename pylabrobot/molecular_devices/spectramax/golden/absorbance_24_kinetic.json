@@ -1,0 +1,389 @@
+{
+  "steps": [
+    {
+      "call": "read_absorbance(plate, wells, wavelength=600, read_type='kinetic', kinetic_settings=KineticSettings(30, 2), shake_settings=ShakeSettings(True, 5, True, 10), settling_time=200)",
+      "result": [
+        {
+          "data": [
+            [
+              "nan",
+              0.01,
+              0.02,
+              0.03,
+              0.04,
+              0.05
+            ],
+            [
+              "inf",
+              0.011,
+              0.021,
+              0.031,
+              0.041,
+              0.051
+            ],
+            [
+              0.002,
+              0.012,
+              0.022,
+              0.032,
+              0.042,
+              0.052
+            ],
+            [
+              0.003,
+              0.013,
+              0.023,
+              0.033,
+              0.043,
+              0.053
+            ]
+          ],
+          "wavelength": 600,
+          "temperature": 25.3,
+          "timestamp": 1234.5
+        },
+        {
+          "data": [
+            [
+              1.0,
+              1.01,
+              1.02,
+              1.03,
+              1.04,
+              1.05
+            ],
+            [
+              1.001,
+              1.011,
+              1.021,
+              1.031,
+              1.041,
+              1.051
+            ],
+            [
+              1.002,
+              1.012,
+              1.022,
+              1.032,
+              1.042,
+              1.052
+            ],
+            [
+              1.003,
+              1.013,
+              1.023,
+              1.033,
+              1.043,
+              1.053
+            ]
+          ],
+          "wavelength": 600,
+          "temperature": 25.3,
+          "timestamp": 1234.5
+        }
+      ],
+      "sent": [
+        "!CLEAR DATA\r",
+        "!XPOS 17.780 19.300 6\r",
+        "!YPOS 13.470 19.300 4\r",
+        "!STRIP 1 6\r",
+        "!CSPEED 8\r",
+        "!SHAKE ON\r",
+        "!SHAKE 5 30 20 10 0\r",
+        "!WAVELENGTH 600\r",
+        "!CALIBRATE ONCE\r",
+        "!MODE KINETIC 30 2\r",
+        "!ORDER COLUMN\r",
+        "!SPEED OFF\r",
+        "!TAG OFF\r",
+        "!NVRAM CARCOL 200\r",
+        "!READTYPE ABSPLA\r",
+        "!READ\r",
+        "!STATUS\r",
+        "!TRANSFER\r",
+        "!TRANSFER\r"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "m5_loading_tray",
+      "parent": "",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER"
+    },
+    {
+      "name": "plate",
+      "parent": "m5_loading_tray",
+      "kind": "RESOURCE_KIND_PLATE",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plate_well_A1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        9.65,
+        63.87,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        9.65,
+        44.57,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        9.65,
+        25.27,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D1",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        9.65,
+        5.97,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.95,
+        63.87,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.95,
+        44.57,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.95,
+        25.27,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D2",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        28.95,
+        5.97,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        48.25,
+        63.87,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        48.25,
+        44.57,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        48.25,
+        25.27,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D3",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        48.25,
+        5.97,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        67.55,
+        63.87,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        67.55,
+        44.57,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        67.55,
+        25.27,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D4",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        67.55,
+        5.97,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        86.85,
+        63.87,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        86.85,
+        44.57,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        86.85,
+        25.27,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D5",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        86.85,
+        5.97,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_A6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        106.15,
+        63.87,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_B6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        106.15,
+        44.57,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_C6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        106.15,
+        25.27,
+        2.54
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "plate_well_D6",
+      "parent": "plate",
+      "kind": "RESOURCE_KIND_WELL",
+      "location": [
+        106.15,
+        5.97,
+        2.54
+      ],
+      "volume": 0.0
+    }
+  ]
+}

@@ -22,6 +22,7 @@ from pylabrobot.revvity.celigo.tests.helpers import (
   make_filter_wheel_config,
   make_hardware_default_config,
   make_linear_axis_config,
+  make_plate,
   make_test_config,
 )
 
@@ -369,6 +370,14 @@ class TestConfiguredDrawer(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(targets.y_clearance_mm, 2)
     self.assertEqual(targets.y_park_mm, 8)
 
+  def test_set_plate_names_the_class_it_takes_and_the_one_it_got(self):
+    driver = make_celigo(hardware=_config())
+    with self.assertRaisesRegex(
+      TypeError,
+      r"pylabrobot\.resources\.store\.handles\.Plate\), got pylabrobot\.resources\.plate\.Plate",
+    ):
+      driver.set_plate(cor_96_wellplate_360uL_Fb("plate"))  # type: ignore[arg-type]
+
   async def test_close_to_well_requires_set_plate(self):
     driver = make_celigo(hardware=_config())
     with self.assertRaisesRegex(CeligoError, r"set_plate\(\)"):
@@ -378,7 +387,7 @@ class TestConfiguredDrawer(unittest.IsolatedAsyncioTestCase):
     driver = make_celigo(hardware=_config())
     driver.config.calibration = make_calibration_config()
     driver.config.hardware_defaults = make_hardware_default_config()
-    driver.set_plate(cor_96_wellplate_360uL_Fb(name="imaging_plate"))
+    driver.set_plate(await make_plate())
     calls = []
 
     async def close_to_sample(x_mm, y_mm):

@@ -1,0 +1,264 @@
+{
+  "name": "Porvair_6_reservoir_47ml_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "Porvair_6_reservoir_47ml_Vb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 44.0
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 1,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 16.8,
+                "y": 70.8,
+                "z": 42.5
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 47141.0,
+                "materialZThickness": 1.4,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 0.01,
+                    "volume": 1.6048e-05
+                  },
+                  {
+                    "height": 0.03,
+                    "volume": 0.000433296
+                  },
+                  {
+                    "height": 0.055,
+                    "volume": 0.00266999
+                  },
+                  {
+                    "height": 0.09,
+                    "volume": 0.011699
+                  },
+                  {
+                    "height": 0.135,
+                    "volume": 0.0394841
+                  },
+                  {
+                    "height": 0.19,
+                    "volume": 0.110073
+                  },
+                  {
+                    "height": 0.25,
+                    "volume": 0.25075
+                  },
+                  {
+                    "height": 0.32,
+                    "volume": 0.525861
+                  },
+                  {
+                    "height": 0.4,
+                    "volume": 1.027072
+                  },
+                  {
+                    "height": 0.49,
+                    "volume": 1.888031
+                  },
+                  {
+                    "height": 0.59,
+                    "volume": 3.295922
+                  },
+                  {
+                    "height": 0.7,
+                    "volume": 5.504464
+                  },
+                  {
+                    "height": 0.815,
+                    "volume": 8.687478
+                  },
+                  {
+                    "height": 0.94,
+                    "volume": 13.329212
+                  },
+                  {
+                    "height": 1.07,
+                    "volume": 19.65949
+                  },
+                  {
+                    "height": 1.22,
+                    "volume": 29.140729
+                  },
+                  {
+                    "height": 1.38,
+                    "volume": 42.175299
+                  },
+                  {
+                    "height": 1.54,
+                    "volume": 58.611533
+                  },
+                  {
+                    "height": 1.695,
+                    "volume": 78.150187
+                  },
+                  {
+                    "height": 1.84,
+                    "volume": 99.97108
+                  },
+                  {
+                    "height": 1.98,
+                    "volume": 124.570867
+                  },
+                  {
+                    "height": 2.115,
+                    "volume": 151.828056
+                  },
+                  {
+                    "height": 2.245,
+                    "volume": 181.580811
+                  },
+                  {
+                    "height": 2.375,
+                    "volume": 214.986781
+                  },
+                  {
+                    "height": 2.5,
+                    "volume": 250.75
+                  },
+                  {
+                    "height": 2.62,
+                    "volume": 288.618915
+                  },
+                  {
+                    "height": 2.74,
+                    "volume": 330.120584
+                  },
+                  {
+                    "height": 2.855,
+                    "volume": 373.455838
+                  },
+                  {
+                    "height": 2.97,
+                    "volume": 420.426676
+                  },
+                  {
+                    "height": 3.08,
+                    "volume": 468.892261
+                  },
+                  {
+                    "height": 3.19,
+                    "volume": 520.946308
+                  },
+                  {
+                    "height": 3.295,
+                    "volume": 574.099505
+                  },
+                  {
+                    "height": 3.4,
+                    "volume": 630.750592
+                  },
+                  {
+                    "height": 3.505,
+                    "volume": 691.011035
+                  },
+                  {
+                    "height": 3.605,
+                    "volume": 751.859554
+                  },
+                  {
+                    "height": 3.705,
+                    "volume": 816.179256
+                  },
+                  {
+                    "height": 3.805,
+                    "volume": 884.066428
+                  },
+                  {
+                    "height": 3.905,
+                    "volume": 955.617359
+                  },
+                  {
+                    "height": 4.0,
+                    "volume": 1027.072
+                  },
+                  {
+                    "height": 4.095,
+                    "volume": 1102.002638
+                  },
+                  {
+                    "height": 4.19,
+                    "volume": 1180.491827
+                  },
+                  {
+                    "height": 4.285,
+                    "volume": 1262.622123
+                  },
+                  {
+                    "height": 4.38,
+                    "volume": 1348.47608
+                  },
+                  {
+                    "height": 4.47,
+                    "volume": 1433.32107
+                  },
+                  {
+                    "height": 4.56,
+                    "volume": 1521.652359
+                  },
+                  {
+                    "height": 4.65,
+                    "volume": 1613.540142
+                  },
+                  {
+                    "height": 4.74,
+                    "volume": 1709.054612
+                  },
+                  {
+                    "height": 4.83,
+                    "volume": 1808.265964
+                  },
+                  {
+                    "height": 4.915,
+                    "volume": 1905.423347
+                  },
+                  {
+                    "height": 5.0,
+                    "volume": 2006.0
+                  },
+                  {
+                    "height": 42.5,
+                    "volume": 47141.0
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.3,
+            "y": 5.7,
+            "z": 0.97
+          },
+          "itemDx": 18.5
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Porvair cat. no.: 390015.\n- Material: Polypropylene\n- Sterilization compatibility: Autoclaving (15 minutes at 121\u00b0C) or Gamma Irradiation\n- Chemical resistance: \"High chemical resistance\"\n- Temperature resistance: high: -196\u00b0C to + 121\u00b0C\n- Cleanliness: 390015: Free of detectable DNase, RNase\n- ANSI/SLAS-format for compatibility with automated systems\n- Tolerances: \"Uniform external dimensions and tolerances\"\n- Each well is segmented into four V bottom wells similar to cor_axy_24_wellplate_10mL_Vb.\n- The bottom can only be reached when using 2 or 4 channels."
+}

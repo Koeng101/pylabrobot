@@ -2,12 +2,14 @@
 
 import json
 import unittest
+from typing import List
 
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.corning import cor_96_wellplate_360uL_Fb
-from pylabrobot.resources.hamilton import hamilton_96_tiprack_1000uL
-from pylabrobot.resources.resource import Resource
-from pylabrobot.visualizer3D.facility import Facility
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.visualizer.mirror import TreeMirror
+from pylabrobot.visualizer.nodes import serialize_node
+from pylabrobot.visualizer3D.facility import facility
 from pylabrobot.visualizer3D.scene import (
   Scene,
   _model_of,
@@ -22,148 +24,169 @@ def canonical(scene: Scene) -> str:
   return json.dumps(scene.serialize(), sort_keys=True)
 
 
-def facility_with(plates: int) -> Facility:
+async def mirror_of(root: handles.Resource) -> TreeMirror:
+  """The tree under `root`, read once."""
+  tree = TreeMirror(root)
+  await tree.load()
+  return tree
+
+
+async def facility_with(store: ResourceStore, plates: int) -> handles.Resource:
   """A facility holding `plates` identical plates, side by side."""
-  facility = Facility(name="facility", size_x=10_000, size_y=10_000, size_z=500)
+  root = await store.create(facility("facility", 10_000, 10_000, 500), name="facility")
   for i in range(plates):
-    facility.assign_child_resource(
-      cor_96_wellplate_360uL_Fb(name=f"plate_{i}"), location=Coordinate(150 * i, 0, 0)
+    await store.create(
+      "cor_96_wellplate_360uL_Fb",
+      name=f"plate_{i}",
+      parent=root,
+      location=Coordinate(150 * i, 0, 0),
     )
-  return facility
+  return root
 
 
-def facility_with_a_full_rack() -> Facility:
+async def facility_with_a_full_rack(store: ResourceStore) -> handles.Resource:
   """A facility holding a tip rack full of tips: a tip spot serializes without its tip."""
-  facility = Facility(name="facility", size_x=1000, size_y=1000, size_z=500)
-  facility.assign_child_resource(
-    hamilton_96_tiprack_1000uL(name="rack", with_tips=True), location=Coordinate(100, 100, 0)
+  root = await store.create(facility("facility", 1000, 1000, 500), name="facility")
+  await store.create(
+    "hamilton_96_tiprack_1000uL", name="rack", parent=root, location=Coordinate(100, 100, 0)
   )
-  return facility
+  return root
 
 
-class SceneTests(unittest.TestCase):
-  def test_emits_parents_before_children(self):
+class SceneTests(unittest.IsolatedAsyncioTestCase):
+  async def asyncSetUp(self) -> None:
+    self.store = ResourceStore.in_memory()
+
+  async def asyncTearDown(self) -> None:
+    await self.store.close()
+
+  async def test_emits_parents_before_children(self):
     """A client resolves world transforms in one forward pass, which only works in this order."""
-    scene = build_scene(facility_with(2))
+    scene = build_scene(await mirror_of(await facility_with(self.store, 2)))
     for index, parent in enumerate(scene.parent_of_instance):
       self.assertLess(parent, index, f"instance {index} is emitted before its parent")
 
-  def test_identical_resources_share_one_model(self):
+  async def test_identical_resources_share_one_model(self):
     """The whole point of the split: geometry is sent once, however many stand on it."""
-    one = build_scene(facility_with(1))
-    many = build_scene(facility_with(20))
+    one = build_scene(await mirror_of(await facility_with(self.store, 1)))
+    many = build_scene(await mirror_of(await facility_with(ResourceStore.in_memory(), 20)))
     self.assertEqual(len(many.models), len(one.models))
     self.assertEqual(len(many.names), 1 + 20 * 97)  # facility, then plate and its 96 wells
 
-  def test_a_move_is_seen_through_reused_models(self):
+  async def test_a_move_is_seen_through_reused_models(self):
     """Skipping the derive must not change a byte of what is sent: a model is reused, a position
     never is, so moving something must still show up."""
-    facility = facility_with(3)
-    first = build_scene(facility)
+    root = await facility_with(self.store, 3)
+    tree = await mirror_of(root)
+    first = build_scene(tree)
     names = frozenset(first.names)
-    facility.get_resource("plate_0").location = Coordinate(999, 888, 0)
-    warm = build_scene(facility, known=first.derived, known_names=names)
-    self.assertEqual(canonical(warm), canonical(build_scene(facility)))
+    plate = await self.store.get("plate_0", root=root)
+    await root.assign_child_resource(plate, location=Coordinate(999, 888, 0))
+    await tree.load()
+    warm = build_scene(tree, known=first.derived, known_names=names)
+    self.assertEqual(canonical(warm), canonical(build_scene(tree)))
+    self.assertIn(999.0, warm.transforms)
 
-  def test_a_racked_tip_hangs_from_its_collar(self):
-    """A tip serializes without its location; the scene places it where its spot put it."""
-    facility = Facility(name="facility", size_x=1000, size_y=1000, size_z=500)
-    rack = hamilton_96_tiprack_1000uL(name="rack", with_tips=True)
-    facility.assign_child_resource(rack, location=Coordinate(100, 100, 0))
-    tip = rack.get_item("A1").get_tip()
-    location = tip.location
+  async def test_a_racked_tip_hangs_from_its_collar(self):
+    """A tip is placed where its spot put it."""
+    root = await facility_with_a_full_rack(self.store)
+    rack = await self.store.get("rack", root=root)
+    assert isinstance(rack, handles.TipRack)
+    tip = await rack.get_tip_spot("A1").get_tip()
+    assert tip is not None
+    location = await tip.get_location()
     assert location is not None
 
-    scene = build_scene(facility)
+    scene = build_scene(await mirror_of(root))
     index = scene.names.index(tip.name)
     self.assertEqual(
       tuple(scene.transforms[6 * index : 6 * index + 3]), (location.x, location.y, location.z)
     )
 
-  def test_models_are_not_reused_when_the_names_change(self):
+  async def test_models_are_not_reused_when_the_names_change(self):
     """Whether a string counts as a reference depends on which names exist, so a changed tree
     invalidates what was derived from the old one."""
-    facility = facility_with(2)
-    first = build_scene(facility)
+    root = await facility_with(self.store, 2)
+    tree = await mirror_of(root)
+    first = build_scene(tree)
     names = frozenset(first.names)
-    # A plate's ordering links its wells by name: with A1 out of the tree, that entry is a name.
-    plate = facility.get_resource("plate_0")
-    plate.unassign_child_resource(facility.get_resource("plate_0_well_A1"))
-    warm = build_scene(facility, known=first.derived, known_names=names)
+    # A plate's ordering links its wells by name: with A1 out of the tree, the plate is another.
+    await (await self.store.get("plate_0_well_A1", root=root)).unassign()
+    await tree.load()
+    warm = build_scene(tree, known=first.derived, known_names=names)
     self.assertNotEqual(
       warm.derived["plate_0"], first.derived["plate_0"], "the model kept its link"
     )
-    self.assertEqual(canonical(warm), canonical(build_scene(facility)))
+    self.assertEqual(canonical(warm), canonical(build_scene(tree)))
 
-  def test_a_discard_reuses_the_models_that_do_not_link_to_it(self):
+  async def test_a_discard_reuses_the_models_that_do_not_link_to_it(self):
     """Any change of names threw every derived model away, so an assign or a discard cost the
     cold build. A model that holds no link is what it was, whichever names exist."""
-    facility = facility_with(2)
-    box = Resource(name="box", size_x=10, size_y=10, size_z=10)
-    facility.assign_child_resource(box, location=Coordinate(900, 900, 0))
-    first = build_scene(facility)
+    root = await facility_with(self.store, 2)
+    box = await self.store.create(
+      build.resource("box", Coordinate(10, 10, 10)),
+      name="box",
+      parent=root,
+      location=Coordinate(900, 900, 0),
+    )
+    tree = await mirror_of(root)
+    first = build_scene(tree)
     names = frozenset(first.names)
-    facility.unassign_child_resource(box)
-    warm = build_scene(facility, known=first.derived, known_names=names)
+    await box.unassign()
+    await tree.load()
+    warm = build_scene(tree, known=first.derived, known_names=names)
     self.assertIs(warm.derived["plate_0_well_A1"], first.derived["plate_0_well_A1"])
     self.assertIsNot(warm.derived["plate_0"], first.derived["plate_0"])  # links its wells
-    self.assertEqual(
-      json.dumps(warm.serialize(), sort_keys=True),
-      json.dumps(build_scene(facility).serialize(), sort_keys=True),
-    )
+    self.assertEqual(canonical(warm), canonical(build_scene(tree)))
 
-  def test_a_name_that_reappears_is_a_link_again(self):
-    """A model derived while a name was gone holds it as a plain string; put back, it is a link."""
-    facility = facility_with(1)
-    plate = facility.get_resource("plate_0")
-    well = facility.get_resource("plate_0_well_A1")
-    location = well.location
-    plate.unassign_child_resource(well)
-    first = build_scene(facility)
+  async def test_a_name_that_reappears_is_a_link_again(self):
+    """A model derived while a name was gone holds no link to it; put back, it is a link."""
+    root = await facility_with(self.store, 1)
+    plate = await self.store.get("plate_0", root=root)
+    well = await self.store.get("plate_0_well_A1", root=root)
+    location = await well.get_location()
+    await well.unassign()
+    tree = await mirror_of(root)
+    first = build_scene(tree)
     names = frozenset(first.names)
-    self.assertEqual(first.derived["plate_0"]["ordering"]["A1"], "plate_0_well_A1")
-    plate.assign_child_resource(well, location=location)
-    warm = build_scene(facility, known=first.derived, known_names=names)
-    self.assertEqual(
-      json.dumps(warm.serialize(), sort_keys=True),
-      json.dumps(build_scene(facility).serialize(), sort_keys=True),
+    self.assertNotIn("A1", first.derived["plate_0"]["ordering"])
+    await plate.assign_child_resource(well, location=location, index=0)
+    await tree.load()
+    warm = build_scene(tree, known=first.derived, known_names=names)
+    self.assertEqual(warm.derived["plate_0"]["ordering"]["A1"], "<resource>")
+    self.assertEqual(canonical(warm), canonical(build_scene(tree)))
+
+  async def test_a_model_is_the_resources_own_whatever_its_parent(self):
+    """A model is what the resource itself says it is, a spot's tip and a plate's well alike."""
+    root = await facility_with_a_full_rack(self.store)
+    await self.store.create(
+      "cor_96_wellplate_360uL_Fb", name="plate", parent=root, location=Coordinate(300, 100, 0)
     )
-
-  def test_a_model_is_the_resources_own_whether_or_not_its_parent_serialized_it(self):
-    """A parent's serialization feeds its children's models, and a child it left out serializes
-    itself: either way the model is what the resource itself says it is."""
-    facility = facility_with_a_full_rack()
-    facility.assign_child_resource(
-      cor_96_wellplate_360uL_Fb(name="plate"), location=Coordinate(300, 100, 0)
-    )
-    scene = build_scene(facility)
-    resources: list = []
-
-    def gather(resource: Resource) -> None:
-      resources.append(resource)
-      for child in resource.children:
-        gather(child)
-
-    gather(facility)
-    self.assertEqual(scene.names, [resource.name for resource in resources])
+    tree = await mirror_of(root)
+    scene = build_scene(tree)
+    nodes = list(tree.walk())
+    self.assertEqual(scene.names, [node.attributes.name for node in nodes])
     names = frozenset(scene.names)
-    for resource, model_index in zip(resources, scene.model_of_instance):
-      expected = _model_of(resource.serialize(), names)
+    for node, model_index in zip(nodes, scene.model_of_instance):
+      expected = _model_of(serialize_node(node, tree), names)
       model = scene.models[model_index]
-      self.assertEqual({k: model[k] for k in expected}, expected, resource.name)
+      self.assertEqual({k: model[k] for k in expected}, expected, node.attributes.name)
 
-  def test_the_legacy_size_counts_one_node_per_resource(self):
+  async def test_the_legacy_size_counts_one_node_per_resource(self):
     """The comparison lists every resource as a node, including the tip its spot serializes
-    without, so a serialization that hands children down must not lose the ones a parent drops."""
-    facility = facility_with_a_full_rack()
-    scene = build_scene(facility, measure_legacy=True)
+    without."""
+    tree = await mirror_of(await facility_with_a_full_rack(self.store))
+    scene = build_scene(tree, measure_legacy=True)
+    counted: List[str] = []
 
-    def one_node_each(resource: Resource) -> dict:
-      data = resource.serialize()
-      data["children"] = [one_node_each(child) for child in resource.children]
+    def one_node_each(node) -> dict:
+      counted.append(node.attributes.name)
+      data = serialize_node(node, tree)
+      data["children"] = [one_node_each(child) for child in tree.children(node)]
       return data
 
-    self.assertEqual(scene.legacy_bytes, len(json.dumps(one_node_each(facility))))
+    self.assertEqual(scene.legacy_bytes, len(json.dumps(one_node_each(tree.node(tree.root_id)))))
+    self.assertIn("rack_tipspot_A1#0", counted)
 
 
 class PackStateTests(unittest.TestCase):

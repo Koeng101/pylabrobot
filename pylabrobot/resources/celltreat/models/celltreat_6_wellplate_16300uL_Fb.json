@@ -1,0 +1,64 @@
+{
+  "name": "celltreat_6_wellplate_16300uL_Fb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "celltreat_6_wellplate_16300uL_Fb",
+      "category": "plate",
+      "size": {
+        "x": 127.8,
+        "y": 85.38,
+        "z": 20.2
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 3,
+        "numItemsY": 2,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 34.7,
+                "y": 34.7,
+                "z": 17.2
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 16300.0,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 17.2,
+                    "volume": 16643.756803
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_FLAT",
+                "crossSectionType": "CROSS_SECTION_TYPE_CIRCLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 6.19,
+            "y": 3.65,
+            "z": 3.0
+          },
+          "itemDx": 39.04,
+          "itemDy": 39.04
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "CellTreat cat. no.: 229105\n- Material: Polystyrene\n- Tissue culture treated: Yes\n\nhttps://www.celltreat.com/wp-content/uploads/6-Well-Plate.pdf"
+}

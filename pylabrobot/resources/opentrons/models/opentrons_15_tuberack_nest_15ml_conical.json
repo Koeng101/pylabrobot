@@ -1,0 +1,47 @@
+{
+  "name": "opentrons_15_tuberack_nest_15ml_conical",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TUBE_RACK",
+      "model": "Opentrons 15 Tube Rack with NEST 15 mL Conical",
+      "category": "tube_rack",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 124.65
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 5,
+        "numItemsY": 3,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_{identifier}",
+              "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+              "category": "resource_holder",
+              "size": {
+                "x": 10.96,
+                "y": 10.96,
+                "z": 117.8
+              },
+              "rotation": {},
+              "holder": {
+                "childLocation": {},
+                "capacity": 1
+              }
+            }
+          },
+          "offset": {
+            "x": 8.4,
+            "y": 12.26,
+            "z": 6.85
+          },
+          "itemDx": 25.0,
+          "itemDy": 25.0
+        }
+      }
+    }
+  }
+}

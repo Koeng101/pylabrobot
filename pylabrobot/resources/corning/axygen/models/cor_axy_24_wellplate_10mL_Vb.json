@@ -1,0 +1,221 @@
+{
+  "name": "cor_axy_24_wellplate_10mL_Vb",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE",
+      "model": "cor_axy_24_wellplate_10mL_Vb",
+      "category": "plate",
+      "size": {
+        "x": 127.76,
+        "y": 85.48,
+        "z": 44.24
+      },
+      "rotation": {},
+      "itemized": {
+        "numItemsX": 6,
+        "numItemsY": 4,
+        "grid": {
+          "item": {
+            "attributes": {
+              "name": "{name}_well_{identifier}",
+              "kind": "RESOURCE_KIND_WELL",
+              "category": "well",
+              "size": {
+                "x": 17.0,
+                "y": 17.0,
+                "z": 42.0
+              },
+              "rotation": {},
+              "container": {
+                "maxVolume": 11174.666666666666,
+                "materialZThickness": 1.46,
+                "heightVolumeData": [
+                  {},
+                  {
+                    "height": 0.42,
+                    "volume": 0.285486
+                  },
+                  {
+                    "height": 0.68,
+                    "volume": 1.211611
+                  },
+                  {
+                    "height": 0.9,
+                    "volume": 2.80908
+                  },
+                  {
+                    "height": 1.095,
+                    "volume": 5.059166
+                  },
+                  {
+                    "height": 1.275,
+                    "volume": 7.986696
+                  },
+                  {
+                    "height": 1.44,
+                    "volume": 11.505992
+                  },
+                  {
+                    "height": 1.595,
+                    "volume": 15.635747
+                  },
+                  {
+                    "height": 1.745,
+                    "volume": 20.474951
+                  },
+                  {
+                    "height": 1.89,
+                    "volume": 26.01489
+                  },
+                  {
+                    "height": 2.03,
+                    "volume": 32.234779
+                  },
+                  {
+                    "height": 2.165,
+                    "volume": 39.103018
+                  },
+                  {
+                    "height": 2.295,
+                    "volume": 46.578409
+                  },
+                  {
+                    "height": 2.42,
+                    "volume": 54.61132
+                  },
+                  {
+                    "height": 2.54,
+                    "volume": 63.14482
+                  },
+                  {
+                    "height": 2.66,
+                    "volume": 72.523957
+                  },
+                  {
+                    "height": 2.775,
+                    "volume": 82.342783
+                  },
+                  {
+                    "height": 2.89,
+                    "volume": 93.010099
+                  },
+                  {
+                    "height": 3.0,
+                    "volume": 104.04
+                  },
+                  {
+                    "height": 3.11,
+                    "volume": 115.909157
+                  },
+                  {
+                    "height": 3.22,
+                    "volume": 128.648342
+                  },
+                  {
+                    "height": 3.325,
+                    "volume": 141.648353
+                  },
+                  {
+                    "height": 3.43,
+                    "volume": 155.495899
+                  },
+                  {
+                    "height": 3.535,
+                    "volume": 170.217745
+                  },
+                  {
+                    "height": 3.635,
+                    "volume": 185.075881
+                  },
+                  {
+                    "height": 3.735,
+                    "volume": 200.774428
+                  },
+                  {
+                    "height": 3.835,
+                    "volume": 217.336508
+                  },
+                  {
+                    "height": 3.93,
+                    "volume": 233.891388
+                  },
+                  {
+                    "height": 4.025,
+                    "volume": 251.266294
+                  },
+                  {
+                    "height": 4.12,
+                    "volume": 269.481048
+                  },
+                  {
+                    "height": 4.215,
+                    "volume": 288.555473
+                  },
+                  {
+                    "height": 4.31,
+                    "volume": 308.509392
+                  },
+                  {
+                    "height": 4.4,
+                    "volume": 328.242347
+                  },
+                  {
+                    "height": 4.49,
+                    "volume": 348.799298
+                  },
+                  {
+                    "height": 4.58,
+                    "volume": 370.197101
+                  },
+                  {
+                    "height": 4.67,
+                    "volume": 392.452609
+                  },
+                  {
+                    "height": 4.76,
+                    "volume": 415.582678
+                  },
+                  {
+                    "height": 4.845,
+                    "volume": 438.245962
+                  },
+                  {
+                    "height": 4.93,
+                    "volume": 461.718565
+                  },
+                  {
+                    "height": 5.02,
+                    "volume": 487.446667
+                  },
+                  {
+                    "height": 42.0,
+                    "volume": 11174.666667
+                  }
+                ],
+                "bottomType": "WELL_BOTTOM_TYPE_V",
+                "crossSectionType": "CROSS_SECTION_TYPE_RECTANGLE"
+              }
+            },
+            "initialState": {
+              "volume": {
+                "trackingEnabled": true
+              }
+            }
+          },
+          "offset": {
+            "x": 9.8,
+            "y": 7.2,
+            "z": 1.2
+          },
+          "itemDx": 18.0,
+          "itemDy": 18.0
+        }
+      },
+      "plate": {
+        "plateType": "skirted"
+      }
+    }
+  },
+  "description": "Corning cat. no.: P-DW-10ML-24-C-S, P-DW-10ML-24-C\n- manufacturer_link: https://ecatalog.corning.com/life-sciences/b2b/UK/en/Genomics-&-Molecular-Biology/Automation-Consumables/Deep-Well-Plate/Axygen%C2%AE-Deep-Well-and-Assay-Plates/p/P-DW-10ML-24-C\n- brand: Axygen\n- distributor: (Fisher Scientific, 12557837)\n- material: Polypropylene\n- sterile: yes\n- autoclavable: yes"
+}

@@ -18,6 +18,8 @@ from pylabrobot.hamilton.protocol.text.framing import (
   parse_fw_string,
 )
 from pylabrobot.hamilton.protocol.text.router import ReplyRouter
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.configuration import (
   DeviceConfiguration,
   read_configuration,
@@ -37,24 +39,17 @@ from pylabrobot.hamilton.star.driver.features.x_arm import XArm, XArmConfigurati
 from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.driver.lock import _FirmwareLock
 from pylabrobot.hamilton.star.resource_model import (
+  AUTOLOAD_BELT_MODEL,
   ELBOW_DRIVE_COLUMN_ABOVE_REPORTED_Z,
-  iswap_gripper,
-  iswap_head,
-  iswap_link_1,
-  iSWAPHead,
+  FRAME_BY_NUM_TRACKS,
 )
-from pylabrobot.hamilton.star.resource_model import head96 as head96_pipette
-from pylabrobot.hamilton.star.resource_model import head384 as head384_pipette
 from pylabrobot.io.io import IOBase
 from pylabrobot.io.usb import USB
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.end_effector import MechanicalGripper
-from pylabrobot.resources.hamilton.hamilton_decks import FRAME_BY_NUM_TRACKS, HamiltonDeck
-from pylabrobot.resources.hamilton.star_decks import HamiltonSTARDeck
-from pylabrobot.resources.hamilton.tip_creators import HamiltonTip, TipPickupMethod, TipSize
-from pylabrobot.resources.manipulator import LinkBody
-from pylabrobot.resources.n_channel_pipettes import NChannelPipette
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.hamilton.tip_creators import TipPickupMethod, TipSize
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.serializer import serialize
 
 logger = logging.getLogger(__name__)
@@ -93,24 +88,31 @@ class STARDriver:
   LLDMode = LLDMode
 
   def _deck_component_name(self, name: str) -> str:
-    """Resolve a built-in deck resource without changing its existing name."""
-    if isinstance(self.deck, HamiltonSTARDeck):
-      return self.deck.get_component_name(name)
-    return name
+    """Resolve a built-in deck resource without changing its existing name: a deck model names
+    what it is built with after the deck."""
+    if self.deck is None:
+      return name
+    return f"{self.deck.name}_{name}"
 
-  def _component_name(self, name: str) -> str:
+  async def _component_name(self, name: str) -> str:
     """Name discovered components after the device carrying the deck, or the standalone deck."""
-    if self.deck is not None and self.deck.parent is not None:
-      device = self.deck.parent
-      if device.category == "device":
-        return f"{device.name}_{name}"
+    if self.deck is not None:
+      response = await self.deck.store.commands.get_resources(
+        spb.GetResourcesRequest(resources=[self.deck.ref], ancestors=True)
+      )
+      # The deck, then its parent when it has one.
+      if len(response.nodes) > 1 and response.nodes[1].attributes.category == "device":
+        return f"{response.nodes[1].attributes.name}_{name}"
+      # A standalone deck named after nothing keeps short names for what is put on it.
+      if self.deck.name == "deck":
+        return name
     return self._deck_component_name(name)
 
   def __init__(
     self,
     device_address: Optional[int] = None,
     serial_number: Optional[str] = None,
-    deck: Optional[HamiltonDeck] = None,
+    deck: Optional[handles.Deck] = None,
     declared_configuration_json: Optional[str] = None,
     packet_read_timeout: int = 3,
     write_timeout: int = 30,
@@ -478,6 +480,13 @@ class STARDriver:
       # survive the device going down.
       self._tip_type_indices.clear()
       await self._close()
+
+  async def _find_on_deck(self, name: str) -> Optional[handles.Resource]:
+    """A resource on the deck by name, or None when there is no deck or nothing by that name."""
+    if self.deck is None:
+      return None
+    found = await self.deck.find_resources(names=[name])
+    return found[0] if found else None
 
   @property
   def connected(self) -> bool:
@@ -1060,25 +1069,27 @@ class STARDriver:
       tu=pickup_method.value,
     )
 
-  async def get_or_assign_tip_type_index(self, tip: HamiltonTip) -> int:
+  async def get_or_assign_tip_type_index(self, tip: pb.ResourceAttributes) -> int:
     """The table index this tip is defined at, defining it if it is new to this session.
 
     Every command that mounts tips names one of these indices, not the tip itself. A tip that has
     not been written into the table has no index to name.
 
     Args:
-      tip: the tip to look up.
+      tip: the tip to look up, as the store holds it.
 
     Returns:
       Its index in the device's tip type table.
 
     Raises:
-      ValueError: If the tip model is undefined or the table is full.
+      ValueError: If the tip model is undefined, it is not a Hamilton tip, or the table is full.
     """
-    model = tip.model
-    if model is None:
+    tip_model = tip.model
+    if not tip_model:
       raise ValueError("Tip model must be defined to assign a tip type index.")
-    if model not in self._tip_type_indices:
+    if not tip.tip.HasField("hamilton"):
+      raise ValueError(f"'{tip.name}' is not a Hamilton tip, so the device has no type for it")
+    if tip_model not in self._tip_type_indices:
       # The first free entry, skipping the grip tool's: a tip written there would overwrite it.
       taken = set(self._tip_type_indices.values()) | {CORE_GRIPPER_TIP_TYPE_INDEX}
       index = next((i for i in range(1, 100) if i not in taken), None)
@@ -1089,17 +1100,17 @@ class STARDriver:
         )
       await self.define_tip_needle(
         tip_type_table_index=index,
-        has_filter=tip.has_filter,
-        tip_length=tip.get_size_z() - tip.fitting_depth,
+        has_filter=tip.tip.has_filter,
+        tip_length=tip.size.z - tip.head_tool.fitting_depth,
         # Floored at 1.0 uL so a teaching or probe needle with no capacity registers the way the
         # firmware's own non-pipetting tools do. It does not affect pickup, which goes by length
         # and collar.
-        maximum_tip_volume=max(tip.maximal_volume, 1.0),
-        tip_size=tip.tip_size,
-        pickup_method=tip.pickup_method,
+        maximum_tip_volume=max(tip.tip.maximal_volume, 1.0),
+        tip_size=TipSize[tip.tip.hamilton.tip_size],
+        pickup_method=model.PICKUP_METHODS[tip.tip.hamilton.pickup_method],
       )
-      self._tip_type_indices[model] = index
-    return self._tip_type_indices[model]
+      self._tip_type_indices[tip_model] = index
+    return self._tip_type_indices[tip_model]
 
   # ----------------------------------------
   # Discovery and initialization
@@ -1150,7 +1161,7 @@ class STARDriver:
         "the declared configuration does not describe this device:\n  " + "\n  ".join(differences)
       )
 
-  def _check_deck_against(self, discovered: DeviceConfiguration) -> None:
+  async def _check_deck_against(self, discovered: DeviceConfiguration) -> None:
     """Raise if the deck is not built for the number of slots the device answered.
 
     Args:
@@ -1159,14 +1170,15 @@ class STARDriver:
     Raises:
       ValueError: If the deck's track count differs from the device's slot count.
     """
-    if self.deck is None or self.deck.num_tracks == discovered.instrument_size_slots:
+    if self.deck is None:
+      return
+    num_tracks = (await self.deck.get_hamilton_tracks()).num_tracks
+    if num_tracks == discovered.instrument_size_slots:
       return
     slots = discovered.instrument_size_slots
     frame = FRAME_BY_NUM_TRACKS.get(slots)
     build = f": build it for the {frame} frame" if frame is not None else ""
-    raise ValueError(
-      f"this device has {slots} slots, the deck is built for {self.deck.num_tracks}{build}"
-    )
+    raise ValueError(f"this device has {slots} slots, the deck is built for {num_tracks}{build}")
 
   async def discover(self):
     """Read what device is on the other end, and build the subsystems it turns out to have.
@@ -1174,7 +1186,7 @@ class STARDriver:
     Read-only: nothing moves. Call `initialize` to bring the device up.
     """
     self.configuration = await self.request_device_configuration()
-    self._check_deck_against(self.configuration)
+    await self._check_deck_against(self.configuration)
     # Which device answered, and what it is running. Read into the same configuration the rest of
     # discovery fills, so a saved one says where it came from. A device that will not answer keeps
     # nothing rather than failing setup: the identity is for telling recordings apart, and nothing
@@ -1443,15 +1455,12 @@ class STARDriver:
         continue
       # A STAR deck carries a trash for the 96-head. A head told nowhere else to eject ejects there,
       # the channel array centred over it.
-      if (
-        name == "head96"
-        and head.configuration.tip_discard_location is None
-        and self.deck is not None
-        and self.deck.has_resource(self._deck_component_name("trash_core96"))
-      ):
-        head.configuration.tip_discard_location = cast(Head96, head)._position_centred_in(
-          self.deck.get_resource(self._deck_component_name("trash_core96"))
-        )
+      if name == "head96" and head.configuration.tip_discard_location is None:
+        trash = await self._find_on_deck(self._deck_component_name("trash_core96"))
+        if trash is not None:
+          head.configuration.tip_discard_location = await cast(Head96, head)._position_centred_in(
+            trash
+          )
       if not await self.request_initialization_status(head.configuration.module):
         if head.configuration.tip_discard_location is None:
           logger.warning(
@@ -1599,6 +1608,34 @@ class STARDriver:
   # Resource model
   # ----------------------------------------
 
+  async def _create_on(
+    self, parent: handles.Resource, definitions: List[pb.ResourceDefinition]
+  ) -> List[handles.Resource]:
+    """Make each definition in the store, in `parent` where the definition says, in one call.
+
+    Args:
+      parent: what they go in.
+      definitions: what to make, each with its location in `parent`.
+
+    Returns:
+      What was made, in order.
+    """
+    store = parent.store
+    request = spb.CreateResourcesRequest(lock_tokens=store.lock_tokens)
+    for definition in definitions:
+      made = request.resources.add(name=definition.attributes.name)
+      made.definition.CopyFrom(definition)
+      made.assign.parent.CopyFrom(parent.ref)
+      made.assign.location.CopyFrom(definition.attributes.location)
+    response = await store.commands.create_resources(request)
+    names = {definition.attributes.name for definition in definitions}
+    roots = [node for node in response.nodes if node.attributes.name in names]
+    return await store.make_handles(roots, response.nodes)
+
+  async def _children_by_name(self, parent: handles.Resource) -> Dict[str, handles.Resource]:
+    """What hangs from `parent` now, by name."""
+    return {child.name: child for child in await parent.get_children()}
+
   async def _create_capability_resources(self) -> None:
     """Put what the device carries on the deck, where it is.
 
@@ -1614,8 +1651,9 @@ class STARDriver:
       if a.width is None:
         logger.warning("the %s X-arm reported no width, so it is not modelled", arm.side)
         continue
-      arm.resource = self.deck.get_or_create_x_arm(
-        name=self._component_name(f"{arm.side}_x_arm"),
+      name = await self._component_name(f"{arm.side}_x_arm")
+      arm.resource = await self._get_or_create_x_arm(
+        name=name,
         x=await arm.request_position(),
         size_x=a.size_x,
         reference_point_from_left=a.reference_point_from_left,
@@ -1626,6 +1664,61 @@ class STARDriver:
     await self._create_head_resources()
     await self._create_iswap_resource()
 
+  async def _get_or_create_x_arm(
+    self, name: str, x: float, size_x: float, reference_point_from_left: float, model: str
+  ) -> handles.Resource:
+    """Get, or create once, the deck-owned X-arm resource called `name`, placed so its reference
+    point sits at the arm's current x.
+
+    Its back edge stands where the arm actually stands: a fixed distance in front of the back of
+    the device carrying the deck. Being deeper than the deck, the arm reaches in front of the deck's
+    front edge, which is why y comes out negative. It sits above the deck plane, so it does not
+    occupy the footprint of the carriers beneath it. A deck standing on its own has no device to
+    measure from, and keeps its own back edge.
+
+    Args:
+      name: what to call it.
+      x: where the arm is now, in mm, at its reference point.
+      size_x: how wide the arm is, in mm, end to end.
+      reference_point_from_left: how far along it, from its left edge in mm, the drive's position
+        refers to.
+      model: which arm this is.
+
+    Returns:
+      The arm resource, whether it was just created or already there.
+    """
+    assert self.deck is not None
+    existing = await self._find_on_deck(name)
+    if existing is not None:
+      return existing
+    response = await self.deck.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[self.deck.ref], ancestors=True)
+    )
+    deck = response.nodes[0]
+    if len(response.nodes) == 1:
+      y = (await self.deck.get_absolute_size()).y - resource_model.X_ARM_SIZE_Y
+    else:
+      device = response.nodes[1]
+      back_of_device = (
+        device.attributes.size.y - deck.attributes.location.y
+        if deck.attributes.HasField("location")
+        else 0.0
+      )
+      y = back_of_device - resource_model.ARM_BACK_FROM_DEVICE_BACK - resource_model.X_ARM_SIZE_Y
+    (made,) = await self._create_on(
+      self.deck,
+      [
+        resource_model.x_arm(
+          name,
+          Coordinate(x - reference_point_from_left, y, resource_model.X_ARM_Z),
+          size_x=size_x,
+          reference_point_from_left=reference_point_from_left,
+          model=model,
+        )
+      ],
+    )
+    return made
+
   async def _create_pipette_resources(self) -> None:
     """Put a resource on the arm for each pipetting channel, where it is.
 
@@ -1633,7 +1726,7 @@ class STARDriver:
     its own Y and Z. They are children of the arm's resource, as the 96-head is. Channels already
     on the arm are reused, and repeated setups do not duplicate them.
 
-    Each carries a `TipMountingShaft` at its lower end. A collected tip becomes a child of the
+    Each carries a tip mounting shaft at its lower end. A collected tip becomes a child of the
     shaft, not of the channel.
 
     Raises:
@@ -1647,46 +1740,43 @@ class STARDriver:
 
     # One per channel the device reported at discovery, not a count assumed here.
     c = arm.pipettes.configuration
-    arm.pipettes.resources = []
 
     # Read before the resources exist, as the arm's own creation reads before it makes one. The
     # reads record nothing while there is nothing to record on, and a simulated device answers
     # where it powered up rather than from a resource that has not been placed yet.
+    await arm.pipettes._take_resources([])
     ys = await arm.pipettes.request_y_positions()
     zs = await arm.pipettes._unchecked_fw_request_lowest_z_positions()
 
-    for channel in range(len(c.channels)):
-      name = self._component_name(f"pipette_channel_{channel}")
-      resource = next((r for r in arm.resource.children if r.name == name), None)
-      if resource is None:
-        width = c.channels[channel].width
-        if width is None:
-          # Skipping it would leave the list one short and every later channel's resource one out
-          # of step with its channel.
-          raise RuntimeError(f"channel {channel} has no width read yet; run discovery first")
-        resource = Resource(
-          name=name,
-          size_x=width,
-          size_y=width,
-          size_z=c.channel_size_z,
-          category="pipette_channel",
-          model="hamilton_star_pipette_channel",
-        )
-        # Along X a channel sits at the arm's own reference point, so its centre lands there. The
-        # arm's reference point is not the middle of it: the part is wider than the width the drive
-        # reports, and reaches further right than the point it counts from.
-        anchor = resource.get_anchor(x=arm.pipettes.configuration.x_reference_anchor)
-        arm.resource.assign_child_resource(
-          resource,
-          location=Coordinate(arm.configuration.reference_point_from_left - anchor.x, 0.0, 0.0),
-        )
-      arm.pipettes.add_tip_mounting_shaft(resource)
-      arm.pipettes.resources.append(resource)
+    on_the_arm = await self._children_by_name(arm.resource)
+    names = [await self._component_name(f"pipette_channel_{ch}") for ch in range(len(c.channels))]
+    missing = []
+    for channel, name in enumerate(names):
+      if name in on_the_arm:
+        continue
+      width = c.channels[channel].width
+      if width is None:
+        # Skipping it would leave the list one short and every later channel's resource one out
+        # of step with its channel.
+        raise RuntimeError(f"channel {channel} has no width read yet; run discovery first")
+      # Along X a channel sits at the arm's own reference point, so its centre lands there. The
+      # arm's reference point is not the middle of it: the part is wider than the width the drive
+      # reports, and reaches further right than the point it counts from.
+      anchor = {"l": 0.0, "c": width / 2, "r": width}[c.x_reference_anchor]
+      definition = resource_model.pipette_channel(name, width, c.channel_size_z)
+      definition.attributes.location.CopyFrom(
+        build.vec3(Coordinate(arm.configuration.reference_point_from_left - anchor, 0.0, 0.0))
+      )
+      missing.append(definition)
+    for made in await self._create_on(arm.resource, missing):
+      on_the_arm[made.name] = made
+    await arm.pipettes._take_resources([on_the_arm[name] for name in names])
 
     # Seat each one where the reads above found it. Recorded here rather than by the reads
     # themselves, because the resources they would have recorded on did not exist yet.
-    for channel in range(len(arm.pipettes.resources)):
-      arm.pipettes.update_location_by_reference_point(channel, y=ys[channel], z=zs[channel])
+    await arm.pipettes.update_locations_by_reference_point(
+      {channel: (ys[channel], zs[channel]) for channel in range(len(names))}
+    )
 
   async def _create_head_resources(self) -> None:
     """Put each head on the arm it rides, where it is along Y.
@@ -1704,20 +1794,20 @@ class STARDriver:
     for arm in self.arms:
       if arm.resource is None:
         continue
-      for head, name, label, build in (
-        (arm.head96, "head96", "96-head", head96_pipette),
-        (arm.head384, "head384", "384-head", head384_pipette),
+      for head, name, label, build_head in (
+        (arm.head96, "head96", "96-head", resource_model.head96),
+        (arm.head384, "head384", "384-head", resource_model.head384),
       ):
         if head is None:
           continue
-        name = self._component_name(name)
+        name = await self._component_name(name)
         c = head.configuration
         # Where the head is, read before it has a resource to read from: the drive answers on a
         # device, and a simulated one falls back to where it rests rather than reporting back the
         # placeholder position it is about to be given.
         y, z = await head.request_y_position(), await head.request_z_position()
-        existing = next((child for child in arm.resource.children if child.name == name), None)
-        resource = existing if isinstance(existing, NChannelPipette) else None
+        existing = (await self._children_by_name(arm.resource)).get(name)
+        resource = existing if isinstance(existing, handles.NChannelPipette) else None
         if resource is None:
           if c.x_offset is None:
             raise RuntimeError(
@@ -1725,22 +1815,25 @@ class STARDriver:
             )
           # The definition, not a bare resource: it carries a mounting shaft per channel, which
           # is what a collected tip becomes a child of.
-          resource = build(name=name, size_z=c.body_size_z)
+          definition = build_head(name=name, size_z=c.body_size_z)
+          reference_x = definition.attributes.n_channel_pipette.reference_point.x
           # Channel A1 sits `x_offset` left of the point the drive tracks the arm by, and the arm
           # is located by its own left edge, so A1 lands that far left of the reference point. What
           # is placed is the head, whose own A1 stands inside it, so that inset comes off too - the
           # head is measured from A1 the way a channel is measured from its axis. Y is set from the
           # drive below.
-          arm.resource.assign_child_resource(
-            resource,
-            location=Coordinate(
-              arm.configuration.reference_point_from_left - c.x_offset - resource.reference_point.x,
-              0.0,
-              0.0,
-            ),
+          definition.attributes.location.CopyFrom(
+            build.vec3(
+              Coordinate(
+                arm.configuration.reference_point_from_left - c.x_offset - reference_x, 0.0, 0.0
+              )
+            )
           )
-        head.resource = resource
-        head.update_location_by_reference_point(y=y, z=z)
+          (made,) = await self._create_on(arm.resource, [definition])
+          assert isinstance(made, handles.NChannelPipette)
+          resource = made
+        await head._take_resource(resource)
+        await head.update_location_by_reference_point(y=y, z=z)
 
   async def _create_iswap_resource(self) -> None:
     """Put each iSWAP's elbow on the arm it rides, where it is.
@@ -1766,9 +1859,8 @@ class STARDriver:
       y = await iswap.elbow_request_y_position()
       z = await iswap.elbow_request_z_position()
       angle = await iswap.elbow_drive_request_angle()
-      name = self._component_name("iswap_head")
-      existing = next((child for child in arm.resource.children if child.name == name), None)
-      resource = existing if isinstance(existing, iSWAPHead) else None
+      name = await self._component_name("iswap_head")
+      resource = (await self._children_by_name(arm.resource)).get(name)
       if resource is None:
         if c.elbow_x_offset is None:
           raise RuntimeError(
@@ -1777,17 +1869,19 @@ class STARDriver:
         # How tall to model the column: nothing reports it, and what the device shows is its top
         # standing level with the tops of the channel bodies when the drive is fully retracted.
         # Both heights are taken on the deck, so neither needs the arm taking out.
+        channels = arm.pipettes.resources if arm.pipettes is not None else []
         tops = [
-          ch.get_location_wrt(self.deck).z + ch.get_size_z()
-          for ch in (arm.pipettes.resources if arm.pipettes is not None else [])
-          if ch.location is not None
+          located.locations[0].z + located.size.z
+          for located in await model.resolve_geometry(
+            self.deck.store, [model.query(channel, self.deck) for channel in channels]
+          )
         ]
         retracted_base = (
           c.z_increments_to_mm(c.z_range_increments[1])
           + c.elbow_z_offset_above_finger
           + ELBOW_DRIVE_COLUMN_ABOVE_REPORTED_Z
         )
-        resource = iswap_head(
+        definition = resource_model.iswap_head(
           name=name,
           diameter=c.elbow_drive_diameter,
           size_z=round(max(tops) - retracted_base, 1) if tops else c.elbow_drive_size_z,
@@ -1795,27 +1889,27 @@ class STARDriver:
         # The drive sits `elbow_x_offset` left of the point the drive tracks the arm by,
         # and the arm is located by its own left edge, so it lands that far left of the reference
         # point.
-        anchor = resource.reference_point
-        arm.resource.assign_child_resource(
-          resource,
-          location=Coordinate(
-            arm.configuration.reference_point_from_left - c.elbow_x_offset - anchor.x,
-            0.0,
-            0.0,
-          ),
+        anchor = resource_model.iswap_head_reference_point(c.elbow_drive_diameter)
+        definition.attributes.location.CopyFrom(
+          build.vec3(
+            Coordinate(
+              arm.configuration.reference_point_from_left - c.elbow_x_offset - anchor.x, 0.0, 0.0
+            )
+          )
         )
+        (resource,) = await self._create_on(arm.resource, [definition])
       iswap.resource = resource
-      iswap.link_1, iswap.gripper = self._create_iswap_arm(resource, c)
-      iswap.update_location_by_reference_point(y=y, z=z)
-      iswap.elbow_drive_update_angle(angle)
-      iswap.wrist_drive_update_angle(await iswap.wrist_drive_request_angle())
+      iswap.link_1, iswap.gripper = await self._create_iswap_arm(resource, c)
+      await iswap.update_location_by_reference_point(y=y, z=z)
+      await iswap.elbow_drive_update_angle(angle)
+      await iswap.wrist_drive_update_angle(await iswap.wrist_drive_request_angle())
       # And how far the jaws stand open, which the read records, so the model starts in step with
       # the arm rather than at whatever width the gripper was built holding.
       await iswap.gripper_request_width()
 
-  def _create_iswap_arm(
-    self, resource: iSWAPHead, c: iSWAPConfiguration
-  ) -> Tuple[Optional[LinkBody], Optional[MechanicalGripper]]:
+  async def _create_iswap_arm(
+    self, resource: handles.Resource, c: iSWAPConfiguration
+  ) -> Tuple[Optional[handles.LinkBody], Optional[handles.MechanicalGripper]]:
     """Hang the arm off the carriage: one link, and the gripper it carries.
 
     Link 1 turns on the elbow drive; the gripper turns on the wrist that link 1 carries, so it
@@ -1832,45 +1926,70 @@ class STARDriver:
     if c.link_1_length is None or c.tool_length is None:
       logger.warning("the iSWAP reported no link lengths, so its arm is not modelled")
       return None, None
-    link_1 = next((child for child in resource.children if isinstance(child, LinkBody)), None)
+    link_1 = next(
+      (child for child in await resource.get_children() if isinstance(child, handles.LinkBody)),
+      None,
+    )
     if link_1 is None:
-      link_1 = iswap_link_1(name=self._component_name("iswap_link_1"), length=c.link_1_length)
       # A member's origin is a corner, so it is placed by where its joint has to land: the joint
       # goes on the drive's reference point, and the corner falls wherever that puts it.
-      resource.assign_child_resource(
-        link_1, location=resource.reference_point - link_1.proximal_joint
+      (made,) = await self._create_on(
+        resource,
+        [
+          resource_model.iswap_link_1(
+            name=await self._component_name("iswap_link_1"),
+            length=c.link_1_length,
+            location=resource_model.iswap_head_reference_point(c.elbow_drive_diameter)
+            - resource_model.LINK_1_JOINT,
+          )
+        ],
       )
+      assert isinstance(made, handles.LinkBody)
+      link_1 = made
     gripper = next(
-      (child for child in link_1.children if isinstance(child, MechanicalGripper)), None
+      (
+        child
+        for child in await link_1.get_children()
+        if isinstance(child, handles.MechanicalGripper)
+      ),
+      None,
     )
     if gripper is None:
       # How far the jaws travel is the gripper drive's own window, converted, rather than a
-      # measurement of the fingers: what the drive accepts is what the jaws do.
-      gripper = iswap_gripper(
-        name=self._component_name("iswap_gripper"),
-        # The Z drive is calibrated to the finger plane and reports its own bottom, so the grip
-        # centre is that far below the wrist the gripper hangs from.
-        tool_center_point=Coordinate(c.tool_length, 0.0, -c.elbow_z_offset_above_finger),
-        jaw_range=(
-          c.gripper_increments_to_mm(c.gripper_range_increments[0]),
-          c.gripper_increments_to_mm(c.gripper_range_increments[1]),
-        ),
-        # And standing where an initialized gripper stands, so the model does not start out
-        # claiming a width nothing has read. Setup reads the jaws straight after and records it.
-        jaw_width=(
-          c.gripper_increments_to_mm(c.gripper_drive_predefined_increments.home)
-          if c.gripper_drive_predefined_increments
-          else None
-        ),
+      # measurement of the fingers: what the drive accepts is what the jaws do. The gripper's own
+      # joint lands on the wrist, which is link 1's far joint.
+      (made,) = await self._create_on(
+        link_1,
+        [
+          resource_model.iswap_gripper(
+            name=await self._component_name("iswap_gripper"),
+            # The Z drive is calibrated to the finger plane and reports its own bottom, so the
+            # grip centre is that far below the wrist the gripper hangs from.
+            tool_center_point=Coordinate(c.tool_length, 0.0, -c.elbow_z_offset_above_finger),
+            jaw_range=(
+              c.gripper_increments_to_mm(c.gripper_range_increments[0]),
+              c.gripper_increments_to_mm(c.gripper_range_increments[1]),
+            ),
+            location=resource_model.iswap_link_1_distal_joint(c.link_1_length)
+            - resource_model.GRIPPER_JOINT,
+            # And standing where an initialized gripper stands, so the model does not start out
+            # claiming a width nothing has read. Setup reads the jaws straight after and records
+            # it.
+            jaw_width=(
+              c.gripper_increments_to_mm(c.gripper_drive_predefined_increments.home)
+              if c.gripper_drive_predefined_increments
+              else None
+            ),
+          )
+        ],
       )
-      # Likewise: the gripper's own joint lands on the wrist, which is link 1's far joint.
-      link_1.assign_child_resource(
-        gripper, location=cast(Coordinate, link_1.distal_joint) - gripper.proximal_joint
-      )
+      assert isinstance(made, handles.MechanicalGripper)
+      gripper = made
     return link_1, gripper
 
   async def _create_autoload_resource(self) -> None:
-    """Put the autoload's sled on the deck, where it is, and the tray it draws carriers from.
+    """Put the autoload's sled on the deck, where it is, and the tray it draws carriers from, and
+    draw the deck with the autoload's belt frame in place of its front panel.
 
     The tray is placed from the deck's features, not read off the device. It is bolted to the
     device and has no drive to report its position.
@@ -1878,12 +1997,28 @@ class STARDriver:
     if self.autoload is None or self.deck is None:
       return
     x = await self.autoload.request_x_position()
-    self.autoload.resource = self.deck.get_or_create_autoload_sled(
-      name=self._component_name("autoload_sled"),
-      x=x,
-      reference_point_from_left=self.autoload.configuration.reference_point_from_sled_left_edge,
-    )
-    self.autoload.update_location_by_reference_point(x)
-    self.deck.get_or_create_autoload_loading_tray(
-      name=self._component_name("autoload_loading_tray")
-    )
+    reference = self.autoload.configuration.reference_point_from_sled_left_edge
+    name = await self._component_name("autoload_sled")
+    sled = await self._find_on_deck(name)
+    if sled is None:
+      (sled,) = await self._create_on(
+        self.deck, [resource_model.autoload_sled(name, x=x, reference_point_from_left=reference)]
+      )
+    self.autoload.resource = sled
+    await self.autoload.update_location_by_reference_point(x)
+    name = await self._component_name("autoload_loading_tray")
+    if await self._find_on_deck(name) is None:
+      tracks = await self.deck.get_hamilton_tracks()
+      deck_size_x = (await self.deck.attributes()).size.x
+      await self._create_on(
+        self.deck,
+        [
+          resource_model.autoload_loading_tray(
+            name, deck_size_x, tracks, FRAME_BY_NUM_TRACKS.get(tracks.num_tracks)
+          )
+        ],
+      )
+    deck = await self.deck.attributes()
+    frame = FRAME_BY_NUM_TRACKS.get(deck.deck.hamilton.num_tracks)
+    if deck.deck.HasField("hamilton") and frame is not None:
+      await self.deck.set_display_model(AUTOLOAD_BELT_MODEL.format(frame=frame))

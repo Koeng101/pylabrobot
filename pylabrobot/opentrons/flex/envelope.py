@@ -9,12 +9,16 @@ between opentrons 8.3.0 (-177.42) and 8.8.1 (-169.42).
 """
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Tuple
+from typing import List, Tuple
 
-from pylabrobot.resources import Coordinate
-
-if TYPE_CHECKING:
-  from pylabrobot.resources.opentrons.flex_deck import FlexDeck
+from pylabrobot.opentrons.decks import (
+  FLEX_SLOT_DEPTH,
+  FLEX_SLOT_LOCATIONS,
+  FLEX_SLOT_WIDTH,
+  get_slot_location,
+)
+from pylabrobot.resources.coordinate import Coordinate
+from pylabrobot.resources.store import handles
 
 # 8-channel single-config active-nozzle Y offsets (9 mm pitch, A1 back .. H1 front),
 # relative to the mount reference. pipette/.../eight_channel/p1000/3_5.json.
@@ -138,7 +142,7 @@ class FlexEnvelope:
 
   def unreachable_slots(
     self,
-    deck: "FlexDeck",
+    deck: handles.Deck,
     channels: int,
     n_active: int,
     active_nozzle_offset_y: float = FLEX_8CH_NOZZLE_A1_Y,
@@ -149,18 +153,13 @@ class FlexEnvelope:
     slot is unreachable when :meth:`check_point` refuses its center. Staging slots
     (A4–D4) are excluded — they are gripper-only storage, not pipette targets. This is
     the executable form of "a labware assigned to a rear slot is not necessarily
-    reachable by this pipette config."
+    reachable by this pipette config." Every Flex deck has the same slots, so `deck` is
+    not read.
     """
-    from pylabrobot.resources.opentrons.flex_deck import (
-      SLOT_DEPTH,
-      SLOT_LOCATIONS,
-      SLOT_WIDTH,
-    )
-
     out: List[str] = []
-    for slot in sorted(SLOT_LOCATIONS):
-      loc = deck.get_slot_location(slot)
-      center = Coordinate(loc["x"] + SLOT_WIDTH / 2, loc["y"] + SLOT_DEPTH / 2, loc["z"])
+    for slot in sorted(FLEX_SLOT_LOCATIONS):
+      loc = get_slot_location(slot)
+      center = Coordinate(loc["x"] + FLEX_SLOT_WIDTH / 2, loc["y"] + FLEX_SLOT_DEPTH / 2, loc["z"])
       try:
         self.check_point(center, channels, n_active, active_nozzle_offset_y)
       except ValueError:

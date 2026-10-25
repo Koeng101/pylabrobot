@@ -10,9 +10,9 @@ import logging
 from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from pylabrobot.io.binary import Writer
-from pylabrobot.resources import Plate
 
 from .helpers import (
+  PlateFormat,
   plate_to_wire_byte,
   plate_well_count,
 )
@@ -92,7 +92,7 @@ class SyringeDispenser:
       pre_dispense_volume: Pre-dispense volume in uL/tube (only used if pre_dispense=True).
       num_pre_dispenses: Number of pre-dispenses.
     """
-    plate = self._el406.plate
+    plate = self._el406.plate_format
 
     # Group consecutive columns with the same volume, in ascending order
     groups: list[tuple[float, list[int]]] = []
@@ -122,7 +122,7 @@ class SyringeDispenser:
 
   async def _syringe_dispense(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     columns: Optional[list[int]] = None,
     syringe: Syringe = "A",
@@ -230,7 +230,7 @@ class SyringeDispenser:
     )
 
     data = self._build_syringe_prime_command(
-      plate=self._el406.plate,
+      plate=self._el406.plate_format,
       volume=volume,
       syringe=syringe,
       flow_rate=flow_rate,
@@ -250,7 +250,7 @@ class SyringeDispenser:
 
   def _build_syringe_dispense_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     syringe: Syringe,
     flow_rate: int,
@@ -319,7 +319,7 @@ class SyringeDispenser:
 
   def _build_syringe_prime_command(
     self,
-    plate: Plate,
+    plate: PlateFormat,
     volume: float,
     syringe: Literal["A", "B"],
     flow_rate: int,

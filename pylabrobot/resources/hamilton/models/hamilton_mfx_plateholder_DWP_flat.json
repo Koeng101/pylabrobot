@@ -1,0 +1,27 @@
+{
+  "name": "hamilton_mfx_plateholder_DWP_flat",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_PLATE_HOLDER",
+      "model": "hamilton_mfx_plateholder_DWP_flat",
+      "category": "plate_holder",
+      "size": {
+        "x": 135.0,
+        "y": 94.0,
+        "z": 59.80000000000001
+      },
+      "rotation": {},
+      "holder": {
+        "childLocation": {
+          "x": 4.0,
+          "y": 3.5,
+          "z": 59.8
+        },
+        "pedestalSizeZ": 0.0,
+        "capacity": 1
+      }
+    }
+  },
+  "description": "Hamilton cat. no.: 188229\nHamilton name: 'MFX_DWP_rackbased_module'\nModule to position a Deep Well Plate / tube racks (MATRIX or MICRONICS) / NUNC reagent trough."
+}

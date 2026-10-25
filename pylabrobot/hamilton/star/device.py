@@ -4,6 +4,8 @@ import logging
 import os
 from typing import Optional
 
+from pylabrobot.hamilton.star import resource_model
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.hamilton.star.driver.features.autoload import Autoload
 from pylabrobot.hamilton.star.driver.features.core_grippers import CoreGrippers
 from pylabrobot.hamilton.star.driver.features.cover import FrontCover
@@ -16,13 +18,14 @@ from pylabrobot.hamilton.star.driver.lld_mode import LLDMode
 from pylabrobot.hamilton.star.driver.master import STARDriver
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.hamilton import (
-  HamiltonSTARDeck,
-  STARDeck,
-  STARLetDeck,
-  STARPlusDeck,
-)
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.v1 import store_pb2 as spb
+
+# The deck each frame is built on, by model name.
+STAR_DECK_MODEL = "STARDeck"
+STARLET_DECK_MODEL = "STARLetDeck"
+STARPLUS_DECK_MODEL = "STARPlusDeck"
 
 # Where the recordings this package ships live, and which one stands for each frame. Only ever
 # handed to a simulated device: a physical one is whatever it answers, and a declaration given for
@@ -134,11 +137,12 @@ STAR_DECK_LOCATION = Coordinate(110.0 + DECK_ORIGIN_X_CORRECTION, DECK_ORIGIN_Y,
 STARLET_DECK_LOCATION = Coordinate(110.0 + DECK_ORIGIN_X_CORRECTION, DECK_ORIGIN_Y, 80.5)
 
 
-class STARDevice(Resource):
+class STARDevice:
   """The complete modelling and control interface for a Hamilton Microlab STAR.
 
-  The device is itself a resource and its deck is its child, so everything on the deck is a
-  descendant of the device carrying it: one tree, rooted here.
+  The device's body is a resource in a store and its deck hangs from it, so everything on the deck
+  is under the device carrying it: one tree, rooted at the body. `create_resources` makes the body
+  and the deck in the store, or finds them there; `setup` calls it.
 
   Two tiers over one driver. `star.driver` speaks to the device in its own terms - tracks,
   positions, millimetres - and stays reachable whatever is built on top of it. The device adds
@@ -150,7 +154,7 @@ class STARDevice(Resource):
 
   def __init__(
     self,
-    deck: HamiltonSTARDeck,
+    deck: Optional[handles.Deck] = None,
     simulation: bool = False,
     declared_configuration_json: Optional[str] = None,
     driver: Optional[STARDriver] = None,
@@ -162,11 +166,13 @@ class STARDevice(Resource):
     left_side_panel_installed: bool = False,
     deck_location: Optional[Coordinate] = None,
     model: Optional[str] = None,
+    store: Optional[ResourceStore] = None,
+    deck_model: str = STAR_DECK_MODEL,
   ):
     """
     Args:
-      deck: the deck this device carries. It becomes a child of the device, so everything
-        assigned to it is a descendant of this device.
+      deck: the deck this device carries. It is put in the device, so everything assigned to it is
+        under this device. Unset, `create_resources` makes one of `deck_model`.
       simulation: whether to build a simulated device, which answers without one being plugged
         in. Superseded by `driver`, which says exactly what to drive.
       declared_configuration_json: path to a declared configuration, passed to the driver this
@@ -187,10 +193,14 @@ class STARDevice(Resource):
       deck_location: where the deck sits inside it, BEFORE any extension housing. Defaults to the
         device's own origin.
       model: which device this is. Defaults to the class name, which says only that it is a STAR.
+      store: the store the device's resources are in. Defaults to the deck's, or else a new one
+        held in this process.
+      deck_model: the deck to make when none is given, by model name.
 
     Raises:
       ValueError: If neither a driver nor simulation is given, since there is then nothing to
-        drive, or if both the extension housing and the left side panel are declared.
+        drive, if both the extension housing and the left side panel are declared, or if the deck
+        is in another store than the one given.
     """
     if driver is None and not simulation:
       raise ValueError("pass a driver, or `simulation=True` to build a simulated one")
@@ -199,86 +209,148 @@ class STARDevice(Resource):
         "an device has the left extension housing or the left side panel, not both: the "
         "housing stands where the panel would be"
       )
+    if deck is not None and store is not None and deck.store is not store:
+      raise ValueError("the deck is in another store than the one given")
     if driver is not None and simulation:
       logger.warning("both a driver and simulation given; driving the driver")
 
-    super().__init__(
-      name=name,
-      size_x=deck.get_absolute_size_x() if size_x is None else size_x,
-      size_y=deck.get_absolute_size_y() if size_y is None else size_y,
-      size_z=deck.get_absolute_size_z() if size_z is None else size_z,
-      category="device",
-      model=model if model is not None else self.__class__.__name__,
-    )
+    self.name = name
+    self.model = model if model is not None else self.__class__.__name__
+    if deck is not None:
+      store = deck.store
+    self.store: ResourceStore = store if store is not None else ResourceStore.in_memory()
+    self._size = (size_x, size_y, size_z)
+    self._deck_location = deck_location if deck_location is not None else Coordinate(0, 0, 0)
+    self._deck_model = deck_model
     self.extension_housing = extension_housing
     self.left_side_panel_installed = left_side_panel_installed
 
-    self.deck = deck
+    # The device's own resources, once `create_resources` has made or found them.
+    self.body: Optional[handles.Resource] = None
+    self.deck: Optional[handles.Deck] = deck
+    self.left_side_panel: Optional[handles.Resource] = None
+    """The chassis's left side panel, on a device it is declared installed on."""
+    self.left_extension_housing: Optional[handles.Resource] = None
+    """The left extension housing, on a device it is fitted to."""
+    self._num_tracks: Optional[int] = None
+
     if driver is not None:
       if declared_configuration_json is not None:
         logger.warning("a driver was given, so it brings its own declared configuration")
       self.driver: STARDriver = driver
     else:
-      # The driver is what reads a declaration. Without one, a simulated device works out from its
-      # deck what frame it is on, and says what it assumed.
+      # The driver is what reads a declaration.
       self.driver = STARSimulationDriver(
         deck=deck, declared_configuration_json=declared_configuration_json
       )
 
-    if self.driver.deck is not None and self.driver.deck is not deck:
+    if self.driver.deck is not None and deck is not None and self.driver.deck != deck:
       logger.warning("the driver was given another deck; modelling into this device's instead")
-
-    self.driver.deck = deck
+    if deck is not None:
+      self.driver.deck = deck
     if self.driver.left_side_panel_installed != left_side_panel_installed:
       logger.warning("the driver was told otherwise about the left side panel; taking this one's")
     self.driver.left_side_panel_installed = left_side_panel_installed
-    self.assign_child_resource(
-      deck, location=deck_location if deck_location is not None else Coordinate(0, 0, 0)
+
+  # -- the device's resources -----------------------------------------------------------------
+
+  async def create_resources(self) -> None:
+    """Make the device's body, its deck and the parts bolted to its side in the store, or find them
+    there under the device's name.
+
+    `setup` calls this. Call it before setup to put labware on the deck. Repeatable: a device whose
+    body exists makes nothing.
+
+    Raises:
+      ValueError: If the store holds a body of this name with no deck in it, or on another deck
+        than the one given.
+    """
+    if self.body is None:
+      found = await self.store.find_resources(
+        spb.ResourceFilter(names=[self.name], categories=["device"])
+      )
+      if found:
+        await self._find_resources(found[0])
+      else:
+        await self._make_resources()
+    assert self.deck is not None
+    self.driver.deck = self.deck
+    if self._num_tracks is None:
+      self._num_tracks = (await self.deck.get_hamilton_tracks()).num_tracks
+
+  async def _find_resources(self, body: handles.Resource) -> None:
+    """Take up the resources a device of this name left in the store.
+
+    Args:
+      body: the device's body, as the store holds it.
+    """
+    children = await body.get_children()
+    deck = next((child for child in children if isinstance(child, handles.Deck)), None)
+    if deck is None:
+      raise ValueError(f"the store holds '{self.name}' with no deck in it")
+    if self.deck is not None and self.deck != deck:
+      raise ValueError(f"the store holds '{self.name}' on another deck than the one given")
+    nodes = {node.id: node for node in await model.get_nodes(self.store, children)}
+    for child in children:
+      category = nodes[child.id].attributes.category
+      if category == "left_side_panel":
+        self.left_side_panel = child
+      elif category == "left_extension_housing":
+        self.left_extension_housing = child
+    self.body, self.deck = body, deck
+
+  async def _make_resources(self) -> None:
+    """Make the body, put the deck in it, and bolt on what the device is declared to have."""
+    deck = self.deck
+    if deck is None:
+      made = await self.store.get_or_create(self._deck_model, name=f"{self.name}_deck")
+      if not isinstance(made, handles.Deck):
+        raise ValueError(f"'{self._deck_model}' is not a deck")
+      deck = made
+    measured = await deck.get_absolute_size()
+    size_x, size_y, size_z = self._size
+    size = Coordinate(
+      measured.x if size_x is None else size_x,
+      measured.y if size_y is None else size_y,
+      measured.z if size_z is None else size_z,
     )
-
-    if left_side_panel_installed:
-      self.assign_child_resource(
-        Resource(
-          name=f"{self.name}_left_side_panel",
-          size_x=SIDE_PANEL_SIZE[0],
-          size_y=SIDE_PANEL_SIZE[1],
-          size_z=SIDE_PANEL_SIZE[2],
-          category="left_side_panel",
-          model="hamilton_star_left_side_panel",
-        ),
-        location=Coordinate(SIDE_PANEL_X, SIDE_PANEL_ORIGIN_YZ[0], SIDE_PANEL_ORIGIN_YZ[1]),
+    body = resource_model.device_body(self.name, size, self.model)
+    if self.left_side_panel_installed:
+      body.children.append(
+        resource_model.side_part(
+          f"{self.name}_left_side_panel",
+          Coordinate(*SIDE_PANEL_SIZE),
+          Coordinate(SIDE_PANEL_X, SIDE_PANEL_ORIGIN_YZ[0], SIDE_PANEL_ORIGIN_YZ[1]),
+          "left_side_panel",
+        )
       )
-
-    if extension_housing:
+    if self.extension_housing:
       # To the left, hung so its top and its back are level with the device's.
-      self.assign_child_resource(
-        Resource(
-          name=f"{self.name}_left_extension_housing",
-          size_x=EXTENSION_HOUSING_SIZE[0],
-          size_y=EXTENSION_HOUSING_SIZE[1],
-          size_z=EXTENSION_HOUSING_SIZE[2],
-          category="left_extension_housing",
-          model="hamilton_star_left_extension_housing",
-        ),
-        location=Coordinate(
-          -EXTENSION_HOUSING_SIZE[0],
-          self.get_absolute_size_y() - EXTENSION_HOUSING_SIZE[1],
-          self.get_absolute_size_z() - EXTENSION_HOUSING_SIZE[2],
-        ),
+      body.children.append(
+        resource_model.side_part(
+          f"{self.name}_left_extension_housing",
+          Coordinate(*EXTENSION_HOUSING_SIZE),
+          Coordinate(
+            -EXTENSION_HOUSING_SIZE[0],
+            size.y - EXTENSION_HOUSING_SIZE[1],
+            size.z - EXTENSION_HOUSING_SIZE[2],
+          ),
+          "left_extension_housing",
+        )
       )
+    made_body = await self.store.create(body, name=self.name)
+    sides = await made_body.get_children()
+    # The deck goes first, ahead of the parts bolted to the side.
+    await made_body.assign_child_resource(deck, location=self._deck_location, index=0)
+    for side in sides:
+      if side.name == f"{self.name}_left_side_panel":
+        self.left_side_panel = side
+      elif side.name == f"{self.name}_left_extension_housing":
+        self.left_extension_housing = side
+    self.body, self.deck = made_body, deck
 
   # -- what the device carries ------------------------------------------------------------
   # Read through: the optional ones do not exist until discovery says what is fitted.
-
-  @property
-  def left_side_panel(self) -> Optional[Resource]:
-    """The chassis's left side panel, on a device it is declared installed on."""
-    return next((c for c in self.children if c.category == "left_side_panel"), None)
-
-  @property
-  def left_extension_housing(self) -> Optional[Resource]:
-    """The left extension housing, on a device it is fitted to."""
-    return next((c for c in self.children if c.category == "left_extension_housing"), None)
 
   @property
   def left_x_arm(self) -> Optional[XArm]:
@@ -349,7 +421,7 @@ class STARDevice(Resource):
     skip_head384: bool = False,
     skip_autoload: bool = False,
   ):
-    """Bring the device up.
+    """Bring the device up, making its resources first when they are not there yet.
 
     Args:
       skip_device_initialization: as `STARDriver.setup` takes it.
@@ -359,6 +431,7 @@ class STARDevice(Resource):
       skip_head384: as `STARDriver.setup` takes it.
       skip_autoload: as `STARDriver.setup` takes it.
     """
+    await self.create_resources()
     await self.driver.setup(
       skip_device_initialization=skip_device_initialization,
       skip_pipettes=skip_pipettes,
@@ -373,14 +446,32 @@ class STARDevice(Resource):
     await self.driver.stop()
 
   def __str__(self) -> str:
-    return f"{self.name}({self.driver.__class__.__name__}, {self.deck.num_tracks}-track deck)"
+    deck = "no deck yet" if self._num_tracks is None else f"{self._num_tracks}-track deck"
+    return f"{self.name}({self.driver.__class__.__name__}, {deck})"
 
 
 # # # # Complete STAR Devices Factory Functions, for convenience in building a configuration.
 
 
+def _driver_for(
+  deck: Optional[handles.Deck],
+  simulation: bool,
+  declared_configuration_json: Optional[str],
+  driver: Optional[STARDriver],
+  recording: str,
+) -> STARDriver:
+  """The driver a factory builds a device with: the one given, or a simulated or a physical one."""
+  if driver is not None:
+    return driver
+  if simulation:
+    return STARSimulationDriver(
+      deck=deck, declared_configuration_json=declared_configuration_json or recording
+    )
+  return STARDriver(deck=deck, declared_configuration_json=declared_configuration_json)
+
+
 def STAR(
-  deck: Optional[HamiltonSTARDeck] = None,
+  deck: Optional[handles.Deck] = None,
   simulation: bool = False,
   declared_configuration_json: Optional[str] = None,
   driver: Optional[STARDriver] = None,
@@ -390,25 +481,16 @@ def STAR(
   size_z: float = SIZE_Z,
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
+  store: Optional[ResourceStore] = None,
 ) -> STARDevice:
   """A full-size STAR, on a full-size STAR deck.
 
   The default deck and built-in components take their names from `name`. A supplied deck keeps
   its existing resource names.
   """
-  if deck is None:
-    deck = STARDeck(name=f"{name}_deck")
-  if simulation and driver is None and declared_configuration_json is None:
-    declared_configuration_json = RECORDING_STAR
-  if driver is None:
-    driver = (
-      STARSimulationDriver(deck=deck, declared_configuration_json=declared_configuration_json)
-      if simulation
-      else STARDriver(deck=deck, declared_configuration_json=declared_configuration_json)
-    )
   return STARDevice(
     deck=deck,
-    driver=driver,
+    driver=_driver_for(deck, simulation, declared_configuration_json, driver, RECORDING_STAR),
     name=name,
     size_x=size_x,
     size_y=size_y,
@@ -417,11 +499,13 @@ def STAR(
     left_side_panel_installed=left_side_panel_installed,
     deck_location=STAR_DECK_LOCATION,
     model=STAR.__name__,
+    store=store,
+    deck_model=STAR_DECK_MODEL,
   )
 
 
 def STARlet(
-  deck: Optional[HamiltonSTARDeck] = None,
+  deck: Optional[handles.Deck] = None,
   simulation: bool = False,
   declared_configuration_json: Optional[str] = None,
   driver: Optional[STARDriver] = None,
@@ -431,25 +515,16 @@ def STARlet(
   size_z: float = SIZE_Z,
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
+  store: Optional[ResourceStore] = None,
 ) -> STARDevice:
   """A STARlet, on a STARlet deck.
 
   The default deck and built-in components take their names from `name`. A supplied deck keeps
   its existing resource names.
   """
-  if deck is None:
-    deck = STARLetDeck(name=f"{name}_deck")
-  if simulation and driver is None and declared_configuration_json is None:
-    declared_configuration_json = RECORDING_STARLET
-  if driver is None:
-    driver = (
-      STARSimulationDriver(deck=deck, declared_configuration_json=declared_configuration_json)
-      if simulation
-      else STARDriver(deck=deck, declared_configuration_json=declared_configuration_json)
-    )
   return STARDevice(
     deck=deck,
-    driver=driver,
+    driver=_driver_for(deck, simulation, declared_configuration_json, driver, RECORDING_STARLET),
     name=name,
     size_x=size_x,
     size_y=size_y,
@@ -458,11 +533,13 @@ def STARlet(
     left_side_panel_installed=left_side_panel_installed,
     deck_location=STARLET_DECK_LOCATION,
     model=STARlet.__name__,
+    store=store,
+    deck_model=STARLET_DECK_MODEL,
   )
 
 
 def STARPlus(
-  deck: Optional[HamiltonSTARDeck] = None,
+  deck: Optional[handles.Deck] = None,
   simulation: bool = False,
   declared_configuration_json: Optional[str] = None,
   driver: Optional[STARDriver] = None,
@@ -472,6 +549,7 @@ def STARPlus(
   size_z: float = SIZE_Z,
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
+  store: Optional[ResourceStore] = None,
 ) -> STARDevice:
   """A STARplus, on a STARplus deck.
 
@@ -485,19 +563,9 @@ def STARPlus(
   Returns:
     The device, on a STARplus deck.
   """
-  if deck is None:
-    deck = STARPlusDeck(name=f"{name}_deck")
-  if simulation and driver is None and declared_configuration_json is None:
-    declared_configuration_json = RECORDING_STARPLUS
-  if driver is None:
-    driver = (
-      STARSimulationDriver(deck=deck, declared_configuration_json=declared_configuration_json)
-      if simulation
-      else STARDriver(deck=deck, declared_configuration_json=declared_configuration_json)
-    )
   return STARDevice(
     deck=deck,
-    driver=driver,
+    driver=_driver_for(deck, simulation, declared_configuration_json, driver, RECORDING_STARPLUS),
     name=name,
     size_x=size_x,
     size_y=size_y,
@@ -506,4 +574,6 @@ def STARPlus(
     left_side_panel_installed=left_side_panel_installed,
     deck_location=STAR_DECK_LOCATION,
     model=STARPlus.__name__,
+    store=store,
+    deck_model=STARPLUS_DECK_MODEL,
   )

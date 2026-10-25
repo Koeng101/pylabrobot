@@ -1,0 +1,272 @@
+{
+  "name": "hamilton_tube_carrier_12_b00",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "model": "hamilton_tube_carrier_12_b00",
+      "category": "tube_carrier",
+      "size": {
+        "x": 45.0,
+        "y": 497.0,
+        "z": 92.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 27.24,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 63.74,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 100.24,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 136.74,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-4",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 173.24,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-5",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 209.74,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-6",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 246.24,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-7",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 282.74,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-8",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 319.24,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-9",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 355.74,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-10",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 392.24,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-11",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 29.0,
+            "y": 29.0
+          },
+          "location": {
+            "x": 11.55,
+            "y": 428.74,
+            "z": 18.9
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Hamilton cat. no.: 182045\nHamilton name: 'SMP_CAR_12_B00'.\n'Sample' carrier for 12 50mL falcon tubes (cor_falcon_tube_50mL_Vb).\n2 track(T) wide."
+}

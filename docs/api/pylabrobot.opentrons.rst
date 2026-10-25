@@ -61,3 +61,21 @@ Gripper
   :recursive:
 
     FlexGripper
+
+Decks
+-----
+
+.. currentmodule:: pylabrobot.opentrons.decks
+
+.. autosummary::
+  :toctree: _autosummary
+  :nosignatures:
+  :recursive:
+
+    create_flex_deck
+    create_ot2_deck
+    assign_child_at_slot
+    get_slot_holder
+    get_slot
+    get_resource_at_slot
+    get_trash_area

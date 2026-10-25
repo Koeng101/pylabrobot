@@ -5,32 +5,36 @@ from __future__ import annotations
 import asyncio
 import logging
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 from unittest.mock import AsyncMock
 
 import pytest
 
 from pylabrobot.hamilton.prep import PrepDriver, PrepSimulationDriver
+from pylabrobot.hamilton.prep.deck import is_prep_deck
 from pylabrobot.hamilton.prep.driver import prep_commands as PrepCmd
 from pylabrobot.hamilton.prep.driver.features.core_grippers import (
   FIRMWARE_Z_LEG,
   JAW_OPEN_EXTRA,
   CoreGrippers,
 )
+from pylabrobot.hamilton.prep.driver.model import ref
+from pylabrobot.hamilton.prep.driver.test_helpers import (
+  make_prep_deck,
+  parts_of,
+  place,
+)
 from pylabrobot.hamilton.transport.tcp.hoi_error import HoiError
-from pylabrobot.lib.pick_and_place.locations import get_grip_location, get_pick_location
 from pylabrobot.resources import Coordinate, Resource
 from pylabrobot.resources.alpaqua.magnetic_racks import alpaqua_96_plateadapter_magnum_flx
 from pylabrobot.resources.azenta import azenta_96_wellplate_200uL_Vb_4titudeframestar
-from pylabrobot.resources.corning.axygen.plates import cor_axy_96_wellplate_500uL_Ub
-from pylabrobot.resources.corning.plates import cor_96_wellplate_2mL_Vb
-from pylabrobot.resources.hamilton import HamiltonCoreGrippers, PrepDeck
-from pylabrobot.resources.head_tool import HeadTool
-from pylabrobot.resources.lid import Lid
-from pylabrobot.resources.plate import Plate
 from pylabrobot.resources.resource_holder import ResourceHolder
 from pylabrobot.resources.resource_stack import ResourceStack
 from pylabrobot.resources.rotation import Rotation
+from pylabrobot.resources.store import build, handles
+from pylabrobot.resources.store.definitions import definition_from_resource
+from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.v1 import types_pb2 as pb
 from pylabrobot.resources.trash import Trash
 
 
@@ -46,7 +50,9 @@ def _capture_send(prep: PrepDriver) -> list[Any]:
   return captured
 
 
-def _make_grippers(deck: PrepDeck, stub_pick_and_place: bool = True) -> Tuple[CoreGrippers, Any]:
+async def _make_grippers(
+  deck: handles.Deck, stub_pick_and_place: bool = True
+) -> Tuple[CoreGrippers, Any]:
   """Grippers that resolve real geometry against `deck` and stop before the device.
 
   By default the two calls the geometry ends in are stood in for on the object, so a test of what
@@ -73,8 +79,12 @@ def _make_grippers(deck: PrepDeck, stub_pick_and_place: bool = True) -> Tuple[Co
   pipettes.move_to_xy_positions = AsyncMock(
     side_effect=lambda *args, **kwargs: order.append("move_to_xy_positions")
   )
+  attributes = await deck.attributes()
   driver = SimpleNamespace(
     deck=deck,
+    store=deck.store,
+    deck_ref=ref(deck.id),
+    parts=await parts_of(deck) if is_prep_deck(attributes) else None,
     send_command=AsyncMock(
       side_effect=lambda command, **kwargs: order.append(type(command).__name__)
     ),
@@ -94,16 +104,20 @@ def _make_grippers(deck: PrepDeck, stub_pick_and_place: bool = True) -> Tuple[Co
   grippers._set_z_acceleration = set_z_acceleration  # type: ignore[method-assign]
   grippers._restore_z_acceleration = restore_z_acceleration  # type: ignore[method-assign]
 
-  def let_go(*args: Any, on_released: Optional[Callable[[], None]] = None, **kwargs: Any) -> None:
+  async def let_go(
+    *args: Any, on_released: Optional[Callable[[], Awaitable[None]]] = None, **kwargs: Any
+  ) -> None:
     if on_released is not None:
-      on_released()
+      await on_released()
     grippers._clear_held_state()
+
+  async def grip(*args: Any, on_gripped: Optional[Callable[[], Awaitable[None]]] = None, **kw: Any):
+    if on_gripped is not None:
+      await on_gripped()
 
   commands = SimpleNamespace(
     # The grip and the let-go stand in for the device and still call back, as the real ones do.
-    pick_up_at=AsyncMock(
-      side_effect=lambda *args, on_gripped=None, **kwargs: on_gripped and on_gripped()
-    ),
+    pick_up_at=AsyncMock(side_effect=grip),
     # A release is what leaves the fingers empty, so the stand-in keeps that and skips only the
     # device.
     place_at=AsyncMock(side_effect=let_go),
@@ -123,20 +137,21 @@ def _make_grippers(deck: PrepDeck, stub_pick_and_place: bool = True) -> Tuple[Co
 
 def test_the_tools_on_by_location_alone_let_the_grippers_act():
   """`pick_up_tools_at_location` puts them on the channels; `drop_tools` takes them off."""
-  deck = PrepDeck(with_core_grippers=True)
-  grippers, commands = _make_grippers(deck)
-  grippers._tools_mounted = grippers._tools_on_channels = False
-  pipettes: Any = grippers._driver.pipettes
-  pipettes._resolve_traverse_height = lambda: 167.5
-  pipettes._record_channel_bounds = AsyncMock()
-
-  async def send(command, **kwargs):
-    if isinstance(command, PrepCmd.PrepGetPlateHeld):
-      return PrepCmd.PrepGetPlateHeld.Response(value=False)
-
-  commands.send_command.side_effect = send
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    grippers, commands = await _make_grippers(deck)
+    grippers._tools_mounted = grippers._tools_on_channels = False
+    pipettes: Any = grippers._driver.pipettes
+    pipettes._resolve_traverse_height = lambda: 167.5
+    pipettes._record_channel_bounds = AsyncMock()
+
+    async def send(command, **kwargs):
+      if isinstance(command, PrepCmd.PrepGetPlateHeld):
+        return PrepCmd.PrepGetPlateHeld.Response(value=False)
+
+    commands.send_command.side_effect = send
+
     with pytest.raises(RuntimeError, match="not on the channels"):
       grippers._require_mounted()
     await grippers.pick_up_tools_at_location(100.0, 50.0, 60.0, 90.0)
@@ -150,15 +165,15 @@ def test_the_tools_on_by_location_alone_let_the_grippers_act():
 
 
 def test_gripped_more_than_20_mm_below_its_top_is_refused():
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_96_wellplate_2mL_Vb("plate")
-  grippers, commands = _make_grippers(deck)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_96_wellplate_2mL_Vb", "plate", 4)
+    grippers, commands = await _make_grippers(deck)
+    size_z = (await plate.get_size()).z
     with pytest.raises(ValueError, match="pipetting head"):
       await grippers.pick_up_resource(plate, pickup_distance_from_top=20.5)
     with pytest.raises(ValueError, match="pipetting head"):
-      await grippers.pick_up_resource(plate, pickup_distance_from_bottom=plate.get_size_z() - 20.5)
+      await grippers.pick_up_resource(plate, pickup_distance_from_bottom=size_z - 20.5)
     commands.pick_up_at.assert_not_awaited()
     await grippers.pick_up_resource(plate, pickup_distance_from_top=12.0)
     commands.pick_up_at.assert_awaited_once()
@@ -167,27 +182,23 @@ def test_gripped_more_than_20_mm_below_its_top_is_refused():
 
 
 def test_a_grip_from_the_bottom_sends_what_the_same_grip_from_the_top_sends():
-  async def pick(
-    pickup_distance_from_top: Optional[float] = None,
-    pickup_distance_from_bottom: Optional[float] = None,
-  ) -> PrepCmd.PrepPickUpPlate:
-    deck = PrepDeck(with_core_grippers=True)
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-    grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
-    await grippers.pick_up_resource(
-      plate,
-      pickup_distance_from_top=pickup_distance_from_top,
-      pickup_distance_from_bottom=pickup_distance_from_bottom,
-    )
+  async def pick(from_top: float, *, from_the_bottom: bool) -> PrepCmd.PrepPickUpPlate:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    size_z = (await plate.get_size()).z
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
+    if from_the_bottom:
+      await grippers.pick_up_resource(plate, pickup_distance_from_bottom=size_z - from_top)
+    else:
+      await grippers.pick_up_resource(plate, pickup_distance_from_top=from_top)
     sent = [c.args[0] for c in commands.send_command.await_args_list]
     (picked,) = _plate_commands(sent, PrepCmd.PrepPickUpPlate)
     assert isinstance(picked, PrepCmd.PrepPickUpPlate)
     return picked
 
   async def _run() -> None:
-    from_top = await pick(pickup_distance_from_top=5)
-    size_z = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate").get_size_z()
-    from_bottom = await pick(pickup_distance_from_bottom=size_z - 5)
+    from_top = await pick(5, from_the_bottom=False)
+    from_bottom = await pick(5, from_the_bottom=True)
     assert from_bottom.grip_height == pytest.approx(from_top.grip_height)
     top, bottom = from_top.plate_top_center, from_bottom.plate_top_center
     assert (bottom.x_position, bottom.y_position, bottom.z_position) == pytest.approx(
@@ -198,11 +209,10 @@ def test_a_grip_from_the_bottom_sends_what_the_same_grip_from_the_top_sends():
 
 
 def test_a_pick_up_with_neither_or_both_distances_is_refused():
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  grippers, commands = _make_grippers(deck)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    grippers, commands = await _make_grippers(deck)
     for from_top, from_bottom in ((None, None), (5.0, 9.82)):
       with pytest.raises(ValueError, match="exactly one"):
         await grippers.pick_up_resource(
@@ -216,17 +226,17 @@ def test_a_pick_up_with_neither_or_both_distances_is_refused():
 
 def test_place_resource_releases_over_the_destination_at_the_grip_height():
   """Released over the new holder's centre plus the offset, at the height it was gripped."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  dest = deck[2]
-  grippers, commands = _make_grippers(deck)
   offset = Coordinate(0.5, -0.25, 1.0)
 
   async def _run() -> None:
-    source = plate.get_absolute_location("c", "c", "b")
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    dest = (await parts_of(deck))[2]
+    grippers, commands = await _make_grippers(deck)
+    source = await plate.get_absolute_location("c", "c", "b")
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     await grippers.place_resource(dest, offset=offset)
-    placed = plate.get_absolute_location("c", "c", "b")
+    placed = await plate.get_absolute_location("c", "c", "b")
     picked: List[Coordinate] = [commands.pick_up_at.await_args.args[0]]
     dropped: List[Coordinate] = [commands.place_at.await_args.args[0]]
     assert (picked[0].x, picked[0].y) == pytest.approx((source.x, source.y))
@@ -237,21 +247,19 @@ def test_place_resource_releases_over_the_destination_at_the_grip_height():
 
 
 def test_place_resource_not_holding_raises():
-  deck = PrepDeck(with_core_grippers=True)
-  grippers, commands = _make_grippers(deck)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    grippers, commands = await _make_grippers(deck)
     with pytest.raises(RuntimeError, match="Not holding anything"):
-      await grippers.place_resource(deck[2])
+      await grippers.place_resource((await parts_of(deck))[2])
 
   asyncio.run(_run())
 
 
 def test_place_resource_after_coordinate_pick_raises():
-  deck = PrepDeck(with_core_grippers=True)
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers._pick_up_at(
       Coordinate(100, 200, 50),
       resource_size_x=127.0,
@@ -260,57 +268,58 @@ def test_place_resource_after_coordinate_pick_raises():
       plate_top_z_offset=5.0,
     )
     with pytest.raises(RuntimeError, match="pick_up_resource"):
-      await grippers.place_resource(deck[2])
+      await grippers.place_resource((await parts_of(deck))[2])
 
   asyncio.run(_run())
 
 
 def test_place_resource_reassigns_holder():
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  dest = deck[2]
-  grippers, commands = _make_grippers(deck)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    parts = await parts_of(deck)
+    dest = parts[2]
+    grippers, commands = await _make_grippers(deck)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     await grippers.place_resource(dest)
-    assert plate.parent is dest
-    assert dest.resource is plate
-    assert deck[4].resource is None
+    parent = await plate.get_parent()
+    assert parent is not None and parent.id == dest.id
+    assert [c.name for c in await dest.get_children()] == ["plate"]
+    assert await parts[4].get_children() == []
     commands.place_at.assert_awaited_once()
     with pytest.raises(RuntimeError, match="Not holding anything"):
-      await grippers.place_resource(deck[4])
+      await grippers.place_resource(parts[4])
 
   asyncio.run(_run())
 
 
 def test_an_occupied_spot_is_refused_before_anything_moves():
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  other = deck[2] = cor_axy_96_wellplate_500uL_Ub("other")
-  grippers, commands = _make_grippers(deck)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    await place(deck, "cor_axy_96_wellplate_500uL_Ub", "other", 2)
+    parts = await parts_of(deck)
+    grippers, commands = await _make_grippers(deck)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     with pytest.raises(RuntimeError):
-      await grippers.place_resource(deck[2])
+      await grippers.place_resource(parts[2])
     commands.place_at.assert_not_awaited()
-    assert grippers._held_resource is plate
-    assert deck[2].resource is other
+    assert grippers._held_resource is not None and grippers._held_resource.id == plate.id
+    assert [c.name for c in await parts[2].get_children()] == ["other"]
 
   asyncio.run(_run())
 
 
 def test_pick_up_resource_width_override():
   """A width given at pick up is the one gripped with and released with."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  grippers, commands = _make_grippers(deck)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    grippers, commands = await _make_grippers(deck)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5, resource_size_y=80.5)
     gripped = grippers._holding_resource_width
-    await grippers.place_resource(deck[2])
+    await grippers.place_resource((await parts_of(deck))[2])
     pick = commands.pick_up_at.await_args
     commands.place_at.assert_awaited_once()
     assert pick.kwargs["resource_size_y"] == 80.5 and gripped == 80.5
@@ -319,11 +328,11 @@ def test_pick_up_resource_width_override():
 
 
 def test_private_pick_up_at_enables_place_at():
-  deck = PrepDeck(with_core_grippers=True)
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
   place = Coordinate(10, 20, 30)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers._pick_up_at(
       Coordinate(1, 2, 3),
       resource_size_x=127.0,
@@ -353,10 +362,10 @@ def test_private_pick_up_at_enables_place_at():
 @pytest.mark.parametrize("resource_height, warned", [(14.0, False), (100.0, True)])
 def test_place_at_warns_when_carried_below_safe_deck_height(caplog, resource_height, warned):
   """Fingers carried at 144.6 mm, gripped 5 mm below the top: a 100 mm resource hangs to 49.6 mm."""
-  deck = PrepDeck(with_core_grippers=True)
-  grippers, _ = _make_grippers(deck, stub_pick_and_place=False)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    grippers, _ = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers._pick_up_at(
       Coordinate(1, 2, 3),
       resource_size_x=127.0,
@@ -383,41 +392,59 @@ def test_place_at_warns_when_carried_below_safe_deck_height(caplog, resource_hei
 def test_probe_resource_exists_ztouches_the_front_tool_over_its_centre(surface, found):
   """The front channel goes over the centre and searches from `search_distance` above the top to
   its centre."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  grippers, commands = _make_grippers(deck)
-  probe = AsyncMock(return_value=surface)
-  pipettes: Any = grippers._driver.pipettes
-  pipettes.probe_z_using_ztouch = probe
 
-  async def _run() -> bool:
-    return await grippers.probe_resource_exists_using_ztouch(plate, search_distance=20.0)
+  async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    grippers, commands = await _make_grippers(deck)
+    probe = AsyncMock(return_value=surface)
+    pipettes: Any = grippers._driver.pipettes
+    pipettes.probe_z_using_ztouch = probe
 
-  assert asyncio.run(_run()) is found
-  top = plate.get_location_wrt(deck, x="c", y="c", z="t")
-  xy = commands.move_to_xy_positions.await_args
-  assert xy is not None
-  assert xy.args == (top.x, {1: top.y})
-  assert xy.kwargs["make_space"] is True
-  probe.assert_awaited_once()
-  seek = probe.await_args
-  assert seek is not None
-  assert seek.args == (1,)
-  assert seek.kwargs["search_start_position"] == pytest.approx(top.z + 20.0)
-  center = plate.get_location_wrt(deck, x="c", y="c", z="c")
-  assert seek.kwargs["search_end_position"] == pytest.approx(center.z)
-  assert seek.kwargs["allow_without_tip"] is True
-  # Travelled at Z safety, and the probe is the one to leave the channels there, not 2 mm up.
-  assert seek.kwargs["post_detection_distance"] == 0.0
-  assert seek.kwargs["move_to_safe_z_position_after"] is True
-  assert commands.move_to_safe_z.await_count == 1
+    assert await grippers.probe_resource_exists_using_ztouch(plate, search_distance=20.0) is found
+    top = await plate.get_location_wrt(deck, x="c", y="c", z="t")
+    xy = commands.move_to_xy_positions.await_args
+    assert xy is not None
+    assert xy.args[0] == pytest.approx(top.x)
+    assert xy.args[1] == {1: pytest.approx(top.y)}
+    assert xy.kwargs["make_space"] is True
+    probe.assert_awaited_once()
+    seek = probe.await_args
+    assert seek is not None
+    assert seek.args == (1,)
+    assert seek.kwargs["search_start_position"] == pytest.approx(top.z + 20.0)
+    center = await plate.get_location_wrt(deck, x="c", y="c", z="c")
+    assert seek.kwargs["search_end_position"] == pytest.approx(center.z)
+    assert seek.kwargs["allow_without_tip"] is True
+    # Travelled at Z safety, and the probe is the one to leave the channels there, not 2 mm up.
+    assert seek.kwargs["post_detection_distance"] == 0.0
+    assert seek.kwargs["move_to_safe_z_position_after"] is True
+    assert commands.move_to_safe_z.await_count == 1
+
+  asyncio.run(_run())
+
+
+async def _holder_tools(p: PrepDriver) -> Tuple[handles.Resource, List[handles.Resource]]:
+  """The deck's CO-RE gripper holder and the tools standing in it."""
+  holder = await p.request_core_gripper_holder()
+  assert holder is not None
+  return holder, [c for c in await holder.get_children() if isinstance(c, handles.HeadTool)]
+
+
+async def _engage(deck: handles.Deck, tools: List[handles.Resource]) -> float:
+  """How far down a channel reaches into the tools: their tops less how deep they fit."""
+  heights = []
+  for tool in tools:
+    top = (await tool.get_location_wrt(deck, z="t")).z
+    heights.append(top - (await tool.attributes()).head_tool.fitting_depth)
+  return min(heights)
 
 
 def test_pick_up_tools_moves_over_the_tools_then_picks():
   """The channels are taken over the tools before the one PrepPickUpTool."""
 
   async def _run() -> None:
-    deck = PrepDeck(with_core_grippers=True)
+    deck = await make_prep_deck(with_core_grippers=True)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.core_grippers is not None
@@ -440,27 +467,27 @@ def test_picking_the_tools_up_sends_where_the_deck_holds_them():
   """The positions sent are the holder's x and channel centres, and the height of the tools in it."""
 
   async def _run() -> None:
-    deck = PrepDeck(with_core_grippers=True)
+    deck = await make_prep_deck(with_core_grippers=True)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.core_grippers is not None
     captured = _capture_send(p)
 
     # Read where the tools stand before they are taken: once they are, they are on the channels.
-    holder = p.core_gripper_holder
-    assert isinstance(holder, HamiltonCoreGrippers)
-    at = holder.get_location_wrt(deck, x="c")
-    tools = [child for child in holder.children if isinstance(child, HeadTool)]
-    engage = min(tool.get_location_wrt(deck, z="t").z - tool.fitting_depth for tool in tools)
+    holder, tools = await _holder_tools(p)
+    at = await holder.get_location_wrt(deck, x="c")
+    engage = await _engage(deck, tools)
+    back_y, front_y = (await holder.attributes()).holder.channel_y_centers
 
     await p.core_grippers.pick_up_tools()
 
     (pickup,) = [c for c in captured if isinstance(c, PrepCmd.PrepPickUpTool)]
-    assert pickup.tool_position_x == at.x
-    assert pickup.tool_position_z == engage == 62.0  # as the deck placed the holder before it was
-    assert pickup.rear_channel_position_y == at.y + holder.back_channel_y_center  # a box of its own
-    assert pickup.front_channel_position_y == at.y + holder.front_channel_y_center
-    assert pickup.tool_seek == engage + 10.0
+    assert pickup.tool_position_x == pytest.approx(at.x)
+    assert pickup.tool_position_z == pytest.approx(engage)
+    assert engage == pytest.approx(62.0)  # as the deck placed the holder before it was
+    assert pickup.rear_channel_position_y == pytest.approx(at.y + back_y)  # a box of its own
+    assert pickup.front_channel_position_y == pytest.approx(at.y + front_y)
+    assert pickup.tool_seek == pytest.approx(engage + 10.0)
     assert pickup.tool_x_radius == 2.0
     assert pickup.tool_y_radius == 2.0
     assert pickup.tip_definition == PrepCmd.CO_RE_GRIPPER_TIP_PICKUP_PARAMETERS
@@ -468,11 +495,10 @@ def test_picking_the_tools_up_sends_where_the_deck_holds_them():
     # The move that precedes it puts the channels over the same x, a channel centre either side.
     before = captured[: captured.index(pickup)]
     (approach,) = [c for c in before if isinstance(c, PrepCmd.PrepMoveToPosition)]
-    assert approach.move_parameters.gantry_x_position == at.x
-    assert [axis.y_position for axis in approach.move_parameters.axis_parameters] == [
-      at.y + holder.back_channel_y_center,
-      at.y + holder.front_channel_y_center,
-    ]
+    assert approach.move_parameters.gantry_x_position == pytest.approx(at.x)
+    assert [axis.y_position for axis in approach.move_parameters.axis_parameters] == pytest.approx(
+      [at.y + back_y, at.y + front_y]
+    )
 
     await p.core_grippers.return_tools()
     assert len([c for c in captured if isinstance(c, PrepCmd.PrepDropTool)]) == 1
@@ -487,23 +513,22 @@ def test_the_tools_are_picked_up_where_they_stand_not_where_the_holder_sits():
   """They stand proud of the holder, and a channel sent to its base would be driven through them."""
 
   async def _t():
-    deck = PrepDeck(with_core_grippers=True)
+    deck = await make_prep_deck(with_core_grippers=True)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     captured = _capture_send(p)
     # Where they stand is read before they are taken: a taken tool is on the channel, not here.
-    holder = p.core_gripper_holder
-    assert holder is not None
-    tools = [child for child in holder.children if isinstance(child, HeadTool)]
-    engage = min(tool.get_location_wrt(deck, z="t").z - tool.fitting_depth for tool in tools)
+    holder, tools = await _holder_tools(p)
+    engage = await _engage(deck, tools)
 
     assert p.core_grippers is not None
     await p.core_grippers.pick_up_tools()
 
     (pickup,) = [c for c in captured if isinstance(c, PrepCmd.PrepPickUpTool)]
-    assert pickup.tool_position_z == engage
-    assert pickup.tool_seek == engage + 10.0
-    assert engage > holder.get_location_wrt(deck).z  # the holder's base is not where they are
+    assert pickup.tool_position_z == pytest.approx(engage)
+    assert pickup.tool_seek == pytest.approx(engage + 10.0)
+    # the holder's base is not where they are
+    assert engage > (await holder.get_location_wrt(deck)).z
     await p.stop()
 
   asyncio.run(_t())
@@ -513,7 +538,7 @@ def test_a_tool_pick_up_that_fails_still_raises_the_channels():
   """Down at the tools is where it leaves them, and the next lateral move would drag them through."""
 
   async def _t():
-    deck = PrepDeck(with_core_grippers=True)
+    deck = await make_prep_deck(with_core_grippers=True)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.pipettes is not None
@@ -529,7 +554,6 @@ def test_a_tool_pick_up_that_fails_still_raises_the_channels():
 
     p.send_command = failing  # type: ignore[method-assign]
     with pytest.raises(RuntimeError, match="refused the tools"):
-      assert p.core_grippers is not None
       assert p.core_grippers is not None
       await p.core_grippers.pick_up_tools()
     assert raised  # to Z safety on the way out
@@ -548,7 +572,7 @@ def test_the_tool_commands_are_the_frames_the_device_answered():
   """
 
   async def _run() -> None:
-    p = PrepSimulationDriver(deck=PrepDeck(with_core_grippers=True))
+    p = PrepSimulationDriver(deck=await make_prep_deck(with_core_grippers=True))
     await p.setup()
     captured = _capture_send(p)
 
@@ -599,30 +623,30 @@ def test_the_tools_ride_on_the_channels_that_took_them():
   sitting in the holder while the channels carry them across the deck."""
 
   async def _run():
-    p = PrepSimulationDriver(deck=PrepDeck(with_core_grippers=True))
+    p = PrepSimulationDriver(deck=await make_prep_deck(with_core_grippers=True))
     await p.setup()
-    holder = p.core_gripper_holder
-    assert holder is not None
-    front, back = (t for t in holder.children if isinstance(t, HeadTool))
-    parked = {tool.name: tool.get_location_wrt(p.deck) for tool in (front, back)}
+    assert p.deck is not None
+    holder, (front, back) = await _holder_tools(p)
+    parked = {tool.name: await tool.get_location_wrt(p.deck) for tool in (front, back)}
 
     assert p.core_grippers is not None
     await p.core_grippers.pick_up_tools()
 
     # Channel 0 takes the rear tool and channel 1 the front, which is the order they are sent in.
     assert p.pipettes is not None
-    assert back.parent is p.pipettes.shaft(0)
-    assert front.parent is p.pipettes.shaft(1)
-    assert [c for c in holder.children if isinstance(c, HeadTool)] == []
+    for tool, channel in ((back, 0), (front, 1)):
+      parent, shaft = await tool.get_parent(), p.pipettes.shaft(channel)
+      assert parent is not None and shaft is not None and parent.id == shaft.id
+    assert (await _holder_tools(p))[1] == []
     # They ride where the channels ride, which is not where they were parked.
     for tool in (front, back):
-      assert tool.get_location_wrt(p.deck).z > parked[tool.name].z
+      assert (await tool.get_location_wrt(p.deck)).z > parked[tool.name].z
 
     await p.core_grippers.return_tools()
 
-    assert {t.name for t in holder.children} == {front.name, back.name}
+    assert {t.name for t in await holder.get_children()} == {front.name, back.name}
     for tool in (front, back):
-      assert tool.get_location_wrt(p.deck) == parked[tool.name]
+      assert await tool.get_location_wrt(p.deck) == parked[tool.name]
 
   asyncio.run(_run())
 
@@ -632,15 +656,16 @@ def test_a_drop_the_device_refuses_leaves_the_tools_on_the_channels():
   tools, and saying otherwise sends the next move somewhere with two tools it does not expect."""
 
   async def _run():
-    p = PrepSimulationDriver(deck=PrepDeck(with_core_grippers=True))
+    p = PrepSimulationDriver(deck=await make_prep_deck(with_core_grippers=True))
     await p.setup()
-    holder = p.core_gripper_holder
-    assert holder is not None
-    tools = [child for child in holder.children if isinstance(child, HeadTool)]
+    _, tools = await _holder_tools(p)
+
+    async def parents() -> List[Optional[str]]:
+      return [None if (h := await tool.get_parent()) is None else h.name for tool in tools]
 
     assert p.core_grippers is not None
     await p.core_grippers.pick_up_tools()
-    held = [tool.parent for tool in tools]
+    held = await parents()
 
     async def refuse(move_to_safe_z_first: bool = True) -> None:
       raise RuntimeError("error 51: the tool did not let go")
@@ -649,9 +674,9 @@ def test_a_drop_the_device_refuses_leaves_the_tools_on_the_channels():
     with pytest.raises(RuntimeError):
       await p.core_grippers.return_tools()
 
-    assert [tool.parent for tool in tools] == held
+    assert await parents() == held
     assert p.core_grippers_mounted
-    assert [c for c in holder.children if isinstance(c, HeadTool)] == []
+    assert (await _holder_tools(p))[1] == []
     await p.stop()
 
   asyncio.run(_run())
@@ -661,7 +686,7 @@ def test_request_tool_attached_asks_the_device_not_the_flag():
   """What the machine holds, which is what survives a restart while the model does not."""
 
   async def _run():
-    p = PrepSimulationDriver(deck=PrepDeck(with_core_grippers=True))
+    p = PrepSimulationDriver(deck=await make_prep_deck(with_core_grippers=True))
     await p.setup()
     assert p.core_grippers is not None
     grippers = p.core_grippers
@@ -687,11 +712,11 @@ def test_request_tool_attached_asks_the_device_not_the_flag():
 
 def test_a_held_resource_moves_with_both_jaws_or_not_at_all():
   """A channel's own Y opens or skews the grip while holding; the arm they share does not."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  grippers, commands = _make_grippers(deck)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    grippers, commands = await _make_grippers(deck)
     await grippers.move_to_y_positions([150.0, 60.0])  # nothing held: allowed
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
 
@@ -712,11 +737,11 @@ def test_a_held_resource_moves_with_both_jaws_or_not_at_all():
 def test_move_resource_to_xy_position_carries_it_at_the_height_it_is_at_now():
   """Not the height it was gripped at: the pick-up raises it, and lowering it back to that height to
   carry it would take it through whatever stands between."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     with pytest.raises(RuntimeError, match="Not holding anything"):
       await grippers.move_resource_to_xy_position(100.0, 200.0)
 
@@ -738,11 +763,10 @@ def test_move_resource_to_xy_position_carries_it_at_the_height_it_is_at_now():
 
 
 def test_the_old_acceleration_scale_x_name_still_works():
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     await grippers.move_resource_to_xy_position(100.0, 200.0, x_acceleration_scale=2)
     assert commands.send_command.await_args.args[0].acceleration_scale_x == 2
@@ -757,18 +781,18 @@ def test_request_plate_held_reads_the_pipettors_record():
   """Set by a finished pick-up whatever the fingers closed on, cleared by a place or a release."""
 
   async def _run():
-    deck = PrepDeck(with_core_grippers=True)
+    deck = await make_prep_deck(with_core_grippers=True)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.core_grippers is not None
     grippers = p.core_grippers
-    plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
     await grippers.pick_up_tools()
 
     assert await grippers.request_plate_held() is False
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     assert await grippers.request_plate_held() is True
-    await grippers.place_resource(deck[2])
+    await grippers.place_resource((await parts_of(deck))[2])
     assert await grippers.request_plate_held() is False
 
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
@@ -790,21 +814,23 @@ def test_get_plate_held_is_the_recorded_method():
 
 def test_return_resource_puts_it_back_where_it_was_taken_from():
   async def _run():
-    deck = PrepDeck(with_core_grippers=True)
+    deck = await make_prep_deck(with_core_grippers=True)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.core_grippers is not None
     grippers = p.core_grippers
-    plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-    source, where = plate.parent, plate.get_absolute_location()
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    source, where = await plate.get_parent(), await plate.get_absolute_location()
+    assert source is not None
     await grippers.pick_up_tools()
 
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     await grippers.move_resource_to_xy_position(150.0, 250.0)
     await grippers.return_resource()
 
-    assert plate.parent is source
-    assert plate.get_absolute_location() == where
+    parent = await plate.get_parent()
+    assert parent is not None and parent.id == source.id
+    assert await plate.get_absolute_location() == where
     assert await grippers.request_plate_held() is False
     with pytest.raises(RuntimeError, match="nothing to return it to"):
       await grippers.return_resource()
@@ -817,30 +843,39 @@ def test_return_resource_puts_it_back_where_it_was_taken_from():
 
 def test_return_resource_off_a_plain_parent_puts_it_on_the_deck_where_it_stood():
   """A holder would say where; a plain parent does not, so it goes to the deck at the same point."""
-  deck = PrepDeck(with_core_grippers=True)
-  bench = Resource("bench", size_x=200, size_y=200, size_z=10)
-  deck.assign_child_resource(bench, location=Coordinate(10, 10, 0))
-  plate = cor_axy_96_wellplate_500uL_Ub("plate")
-  bench.assign_child_resource(plate, location=Coordinate(30.0, 40.0, 10.0))
-  grippers, commands = _make_grippers(deck)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    bench = await deck.store.create(
+      build.resource("bench", Coordinate(200, 200, 10)),
+      name="bench",
+      parent=deck,
+      location=Coordinate(10, 10, 0),
+    )
+    plate = await deck.store.create(
+      "cor_axy_96_wellplate_500uL_Ub",
+      name="plate",
+      parent=bench,
+      location=Coordinate(30.0, 40.0, 10.0),
+    )
+    grippers, commands = await _make_grippers(deck)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     picked = commands.pick_up_at.await_args.args[0]
     await grippers.return_resource()
     dropped = commands.place_at.await_args.args[0]
-    assert plate.parent is deck and plate.location == Coordinate(40.0, 50.0, 10.0)
+    parent = await plate.get_parent()
+    assert parent is not None and parent.id == deck.id
+    assert await plate.get_location() == Coordinate(40.0, 50.0, 10.0)
     assert (dropped.x, dropped.y, dropped.z) == pytest.approx((picked.x, picked.y, picked.z))
 
   asyncio.run(_run())
 
 
 def test_release_plate_leaves_nothing_held_and_nothing_to_return():
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  grippers, commands = _make_grippers(deck)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    grippers, commands = await _make_grippers(deck)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     await grippers.release_plate()
     assert grippers._holding_resource_width is None and grippers._held_resource is None
@@ -862,12 +897,12 @@ def test_a_returned_plate_is_let_go_of_at_the_top_it_was_taken_at():
   with the jaws still closed on the plate. The top a plate is let go of at is the top it was taken
   at, when it goes back where it came from; in between it is carried where it was raised to.
   """
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-  top = plate.get_location_wrt(deck, "c", "c", "t")
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    top = await plate.get_location_wrt(deck, "c", "c", "t")
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     await grippers.move_resource_to_xy_position(top.x + 1.0, top.y)
     await grippers.move_resource_to_xy_position(top.x, top.y)
@@ -905,23 +940,28 @@ def test_a_returned_plate_is_let_go_of_at_the_top_it_was_taken_at():
 
 def test_a_plate_placed_onto_a_plate_adapter_goes_where_the_adapter_places_it():
   """Let go of with its top where the adapter puts it, and the tree places it there too."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-  magnet = alpaqua_96_plateadapter_magnum_flx(name="magnet")
-  magnet.plate_z_offset = 0.62
-  deck[2] = magnet
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    # The adapter with the plate offset a test would set at runtime, made from its PLR model.
+    adapter = alpaqua_96_plateadapter_magnum_flx(name="magnet")
+    adapter.plate_z_offset = 0.62
+    magnet = await deck.store.create(
+      definition_from_resource(adapter), name="magnet", parent=(await parts_of(deck))[2]
+    )
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     await grippers.place_resource(magnet)
     sent = [c.args[0] for c in commands.send_command.await_args_list]
     (drop,) = _plate_commands(sent, PrepCmd.PrepDropPlate)
     # The magnet's bottom at 3.5, the plate 28.12 up in it, its top 16.1 above that.
     assert drop.plate_top_center.z_position == pytest.approx(3.5 + 28.12 + 16.1)
-    assert plate.parent is magnet
-    assert plate.location == magnet.compute_plate_location(plate)
-    top = plate.get_location_wrt(deck, "c", "c", "t")
+    parent = await plate.get_parent()
+    assert parent is not None and parent.id == magnet.id
+    plr_plate = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
+    assert await plate.get_location() == adapter.compute_plate_location(plr_plate)
+    top = await plate.get_location_wrt(deck, "c", "c", "t")
     assert (
       drop.plate_top_center.x_position,
       drop.plate_top_center.y_position,
@@ -931,31 +971,57 @@ def test_a_plate_placed_onto_a_plate_adapter_goes_where_the_adapter_places_it():
   asyncio.run(_run())
 
 
-def _layout_onto_a_stack(deck: PrepDeck, plate: Plate) -> Tuple[Resource, Resource]:
-  stack = ResourceStack("stack", "z", [azenta_96_wellplate_200uL_Vb_4titudeframestar("bottom")])
-  deck.assign_child_resource(stack, location=Coordinate(200, 100, 0))
-  return plate, stack
+Layout = Callable[
+  [handles.Deck, handles.Resource], Awaitable[Tuple[handles.Resource, handles.Resource]]
+]
 
 
-def _layout_into_a_trash(deck: PrepDeck, plate: Plate) -> Tuple[Resource, Resource]:
-  trash = Trash("bin", size_x=130, size_y=90, size_z=40)
-  deck.assign_child_resource(trash, location=Coordinate(200, 100, 0))
-  return plate, trash
-
-
-def _layout_a_lid_onto_a_plate(deck: PrepDeck, plate: Plate) -> Tuple[Resource, Resource]:
-  lid = Lid(
-    "lid", size_x=plate.get_size_x(), size_y=plate.get_size_y(), size_z=8, nesting_z_height=3
+async def _on_the_deck(deck: handles.Deck, resource: Resource) -> handles.Resource:
+  """A resource made from a PLR one, on the deck at (200, 100, 0)."""
+  return await deck.store.create(
+    definition_from_resource(resource),
+    name=resource.name,
+    parent=deck,
+    location=Coordinate(200, 100, 0),
   )
-  plate.assign_child_resource(lid)
-  other = deck[2] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="other")
+
+
+async def _layout_onto_a_stack(
+  deck: handles.Deck, plate: handles.Resource
+) -> Tuple[handles.Resource, handles.Resource]:
+  stack = ResourceStack("stack", "z", [azenta_96_wellplate_200uL_Vb_4titudeframestar("bottom")])
+  return plate, await _on_the_deck(deck, stack)
+
+
+async def _layout_into_a_trash(
+  deck: handles.Deck, plate: handles.Resource
+) -> Tuple[handles.Resource, handles.Resource]:
+  return plate, await _on_the_deck(deck, Trash("bin", size_x=130, size_y=90, size_z=40))
+
+
+async def _layout_a_lid_onto_a_plate(
+  deck: handles.Deck, plate: handles.Resource
+) -> Tuple[handles.Resource, handles.Resource]:
+  size = await plate.get_size()
+  lid = await deck.store.create(
+    build.resource(
+      "lid",
+      Coordinate(size.x, size.y, 8),
+      kind=pb.RESOURCE_KIND_LID,
+      lid=pb.LidSpec(nesting_z_height=3),
+    ),
+    name="lid",
+    parent=plate,
+  )
+  other = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "other", 2)
   return lid, other
 
 
-def _layout_into_a_rotated_holder(deck: PrepDeck, plate: Plate) -> Tuple[Resource, Resource]:
+async def _layout_into_a_rotated_holder(
+  deck: handles.Deck, plate: handles.Resource
+) -> Tuple[handles.Resource, handles.Resource]:
   turned = ResourceHolder("turned", size_x=127.76, size_y=85.48, size_z=5, rotation=Rotation(z=180))
-  deck.assign_child_resource(turned, location=Coordinate(200, 100, 0))
-  return plate, turned
+  return plate, await _on_the_deck(deck, turned)
 
 
 @pytest.mark.parametrize(
@@ -970,25 +1036,31 @@ def _layout_into_a_rotated_holder(deck: PrepDeck, plate: Plate) -> Tuple[Resourc
     (_layout_into_a_rotated_holder, (136.12, 57.26, 16.1)),
   ],
 )
-def test_each_destination_type_is_let_go_of_where_it_places_it(layout, plate_top_center):
+def test_each_destination_type_is_let_go_of_where_it_places_it(layout: Layout, plate_top_center):
   """Let go of where the destination seats it, and the tree puts it there too."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-  resource, destination = layout(deck, plate)
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    resource, destination = await layout(deck, plate)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers.pick_up_resource(resource, pickup_distance_from_top=5)
     await grippers.place_resource(destination)
     sent = [c.args[0] for c in commands.send_command.await_args_list]
     (drop,) = _plate_commands(sent, PrepCmd.PrepDropPlate)
     top = drop.plate_top_center
     assert (top.x_position, top.y_position, top.z_position) == pytest.approx(plate_top_center)
-    if isinstance(destination, Trash):
-      assert resource.parent is None
+    if isinstance(destination, handles.Trash):
+      # A trash keeps what goes into it until it is cleared.
+      parent = await resource.get_parent()
+      assert parent is not None and parent.id == destination.id
+      await destination.clear()
+      with pytest.raises(StoreError, match="no resource"):
+        await resource.get_parent()
       return
-    assert resource.parent is destination
-    modelled = resource.get_location_wrt(deck, "c", "c", "t")
+    parent = await resource.get_parent()
+    assert parent is not None and parent.id == destination.id
+    modelled = await resource.get_location_wrt(deck, "c", "c", "t")
     assert (modelled.x, modelled.y, modelled.z) == pytest.approx(plate_top_center)
 
   asyncio.run(_run())
@@ -997,19 +1069,20 @@ def test_each_destination_type_is_let_go_of_where_it_places_it(layout, plate_top
 def test_drop_resource_and_the_drop_keywords_are_deprecated_and_still_place():
   """`drop_resource` and `move_resource`'s `drop_*` warn and place it as their `place_*` do."""
 
-  async def place(deprecated: bool) -> Any:
-    deck = PrepDeck(with_core_grippers=True)
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-    grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
+  async def place_it(deprecated: bool) -> Any:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    parts = await parts_of(deck)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     pipettes: Any = grippers._driver.pipettes
-    pipettes.get_mounted_tips = lambda: [None, None]
+    pipettes.get_mounted_tips = AsyncMock(return_value=[None, None])
     keywords = {"offset": Coordinate(1, 0, 0), "z_acceleration": 100.0, "z_speed": 20.0}
     keywords["y_clearance"] = 2.0
     prefix = "drop" if deprecated else "place"
     by_name: Dict[str, Any] = {f"{prefix}_{name}": value for name, value in keywords.items()}
     if deprecated:
       with pytest.warns(DeprecationWarning) as caught:
-        await grippers.move_resource(plate, deck[2], pickup_distance_from_top=5, **by_name)
+        await grippers.move_resource(plate, parts[2], pickup_distance_from_top=5, **by_name)
       messages = [str(w.message) for w in caught]
       for name in keywords:
         assert any(
@@ -1017,17 +1090,18 @@ def test_drop_resource_and_the_drop_keywords_are_deprecated_and_still_place():
         ), name
       with pytest.warns(DeprecationWarning, match="drop_resource.*release after next"):
         await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
-        await grippers.drop_resource(deck[4])
+        await grippers.drop_resource(parts[4])
     else:
-      await grippers.move_resource(plate, deck[2], pickup_distance_from_top=5, **by_name)
+      await grippers.move_resource(plate, parts[2], pickup_distance_from_top=5, **by_name)
       await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
-      await grippers.place_resource(deck[4])
-    assert plate.parent is deck[4]
+      await grippers.place_resource(parts[4])
+    parent = await plate.get_parent()
+    assert parent is not None and parent.id == parts[4].id
     sent = [c.args[0] for c in commands.send_command.await_args_list]
     return sent
 
   async def _run() -> None:
-    placed, dropped = await place(deprecated=False), await place(deprecated=True)
+    placed, dropped = await place_it(deprecated=False), await place_it(deprecated=True)
     assert len(placed) == len(dropped)
     for a, b in zip(placed, dropped):
       assert a.build_parameters().build() == b.build_parameters().build()
@@ -1037,12 +1111,11 @@ def test_drop_resource_and_the_drop_keywords_are_deprecated_and_still_place():
 
 
 def test_pickup_distance_from_top_is_how_far_below_the_top_the_jaws_close():
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-  top = plate.get_location_wrt(deck, "c", "c", "t")
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
-
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    top = await plate.get_location_wrt(deck, "c", "c", "t")
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=3.0)
     (pick,) = _plate_commands(
       [c.args[0] for c in commands.send_command.await_args_list], PrepCmd.PrepPickUpPlate
@@ -1055,12 +1128,12 @@ def test_pickup_distance_from_top_is_how_far_below_the_top_the_jaws_close():
 
 def test_move_resource_to_xy_position_keeps_the_dimension_it_is_not_given():
   """One of x and y moves it in that one; the other is where the fingers have it now."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
-  locations = commands.request_locations
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
+    locations = commands.request_locations
     with pytest.raises(ValueError, match="nowhere to move it"):
       await grippers.move_resource_to_xy_position()
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
@@ -1087,15 +1160,15 @@ def test_move_resource_to_xy_position_keeps_the_dimension_it_is_not_given():
 
 def test_a_z_acceleration_holds_from_the_grip_until_it_is_let_go():
   """The empty approach and the empty raise after letting go run at the pipettes' default."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
-  commands.move_to_safe_z.side_effect = lambda *args, **kwargs: commands.order.append("safe_z")
-  commands.move_tool_bottom_to_z_positions.side_effect = lambda *args, **kwargs: (
-    commands.order.append("jaws_z")
-  )
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
+    commands.move_to_safe_z.side_effect = lambda *args, **kwargs: commands.order.append("safe_z")
+    commands.move_tool_bottom_to_z_positions.side_effect = lambda *args, **kwargs: (
+      commands.order.append("jaws_z")
+    )
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5, z_acceleration=100.0)
     await grippers.return_resource(z_acceleration=50.0)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
@@ -1129,13 +1202,14 @@ def test_a_z_speed_is_how_fast_a_held_plate_moves_in_z():
   is the firmware's."""
 
   async def _run():
-    deck = PrepDeck(with_core_grippers=True)
+    deck = await make_prep_deck(with_core_grippers=True)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.core_grippers is not None
     grippers = p.core_grippers
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-    spot = plate.parent
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    spot = await plate.get_parent()
+    assert spot is not None
     await grippers.pick_up_tools()
     travel_z = (await grippers._pipettes.request_locations())[0].z
     captured = _capture_send(p)
@@ -1149,14 +1223,15 @@ def test_a_z_speed_is_how_fast_a_held_plate_moves_in_z():
           out.append((type(c).__name__, None))
       return out
 
-    grip_height = plate.get_size_z() - 5.0
-    grip = get_grip_location(plate, get_pick_location(plate, deck), deck, grip_height).z
+    # The grip is 5 mm below its top, over where it stands.
+    grip = (await plate.get_location_wrt(deck, "c", "c", "t")).z - 5.0
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5, z_speed=20.0)
     assert sent() == [("PrepPickUpPlate", None), ("z", (round(travel_z, 2), 20.0))]
     captured.clear()
     await grippers.return_resource(z_speed=20.0)
     assert sent() == [("z", (round(grip + FIRMWARE_Z_LEG, 2), 20.0)), ("PrepDropPlate", None)]
-    assert plate.parent is spot
+    parent = await plate.get_parent()
+    assert parent is not None and parent.id == spot.id
     await p.stop()
 
   asyncio.run(_run())
@@ -1166,13 +1241,13 @@ def test_only_moves_with_a_resource_held_set_the_z_drives_and_they_go_back_to_wh
   """The tools alone run at the pipettes' default; a held resource at its own, then back."""
 
   async def _run():
-    deck = PrepDeck(with_core_grippers=True)
+    deck = await make_prep_deck(with_core_grippers=True)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     assert p.core_grippers is not None
     grippers = p.core_grippers
     assert grippers._pipettes.default_z_acceleration == 800.0  # read at setup
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
     captured = _capture_send(p)
 
     def accelerations() -> List[float]:
@@ -1197,13 +1272,13 @@ def test_only_moves_with_a_resource_held_set_the_z_drives_and_they_go_back_to_wh
 def test_a_coordinate_places_it_exactly_as_the_spot_it_names_would():
   """Placed at a spot's centre-bottom, the device is sent what placing into the spot sends."""
 
-  async def place(by_coordinate: Optional[Coordinate]) -> Tuple[Any, Any, Any, Any]:
-    deck = PrepDeck(with_core_grippers=True)
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-    grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
+  async def place_it(by_coordinate: Optional[Coordinate]) -> Tuple[Any, Any, Any, Any]:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     if by_coordinate is None:
-      await grippers.place_resource(deck[4])
+      await grippers.place_resource((await parts_of(deck))[4])
     else:
       await grippers.place_resource(by_coordinate)
     sent = [c.args[0] for c in commands.send_command.await_args_list]
@@ -1212,36 +1287,37 @@ def test_a_coordinate_places_it_exactly_as_the_spot_it_names_would():
     return deck, plate, release, carry
 
   async def _run() -> None:
-    deck_a, into_spot, release_a, carry_a = await place(None)
-    ccb = into_spot.get_location_wrt(deck_a, "c", "c", "b")
-    deck_b, at_point, release_b, carry_b = await place(ccb)
+    deck_a, into_spot, release_a, carry_a = await place_it(None)
+    ccb = await into_spot.get_location_wrt(deck_a, "c", "c", "b")
+    deck_b, at_point, release_b, carry_b = await place_it(ccb)
     for a, b in ((release_a, release_b), (carry_a, carry_b)):
       top_a, top_b = a.plate_top_center, b.plate_top_center
       assert (top_b.x_position, top_b.y_position, top_b.z_position) == pytest.approx(
         (top_a.x_position, top_a.y_position, top_a.z_position)
       )
     # In the tree it joins the deck, with its centre-bottom where it was told.
-    assert at_point.parent is deck_b
-    assert at_point.get_location_wrt(deck_b, "c", "c", "b") == pytest.approx(ccb)
+    parent = await at_point.get_parent()
+    assert parent is not None and parent.id == deck_b.id
+    assert await at_point.get_location_wrt(deck_b, "c", "c", "b") == pytest.approx(ccb)
 
   asyncio.run(_run())
 
 
 def test_the_grippers_ride_the_two_front_most_channels_and_move_the_rest_aside():
   """channels[-2] carries the back tool and channels[-1] the front one, however many there are."""
-  deck = PrepDeck(with_core_grippers=True)
-  plate = deck[4] = cor_axy_96_wellplate_500uL_Ub("plate")
-  grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
-  pipettes: Any = grippers._driver.pipettes
-  pipettes.num_channels = 4
-  pipettes.request_locations.return_value = [
-    Coordinate(62.55, 300.0, 144.6),
-    Coordinate(62.55, 200.0, 144.6),
-    Coordinate(62.55, 84.47, 144.6),
-    Coordinate(62.55, 4.0, 144.6),
-  ]
 
   async def _run() -> None:
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "cor_axy_96_wellplate_500uL_Ub", "plate", 4)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
+    pipettes: Any = grippers._driver.pipettes
+    pipettes.num_channels = 4
+    pipettes.request_locations.return_value = [
+      Coordinate(62.55, 300.0, 144.6),
+      Coordinate(62.55, 200.0, 144.6),
+      Coordinate(62.55, 84.47, 144.6),
+      Coordinate(62.55, 4.0, 144.6),
+    ]
     assert (grippers._back_channel, grippers._front_channel) == (2, 3)
     await grippers.move_to_y_positions([150.0, 60.0])
     assert pipettes.move_to_y_positions.await_args.args[0] == {2: 150.0, 3: 60.0}
@@ -1267,9 +1343,9 @@ def test_every_firmware_move_records_where_the_channels_stopped_even_when_refuse
   """The model follows the device: after each command that moves the channels, worked or not."""
 
   async def run(kind: type, refused: bool) -> List[str]:
-    deck = PrepDeck(with_core_grippers=True)
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-    grippers, commands = _make_grippers(deck, stub_pick_and_place=False)
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    grippers, commands = await _make_grippers(deck, stub_pick_and_place=False)
     pipettes: Any = grippers._driver.pipettes
     pipettes._resolve_traverse_height = lambda: 167.5
     pipettes._record_channel_bounds = AsyncMock()
@@ -1320,23 +1396,23 @@ def test_with_the_tools_on_z_is_at_their_jaws_and_the_shafts_stay_at_z_safety():
   """As the device reports it: Z safety reads 144.6 with the tools on, 167.5 without."""
 
   async def _run():
-    p = PrepSimulationDriver(deck=PrepDeck(with_core_grippers=True))
+    p = PrepSimulationDriver(deck=await make_prep_deck(with_core_grippers=True))
     await p.setup()
     assert p.core_grippers is not None and p.pipettes is not None
     pipettes = p.pipettes
 
-    def shaft_end_z(channel: int) -> float:
+    async def shaft_end_z(channel: int) -> float:
       resource = pipettes.resources[channel]
       assert pipettes.deck is not None
-      return resource.get_location_wrt(pipettes.deck).z + pipettes._reference_anchor(resource).z
+      return (await resource.get_location_wrt(pipettes.deck)).z + pipettes._reference_anchor().z
 
     await p.core_grippers.pick_up_tools()
     assert [c.z for c in await pipettes.request_locations()] == pytest.approx([144.6, 144.6])
-    assert [shaft_end_z(0), shaft_end_z(1)] == pytest.approx([167.5, 167.5])
+    assert [await shaft_end_z(0), await shaft_end_z(1)] == pytest.approx([167.5, 167.5])
     await p.core_grippers.return_tools()
     await pipettes.move_to_safe_z()
     assert [c.z for c in await pipettes.request_locations()] == pytest.approx([167.5, 167.5])
-    assert [shaft_end_z(0), shaft_end_z(1)] == pytest.approx([167.5, 167.5])
+    assert [await shaft_end_z(0), await shaft_end_z(1)] == pytest.approx([167.5, 167.5])
     await p.stop()
 
   asyncio.run(_run())
@@ -1349,8 +1425,8 @@ def test_the_simulator_moves_the_grippers_where_the_device_did():
   """
 
   async def _run():
-    deck = PrepDeck(with_core_grippers=True)
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     grippers, pipettes = p.core_grippers, p.pipettes
@@ -1361,8 +1437,8 @@ def test_the_simulator_moves_the_grippers_where_the_device_did():
       assert back.x == pytest.approx(front.x) and back.z == pytest.approx(front.z)
       return back.x, back.y, front.y, back.z
 
-    width = plate.get_absolute_size_y()
-    centre = plate.get_absolute_location(x="c", y="c")
+    width = (await plate.get_size()).y
+    centre = await plate.get_absolute_location(x="c", y="c")
     closed = width + JAW_OPEN_EXTRA - 2 * 4.5  # grip_distance: clearance 2.5 + squeeze 2.0
     opened = closed + 2 * (2.5 + 4.5)  # a drop opens by its y_clearance and the grip distance
 
@@ -1397,41 +1473,48 @@ def test_a_held_plate_rides_on_the_front_tool_and_lands_where_it_is_put():
   """Gripped, it hangs from the front tool where the fingers hold it; placed, it is in its place."""
 
   async def _run():
-    deck = PrepDeck(with_core_grippers=True)
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-    spot, taken_at = plate.parent, plate.location
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    spot, taken_at = await plate.get_parent(), await plate.get_location()
+    assert spot is not None
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     grippers, pipettes = p.core_grippers, p.pipettes
     assert grippers is not None and pipettes is not None
     await grippers.pick_up_tools()
-    front_tool = grippers._front_tool()
+    front_tool = await grippers._front_tool()
+    assert front_tool is not None
+
+    async def parent_id() -> Optional[bytes]:
+      parent = await plate.get_parent()
+      return None if parent is None else parent.id
 
     async def jaws() -> Tuple[float, float, float]:
       back, front = (await pipettes.request_locations())[:2]
       return front.x, (back.y + front.y) / 2, front.z
 
-    def plate_centre_and_top() -> Tuple[float, float, float]:
-      c = plate.get_absolute_location(x="c", y="c", z="t")
+    async def plate_centre_and_top() -> Tuple[float, float, float]:
+      c = await plate.get_absolute_location(x="c", y="c", z="t")
       return c.x, c.y, c.z
 
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     grip_height = grippers._grip_height
-    assert plate.parent is front_tool and grip_height is not None
-    from_top = plate.get_absolute_size_z() - grip_height
+    assert await parent_id() == front_tool and grip_height is not None
+    from_top = (await plate.get_size()).z - grip_height
     x, y, z = await jaws()
-    assert plate_centre_and_top() == pytest.approx((x, y, z + from_top), abs=0.01)
+    assert await plate_centre_and_top() == pytest.approx((x, y, z + from_top), abs=0.01)
 
     await grippers.move_resource_to_xy_position(x=80.0, y=280.0)
-    assert plate_centre_and_top() == pytest.approx((80.0, 280.0, z + from_top), abs=0.01)
+    assert await plate_centre_and_top() == pytest.approx((80.0, 280.0, z + from_top), abs=0.01)
 
     await grippers.return_resource()
-    assert plate.parent is spot and plate.location == taken_at
+    assert await parent_id() == spot.id and await plate.get_location() == taken_at
 
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
-    held_at = plate.get_location_wrt(deck)
+    held_at = await plate.get_location_wrt(deck)
     await grippers.release_plate()
-    assert plate.parent is deck and plate.location == pytest.approx(held_at)
+    assert await parent_id() == deck.id
+    assert await plate.get_location() == pytest.approx(held_at)
     await p.stop()
 
   asyncio.run(_run())
@@ -1441,21 +1524,23 @@ def test_while_a_plate_is_held_the_simulator_refuses_the_tools_home_and_initiali
   """The plate-held latch: 0x0F04 for PrepDropTool, 0x0F0A (and 0x0F04) for PrepInitialize."""
 
   async def _run():
-    deck = PrepDeck(with_core_grippers=True)
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     grippers = p.core_grippers
     assert grippers is not None
     await grippers.pick_up_tools()
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
-    front_tool = grippers._front_tool()
+    front_tool = await grippers._front_tool()
 
     with pytest.raises(RuntimeError, match="the grippers hold plate"):
       await grippers.return_tools()  # refused before anything is sent
     with pytest.raises(HoiError, match="0x0F04"):
       await p.send_command(PrepCmd.PrepDropTool())
-    assert grippers.tools_mounted and plate.parent is front_tool  # nothing let go of in the model
+    parent = await plate.get_parent()
+    # nothing let go of in the model
+    assert grippers.tools_mounted and parent is not None and parent.id == front_tool
     initialize = PrepCmd.PrepInitialize(
       smart=True,
       tip_drop_params=PrepCmd.InitTipDropParameters(
@@ -1477,40 +1562,44 @@ def test_the_plate_is_taken_at_the_grip_and_put_down_at_the_let_go_before_the_ja
   """So the model lifts it with the fingers, and the fingers rise empty after letting go of it."""
 
   async def _run():
-    deck = PrepDeck(with_core_grippers=True)
-    plate = deck[0] = azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
-    spot = plate.parent
-    at = plate.get_absolute_location()
+    deck = await make_prep_deck(with_core_grippers=True)
+    plate = await place(deck, "azenta_96_wellplate_200uL_Vb_4titudeframestar", "plate", 0)
+    spot = await plate.get_parent()
+    at = await plate.get_absolute_location()
     stood_at = (at.x, at.y, at.z)
     p = PrepSimulationDriver(deck=deck)
     await p.setup()
     grippers = p.core_grippers
     assert grippers is not None
     await grippers.pick_up_tools()
-    front_tool = grippers._front_tool()
+    front_tool_id = await grippers._front_tool()
+    assert spot is not None and front_tool_id is not None
+    front_tool = await p.store.get_by_id(front_tool_id)
     at_each_raise: List[Tuple[Optional[str], Tuple[float, float, float]]] = []
+
+    async def where_it_is() -> None:
+      held_by = await plate.get_parent()
+      where = await plate.get_absolute_location()
+      at_each_raise.append((None if held_by is None else held_by.name, (where.x, where.y, where.z)))
+
     raise_ = grippers._raise_to_traverse
 
     async def capturing(minimum_traverse_height_end: Optional[float]) -> None:
-      parent = None if plate.parent is None else plate.parent.name
-      where = plate.get_absolute_location()
-      at_each_raise.append((parent, (where.x, where.y, where.z)))
+      await where_it_is()
       await raise_(minimum_traverse_height_end)
 
     move_jaws = grippers._move_jaws_to_z
 
     async def capturing_jaws(z: float, speed: float) -> None:
-      parent = None if plate.parent is None else plate.parent.name
-      where = plate.get_absolute_location()
-      at_each_raise.append((parent, (where.x, where.y, where.z)))
+      await where_it_is()
       await move_jaws(z, speed)
 
     grippers._raise_to_traverse = capturing  # type: ignore[method-assign]
     grippers._move_jaws_to_z = capturing_jaws  # type: ignore[method-assign]
-    assert spot is not None and front_tool is not None
 
     await grippers.pick_up_resource(plate, pickup_distance_from_top=5)
     assert [parent for parent, _ in at_each_raise] == [spot.name, front_tool.name]
+    assert at_each_raise[0][1] == pytest.approx(stood_at, abs=0.01)
     assert at_each_raise[1][1] == pytest.approx(stood_at, abs=0.01)  # taken where it stood
 
     at_each_raise.clear()

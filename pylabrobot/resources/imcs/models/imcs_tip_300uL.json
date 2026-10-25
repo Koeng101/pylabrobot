@@ -1,0 +1,36 @@
+{
+  "name": "imcs_tip_300uL",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_TIP",
+      "model": "imcs_tip_300uL",
+      "category": "tip",
+      "size": {
+        "x": 8.2,
+        "y": 8.2,
+        "z": 53.9
+      },
+      "rotation": {},
+      "headTool": {
+        "fittingDepth": 8.0
+      },
+      "tip": {
+        "diameter": 8.2,
+        "hasFilter": true,
+        "maximalVolume": 360.0,
+        "nominalVolume": 360.0,
+        "hamilton": {
+          "tipSize": "STANDARD_VOLUME",
+          "pickupMethod": "TIP_PICKUP_METHOD_OUT_OF_RACK"
+        }
+      }
+    },
+    "initialState": {
+      "volume": {
+        "trackingEnabled": true
+      }
+    }
+  },
+  "description": "IMCS tip. Same as \"Hamilton Standard volume (300 \u00b5L) tip without a filter\", but tips are 6mm shorter."
+}

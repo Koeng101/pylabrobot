@@ -5,11 +5,14 @@ from typing import List, Optional, Tuple, Union
 
 from pylabrobot.io.http import HTTP
 from pylabrobot.opentrons.api import HTTP_API_VERSION, OpentronsAPI
+from pylabrobot.opentrons.decks import OT2_SLOT_LOCATIONS, create_ot2_deck, slot_in
+from pylabrobot.opentrons.heads import PipetteShafts
 from pylabrobot.opentrons.labware import (
   LabwareRegistry,
   build_tip_rack_definition,
-  official_tip_rack_identity,
+  official_identity_for_model,
 )
+from pylabrobot.opentrons.model import Identified, TipFacts, Tree, read_labware
 from pylabrobot.opentrons.operations import OperationLock
 from pylabrobot.opentrons.ot2.pipette import (
   _PIPETTE_SPECS,
@@ -25,9 +28,9 @@ from pylabrobot.opentrons.types import (
   RunInfo,
 )
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.opentrons import OT2RobotGeometry, OTDeck
-from pylabrobot.resources.tip import Tip
-from pylabrobot.resources.tip_rack import TipRack
+from pylabrobot.resources.opentrons.ot2_geometry import OT2RobotGeometry
+from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.client import ResourceStore
 
 
 class OT2:
@@ -36,13 +39,19 @@ class OT2:
   ``connect()`` opens the transport for queries. ``setup()`` also creates a
   run, binds mounted pipettes, and optionally homes the robot. Physical
   operations are exposed on ``left_pipette`` and ``right_pipette``.
+
+  The deck is a handle to an OT-2 deck in a resource store (see
+  :func:`pylabrobot.opentrons.decks.create_ot2_deck`), the robot's body there: its pipettes hang
+  from it. Without one, ``create_resources()`` (called by ``setup()``) makes an in-memory store and
+  an OT-2 deck in it. A deck already in a store is used by passing it:
+  ``OT2(..., deck=await store.get("ot2_deck"))``.
   """
 
   def __init__(
     self,
     host: str,
     port: int = 31950,
-    deck: Optional[OTDeck] = None,
+    deck: Optional[handles.Deck] = None,
     traversal_height: float = 120,
     command_timeout: float = 30,
     command_poll_interval: float = 0.05,
@@ -61,7 +70,7 @@ class OT2:
 
     self.host = host
     self.port = port
-    self.deck = deck or OTDeck()
+    self._deck = deck
     self.geometry = OT2RobotGeometry()
     self.traversal_height = traversal_height
     self.command_timeout = command_timeout
@@ -79,6 +88,31 @@ class OT2:
     self.left_pipette: Optional[Union[OT2SingleChannelPipette, OT2_8ChannelPipette]] = None
     self.right_pipette: Optional[Union[OT2SingleChannelPipette, OT2_8ChannelPipette]] = None
     self._operation_lock = OperationLock()
+
+  @property
+  def deck(self) -> handles.Deck:
+    """The deck, a handle into the resource store.
+
+    Raises:
+      RuntimeError: No deck was given and ``create_resources()`` has not made one yet.
+    """
+    if self._deck is None:
+      raise RuntimeError(
+        "The OT-2 has no deck yet: pass one, or call create_resources() or setup()"
+      )
+    return self._deck
+
+  async def create_resources(self) -> handles.Deck:
+    """The OT-2's deck, the robot's body in the store: the deck it was given, or an OT-2 deck made
+    in a new in-memory store when none was. Called by `setup`."""
+    if self._deck is None:
+      self._deck = await create_ot2_deck(ResourceStore.in_memory())
+    return self._deck
+
+  @property
+  def store(self) -> ResourceStore:
+    """The resource store the deck is in."""
+    return self.deck.store
 
   @property
   def pipettes(self) -> List[Union[OT2SingleChannelPipette, OT2_8ChannelPipette]]:
@@ -129,6 +163,7 @@ class OT2:
     async with self._operation_lock:
       if self._run is not None:
         raise RuntimeError("The OT-2 is already set up")
+      await self.create_resources()
       await self._connect()
       try:
         health = await self.get_health()
@@ -156,11 +191,16 @@ class OT2:
     run = self._require_run()
     for pipette in mounted:
       pipette_id = await run.load_pipette(pipette.name, pipette.mount)
+      shafts = await PipetteShafts.create(
+        self.deck,
+        f"{self.deck.name}_{pipette.mount}_pipette",
+        _PIPETTE_SPECS[pipette.name].channels,
+      )
       bound: Union[OT2SingleChannelPipette, OT2_8ChannelPipette]
       if _PIPETTE_SPECS[pipette.name].channels == 8:
-        bound = OT2_8ChannelPipette(self, pipette.mount, pipette.name, pipette_id)
+        bound = OT2_8ChannelPipette(self, pipette.mount, pipette.name, pipette_id, shafts)
       else:
-        bound = OT2SingleChannelPipette(self, pipette.mount, pipette.name, pipette_id)
+        bound = OT2SingleChannelPipette(self, pipette.mount, pipette.name, pipette_id, shafts)
       if pipette.mount == "left":
         self.left_pipette = bound
       else:
@@ -199,8 +239,10 @@ class OT2:
       self._require_run()
       await self._api.home()
 
-  async def _load_tip_rack(self, tip_rack: TipRack, tip: Tip) -> None:
-    slot = self.deck.get_slot(tip_rack)
+  async def _load_tip_rack(self, tip_rack: Identified, tip: TipFacts, tree: Tree) -> None:
+    """Load a rack, read with its ancestors in ``tree``, defining it first when it has no
+    official definition."""
+    slot = slot_in(self.deck, tree, tree.node(tip_rack.id))
     if slot is None:
       raise ValueError("tip rack must be assigned directly to an OT-2 deck slot")
     registry = self._require_labware()
@@ -208,11 +250,11 @@ class OT2:
     if registry.is_loaded(tip_rack):
       identity = registry.get(tip_rack).identity
     else:
-      identity = official_tip_rack_identity(tip_rack)
+      identity = official_identity_for_model(tree.node(tip_rack.id).attributes.model)
       if identity is None:
-        definition = build_tip_rack_definition(tip_rack, tip)
+        definition = build_tip_rack_definition(await read_labware(self.store, tip_rack.id), tip)
         identity = await registry.define(tip_rack, definition)
     await registry.load(tip_rack, str(slot), identity)
 
   def _deck_to_robot_frame(self, location: Coordinate) -> Coordinate:
-    return location - self.deck.slot_locations[0]
+    return location - OT2_SLOT_LOCATIONS[0]

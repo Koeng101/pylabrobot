@@ -1,0 +1,104 @@
+{
+  "name": "boekel_50mL_falcon_carrier",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "model": "Boekel Scientific Tube Carrier",
+      "category": "tube_carrier",
+      "size": {
+        "x": 174.0,
+        "y": 52.0,
+        "z": 95.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "ResourceHolder_0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 30.0,
+            "y": 30.0
+          },
+          "location": {
+            "x": 11.0,
+            "y": 11.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 30.0,
+            "y": 30.0
+          },
+          "location": {
+            "x": 46.0,
+            "y": 11.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 30.0,
+            "y": 30.0
+          },
+          "location": {
+            "x": 91.0,
+            "y": 11.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "ResourceHolder_3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 30.0,
+            "y": 30.0
+          },
+          "location": {
+            "x": 127.0,
+            "y": 11.0,
+            "z": 5.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "50 mL Falcon tube carrier orientation.\n\nhttps://www.boekelsci.com/multi-tube-rack-for-50ml-conical-15ml-conical-and-\nmicrocentrifuge-tubes-pn-120008.html.\n\nOriented in landscape mode with the male connector to the right.\n\nSizes from website; carrier site locations measured with ruler."
+}

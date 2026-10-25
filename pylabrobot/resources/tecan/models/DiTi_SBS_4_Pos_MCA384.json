@@ -1,0 +1,104 @@
+{
+  "name": "DiTi_SBS_4_Pos_MCA384",
+  "definition": {
+    "attributes": {
+      "name": "{name}",
+      "kind": "RESOURCE_KIND_CARRIER",
+      "model": "DiTi_SBS_4_Pos_MCA384",
+      "category": "tecan_tip_carrier",
+      "size": {
+        "x": 149.0,
+        "y": 380.0,
+        "z": 4.0
+      },
+      "rotation": {}
+    },
+    "children": [
+      {
+        "attributes": {
+          "name": "{name}-0",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 10.5,
+            "y": 3.0,
+            "z": 4.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-1",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 10.5,
+            "y": 99.0,
+            "z": 4.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-2",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 10.5,
+            "y": 195.0,
+            "z": 4.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      },
+      {
+        "attributes": {
+          "name": "{name}-3",
+          "kind": "RESOURCE_KIND_RESOURCE_HOLDER",
+          "category": "resource_holder",
+          "size": {
+            "x": 127.0,
+            "y": 85.5
+          },
+          "location": {
+            "x": 10.5,
+            "y": 291.0,
+            "z": 4.0
+          },
+          "rotation": {},
+          "holder": {
+            "childLocation": {},
+            "capacity": 1
+          }
+        }
+      }
+    ]
+  },
+  "description": "Tecan part no. 30052708"
+}

@@ -1,7 +1,8 @@
+import functools
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Optional, Tuple, TypeVar
 
-from pylabrobot.events import evented_operation, resource_reference
+from pylabrobot.events import event_operation, is_event_bus_active
 
 from .errors import HighResSampleStorageError
 from .types import EnvironmentParameter
@@ -11,31 +12,50 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
-def _control_event_context(self: "EnvironmentControl") -> Dict[str, Any]:
-  return {"device": resource_reference(self._driver), "resources": []}
+F = TypeVar("F", bound=Callable[..., Awaitable[Any]])
 
 
-def _set_temperature_event_context(
-  self: "EnvironmentControl", temperature: float
-) -> Dict[str, Any]:
-  return {
-    **_control_event_context(self),
-    "target_temperature": float(temperature),
-    "passive": False,
-  }
+def _no_data(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+  return {}
 
 
-def _set_humidity_event_context(self: "EnvironmentControl", humidity: float) -> Dict[str, Any]:
-  return {**_control_event_context(self), "target_humidity": float(humidity)}
+def _evented(name: str, data: Callable[..., Dict[str, Any]] = _no_data) -> Callable[[F], F]:
+  """Emit correlated lifecycle events around an environment command, referring to the device
+  as its body in the resource store. `data` gives what else the events carry, from the
+  command's arguments."""
+
+  def decorator(func: F) -> F:
+    @functools.wraps(func)
+    async def wrapper(self: "EnvironmentControl", *args: Any, **kwargs: Any) -> Any:
+      if not is_event_bus_active():
+        return await func(self, *args, **kwargs)
+      operation_data = {
+        "device": await self._driver._device_reference(),
+        "resources": [],
+        **data(*args, **kwargs),
+      }
+      with event_operation(name, **operation_data):
+        return await func(self, *args, **kwargs)
+
+    return wrapper  # type: ignore[return-value]
+
+  return decorator
 
 
-def _set_co2_event_context(self: "EnvironmentControl", co2: float) -> Dict[str, Any]:
-  return {**_control_event_context(self), "target_co2": float(co2)}
+def _temperature_data(temperature: float) -> Dict[str, Any]:
+  return {"target_temperature": float(temperature), "passive": False}
 
 
-def _set_o2_event_context(self: "EnvironmentControl", o2: float) -> Dict[str, Any]:
-  return {**_control_event_context(self), "target_o2": float(o2)}
+def _humidity_data(humidity: float) -> Dict[str, Any]:
+  return {"target_humidity": float(humidity)}
+
+
+def _co2_data(co2: float) -> Dict[str, Any]:
+  return {"target_co2": float(co2)}
+
+
+def _o2_data(o2: float) -> Dict[str, Any]:
+  return {"target_o2": float(o2)}
 
 
 class EnvironmentControl:
@@ -124,7 +144,7 @@ class EnvironmentControl:
   async def request_target_temperature(self) -> float:
     return await self._request_setpoint("TEMP")
 
-  @evented_operation("temperature_controller.set_temperature", _set_temperature_event_context)
+  @_evented("temperature_controller.set_temperature", _temperature_data)
   async def set_temperature(self, temperature: float) -> None:
     temperature_range = self.temperature_range
     if temperature_range is not None:
@@ -142,11 +162,11 @@ class EnvironmentControl:
     logger.info("Setting %s temperature target to %g C", self._driver.name, temperature)
     await self._driver._send_command(f"environmentset TEMP {temperature}")
 
-  @evented_operation("temperature_controller.activate", _control_event_context)
+  @_evented("temperature_controller.activate")
   async def start_temperature_control(self) -> None:
     await self._set_control_enabled("TEMP", True)
 
-  @evented_operation("temperature_controller.deactivate", _control_event_context)
+  @_evented("temperature_controller.deactivate")
   async def stop_temperature_control(self) -> None:
     await self._set_control_enabled("TEMP", False)
 
@@ -163,7 +183,7 @@ class EnvironmentControl:
   async def request_target_humidity(self) -> float:
     return await self._request_setpoint("RH") / 100.0
 
-  @evented_operation("humidity_controller.set_humidity", _set_humidity_event_context)
+  @_evented("humidity_controller.set_humidity", _humidity_data)
   async def set_humidity(self, humidity: float) -> None:
     humidity_range = self.humidity_range
     if humidity_range is not None and not humidity_range[0] <= humidity <= humidity_range[1]:
@@ -173,11 +193,11 @@ class EnvironmentControl:
       )
     await self._set_percentage("RH", humidity)
 
-  @evented_operation("humidity_controller.activate", _control_event_context)
+  @_evented("humidity_controller.activate")
   async def start_humidity_control(self) -> None:
     await self._set_control_enabled("RH", True)
 
-  @evented_operation("humidity_controller.deactivate", _control_event_context)
+  @_evented("humidity_controller.deactivate")
   async def stop_humidity_control(self) -> None:
     await self._set_control_enabled("RH", False)
 
@@ -194,15 +214,15 @@ class EnvironmentControl:
   async def request_target_co2(self) -> float:
     return await self._request_setpoint("CO2") / 100.0
 
-  @evented_operation("co2_controller.set_co2", _set_co2_event_context)
+  @_evented("co2_controller.set_co2", _co2_data)
   async def set_co2(self, co2: float) -> None:
     await self._set_percentage("CO2", co2)
 
-  @evented_operation("co2_controller.activate", _control_event_context)
+  @_evented("co2_controller.activate")
   async def start_co2_control(self) -> None:
     await self._set_control_enabled("CO2", True)
 
-  @evented_operation("co2_controller.deactivate", _control_event_context)
+  @_evented("co2_controller.deactivate")
   async def stop_co2_control(self) -> None:
     await self._set_control_enabled("CO2", False)
 
@@ -219,15 +239,15 @@ class EnvironmentControl:
   async def request_target_o2(self) -> float:
     return await self._request_setpoint("O2") / 100.0
 
-  @evented_operation("o2_controller.set_o2", _set_o2_event_context)
+  @_evented("o2_controller.set_o2", _o2_data)
   async def set_o2(self, o2: float) -> None:
     await self._set_percentage("O2", o2)
 
-  @evented_operation("o2_controller.activate", _control_event_context)
+  @_evented("o2_controller.activate")
   async def start_o2_control(self) -> None:
     await self._set_control_enabled("O2", True)
 
-  @evented_operation("o2_controller.deactivate", _control_event_context)
+  @_evented("o2_controller.deactivate")
   async def stop_o2_control(self) -> None:
     await self._set_control_enabled("O2", False)
 
