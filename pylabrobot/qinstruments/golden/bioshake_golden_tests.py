@@ -10,7 +10,7 @@ from __future__ import annotations
 import pathlib
 import types
 import unittest
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 from unittest import mock
 
 from pylabrobot.qinstruments import bioshake as bioshake_module
