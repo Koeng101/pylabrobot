@@ -203,7 +203,7 @@ class TestComponentNames(unittest.IsolatedAsyncioTestCase):
 
   async def test_device_components_are_unique_and_reused(self):
     """Every built-in component, including nested head and iSWAP parts, belongs to its name."""
-    store = ResourceStore.in_process()
+    store = ResourceStore.in_memory()
     bench = await store.create(build.resource("bench", Coordinate(10000, 2000, 2000)), name="bench")
     cases: Tuple[Tuple[Callable[..., STARDevice], str, Optional[str], bool], ...] = (
       (STAR, "star_a", None, False),

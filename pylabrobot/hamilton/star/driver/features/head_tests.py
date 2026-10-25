@@ -57,7 +57,7 @@ def declaring(**parts: object) -> str:
 
 async def make_deck(model: str = "STARLetDeck") -> handles.Deck:
   """A standalone deck of the model, named `test_deck`, in a store of its own."""
-  store = ResourceStore.in_process()
+  store = ResourceStore.in_memory()
   return cast(handles.Deck, await store.create(model, name="test_deck"))
 
 

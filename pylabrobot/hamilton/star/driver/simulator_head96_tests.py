@@ -13,7 +13,7 @@ class TestSimulatedHead96MasterCommands(unittest.IsolatedAsyncioTestCase):
   """`C0 EP`, `ER`, `EA`, `ED` and `H0 RD` move and read the simulated 96-head's model."""
 
   async def asyncSetUp(self):
-    store = ResourceStore.in_process()
+    store = ResourceStore.in_memory()
     self.deck = cast(handles.Deck, await store.create("STARLetDeck", name="deck"))
     self.driver = STARSimulationDriver(
       deck=self.deck, declared_configuration_json=RECORDING_STARLET

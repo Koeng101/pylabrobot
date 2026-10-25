@@ -218,7 +218,7 @@ class STARDevice:
     self.model = model if model is not None else self.__class__.__name__
     if deck is not None:
       store = deck.store
-    self.store: ResourceStore = store if store is not None else ResourceStore.in_process()
+    self.store: ResourceStore = store if store is not None else ResourceStore.in_memory()
     self._size = (size_x, size_y, size_z)
     self._deck_location = deck_location if deck_location is not None else Coordinate(0, 0, 0)
     self._deck_model = deck_model

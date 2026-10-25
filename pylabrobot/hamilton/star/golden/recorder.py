@@ -9,9 +9,21 @@ A command the simulated device answers with an error never reaches `_log_exchang
 
 Only the commands written are recorded, not what the simulator answered: what it answers is taken
 from the resource model, and the model is what the snapshots pin.
+
+Commands the device sends from tasks it runs together, with `asyncio.gather`, are recorded per
+task rather than as one stream: how such tasks interleave depends on how often each gives way to
+the others, a resource store call among them, so only each task's own order is fixed. Where a step
+ran tasks together and more than one of them sent something, its `sent` holds, at that point,
+
+  {"concurrently": [{"task": "<coroutine>", "sent": [...]}, ...]}
+
+one entry per task that sent anything, in the order the tasks were made, each `sent` laid out the
+same way. Tasks run together of which only one sent anything are recorded inline, since nothing
+ran beside it.
 """
 
-from typing import Any, Callable, Dict, List, Optional, cast
+import asyncio
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Union, cast
 
 from pylabrobot.hamilton.protocol.text.framing import assemble_channel_command
 from pylabrobot.hamilton.star.device import STARDevice
@@ -22,6 +34,42 @@ from pylabrobot.testing.golden import snapshot_changes, snapshot_store
 
 # What a hook given to `STARRecorder.fail` is handed: the command's own parameters.
 Hook = Callable[[Dict[str, Any]], None]
+
+
+class _Sender:
+  """What one task sent: commands, and groups of tasks it ran together, in the order they came."""
+
+  def __init__(self, name: str):
+    self.name = name
+    self.items: List[Union[str, "_Together"]] = []
+
+
+class _Together:
+  """Tasks one task made together, as one `asyncio.gather` makes them."""
+
+  def __init__(self) -> None:
+    self.tasks: List["asyncio.Future[Any]"] = []
+    self.senders: List[_Sender] = []
+
+  def running(self) -> bool:
+    return not all(task.done() for task in self.tasks)
+
+
+def _laid_out(sender: _Sender) -> List[Any]:
+  """What a task sent as a step records it: its commands in order, and, where it ran tasks
+  together of which more than one sent anything, what each of them sent."""
+  out: List[Any] = []
+  for item in sender.items:
+    if isinstance(item, str):
+      out.append(item)
+      continue
+    sent = [(member.name, _laid_out(member)) for member in item.senders]
+    sent = [(name, commands) for name, commands in sent if commands]
+    if len(sent) == 1:
+      out.extend(sent[0][1])
+    elif sent:
+      out.append({"concurrently": [{"task": name, "sent": commands} for name, commands in sent]})
+  return out
 
 
 def described(error: BaseException) -> str:
@@ -46,10 +94,39 @@ class STARRecorder(recording.Recorder):
     self.driver = cast(STARSimulationDriver, device.driver)
     self._rules: List[Dict[str, Any]] = []
 
+    # Which task sent each command: every task made from here on is noted with the task that made
+    # it, and what a task not noted sends is the step's own.
+    self._root = _Sender("step")
+    self._senders: Dict["asyncio.Future[Any]", _Sender] = {}
+    loop = asyncio.get_running_loop()
+    make_task = loop.get_task_factory()
+
+    def noted(
+      loop: asyncio.AbstractEventLoop, coro: Coroutine[Any, Any, Any], **kwargs: Any
+    ) -> "asyncio.Future[Any]":
+      parent = self._sender(loop)
+      task: "asyncio.Future[Any]" = (
+        make_task(loop, coro, **kwargs)
+        if make_task is not None
+        else asyncio.Task(coro, loop=loop, **kwargs)
+      )
+      last = parent.items[-1] if parent.items else None
+      together = last if isinstance(last, _Together) and last.running() else _Together()
+      if together is not last:
+        parent.items.append(together)
+      sender = _Sender(coro.__qualname__)
+      together.tasks.append(task)
+      together.senders.append(sender)
+      self._senders[task] = sender
+      return task
+
+    # Python 3.11 and later also hand the factory a `context`, which it passes on.
+    loop.set_task_factory(noted)  # type: ignore[arg-type]
+
     log = self.driver._log_exchange
 
     def logged(written: str, read: Optional[str]) -> None:
-      self.sent.append(written)
+      self._sender().items.append(written)
       log(written, read)
 
     self.driver._log_exchange = logged  # type: ignore[method-assign]
@@ -75,7 +152,7 @@ class STARRecorder(recording.Recorder):
           num_channels=self.driver.num_channels if carries_a_list else 0,
           **parameters,
         )
-        self.sent.append(f"{written} -> {error.raw_response}")
+        self._sender().items.append(f"{written} -> {error.raw_response}")
         raise
 
     self.driver._send = sent  # type: ignore[method-assign, assignment]
@@ -154,6 +231,18 @@ class STARRecorder(recording.Recorder):
         "times": 1,
       }
     )
+
+  def _sender(self, loop: Optional[asyncio.AbstractEventLoop] = None) -> _Sender:
+    """Where a command the current task sends is recorded."""
+    task = asyncio.current_task(loop)
+    return self._root if task is None else self._senders.get(task, self._root)
+
+  def take_sent(self) -> List[Any]:
+    """What was sent since the last call, per task where tasks ran together."""
+    taken = _laid_out(self._root)
+    self._root = _Sender("step")
+    self._senders.clear()
+    return taken
 
   def failed(self, entry: Dict[str, Any], error: BaseException) -> None:
     entry["error"] = described(error)

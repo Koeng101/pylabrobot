@@ -36,7 +36,7 @@ def a_tip(model_name: str, name: str = "tip") -> pb.ResourceNode:
 
 async def a_deck() -> handles.Deck:
   """A STAR deck in a store of its own, named as a standalone deck is."""
-  deck = await ResourceStore.in_process().create("STARDeck", name="deck")
+  deck = await ResourceStore.in_memory().create("STARDeck", name="deck")
   assert isinstance(deck, handles.Deck)
   return deck
 
@@ -1378,12 +1378,14 @@ class TestLiquidHeightProbing(unittest.IsolatedAsyncioTestCase):
     modes = [self.pipettes.LLDMode.PRESSURE, self.pipettes.LLDMode.CAPACITIVE]
     await self.pipettes.probe_liquid_heights(wells, lld_mode=modes)
     end, start = await self._window(wells[0])
+    # The channels search together, so which of them is sent first is not fixed.
+    searches = sorted(command for command in self.sent if command[2:4] in ("ZE", "ZL"))
     self.assertEqual(
-      self.sent[0],
+      searches[0],
       f"P1ZEzh{end:05}zc{start:05}zi0000zj1gf0gt0010gl0002gu0030gn0010gm0gz0466cj0co0030cp0030"
       "cq0030cl00932cc0cd00000zv11186zl00932zr075zw3dl01829dr073dv05303dw3",
     )
-    self.assertTrue(self.sent[1].startswith("P2ZL"))
+    self.assertTrue(searches[1].startswith("P2ZL"))
 
   async def test_the_filter_flag_comes_from_the_mounted_tip(self):
     filtered = a_tip("hamilton_tip_300uL_filter", "filtered")

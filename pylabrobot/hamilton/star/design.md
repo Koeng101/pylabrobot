@@ -119,10 +119,11 @@ before sending anything is the store's `ON_TRACKING_PROBLEM_REJECT`, raised as t
 raises for it (`model.raise_tracking_error`). Reads go in batches: one `GetResources` and one
 `ResolveGeometry` per command, never one call per channel or well.
 
-**P12b. The device's store is called in process.** With no store given, a device makes one with
-`ResourceStore.in_process()`: a request completes without giving way to other tasks, as PLR's own
-resource tree did, so commands sent from features brought up together interleave the same way
-whether the model is in a store or not.
+**P12b. Only each feature's own command order is fixed.** With no store given, a device makes one
+with `ResourceStore.in_memory()`. Every store call gives way to other tasks, as a remote store's
+does, so commands sent from features brought up together (`asyncio.gather` at setup and stop)
+interleave however the store's latency has them. Each feature's own sequence is fixed, and the
+golden records hold those sections per task rather than as one stream.
 
 **P13. A configuration is data, not code.** `save_configuration` writes what a device answered;
 `declared_configuration_json` reads one back, and is the only path a configuration takes off a

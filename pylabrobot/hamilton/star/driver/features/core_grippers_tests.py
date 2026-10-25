@@ -70,7 +70,7 @@ class TestWiring(unittest.IsolatedAsyncioTestCase):
 
   async def test_none_on_an_arm_without_pipettes(self):
     both = dataclasses.replace(RECORDED_DEVICE, right_arm=BARE_X_ARM)
-    deck = await ResourceStore.in_process().create("STARDeck", name="deck")
+    deck = await ResourceStore.in_memory().create("STARDeck", name="deck")
     assert isinstance(deck, handles.Deck)
     driver = STARSimulationDriver(deck=deck, declared_configuration_json=declaring(device=both))
     await driver.setup()

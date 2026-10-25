@@ -16,7 +16,7 @@ async def make_deck(model: str = "STARDeck", name: str = "deck") -> handles.Deck
     model: which deck, by model name.
     name: what to call it; "deck" keeps its built-in parts' short names.
   """
-  deck = await ResourceStore.in_process().create(model, name=name)
+  deck = await ResourceStore.in_memory().create(model, name=name)
   assert isinstance(deck, handles.Deck)
   return deck
 

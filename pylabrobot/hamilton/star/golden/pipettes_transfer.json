@@ -3497,138 +3497,264 @@
         "C0UA",
         "C0RI",
         "C0RF",
-        "H0RF",
-        "H0QU",
-        "H0QG",
-        "C0RArakf",
-        "H0RArayv",
-        "H0RArayr",
-        "H0RArazv",
-        "H0RArazr",
-        "H0RArapy",
-        "H0RArapz",
-        "H0RArasv",
-        "H0RArasr",
-        "R0RF",
-        "C0RArakg",
-        "P1VY",
-        "P2VY",
-        "P3VY",
-        "P4VY",
-        "P5VY",
-        "P6VY",
-        "P7VY",
-        "P8VY",
-        "I0RF",
-        "C0CQ",
-        "I0RAraau",
-        "I0QX",
-        "I0RJ",
-        "P1RF",
-        "P1VW",
-        "P1VY",
-        "P2RF",
-        "P2VW",
-        "P2VY",
-        "P3RF",
-        "P3VW",
-        "P3VY",
-        "P4RF",
-        "P4VW",
-        "P4VY",
-        "P5RF",
-        "P5VW",
-        "P5VY",
-        "P6RF",
-        "P6VW",
-        "P6VY",
-        "P7RF",
-        "P7VW",
-        "P7VY",
-        "P8RF",
-        "P8VW",
-        "P8VY",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.discover",
+              "sent": [
+                {
+                  "concurrently": [
+                    {
+                      "task": "Pipettes._discover_channel",
+                      "sent": [
+                        "P1RF",
+                        "P1VW",
+                        "P1VY"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes._discover_channel",
+                      "sent": [
+                        "P2RF",
+                        "P2VW",
+                        "P2VY"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes._discover_channel",
+                      "sent": [
+                        "P3RF",
+                        "P3VW",
+                        "P3VY"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes._discover_channel",
+                      "sent": [
+                        "P4RF",
+                        "P4VW",
+                        "P4VY"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes._discover_channel",
+                      "sent": [
+                        "P5RF",
+                        "P5VW",
+                        "P5VY"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes._discover_channel",
+                      "sent": [
+                        "P6RF",
+                        "P6VW",
+                        "P6VY"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes._discover_channel",
+                      "sent": [
+                        "P7RF",
+                        "P7VW",
+                        "P7VY"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes._discover_channel",
+                      "sent": [
+                        "P8RF",
+                        "P8VW",
+                        "P8VY"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "task": "Head96.discover",
+              "sent": [
+                "H0RF",
+                "H0QU",
+                "H0QG",
+                "C0RArakf",
+                "H0RArayv",
+                "H0RArayr",
+                "H0RArazv",
+                "H0RArazr",
+                "H0RArapy",
+                "H0RArapz",
+                "H0RArasv",
+                "H0RArasr"
+              ]
+            },
+            {
+              "task": "iSWAP.discover",
+              "sent": [
+                "R0RF",
+                "C0RArakg",
+                "P1VY",
+                "P2VY",
+                "P3VY",
+                "P4VY",
+                "P5VY",
+                "P6VY",
+                "P7VY",
+                "P8VY"
+              ]
+            },
+            {
+              "task": "Autoload.discover",
+              "sent": [
+                "I0RF",
+                "C0CQ",
+                "I0RAraau",
+                "I0QX",
+                "I0RJ"
+              ]
+            }
+          ]
+        },
         "C0VI",
-        "C0RT",
-        "C0DIxp08000&yp4050 3783 3516 3249 2982 2715 2448 2181tp2450tz1220te3600tm1 1 1 1 1 1 1 1tt04ti0",
-        "C0RY",
-        "P1RZ",
-        "P2RZ",
-        "P3RZ",
-        "P4RZ",
-        "P5RZ",
-        "P6RZ",
-        "P7RZ",
-        "P8RZ",
-        "I0QW",
-        "C0II",
-        "I0RX",
-        "C0IV",
-        "I0RZ",
-        "I0RZ",
-        "I0XPxp30xv2500xr3xw7",
-        "I0RX",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
-        "P5RD",
-        "P6RD",
-        "P7RD",
-        "P8RD",
-        "C0ZA",
-        "P1RZ",
-        "P2RZ",
-        "P3RZ",
-        "P4RZ",
-        "P5RZ",
-        "P6RZ",
-        "P7RZ",
-        "P8RZ",
-        "C0RT",
-        "P1AAyv5399",
-        "P1AAyr3",
-        "P1AAzv11652",
-        "P1AAzr075",
-        "P2AAyv5399",
-        "P2AAyr3",
-        "P2AAzv11652",
-        "P2AAzr075",
-        "P3AAyv5399",
-        "P3AAyr3",
-        "P3AAzv11652",
-        "P3AAzr075",
-        "P4AAyv5399",
-        "P4AAyr3",
-        "P4AAzv11652",
-        "P4AAzr075",
-        "P5AAyv5399",
-        "P5AAyr3",
-        "P5AAzv11652",
-        "P5AAzr075",
-        "P6AAyv5399",
-        "P6AAyr3",
-        "P6AAzv11652",
-        "P6AAzr075",
-        "P7AAyv5399",
-        "P7AAyr3",
-        "P7AAzv11652",
-        "P7AAzr075",
-        "P8AAyv5399",
-        "P8AAyr3",
-        "P8AAzv11652",
-        "P8AAzr075",
-        "C0FI",
-        "C0PGth2840",
-        "R0RY",
-        "R0RZ",
-        "R0RW",
-        "R0RT",
-        "R0RG",
-        "C0EIxs00465xd1yh1788za2164ze2450",
-        "H0RD",
-        "C0EV",
-        "H0RZ",
+        {
+          "concurrently": [
+            {
+              "task": "STARDriver._initialize_arm",
+              "sent": [
+                "C0RT",
+                "C0DIxp08000&yp4050 3783 3516 3249 2982 2715 2448 2181tp2450tz1220te3600tm1 1 1 1 1 1 1 1tt04ti0",
+                "C0RY",
+                "P1RZ",
+                "P2RZ",
+                "P3RZ",
+                "P4RZ",
+                "P5RZ",
+                "P6RZ",
+                "P7RZ",
+                "P8RZ",
+                {
+                  "concurrently": [
+                    {
+                      "task": "Pipettes.dispensing_drive_request_uL_position",
+                      "sent": [
+                        "P1RD"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes.dispensing_drive_request_uL_position",
+                      "sent": [
+                        "P2RD"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes.dispensing_drive_request_uL_position",
+                      "sent": [
+                        "P3RD"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes.dispensing_drive_request_uL_position",
+                      "sent": [
+                        "P4RD"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes.dispensing_drive_request_uL_position",
+                      "sent": [
+                        "P5RD"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes.dispensing_drive_request_uL_position",
+                      "sent": [
+                        "P6RD"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes.dispensing_drive_request_uL_position",
+                      "sent": [
+                        "P7RD"
+                      ]
+                    },
+                    {
+                      "task": "Pipettes.dispensing_drive_request_uL_position",
+                      "sent": [
+                        "P8RD"
+                      ]
+                    }
+                  ]
+                },
+                "C0ZA",
+                "P1RZ",
+                "P2RZ",
+                "P3RZ",
+                "P4RZ",
+                "P5RZ",
+                "P6RZ",
+                "P7RZ",
+                "P8RZ",
+                "C0RT",
+                "P1AAyv5399",
+                "P1AAyr3",
+                "P1AAzv11652",
+                "P1AAzr075",
+                "P2AAyv5399",
+                "P2AAyr3",
+                "P2AAzv11652",
+                "P2AAzr075",
+                "P3AAyv5399",
+                "P3AAyr3",
+                "P3AAzv11652",
+                "P3AAzr075",
+                "P4AAyv5399",
+                "P4AAyr3",
+                "P4AAzv11652",
+                "P4AAzr075",
+                "P5AAyv5399",
+                "P5AAyr3",
+                "P5AAzv11652",
+                "P5AAzr075",
+                "P6AAyv5399",
+                "P6AAyr3",
+                "P6AAzv11652",
+                "P6AAzr075",
+                "P7AAyv5399",
+                "P7AAyr3",
+                "P7AAzv11652",
+                "P7AAzr075",
+                "P8AAyv5399",
+                "P8AAyr3",
+                "P8AAzv11652",
+                "P8AAzr075",
+                "C0FI",
+                "C0PGth2840",
+                "R0RY",
+                "R0RZ",
+                "R0RW",
+                "R0RT",
+                "R0RG",
+                "C0EIxs00465xd1yh1788za2164ze2450",
+                "H0RD",
+                "C0EV",
+                "H0RZ"
+              ]
+            },
+            {
+              "task": "SimulatedAutoload.initialize",
+              "sent": [
+                "I0QW",
+                "C0II",
+                "I0RX",
+                "C0IV",
+                "I0RZ",
+                "I0RZ",
+                "I0XPxp30xv2500xr3xw7",
+                "I0RX"
+              ]
+            }
+          ]
+        },
         "C0RY",
         "C0RZ",
         "I0RX",
@@ -4920,14 +5046,58 @@
         "P6RZ",
         "P7RZ",
         "P8RZ",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
-        "P5RD",
-        "P6RD",
-        "P7RD",
-        "P8RD"
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P3RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P4RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P5RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P6RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P7RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P8RD"
+              ]
+            }
+          ]
+        }
       ],
       "result": null,
       "resources": [
@@ -5115,14 +5285,58 @@
       "call": "aspirate(plate['A1:H1'], [50.0] * 8)",
       "sent": [
         "C0RT",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
-        "P5RD",
-        "P6RD",
-        "P7RD",
-        "P8RD",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P3RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P4RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P5RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P6RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P7RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P8RD"
+              ]
+            }
+          ]
+        },
         "C0RZ",
         "P1RZ",
         "P2RZ",
@@ -5134,8 +5348,22 @@
         "P8RZ",
         "C0RZ",
         "C0RY",
-        "X0XPla02533lr3lw7",
-        "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.move_to_x_position",
+              "sent": [
+                "X0XPla02533lr3lw7"
+              ]
+            },
+            {
+              "task": "Pipettes._move_to_planned_y_positions",
+              "sent": [
+                "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827"
+              ]
+            }
+          ]
+        },
         "C0ASat0 0 0 0 0 0 0 0tm1 1 1 1 1 1 1 1xp02533 02533 02533 02533 02533 02533 02533 02533yp1457 1367 1277 1187 1097 1007 0917 0827th2450te2450lp1988 1988 1988 1988 1988 1988 1988 1988ch000 000 000 000 000 000 000 000zl1866 1866 1866 1866 1866 1866 1866 1866po0100 0100 0100 0100 0100 0100 0100 0100zu0032 0032 0032 0032 0032 0032 0032 0032zr06180 06180 06180 06180 06180 06180 06180 06180zx1866 1866 1866 1866 1866 1866 1866 1866ip0000 0000 0000 0000 0000 0000 0000 0000it0 0 0 0 0 0 0 0fp0000 0000 0000 0000 0000 0000 0000 0000av00551 00551 00551 00551 00551 00551 00551 00551as1000 1000 1000 1000 1000 1000 1000 1000ta000 000 000 000 000 000 000 000ba0000 0000 0000 0000 0000 0000 0000 0000oa050 050 050 050 050 050 050 050lm0 0 0 0 0 0 0 0ll1 1 1 1 1 1 1 1lv1 1 1 1 1 1 1 1zo000 000 000 000 000 000 000 000ld00 00 00 00 00 00 00 00de0020 0020 0020 0020 0020 0020 0020 0020wt10 10 10 10 10 10 10 10mv00000 00000 00000 00000 00000 00000 00000 00000mc00 00 00 00 00 00 00 00mp000 000 000 000 000 000 000 000ms1000 1000 1000 1000 1000 1000 1000 1000mh0000 0000 0000 0000 0000 0000 0000 0000gi000 000 000 000 000 000 000 000gj0gk0lk0 0 0 0 0 0 0 0ik0000 0000 0000 0000 0000 0000 0000 0000sd0500 0500 0500 0500 0500 0500 0500 0500se0500 0500 0500 0500 0500 0500 0500 0500sz0300 0300 0300 0300 0300 0300 0300 0300io0000 0000 0000 0000 0000 0000 0000 0000",
         "C0RY",
         "P1RZ",
@@ -5421,14 +5649,58 @@
       "call": "dispense(plate['A2:H2'], [50.0] * 8)",
       "sent": [
         "C0RT",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
-        "P5RD",
-        "P6RD",
-        "P7RD",
-        "P8RD",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P3RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P4RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P5RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P6RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P7RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P8RD"
+              ]
+            }
+          ]
+        },
         "C0RZ",
         "P1RZ",
         "P2RZ",
@@ -5440,8 +5712,22 @@
         "P8RZ",
         "C0RZ",
         "C0RY",
-        "X0XPla02623lr3lw7",
-        "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.move_to_x_position",
+              "sent": [
+                "X0XPla02623lr3lw7"
+              ]
+            },
+            {
+              "task": "Pipettes._move_to_planned_y_positions",
+              "sent": [
+                "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827"
+              ]
+            }
+          ]
+        },
         "C0DSdm2 2 2 2 2 2 2 2tm1 1 1 1 1 1 1 1xp02623 02623 02623 02623 02623 02623 02623 02623yp1457 1367 1277 1187 1097 1007 0917 0827zx1866 1866 1866 1866 1866 1866 1866 1866lp1988 1988 1988 1988 1988 1988 1988 1988zl1866 1866 1866 1866 1866 1866 1866 1866po0100 0100 0100 0100 0100 0100 0100 0100ip0000 0000 0000 0000 0000 0000 0000 0000it0 0 0 0 0 0 0 0fp0000 0000 0000 0000 0000 0000 0000 0000zu0032 0032 0032 0032 0032 0032 0032 0032zr06180 06180 06180 06180 06180 06180 06180 06180th2450te2450dv00551 00551 00551 00551 00551 00551 00551 00551ds1200 1200 1200 1200 1200 1200 1200 1200ss0050 0050 0050 0050 0050 0050 0050 0050rv000 000 000 000 000 000 000 000ta050 050 050 050 050 050 050 050ba0000 0000 0000 0000 0000 0000 0000 0000lm0 0 0 0 0 0 0 0dj00zo000 000 000 000 000 000 000 000ll1 1 1 1 1 1 1 1lv1 1 1 1 1 1 1 1de0020 0020 0020 0020 0020 0020 0020 0020wt00 00 00 00 00 00 00 00mv00000 00000 00000 00000 00000 00000 00000 00000mc00 00 00 00 00 00 00 00mp000 000 000 000 000 000 000 000ms0010 0010 0010 0010 0010 0010 0010 0010mh0000 0000 0000 0000 0000 0000 0000 0000gi000 000 000 000 000 000 000 000gj0gk0",
         "C0RY",
         "P1RZ",
@@ -5657,14 +5943,58 @@
         "P6RZ",
         "P7RZ",
         "P8RZ",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
-        "P5RD",
-        "P6RD",
-        "P7RD",
-        "P8RD"
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P3RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P4RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P5RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P6RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P7RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P8RD"
+              ]
+            }
+          ]
+        }
       ],
       "result": null,
       "resources": [
@@ -5862,14 +6192,58 @@
         "P6RZ",
         "P7RZ",
         "P8RZ",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
-        "P5RD",
-        "P6RD",
-        "P7RD",
-        "P8RD"
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P3RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P4RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P5RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P6RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P7RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P8RD"
+              ]
+            }
+          ]
+        }
       ],
       "result": null,
       "resources": [
@@ -6073,12 +6447,50 @@
         "P8RZ",
         "C0RT",
         "C0RY",
-        "X0XPla02533lr3lw7",
-        "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827",
-        "P1ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000",
-        "P2ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000",
-        "P3ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000",
-        "P4ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.move_to_x_position",
+              "sent": [
+                "X0XPla02533lr3lw7"
+              ]
+            },
+            {
+              "task": "Pipettes._move_to_planned_y_positions",
+              "sent": [
+                "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827"
+              ]
+            }
+          ]
+        },
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P1ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P2ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P3ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P4ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            }
+          ]
+        },
         "C0RL",
         "C0ZA",
         "P1RZ",
@@ -6210,12 +6622,50 @@
         "P8RZ",
         "C0RT",
         "C0RY",
-        "X0XPla02533lr3lw7",
-        "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827",
-        "P1ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000",
-        "P2ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000",
-        "P3ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000",
-        "P4ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.move_to_x_position",
+              "sent": [
+                "X0XPla02533lr3lw7"
+              ]
+            },
+            {
+              "task": "Pipettes._move_to_planned_y_positions",
+              "sent": [
+                "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827"
+              ]
+            }
+          ]
+        },
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P1ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P2ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P3ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P4ZLzh22144zc23651zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            }
+          ]
+        },
         "C0RL",
         "C0ZA",
         "P1RZ",
@@ -6239,10 +6689,34 @@
       "call": "aspirate(plate['A3:D3'], [20.0] * 4, lld_mode=LLDMode.CAPACITIVE)",
       "sent": [
         "C0RT",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P3RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P4RD"
+              ]
+            }
+          ]
+        },
         "C0RZ",
         "P1RZ",
         "P2RZ",
@@ -6250,20 +6724,82 @@
         "P4RZ",
         "C0RZ",
         "C0RY",
-        "X0XPla02713lr3lw7",
-        "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827",
-        "P1ZAza23371zv11652zr075zw3",
-        "P1RZ",
-        "P2ZAza23371zv11652zr075zw3",
-        "P2RZ",
-        "P3ZAza23371zv11652zr075zw3",
-        "P3RZ",
-        "P4ZAza23371zv11652zr075zw3",
-        "P4RZ",
-        "P1ZLzh22144zc23371zl00932zr075gt0010gl0002zj1zi0000",
-        "P2ZLzh22144zc23371zl00932zr075gt0010gl0002zj1zi0000",
-        "P3ZLzh22144zc23371zl00932zr075gt0010gl0002zj1zi0000",
-        "P4ZLzh22144zc23371zl00932zr075gt0010gl0002zj1zi0000",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.move_to_x_position",
+              "sent": [
+                "X0XPla02713lr3lw7"
+              ]
+            },
+            {
+              "task": "Pipettes._move_to_planned_y_positions",
+              "sent": [
+                "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827"
+              ]
+            }
+          ]
+        },
+        {
+          "concurrently": [
+            {
+              "task": "SimulatedPipettes.move_stop_disc_to_z_position",
+              "sent": [
+                "P1ZAza23371zv11652zr075zw3",
+                "P1RZ"
+              ]
+            },
+            {
+              "task": "SimulatedPipettes.move_stop_disc_to_z_position",
+              "sent": [
+                "P2ZAza23371zv11652zr075zw3",
+                "P2RZ"
+              ]
+            },
+            {
+              "task": "SimulatedPipettes.move_stop_disc_to_z_position",
+              "sent": [
+                "P3ZAza23371zv11652zr075zw3",
+                "P3RZ"
+              ]
+            },
+            {
+              "task": "SimulatedPipettes.move_stop_disc_to_z_position",
+              "sent": [
+                "P4ZAza23371zv11652zr075zw3",
+                "P4RZ"
+              ]
+            }
+          ]
+        },
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P1ZLzh22144zc23371zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P2ZLzh22144zc23371zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P3ZLzh22144zc23371zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            },
+            {
+              "task": "Pipettes._clld_search",
+              "sent": [
+                "P4ZLzh22144zc23371zl00932zr075gt0010gl0002zj1zi0000"
+              ]
+            }
+          ]
+        },
         "C0RL",
         "C0ASat0 0 0 0 0&tm1 1 1 1 0&xp02713 02713 02713 02713 00000&yp1457 1367 1277 1187 0000&th1928te2450lp1988 1988 1988 1988 1988&ch000 000 000 000 000&zl1928 1928 1928 1928 1928&po0100 0100 0100 0100 0100&zu0032 0032 0032 0032 0032&zr06180 06180 06180 06180 06180&zx1866 1866 1866 1866 1866&ip0000 0000 0000 0000 0000&it0 0 0 0 0&fp0000 0000 0000 0000 0000&av00232 00232 00232 00232 00232&as1000 1000 1000 1000 1000&ta000 000 000 000 000&ba0000 0000 0000 0000 0000&oa050 050 050 050 050&lm0 0 0 0 0&ll1 1 1 1 1&lv1 1 1 1 1&zo000 000 000 000 000&ld00 00 00 00 00&de0020 0020 0020 0020 0020&wt10 10 10 10 10&mv00000 00000 00000 00000 00000&mc00 00 00 00 00&mp000 000 000 000 000&ms1000 1000 1000 1000 1000&mh0000 0000 0000 0000 0000&gi000 000 000 000 000&gj0gk0lk0 0 0 0 0&ik0000 0000 0000 0000 0000&sd0500 0500 0500 0500 0500&se0500 0500 0500 0500 0500&sz0300 0300 0300 0300 0300&io0000 0000 0000 0000 0000&",
         "C0RY",
@@ -6418,10 +6954,34 @@
       "call": "dispense(plate['A4:D4'], [20.0] * 4)",
       "sent": [
         "C0RT",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P3RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P4RD"
+              ]
+            }
+          ]
+        },
         "C0RZ",
         "P1RZ",
         "P2RZ",
@@ -6429,8 +6989,22 @@
         "P4RZ",
         "C0RZ",
         "C0RY",
-        "X0XPla02803lr3lw7",
-        "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.move_to_x_position",
+              "sent": [
+                "X0XPla02803lr3lw7"
+              ]
+            },
+            {
+              "task": "Pipettes._move_to_planned_y_positions",
+              "sent": [
+                "C0JYyp1457 1367 1277 1187 1097 1007 0917 0827"
+              ]
+            }
+          ]
+        },
         "C0DSdm2 2 2 2 2&tm1 1 1 1 0&xp02803 02803 02803 02803 00000&yp1457 1367 1277 1187 0000&zx1866 1866 1866 1866 1866&lp1988 1988 1988 1988 1988&zl1866 1866 1866 1866 1866&po0100 0100 0100 0100 0100&ip0000 0000 0000 0000 0000&it0 0 0 0 0&fp0000 0000 0000 0000 0000&zu0032 0032 0032 0032 0032&zr06180 06180 06180 06180 06180&th2450te2450dv00232 00232 00232 00232 00232&ds1200 1200 1200 1200 1200&ss0050 0050 0050 0050 0050&rv000 000 000 000 000&ta050 050 050 050 050&ba0000 0000 0000 0000 0000&lm0 0 0 0 0&dj00zo000 000 000 000 000&ll1 1 1 1 1&lv1 1 1 1 1&de0020 0020 0020 0020 0020&wt00 00 00 00 00&mv00000 00000 00000 00000 00000&mc00 00 00 00 00&mp000 000 000 000 000&ms0010 0010 0010 0010 0010&mh0000 0000 0000 0000 0000&gi000 000 000 000 000&gj0gk0",
         "C0RY",
         "P1RZ",
@@ -6566,14 +7140,58 @@
         "P6RZ",
         "P7RZ",
         "P8RZ",
-        "P1RD",
-        "P2RD",
-        "P3RD",
-        "P4RD",
-        "P5RD",
-        "P6RD",
-        "P7RD",
-        "P8RD"
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P3RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P4RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P5RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P6RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P7RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P8RD"
+              ]
+            }
+          ]
+        }
       ],
       "result": null,
       "resources": [
@@ -6771,8 +7389,22 @@
         "P6RZ",
         "P7RZ",
         "P8RZ",
-        "P1RD",
-        "P2RD"
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            }
+          ]
+        }
       ],
       "result": null,
       "resources": [
@@ -6849,8 +7481,22 @@
         "P6RZ",
         "P7RZ",
         "P8RZ",
-        "P1RD",
-        "P2RD"
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            }
+          ]
+        }
       ],
       "result": null,
       "resources": [
@@ -6911,25 +7557,49 @@
     {
       "call": "stop()",
       "sent": [
-        "C0ZA",
-        "P1RZ",
-        "P2RZ",
-        "P3RZ",
-        "P4RZ",
-        "P5RZ",
-        "P6RZ",
-        "P7RZ",
-        "P8RZ",
-        "C0RT",
-        "H0RArazv",
-        "H0RArazr",
-        "H0ZAza67200zv17000zr080000zw15",
-        "H0RZ",
-        "H0RZ",
-        "R0ZAza+26660zv11000zr060zw6",
-        "R0RZ",
-        "C0IV",
-        "I0RZ",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.move_to_safe_z",
+              "sent": [
+                "C0ZA",
+                "P1RZ",
+                "P2RZ",
+                "P3RZ",
+                "P4RZ",
+                "P5RZ",
+                "P6RZ",
+                "P7RZ",
+                "P8RZ",
+                "C0RT"
+              ]
+            },
+            {
+              "task": "Head.move_to_safe_z",
+              "sent": [
+                "H0RArazv",
+                "H0RArazr",
+                "H0ZAza67200zv17000zr080000zw15",
+                "H0RZ",
+                "H0RZ"
+              ]
+            },
+            {
+              "task": "iSWAP.elbow_move_to_safe_z_height",
+              "sent": [
+                "R0ZAza+26660zv11000zr060zw6",
+                "R0RZ"
+              ]
+            },
+            {
+              "task": "Autoload.wheel_move_to_safe_z",
+              "sent": [
+                "C0IV",
+                "I0RZ"
+              ]
+            }
+          ]
+        },
         "P1RZ",
         "P2RZ",
         "P3RZ",
