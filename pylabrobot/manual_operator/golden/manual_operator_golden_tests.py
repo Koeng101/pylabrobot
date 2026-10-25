@@ -141,9 +141,7 @@ async def _bench(nest_accepts: Sequence["pb.ResourceKind"] = ()) -> _Bench:
       children=[
         _holder("plate_module", Coordinate(100, 100, 0), Coordinate.zero()),
         _holder("handover_nest", Coordinate(400, 100, 0), Coordinate(1.5, 2.5, 3), nest_accepts),
-        build.resource(
-          "shelf", Coordinate(300, 100, 5), location=Coordinate(600, 300, 50)
-        ),
+        build.resource("shelf", Coordinate(300, 100, 5), location=Coordinate(600, 300, 50)),
       ],
     ),
     name="deck",
@@ -165,9 +163,7 @@ async def _resource(
 ) -> handles.Resource:
   """A plate-sized resource, a root in `store`."""
   return await store.create(
-    build.resource(
-      name, Coordinate(127.76, 85.48, 14.2), kind=kind, rotation=rotation
-    ),
+    build.resource(name, Coordinate(127.76, 85.48, 14.2), kind=kind, rotation=rotation),
     name=name,
   )
 
