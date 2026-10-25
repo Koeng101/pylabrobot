@@ -294,13 +294,13 @@ class Resource:
       assignment.track = track
     if index is not None:
       assignment.index = index
-    before = await _read_for_events(self.store, [child.ref, self.ref])
+    before = await read_for_events(self.store, [child.ref, self.ref])
     response = await self.store.commands.assign_resources(
       spb.AssignResourcesRequest(lock_tokens=self.store.lock_tokens, assignments=[assignment])
     )
     if before is not None:
-      _emit_unassigned(before, child.id)
-      _emit_assigned(before, response.nodes[0], self.id)
+      emit_unassigned(before, child.id)
+      emit_assigned(before, response.nodes[0], self.id)
 
   async def unassign_child_resource(self, child: Resource) -> None:
     """Take `child` out of it; `child` becomes a root with no location.
@@ -315,12 +315,12 @@ class Resource:
 
   async def unassign(self) -> None:
     """Take it out of its parent; it becomes a root with no location."""
-    before = await _read_for_events(self.store, [self.ref])
+    before = await read_for_events(self.store, [self.ref])
     await self.store.commands.unassign_resources(
       spb.UnassignResourcesRequest(lock_tokens=self.store.lock_tokens, resources=[self.ref])
     )
     if before is not None:
-      _emit_unassigned(before, self.id)
+      emit_unassigned(before, self.id)
 
   async def _update(self, *updates: spb.ResourceUpdate) -> None:
     await self.store.commands.update_resources(
@@ -419,12 +419,12 @@ class Resource:
   async def delete(self) -> None:
     """Remove it and everything under it from the store; leaving a parent, it emits
     `resource.unassigned`."""
-    before = await _read_for_events(self.store, [self.ref])
+    before = await read_for_events(self.store, [self.ref])
     await self.store.commands.delete_resources(
       spb.DeleteResourcesRequest(lock_tokens=self.store.lock_tokens, resources=[self.ref])
     )
     if before is not None:
-      _emit_unassigned(before, self.id)
+      emit_unassigned(before, self.id)
 
 
 # -- containers ----------------------------------------------------------------------------------
@@ -666,7 +666,7 @@ class TipRack(ItemizedResource):
           spb.ResourceUpdate(tip_presence=pb.SetTipPresence(spots=spots, present=state))
         )
     refs = [spot.ref for spot in self.items]
-    before = await _read_for_events(self.store, refs, depth=1)
+    before = await read_for_events(self.store, refs, depth=1)
     await self._update(*updates)
     if before is None:
       return
@@ -679,9 +679,9 @@ class TipRack(ItemizedResource):
         if each is not state:
           continue
         if state and spot.id not in held and spot.id in holds:
-          _emit_assigned(before, holds[spot.id], spot.id)
+          emit_assigned(before, holds[spot.id], spot.id)
         elif not state and spot.id in held:
-          _emit_unassigned(before, held[spot.id].id)
+          emit_unassigned(before, held[spot.id].id)
 
   async def fill(self) -> None:
     await self.set_tip_state(True)
@@ -899,15 +899,28 @@ STRUCTURED_KINDS = frozenset(
 
 # -- events --------------------------------------------------------------------------------------
 # `resource.unassigned` when a resource leaves a parent, and `resource.assigned` when it enters
-# one, with the payloads PLR's `Resource` gives them. Read only while an event bus listens.
+# one, with the payloads PLR's `Resource` gives them. Handles emit them for the changes they make,
+# reading what the payloads need only while an event bus listens and the client's own events are
+# on (`ResourceStore.client_events`); an `EventBridge` following the store's `Watch` publishes them
+# for every change instead. Code that changes resources through raw commands emits them with
+# `read_for_events` before the change and `emit_assigned` / `emit_unassigned` after it.
 
 
-async def _read_for_events(
+async def read_for_events(
   store: ResourceStore, refs: Sequence[pb.ResourceRef], depth: int = 0
 ) -> Optional[Dict[bytes, pb.ResourceNode]]:
-  """The resources, `depth` levels below them, and their ancestors, as they are before a move;
-  None when nothing listens."""
-  if not is_event_bus_active():
+  """The resources, `depth` levels below them, and their ancestors, as they are before a change.
+
+  Args:
+    store: The client the change is made through.
+    refs: The resources the change moves, and any parent it moves them into.
+    depth: How far below each to read.
+
+  Returns:
+    The nodes by id, what `emit_assigned` and `emit_unassigned` take; None when nothing listens or
+    the client's own events are off, and nothing is to be emitted.
+  """
+  if not store.client_events or not is_event_bus_active():
     return None
   response = await store.commands.get_resources(
     spb.GetResourcesRequest(resources=refs, depth=depth, ancestors=True)
@@ -950,29 +963,67 @@ def _location(node: pb.ResourceNode) -> Optional[Dict[str, Any]]:
   return dict(coordinate_reference(to_coordinate(node.attributes.location)) or {})
 
 
-def _emit_unassigned(before: Mapping[bytes, pb.ResourceNode], resource_id: bytes) -> None:
+def unassigned_data(
+  before: Mapping[bytes, pb.ResourceNode], resource_id: bytes
+) -> Optional[Dict[str, Any]]:
+  """The data of `resource.unassigned` for a resource leaving its parent; None for a root.
+
+  Args:
+    before: The resource, its parent and their ancestors, as they were before it left.
+    resource_id: The resource.
+  """
   node = before[resource_id]
   if not node.parent_id:
-    return
+    return None
   parent = before[node.parent_id]
-  emit_event(
-    "resource.unassigned",
-    resource=_reference(node, before, b""),
-    previous_parent=_reference(parent, before, parent.parent_id),
-    previous_location=_location(node),
-  )
+  return {
+    "resource": _reference(node, before, b""),
+    "previous_parent": _reference(parent, before, parent.parent_id),
+    "previous_location": _location(node),
+  }
 
 
-def _emit_assigned(
+def assigned_data(
+  before: Mapping[bytes, pb.ResourceNode], node: pb.ResourceNode, parent_id: bytes
+) -> Dict[str, Any]:
+  """The data of `resource.assigned` for a resource entering a parent.
+
+  Args:
+    before: The parent and its ancestors.
+    node: The resource, as it is in the parent.
+    parent_id: The parent.
+  """
+  parent = before[parent_id]
+  return {
+    "resource": _reference(node, before, parent_id),
+    "parent": _reference(parent, before, parent.parent_id),
+    "location": _location(node),
+  }
+
+
+def emit_unassigned(before: Mapping[bytes, pb.ResourceNode], resource_id: bytes) -> None:
+  """Emit `resource.unassigned` for a resource that left its parent; nothing for a root.
+
+  Args:
+    before: What `read_for_events` read before the change.
+    resource_id: The resource.
+  """
+  data = unassigned_data(before, resource_id)
+  if data is not None:
+    emit_event("resource.unassigned", **data)
+
+
+def emit_assigned(
   before: Mapping[bytes, pb.ResourceNode], node: pb.ResourceNode, parent_id: bytes
 ) -> None:
-  parent = before[parent_id]
-  emit_event(
-    "resource.assigned",
-    resource=_reference(node, before, parent_id),
-    parent=_reference(parent, before, parent.parent_id),
-    location=_location(node),
-  )
+  """Emit `resource.assigned` for a resource that entered a parent.
+
+  Args:
+    before: What `read_for_events` read before the change, the parent among it.
+    node: The resource, as the change left it.
+    parent_id: The parent.
+  """
+  emit_event("resource.assigned", **assigned_data(before, node, parent_id))
 
 
 def _tools_by_holder(nodes: Iterable[pb.ResourceNode]) -> Dict[bytes, pb.ResourceNode]:

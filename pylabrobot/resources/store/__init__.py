@@ -6,6 +6,7 @@ Resources in a store are used through async handles, imported from here:
 
 from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.errors import StoreError
+from pylabrobot.resources.store.event_bridge import EventBridge
 from pylabrobot.resources.store.handles import (
   Carrier,
   Container,

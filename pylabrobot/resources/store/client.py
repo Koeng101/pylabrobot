@@ -81,6 +81,8 @@ class ResourceStore:
     primitives: the `ResourcePrimitivesService`, low-level changes.
     memory: the store itself, when it is served in this process.
     lock_tokens: the locks this client holds, sent with every change it makes.
+    client_events: whether handles emit `resource.assigned` and `resource.unassigned` for the
+      changes they make; off while an `EventBridge` publishes them from the store's `Watch`.
   """
 
   def __init__(self, address: str, http: Client, memory: Optional[MemoryStore] = None):
@@ -91,6 +93,7 @@ class ResourceStore:
     )
     self.memory = memory
     self.lock_tokens: List[bytes] = []
+    self.client_events = True
 
   @classmethod
   def in_memory(cls, store: Optional[MemoryStore] = None) -> ResourceStore:
@@ -226,7 +229,7 @@ class ResourceStore:
         request.assign.track = track
     elif location is not None or track is not None:
       raise ValueError("a location needs a parent")
-    before = await handles._read_for_events(self, [parent.ref]) if parent is not None else None
+    before = await handles.read_for_events(self, [parent.ref]) if parent is not None else None
     create = spb.CreateResourcesRequest(lock_tokens=self.lock_tokens, resources=[request])
     try:
       response = await self.commands.create_resources(create)
@@ -239,7 +242,7 @@ class ResourceStore:
         raise
       response = await self.commands.create_resources(create)
     if before is not None and parent is not None:
-      handles._emit_assigned(before, response.nodes[0], parent.id)
+      handles.emit_assigned(before, response.nodes[0], parent.id)
     return (await self.make_handles(response.nodes[:1], response.nodes[1:]))[0]
 
   async def _put_library_model(self, name: str) -> bool:

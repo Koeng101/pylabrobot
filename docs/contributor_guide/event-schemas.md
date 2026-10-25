@@ -145,7 +145,16 @@ For resources in a resource store, a handle emits both when it changes the tree:
 `delete`, `ResourceStore.create` with a parent, and `TipRack.set_tip_state`, `fill` and `empty`
 for each tip they make or remove, tips made first. A handle reads what the events carry only while a listener is
 installed. Changes a device stages through the store's command API (`BeginToolPickup` and the
-like) emit neither.
+like), or makes with raw `store.commands`, emit neither from the client; code making such a change
+can emit them with `handles.read_for_events` before it and `handles.emit_assigned` /
+`handles.emit_unassigned` after it.
+
+`EventBridge(store)` publishes both from the store instead: it follows the store's `Watch` stream
+and emits, for every change - staged, raw, or made by another client - the events a handle emits
+for the same change, with the same payloads and `{"source": "store", "revision": ...}` as their
+context. While it runs, the client's own resource events are off (`ResourceStore.client_events`),
+so each change is published once. Its events come from its own task as the store reports each
+change; `await bridge.caught_up()` waits until every change made so far is published.
 
 ## Resource transfer
 
