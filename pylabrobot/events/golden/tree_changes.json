@@ -25,12 +25,12 @@
                 },
                 {
                   "name": "plate_carrier",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "hamilton_plate_carrier_L5_ac"
                 },
                 {
                   "name": "deck",
-                  "type": "HamiltonSTARDeck",
+                  "type": "Deck",
                   "model": "starlet_deck_front_top_cover"
                 }
               ]
@@ -46,12 +46,12 @@
               "ancestors": [
                 {
                   "name": "plate_carrier",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "hamilton_plate_carrier_L5_ac"
                 },
                 {
                   "name": "deck",
-                  "type": "HamiltonSTARDeck",
+                  "type": "Deck",
                   "model": "starlet_deck_front_top_cover"
                 }
               ]
@@ -96,12 +96,12 @@
               "ancestors": [
                 {
                   "name": "plate_carrier",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "hamilton_plate_carrier_L5_ac"
                 },
                 {
                   "name": "deck",
-                  "type": "HamiltonSTARDeck",
+                  "type": "Deck",
                   "model": "starlet_deck_front_top_cover"
                 }
               ]
@@ -146,12 +146,12 @@
               "ancestors": [
                 {
                   "name": "plate_carrier",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "hamilton_plate_carrier_L5_ac"
                 },
                 {
                   "name": "deck",
-                  "type": "HamiltonSTARDeck",
+                  "type": "Deck",
                   "model": "starlet_deck_front_top_cover"
                 }
               ]
@@ -185,12 +185,12 @@
                 },
                 {
                   "name": "plate_carrier",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "hamilton_plate_carrier_L5_ac"
                 },
                 {
                   "name": "deck",
-                  "type": "HamiltonSTARDeck",
+                  "type": "Deck",
                   "model": "starlet_deck_front_top_cover"
                 }
               ]
@@ -206,12 +206,12 @@
               "ancestors": [
                 {
                   "name": "plate_carrier",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "hamilton_plate_carrier_L5_ac"
                 },
                 {
                   "name": "deck",
-                  "type": "HamiltonSTARDeck",
+                  "type": "Deck",
                   "model": "starlet_deck_front_top_cover"
                 }
               ]
@@ -258,12 +258,12 @@
           },
           {
             "name": "plate_carrier",
-            "type": "PlateCarrier",
+            "type": "Carrier",
             "model": "hamilton_plate_carrier_L5_ac"
           },
           {
             "name": "deck",
-            "type": "HamiltonSTARDeck",
+            "type": "Deck",
             "model": "starlet_deck_front_top_cover"
           }
         ]

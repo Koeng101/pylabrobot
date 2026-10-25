@@ -42,7 +42,7 @@
           "data": {
             "device": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -59,7 +59,7 @@
           "data": {
             "device": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -227,7 +227,7 @@
           "data": {
             "device": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -263,7 +263,7 @@
             },
             "destination": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -281,7 +281,7 @@
           "data": {
             "device": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -317,7 +317,7 @@
             },
             "destination": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -353,14 +353,14 @@
               "ancestors": [
                 {
                   "name": "loader",
-                  "type": "Access2",
+                  "type": "ResourceHolder",
                   "model": "Agilent Access2"
                 }
               ]
             },
             "parent": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -483,7 +483,7 @@
           "data": {
             "device": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -503,7 +503,7 @@
                 "ancestors": [
                   {
                     "name": "loader",
-                    "type": "Access2",
+                    "type": "ResourceHolder",
                     "model": "Agilent Access2"
                   }
                 ]
@@ -511,7 +511,7 @@
             ],
             "source": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -538,7 +538,7 @@
           "data": {
             "device": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -558,7 +558,7 @@
                 "ancestors": [
                   {
                     "name": "loader",
-                    "type": "Access2",
+                    "type": "ResourceHolder",
                     "model": "Agilent Access2"
                   }
                 ]
@@ -566,7 +566,7 @@
             ],
             "source": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -605,7 +605,7 @@
           "data": {
             "device": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -641,7 +641,7 @@
             },
             "destination": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -659,7 +659,7 @@
           "data": {
             "device": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,
@@ -695,7 +695,7 @@
             },
             "destination": {
               "name": "loader",
-              "type": "Access2",
+              "type": "ResourceHolder",
               "model": "Agilent Access2",
               "rotation": {
                 "x": 0,

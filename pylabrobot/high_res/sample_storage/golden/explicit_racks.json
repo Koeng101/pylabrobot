@@ -90,14 +90,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -123,14 +123,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -235,7 +235,7 @@
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -251,7 +251,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -370,7 +370,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -394,7 +394,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "AmbiStore",
+                    "type": "Resource",
                     "model": "AmbiStore"
                   }
                 ]
@@ -411,7 +411,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -427,11 +427,11 @@
               "ancestors": [
                 {
                   "name": "out_of_order",
-                  "type": "PlateCarrier"
+                  "type": "Carrier"
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -440,7 +440,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -464,7 +464,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "AmbiStore",
+                    "type": "Resource",
                     "model": "AmbiStore"
                   }
                 ]
@@ -481,7 +481,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -497,11 +497,11 @@
               "ancestors": [
                 {
                   "name": "out_of_order",
-                  "type": "PlateCarrier"
+                  "type": "Carrier"
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -515,7 +515,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -539,7 +539,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "AmbiStore",
+                    "type": "Resource",
                     "model": "AmbiStore"
                   }
                 ]
@@ -556,7 +556,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -572,11 +572,11 @@
               "ancestors": [
                 {
                   "name": "out_of_order",
-                  "type": "PlateCarrier"
+                  "type": "Carrier"
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -603,7 +603,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -623,7 +623,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -647,7 +647,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "AmbiStore",
+                    "type": "Resource",
                     "model": "AmbiStore"
                   }
                 ]
@@ -664,7 +664,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -680,11 +680,11 @@
               "ancestors": [
                 {
                   "name": "out_of_order",
-                  "type": "PlateCarrier"
+                  "type": "Carrier"
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -706,11 +706,11 @@
                 },
                 {
                   "name": "out_of_order",
-                  "type": "PlateCarrier"
+                  "type": "Carrier"
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -726,11 +726,11 @@
               "ancestors": [
                 {
                   "name": "out_of_order",
-                  "type": "PlateCarrier"
+                  "type": "Carrier"
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -750,7 +750,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -774,7 +774,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "AmbiStore",
+                    "type": "Resource",
                     "model": "AmbiStore"
                   }
                 ]
@@ -791,7 +791,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -807,11 +807,11 @@
               "ancestors": [
                 {
                   "name": "out_of_order",
-                  "type": "PlateCarrier"
+                  "type": "Carrier"
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -820,7 +820,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "AmbiStore",
+              "type": "Resource",
               "model": "AmbiStore",
               "rotation": {
                 "x": 0,
@@ -844,7 +844,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "AmbiStore",
+                    "type": "Resource",
                     "model": "AmbiStore"
                   }
                 ]
@@ -861,7 +861,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -877,11 +877,11 @@
               "ancestors": [
                 {
                   "name": "out_of_order",
-                  "type": "PlateCarrier"
+                  "type": "Carrier"
                 },
                 {
                   "name": "store",
-                  "type": "AmbiStore",
+                  "type": "Resource",
                   "model": "AmbiStore"
                 }
               ]
@@ -993,7 +993,7 @@
       "events": [],
       "result": {
         "name": "store",
-        "type": "AmbiStore",
+        "type": "Resource",
         "size_x": 0,
         "size_y": 0,
         "size_z": 0,

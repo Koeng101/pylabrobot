@@ -25,14 +25,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -63,14 +63,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -101,14 +101,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -130,7 +130,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -140,14 +140,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -173,14 +173,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -211,14 +211,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -249,14 +249,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -287,14 +287,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -316,7 +316,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -326,14 +326,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -359,14 +359,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -397,14 +397,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -426,7 +426,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -436,14 +436,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -469,14 +469,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -502,14 +502,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -736,7 +736,7 @@
       "events": [],
       "result": {
         "name": "store",
-        "type": "SteriStore",
+        "type": "Resource",
         "size_x": 0,
         "size_y": 0,
         "size_z": 0,

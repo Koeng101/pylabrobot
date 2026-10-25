@@ -25,14 +25,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -63,14 +63,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -101,14 +101,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -130,7 +130,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -140,14 +140,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -173,14 +173,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -211,14 +211,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -249,14 +249,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -287,14 +287,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -316,7 +316,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -326,14 +326,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -359,14 +359,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -397,14 +397,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -426,7 +426,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -436,14 +436,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -469,14 +469,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -502,14 +502,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -669,7 +669,7 @@
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -685,7 +685,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -859,7 +859,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -883,7 +883,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -900,7 +900,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -916,12 +916,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -930,7 +930,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -954,7 +954,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -971,7 +971,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -987,12 +987,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1006,7 +1006,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -1030,7 +1030,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -1047,7 +1047,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1063,12 +1063,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1095,7 +1095,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1115,7 +1115,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -1139,7 +1139,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -1156,7 +1156,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1172,12 +1172,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1199,12 +1199,12 @@
                 },
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1220,12 +1220,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1245,7 +1245,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -1269,7 +1269,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -1286,7 +1286,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1302,12 +1302,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1316,7 +1316,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -1340,7 +1340,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -1357,7 +1357,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1373,12 +1373,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1590,7 +1590,7 @@
             "operation_id": "op2",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -1614,12 +1614,12 @@
                   },
                   {
                     "name": "store_stacker_5",
-                    "type": "PlateCarrier",
+                    "type": "Carrier",
                     "model": "high_res_stacker"
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -1636,12 +1636,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1657,7 +1657,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1666,7 +1666,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -1690,12 +1690,12 @@
                   },
                   {
                     "name": "store_stacker_5",
-                    "type": "PlateCarrier",
+                    "type": "Carrier",
                     "model": "high_res_stacker"
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -1712,12 +1712,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1733,7 +1733,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1747,7 +1747,7 @@
             "operation_id": "op2",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -1771,12 +1771,12 @@
                   },
                   {
                     "name": "store_stacker_5",
-                    "type": "PlateCarrier",
+                    "type": "Carrier",
                     "model": "high_res_stacker"
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -1793,12 +1793,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1814,7 +1814,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1823,7 +1823,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -1847,12 +1847,12 @@
                   },
                   {
                     "name": "store_stacker_5",
-                    "type": "PlateCarrier",
+                    "type": "Carrier",
                     "model": "high_res_stacker"
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -1869,12 +1869,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1890,7 +1890,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1929,7 +1929,7 @@
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -1945,7 +1945,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2139,7 +2139,7 @@
             "operation_id": "op3",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2163,7 +2163,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2180,7 +2180,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2196,12 +2196,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2210,7 +2210,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2234,7 +2234,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2251,7 +2251,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2267,12 +2267,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2286,7 +2286,7 @@
             "operation_id": "op3",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2310,7 +2310,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2327,7 +2327,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2343,12 +2343,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2357,7 +2357,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2381,7 +2381,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2398,7 +2398,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2414,12 +2414,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2446,7 +2446,7 @@
             "operation_id": "op4",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2470,7 +2470,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2487,7 +2487,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2503,12 +2503,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2517,7 +2517,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2541,7 +2541,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2558,7 +2558,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2574,12 +2574,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2593,7 +2593,7 @@
             "operation_id": "op4",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2617,7 +2617,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2634,7 +2634,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2650,12 +2650,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2664,7 +2664,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2688,7 +2688,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2705,7 +2705,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2721,12 +2721,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2753,7 +2753,7 @@
             "operation_id": "op5",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2777,7 +2777,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2794,7 +2794,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2810,12 +2810,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2824,7 +2824,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2848,7 +2848,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2865,7 +2865,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2881,12 +2881,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2900,7 +2900,7 @@
             "operation_id": "op5",
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2924,7 +2924,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -2941,7 +2941,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2957,12 +2957,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -2971,7 +2971,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "TundraStore",
+              "type": "Resource",
               "model": "TundraStore",
               "rotation": {
                 "x": 0,
@@ -2995,7 +2995,7 @@
                   },
                   {
                     "name": "store",
-                    "type": "TundraStore",
+                    "type": "Resource",
                     "model": "TundraStore"
                   }
                 ]
@@ -3012,7 +3012,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -3028,12 +3028,12 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -3102,7 +3102,7 @@
                 },
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]
@@ -3118,7 +3118,7 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "TundraStore",
+                  "type": "Resource",
                   "model": "TundraStore"
                 }
               ]

@@ -25,14 +25,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -63,14 +63,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -101,14 +101,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_1",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -130,7 +130,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_1",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -140,14 +140,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -173,14 +173,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -211,14 +211,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -249,14 +249,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -287,14 +287,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_2",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -316,7 +316,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_2",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -326,14 +326,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -359,14 +359,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -397,14 +397,14 @@
               "ancestors": [
                 {
                   "name": "store_stacker_5",
-                  "type": "PlateCarrier",
+                  "type": "Carrier",
                   "model": "high_res_stacker"
                 }
               ]
             },
             "parent": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -426,7 +426,7 @@
           "data": {
             "resource": {
               "name": "store_stacker_5",
-              "type": "PlateCarrier",
+              "type": "Carrier",
               "model": "high_res_stacker",
               "rotation": {
                 "x": 0,
@@ -436,14 +436,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -469,14 +469,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -502,14 +502,14 @@
               "ancestors": [
                 {
                   "name": "store",
-                  "type": "SteriStore",
+                  "type": "Resource",
                   "model": "SteriStore"
                 }
               ]
             },
             "parent": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -724,7 +724,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -739,7 +739,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -759,7 +759,7 @@
             "operation_id": "op1",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -774,7 +774,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -802,7 +802,7 @@
             "operation_id": "op2",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -817,7 +817,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -837,7 +837,7 @@
             "operation_id": "op2",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -852,7 +852,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -888,7 +888,7 @@
             "operation_id": "op3",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -902,7 +902,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -921,7 +921,7 @@
             "operation_id": "op3",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -935,7 +935,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -965,7 +965,7 @@
             "operation_id": "op4",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -979,7 +979,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -998,7 +998,7 @@
             "operation_id": "op4",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1012,7 +1012,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1042,7 +1042,7 @@
             "operation_id": "op5",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1056,7 +1056,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1075,7 +1075,7 @@
             "operation_id": "op5",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1089,7 +1089,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1119,7 +1119,7 @@
             "operation_id": "op6",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1132,7 +1132,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1150,7 +1150,7 @@
             "operation_id": "op6",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1163,7 +1163,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1192,7 +1192,7 @@
             "operation_id": "op7",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1205,7 +1205,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1223,7 +1223,7 @@
             "operation_id": "op7",
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,
@@ -1236,7 +1236,7 @@
           "data": {
             "device": {
               "name": "store",
-              "type": "SteriStore",
+              "type": "Resource",
               "model": "SteriStore",
               "rotation": {
                 "x": 0,

@@ -254,7 +254,7 @@
                 "methods": "<methods>"
               },
               {
-                "type": "EmbeddedTipRack",
+                "type": "TipRack",
                 "size_x": 122.4,
                 "size_y": 82.6,
                 "size_z": 20.0,
@@ -374,7 +374,7 @@
                 "size_z": 0,
                 "category": "tip_spot",
                 "prototype_tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "category": "tip",
                   "model": "hamilton_tip_300uL",
@@ -391,7 +391,7 @@
                 "methods": "<methods>"
               },
               {
-                "type": "HamiltonTip",
+                "type": "Tip",
                 "size_z": 59.9,
                 "category": "tip",
                 "model": "hamilton_tip_300uL",
@@ -3195,7 +3195,7 @@
               },
               {
                 "tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "location": {
                     "x": -0.5,
@@ -3221,7 +3221,7 @@
                   "max_volume": 400
                 },
                 "pending_tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "location": {
                     "x": -0.5,
@@ -3798,7 +3798,7 @@
                 "methods": "<methods>"
               },
               {
-                "type": "EmbeddedTipRack",
+                "type": "TipRack",
                 "size_x": 122.4,
                 "size_y": 82.6,
                 "size_z": 20.0,
@@ -3918,7 +3918,7 @@
                 "size_z": 0,
                 "category": "tip_spot",
                 "prototype_tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "category": "tip",
                   "model": "hamilton_tip_300uL",
@@ -3935,7 +3935,7 @@
                 "methods": "<methods>"
               },
               {
-                "type": "HamiltonTip",
+                "type": "Tip",
                 "size_z": 59.9,
                 "category": "tip",
                 "model": "hamilton_tip_300uL",
@@ -7612,7 +7612,7 @@
               },
               {
                 "tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "location": {
                     "x": -0.5,
@@ -7638,7 +7638,7 @@
                   "max_volume": 400
                 },
                 "pending_tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "location": {
                     "x": -0.5,
@@ -8311,7 +8311,7 @@
                 "methods": "<methods>"
               },
               {
-                "type": "EmbeddedTipRack",
+                "type": "TipRack",
                 "size_x": 122.4,
                 "size_y": 82.6,
                 "size_z": 20.0,
@@ -8431,7 +8431,7 @@
                 "size_z": 0,
                 "category": "tip_spot",
                 "prototype_tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "category": "tip",
                   "model": "hamilton_tip_300uL",
@@ -8448,7 +8448,7 @@
                 "methods": "<methods>"
               },
               {
-                "type": "HamiltonTip",
+                "type": "Tip",
                 "size_z": 59.9,
                 "category": "tip",
                 "model": "hamilton_tip_300uL",
@@ -11252,7 +11252,7 @@
               },
               {
                 "tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "location": {
                     "x": -0.5,
@@ -11278,7 +11278,7 @@
                   "max_volume": 400
                 },
                 "pending_tip": {
-                  "type": "HamiltonTip",
+                  "type": "Tip",
                   "size_z": 59.9,
                   "location": {
                     "x": -0.5,

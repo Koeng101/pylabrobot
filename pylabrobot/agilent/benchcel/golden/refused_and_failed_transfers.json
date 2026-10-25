@@ -116,7 +116,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -136,7 +136,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -152,7 +152,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -166,7 +166,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -186,7 +186,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -202,7 +202,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -228,7 +228,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -248,7 +248,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -264,7 +264,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -278,7 +278,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -298,7 +298,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -314,7 +314,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -340,7 +340,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -369,7 +369,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -383,7 +383,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -412,7 +412,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -438,7 +438,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -463,7 +463,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -480,7 +480,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -496,7 +496,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -510,7 +510,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -535,7 +535,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -552,7 +552,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -568,7 +568,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -594,7 +594,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -614,7 +614,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -630,7 +630,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -644,7 +644,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -664,7 +664,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -680,7 +680,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -710,7 +710,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -735,7 +735,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -752,7 +752,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -768,7 +768,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -782,7 +782,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -807,7 +807,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -824,7 +824,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -840,7 +840,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -869,7 +869,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -894,7 +894,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -911,7 +911,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -927,7 +927,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -941,7 +941,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -966,7 +966,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -983,7 +983,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -999,7 +999,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1028,7 +1028,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1053,7 +1053,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1070,7 +1070,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1086,7 +1086,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1119,7 +1119,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1153,7 +1153,7 @@
                 },
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1169,7 +1169,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1189,7 +1189,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1214,7 +1214,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1231,7 +1231,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1247,7 +1247,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1372,7 +1372,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1397,7 +1397,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1414,7 +1414,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1430,7 +1430,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1444,7 +1444,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1469,7 +1469,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1486,7 +1486,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1502,7 +1502,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1532,7 +1532,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1557,7 +1557,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1574,7 +1574,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1590,7 +1590,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1604,7 +1604,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1629,7 +1629,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1646,7 +1646,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1662,7 +1662,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1694,7 +1694,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1719,7 +1719,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1736,7 +1736,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1752,7 +1752,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1766,7 +1766,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1791,7 +1791,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1808,7 +1808,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1824,7 +1824,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1851,7 +1851,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -1876,7 +1876,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -1893,7 +1893,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1909,7 +1909,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1942,7 +1942,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1976,7 +1976,7 @@
                 },
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -1992,7 +1992,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -2012,7 +2012,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0,
@@ -2037,7 +2037,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -2054,7 +2054,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -2070,7 +2070,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -2199,7 +2199,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0.0,
@@ -2223,7 +2223,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -2240,7 +2240,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -2256,7 +2256,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -2270,7 +2270,7 @@
           "data": {
             "device": {
               "name": "benchcel",
-              "type": "BenchCel4R",
+              "type": "Resource",
               "model": "Agilent BenchCel 4R",
               "rotation": {
                 "x": 0.0,
@@ -2294,7 +2294,7 @@
                   },
                   {
                     "name": "benchcel",
-                    "type": "BenchCel4R",
+                    "type": "Resource",
                     "model": "Agilent BenchCel 4R"
                   }
                 ]
@@ -2311,7 +2311,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
@@ -2327,7 +2327,7 @@
               "ancestors": [
                 {
                   "name": "benchcel",
-                  "type": "BenchCel4R",
+                  "type": "Resource",
                   "model": "Agilent BenchCel 4R"
                 }
               ]
