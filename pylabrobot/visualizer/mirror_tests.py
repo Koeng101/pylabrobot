@@ -1,5 +1,8 @@
 """A mirror follows the store: one batch per request, named as PLR's resource callbacks name it."""
 
+import asyncio
+import logging
+import time
 import unittest
 from typing import List
 
@@ -83,3 +86,21 @@ class TreeMirrorTests(unittest.IsolatedAsyncioTestCase):
     await self.plate.rotate(z=90)
     await self.mirror.caught_up()
     self.assertEqual([(c.kind, c.name) for c in self.batches[-1]], [(ChangeKind.STATE, "plate")])
+
+  async def test_a_change_elsewhere_in_the_store_is_not_waited_for(self):
+    elsewhere = await self.store.create(
+      build.resource("elsewhere", Coordinate(5, 5, 5)), "elsewhere"
+    )
+    await elsewhere.rotate(z=90)
+    started = time.monotonic()
+    await self.mirror.caught_up(timeout=10)
+    self.assertLess(time.monotonic() - started, 5)
+
+  async def test_stopping_logs_nothing(self):
+    with self.assertLogs("pylabrobot.visualizer.mirror", level="DEBUG") as logs:
+      logging.getLogger("pylabrobot.visualizer.mirror").debug("only this")
+      await self.mirror.stop()
+      await self.mirror.start()
+      await self.mirror.stop()
+      await asyncio.sleep(0.1)
+    self.assertEqual(len(logs.records), 1)

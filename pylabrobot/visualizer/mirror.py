@@ -15,6 +15,9 @@ import logging
 from dataclasses import dataclass
 from typing import Callable, Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
+from connectrpc.code import Code
+from connectrpc.errors import ConnectError
+
 from pylabrobot.resources.store import handles
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
@@ -76,6 +79,12 @@ def _state_differs(before: pb.ResourceNode, after: pb.ResourceNode) -> bool:
     b.volume.pending_volume,
     b.jaw_width,
   )
+
+
+def _cancelled(error: Exception) -> bool:
+  """Whether a stream ended because it was cancelled, as a store's refusal says it."""
+  cause = error.__cause__
+  return isinstance(cause, ConnectError) and cause.code == Code.CANCELED
 
 
 class TreeMirror:
@@ -208,9 +217,10 @@ class TreeMirror:
         queue.put_nowait(event)
     except asyncio.CancelledError:
       raise
-    except Exception:
-      # Cancelling the stream on `stop` ends it with the store's refusal: nothing went wrong.
-      if self._tasks:
+    except Exception as error:
+      # Cancelling the stream on `stop` can end it with the store's refusal, even after `stop` has
+      # moved on or the mirror has started again: nothing went wrong.
+      if asyncio.current_task() in self._tasks and not _cancelled(error):
         logger.exception("stopped following the store for '%s'", self.root.name)
 
   async def _apply_batches(self, queue: "asyncio.Queue[spb.ResourceEvent]") -> None:
@@ -235,14 +245,25 @@ class TreeMirror:
       except Exception:
         logger.exception("could not apply revision %d to '%s'", batch[0].revision, self.root.name)
 
-  async def caught_up(self, timeout: float = 5.0) -> None:
-    """Wait until every change the store has made by now is applied, or `timeout` s pass: a change
-    that touched nothing in this tree never arrives."""
+  async def caught_up(self, timeout: float = 30.0) -> None:
+    """Wait until every change the store has made to this tree by now is applied, or `timeout` s
+    pass.
+
+    The last revision that changed the tree is the newest revision of any resource in it: a change
+    that took a resource away changed what it hung from. Changes elsewhere in the store are not
+    waited for, so the timeout is reached only when the stream falls that far behind.
+    """
     info = await self.store.commands.get_store_info(spb.GetStoreInfoRequest())
     if self.revision >= info.revision or not self.following:
       return
+    response = await self.store.commands.get_resources(
+      spb.GetResourcesRequest(resources=[self.root.ref], depth=-1)
+    )
+    target = max(node.revision for node in response.nodes)
+    if self.revision >= target:
+      return
     waiter: "asyncio.Future[None]" = asyncio.get_running_loop().create_future()
-    self._waiters.append((info.revision, waiter))
+    self._waiters.append((target, waiter))
     try:
       await asyncio.wait_for(asyncio.shield(waiter), timeout)
     except asyncio.TimeoutError:
