@@ -31,35 +31,24 @@ GOLDEN = pathlib.Path(__file__).parent
 
 def loading_tray(name: str) -> pb.ResourceDefinition:
   """The plate holder a reader's plate sits in: the scenarios' snapshot root."""
-  return build.resource(
-    name,
-    Coordinate(127.76, 85.48, 0),
-    kind=pb.RESOURCE_KIND_PLATE_HOLDER,
-    category="plate_holder",
-    holder=pb.HolderSpec(child_location=build.vec3(Coordinate.zero()), pedestal_size_z=0),
+  return build.plate_holder(
+    name, Coordinate(127.76, 85.48, 0), category="plate_holder", pedestal_size_z=0
   )
 
 
 def strip_plate(name: str) -> pb.ResourceDefinition:
   """A one-column plate of eight wells: PLR's library has none."""
-  well = build.resource(
-    "{name}_well_{identifier}",
-    Coordinate(6, 6, 10),
-    kind=pb.RESOURCE_KIND_WELL,
-    category="well",
-    container=pb.ContainerSpec(),
-  )
-  return build.resource(
+  well = build.well("{name}_well_{identifier}", Coordinate(6, 6, 10), category="well")
+  return build.plate(
     name,
     Coordinate(127.76, 85.48, 14.2),
-    kind=pb.RESOURCE_KIND_PLATE,
     category="plate",
-    itemized=pb.ItemizedSpec(
-      num_items_x=1,
-      num_items_y=8,
-      grid=pb.ItemGrid(item=well, offset=build.vec3(Coordinate(10, 7, 1)), item_dx=9, item_dy=9),
-    ),
-    plate=pb.PlateSpec(plate_type="skirted"),
+    num_items_x=1,
+    num_items_y=8,
+    item=well,
+    item_offset=Coordinate(10, 7, 1),
+    item_dx=9,
+    item_dy=9,
   )
 
 

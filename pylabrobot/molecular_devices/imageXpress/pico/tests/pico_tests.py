@@ -52,31 +52,25 @@ async def _test_plate() -> handles.Plate:
   Pico dist2first* values are center-based, so the expected centers are offset + size/2:
   10.9 + 3.4 = 14.3,  7.96 + 3.4 = 11.36.
   """
-  well = build.resource(
+  well = build.well(
     "test_plate_well_{identifier}",
     Coordinate(6.8, 6.8, 10.67),
-    kind=pb.RESOURCE_KIND_WELL,
     category="well",
-    container=pb.ContainerSpec(
-      max_volume=350.0,
-      material_z_thickness=0.17,
-      bottom_type=pb.WELL_BOTTOM_TYPE_FLAT,
-      cross_section_type=pb.CROSS_SECTION_TYPE_CIRCLE,
-    ),
+    max_volume=350.0,
+    material_z_thickness=0.17,
+    bottom_type=pb.WELL_BOTTOM_TYPE_FLAT,
+    cross_section_type=pb.CROSS_SECTION_TYPE_CIRCLE,
   )
-  definition = build.resource(
+  definition = build.plate(
     "test_plate",
     Coordinate(127.6, 85.75, 13.83),
-    kind=pb.RESOURCE_KIND_PLATE,
     category="plate",
-    itemized=pb.ItemizedSpec(
-      num_items_x=12,
-      num_items_y=8,
-      grid=pb.ItemGrid(
-        item=well, offset=build.vec3(Coordinate(10.9, 7.96, 1.5)), item_dx=9.0, item_dy=9.0
-      ),
-    ),
-    plate=pb.PlateSpec(plate_type="skirted"),
+    num_items_x=12,
+    num_items_y=8,
+    item=well,
+    item_offset=Coordinate(10.9, 7.96, 1.5),
+    item_dx=9.0,
+    item_dy=9.0,
   )
   plate = await ResourceStore.in_memory().create(definition, name="test_plate")
   assert isinstance(plate, handles.Plate)

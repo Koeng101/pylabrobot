@@ -40,16 +40,14 @@ def clariostar_definition(
   name: str, model: str, size_x: float = SIZE_X, size_y: float = SIZE_Y, size_z: float = SIZE_Z
 ) -> pb.ResourceDefinition:
   """The reader's body and its plate holder, `<name>_plate_holder`, which the drawer carries."""
-  plate_holder = build.resource(
+  plate_holder = build.plate_holder(
     f"{name}_plate_holder",
     Coordinate(127.76, 85.48, 0),
-    kind=pb.RESOURCE_KIND_PLATE_HOLDER,
     location=Coordinate.zero(),
     category="plate_holder",
     model="clariostar_plate_holder",
-    holder=pb.HolderSpec(
-      child_location=build.vec3(Coordinate.zero()), pedestal_size_z=0, capacity=1
-    ),
+    pedestal_size_z=0,
+    capacity=1,
   )
   return build.resource(
     name,
