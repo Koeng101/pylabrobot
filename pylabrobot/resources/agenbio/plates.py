@@ -12,7 +12,7 @@ from pylabrobot.resources.well import (
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _agenbio_96_wellplate_Ub_2200uL_height_volume_data = {
   0.0: 0.0,
-  37.2: 2380.8,
+  38.2: 2444.8,
 }
 
 
@@ -60,7 +60,7 @@ def agenbio_96_wellplate_Ub_2200uL(name: str, lid: Optional[Lid] = None) -> Plat
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _agenbio_4_troughplate_75mL_Vb_height_volume_data = {
   0.0: 0.0,
-  41.55: 78080.76,
+  42.55: 79959.96,
 }
 
 
@@ -133,7 +133,7 @@ def AGenBio_1_wellplate_Fl(name: str, lid: Optional[Lid] = None) -> Plate:
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _agenbio_1_troughplate_190mL_Fl_height_volume_data = {
   0.0: 0.0,
-  37.32: 283649.9136,
+  38.32: 291250.3936,
 }
 
 
@@ -182,7 +182,7 @@ def agenbio_1_troughplate_190mL_Fl(name: str, lid: Optional[Lid] = None) -> Plat
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _agenbio_1_troughplate_100mL_Fl_height_volume_data = {
   0.0: 0.0,
-  24.52: 186363.7696,
+  25.52: 193964.2496,
 }
 
 

@@ -24,7 +24,7 @@ def celltreat_6_wellplate_16300uL_Fb_lid(name: str) -> Lid:
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _celltreat_6_wellplate_16300uL_Fb_height_volume_data = {
   0.0: 0.0,
-  17.2: 16643.756802,
+  17.2: 16643.756803,
 }
 
 
@@ -151,7 +151,7 @@ def celltreat_24_wellplate_3300uL_Fb(name: str, with_lid: bool = False) -> Plate
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _celltreat_96_wellplate_350uL_Ub_height_volume_data = {
   0.0: 0.0,
-  8.49: 268.871656,
+  10.04: 317.958944,
 }
 
 

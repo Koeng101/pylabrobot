@@ -28,12 +28,12 @@
               },
               "rotation": {},
               "container": {
-                "maxVolume": 489.4648,
+                "maxVolume": 489.46478236842313,
                 "heightVolumeData": [
                   {},
                   {
                     "height": 14.3,
-                    "volume": 489.464782
+                    "volume": 489.464783
                   }
                 ],
                 "bottomType": "WELL_BOTTOM_TYPE_FLAT",

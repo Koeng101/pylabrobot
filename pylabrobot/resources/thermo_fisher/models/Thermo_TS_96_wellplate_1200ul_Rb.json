@@ -28,113 +28,205 @@
               },
               "rotation": {},
               "container": {
-                "maxVolume": 1232.7129,
+                "maxVolume": 1232.7129266641255,
                 "materialZThickness": 1.15,
                 "heightVolumeData": [
                   {},
                   {
-                    "height": 0.04,
-                    "volume": 0.020416
+                    "height": 0.015,
+                    "volume": 0.00287691
                   },
                   {
-                    "height": 0.12,
-                    "volume": 0.182539
+                    "height": 0.045,
+                    "volume": 0.0258286
                   },
                   {
-                    "height": 0.24,
-                    "volume": 0.722918
+                    "height": 0.095,
+                    "volume": 0.11464
                   },
                   {
-                    "height": 0.37,
-                    "volume": 1.699549
+                    "height": 0.155,
+                    "volume": 0.303668
                   },
                   {
-                    "height": 0.5,
-                    "volume": 3.069598
+                    "height": 0.215,
+                    "volume": 0.581365
                   },
                   {
-                    "height": 0.63,
-                    "volume": 4.819261
+                    "height": 0.275,
+                    "volume": 0.946372
                   },
                   {
-                    "height": 0.76,
-                    "volume": 6.934735
+                    "height": 0.335,
+                    "volume": 1.397334
                   },
                   {
-                    "height": 0.9,
-                    "volume": 9.606205
+                    "height": 0.4,
+                    "volume": 1.981298
                   },
                   {
-                    "height": 1.04,
-                    "volume": 12.668678
+                    "height": 0.465,
+                    "volume": 2.66282
                   },
                   {
-                    "height": 1.18,
-                    "volume": 16.104912
+                    "height": 0.53,
+                    "volume": 3.440175
                   },
                   {
-                    "height": 1.33,
-                    "volume": 20.181765
+                    "height": 0.595,
+                    "volume": 4.311638
                   },
                   {
-                    "height": 1.48,
-                    "volume": 24.646682
+                    "height": 0.66,
+                    "volume": 5.275482
                   },
                   {
-                    "height": 1.63,
-                    "volume": 29.47846
+                    "height": 0.725,
+                    "volume": 6.329982
                   },
                   {
-                    "height": 1.79,
-                    "volume": 35.012823
+                    "height": 0.79,
+                    "volume": 7.473413
                   },
                   {
-                    "height": 1.96,
-                    "volume": 41.295213
+                    "height": 0.855,
+                    "volume": 8.704049
                   },
                   {
-                    "height": 2.13,
-                    "volume": 47.961654
+                    "height": 0.925,
+                    "volume": 10.124895
                   },
                   {
-                    "height": 2.31,
-                    "volume": 55.404533
+                    "height": 0.995,
+                    "volume": 11.642722
                   },
                   {
-                    "height": 2.5,
-                    "volume": 63.649976
+                    "height": 1.065,
+                    "volume": 13.255375
                   },
                   {
-                    "height": 2.7,
-                    "volume": 72.714518
+                    "height": 1.135,
+                    "volume": 14.960699
                   },
                   {
-                    "height": 2.92,
-                    "volume": 83.082718
+                    "height": 1.205,
+                    "volume": 16.756538
                   },
                   {
-                    "height": 3.16,
-                    "volume": 94.791761
+                    "height": 1.275,
+                    "volume": 18.640738
                   },
                   {
-                    "height": 3.44,
-                    "volume": 108.864747
+                    "height": 1.35,
+                    "volume": 20.755128
                   },
                   {
-                    "height": 3.81,
-                    "volume": 127.918303
+                    "height": 1.425,
+                    "volume": 22.965828
                   },
                   {
-                    "height": 4.07,
-                    "volume": 141.462524
+                    "height": 1.5,
+                    "volume": 25.270186
                   },
                   {
-                    "height": 4.1,
-                    "volume": 143.383927
+                    "height": 1.575,
+                    "volume": 27.665552
                   },
                   {
-                    "height": 19.35,
-                    "volume": 1156.327052
+                    "height": 1.65,
+                    "volume": 30.149276
+                  },
+                  {
+                    "height": 1.73,
+                    "volume": 32.892983
+                  },
+                  {
+                    "height": 1.81,
+                    "volume": 35.730989
+                  },
+                  {
+                    "height": 1.89,
+                    "volume": 38.660076
+                  },
+                  {
+                    "height": 1.975,
+                    "volume": 41.868431
+                  },
+                  {
+                    "height": 2.06,
+                    "volume": 45.172117
+                  },
+                  {
+                    "height": 2.145,
+                    "volume": 48.567276
+                  },
+                  {
+                    "height": 2.235,
+                    "volume": 52.257564
+                  },
+                  {
+                    "height": 2.325,
+                    "volume": 56.041497
+                  },
+                  {
+                    "height": 2.42,
+                    "volume": 60.13218
+                  },
+                  {
+                    "height": 2.515,
+                    "volume": 64.316711
+                  },
+                  {
+                    "height": 2.615,
+                    "volume": 68.816945
+                  },
+                  {
+                    "height": 2.72,
+                    "volume": 73.640808
+                  },
+                  {
+                    "height": 2.825,
+                    "volume": 78.558535
+                  },
+                  {
+                    "height": 2.935,
+                    "volume": 83.803189
+                  },
+                  {
+                    "height": 3.055,
+                    "volume": 89.623187
+                  },
+                  {
+                    "height": 3.18,
+                    "volume": 95.78366
+                  },
+                  {
+                    "height": 3.315,
+                    "volume": 102.535296
+                  },
+                  {
+                    "height": 3.465,
+                    "volume": 110.138511
+                  },
+                  {
+                    "height": 3.635,
+                    "volume": 118.8586
+                  },
+                  {
+                    "height": 3.85,
+                    "volume": 129.997468
+                  },
+                  {
+                    "height": 4.075,
+                    "volume": 141.723364
+                  },
+                  {
+                    "height": 20.5,
+                    "volume": 1232.712927
+                  },
+                  {
+                    "height": 20.525,
+                    "volume": 1234.37349
                   }
                 ],
                 "bottomType": "WELL_BOTTOM_TYPE_U",

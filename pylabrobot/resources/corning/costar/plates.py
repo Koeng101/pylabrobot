@@ -17,7 +17,7 @@ from pylabrobot.resources.well import (
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _cor_cos_6_wellplate_16800uL_Fb_height_volume_data = {
   0.0: 0.0,
-  16.13: 15621.446413,
+  17.4: 16851.405307,
 }
 
 
@@ -85,7 +85,7 @@ def cor_cos_6_wellplate_16800uL_Fb_lid(name: str) -> Lid:
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _cor_cos_12_wellplate_6900uL_Fb_height_volume_data = {
   0.0: 0.0,
-  16.23: 6407.775588,
+  17.5: 6909.185016,
 }
 
 
@@ -142,7 +142,7 @@ def cor_cos_12_wellplate_6900uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _cor_cos_24_wellplate_3470uL_Fb_height_volume_data = {
   0.0: 0.0,
-  16.13: 3219.283485,
+  17.4: 3472.754659,
 }
 
 
@@ -197,7 +197,7 @@ def cor_cos_24_wellplate_3470uL_Fb(name: str, lid: Optional[Lid] = None) -> Plat
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _cor_cos_48_wellplate_1620uL_Fb_height_volume_data = {
   0.0: 0.0,
-  16.13: 1619.343681,
+  17.4: 1746.843153,
 }
 
 

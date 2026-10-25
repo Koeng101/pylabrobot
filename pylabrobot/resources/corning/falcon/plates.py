@@ -17,7 +17,7 @@ from pylabrobot.resources.well import (
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _cor_falcon_96_wellplate_275uL_Fb_height_volume_data = {
   0.0: 0.0,
-  14.3: 489.464782,
+  14.3: 489.464783,
 }
 
 
@@ -53,7 +53,7 @@ def cor_falcon_96_wellplate_275uL_Fb(name: str, lid: Optional[Lid] = None) -> Pl
       size_z=14.30,
       bottom_type=WellBottomType.FLAT,
       height_volume_data=_cor_falcon_96_wellplate_275uL_Fb_height_volume_data,
-      max_volume=489.4648,
+      max_volume=489.46478236842313,
       name_prefix=name,
     ),
   )
@@ -115,7 +115,7 @@ def cor_falcon_96_wellplate_250uL_Rb(name: str, lid: Optional[Lid] = None) -> Pl
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _cor_falcon_96_wellplate_340uL_Fb_black_height_volume_data = {
   0.0: 0.0,
-  10.75: 387.070159,
+  10.9: 392.471139,
 }
 
 
@@ -139,7 +139,7 @@ def cor_falcon_96_wellplate_340uL_Fb_black(name: str, lid: Optional[Lid] = None)
     "bottom_type": WellBottomType.FLAT,
     "cross_section_type": CrossSectionType.CIRCLE,
     "height_volume_data": _cor_falcon_96_wellplate_340uL_Fb_black_height_volume_data,
-    "max_volume": 392.4711,
+    "max_volume": 392.47113820775513,
     "material_z_thickness": 0.15,  # measured at 0.15 mm
   }
 

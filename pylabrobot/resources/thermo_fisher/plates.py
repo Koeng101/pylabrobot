@@ -51,32 +51,55 @@ def Thermo_TS_96_wellplate_1200ul_Rb_Lid(name: str) -> Lid:
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _Thermo_TS_96_wellplate_1200ul_Rb_height_volume_data = {
   0.0: 0.0,
-  0.04: 0.020416,
-  0.12: 0.182539,
-  0.24: 0.722918,
-  0.37: 1.699549,
-  0.5: 3.069598,
-  0.63: 4.819261,
-  0.76: 6.934735,
-  0.9: 9.606205,
-  1.04: 12.668678,
-  1.18: 16.104912,
-  1.33: 20.181765,
-  1.48: 24.646682,
-  1.63: 29.47846,
-  1.79: 35.012823,
-  1.96: 41.295213,
-  2.13: 47.961654,
-  2.31: 55.404533,
-  2.5: 63.649976,
-  2.7: 72.714518,
-  2.92: 83.082718,
-  3.16: 94.791761,
-  3.44: 108.864747,
-  3.81: 127.918303,
-  4.07: 141.462524,
-  4.1: 143.383927,
-  19.35: 1156.327052,
+  0.015: 0.00287691,
+  0.045: 0.0258286,
+  0.095: 0.11464,
+  0.155: 0.303668,
+  0.215: 0.581365,
+  0.275: 0.946372,
+  0.335: 1.397334,
+  0.4: 1.981298,
+  0.465: 2.66282,
+  0.53: 3.440175,
+  0.595: 4.311638,
+  0.66: 5.275482,
+  0.725: 6.329982,
+  0.79: 7.473413,
+  0.855: 8.704049,
+  0.925: 10.124895,
+  0.995: 11.642722,
+  1.065: 13.255375,
+  1.135: 14.960699,
+  1.205: 16.756538,
+  1.275: 18.640738,
+  1.35: 20.755128,
+  1.425: 22.965828,
+  1.5: 25.270186,
+  1.575: 27.665552,
+  1.65: 30.149276,
+  1.73: 32.892983,
+  1.81: 35.730989,
+  1.89: 38.660076,
+  1.975: 41.868431,
+  2.06: 45.172117,
+  2.145: 48.567276,
+  2.235: 52.257564,
+  2.325: 56.041497,
+  2.42: 60.13218,
+  2.515: 64.316711,
+  2.615: 68.816945,
+  2.72: 73.640808,
+  2.825: 78.558535,
+  2.935: 83.803189,
+  3.055: 89.623187,
+  3.18: 95.78366,
+  3.315: 102.535296,
+  3.465: 110.138511,
+  3.635: 118.8586,
+  3.85: 129.997468,
+  4.075: 141.723364,
+  20.5: 1232.712927,
+  20.525: 1234.37349,
 }
 
 
@@ -119,7 +142,7 @@ def Thermo_TS_96_wellplate_1200ul_Rb(name: str, with_lid: bool = False) -> Plate
       material_z_thickness=1.15,
       cross_section_type=CrossSectionType.RECTANGLE,
       height_volume_data=_Thermo_TS_96_wellplate_1200ul_Rb_height_volume_data,
-      max_volume=1232.7129,
+      max_volume=1232.7129266641255,
       name_prefix=name,
     ),
   )
@@ -156,16 +179,11 @@ def Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate_Lid(name: str) -> Lid:
   # )
 
 
-# Height above the cavity bottom (mm) to volume (uL), linear between points.
+# Height above the cavity bottom (mm) to volume (uL), linear between points: the calibration data,
+# continued along its last segment to 21.11 mm, just past 5 % above the well's depth (20.1 mm).
 _Thermo_AB_96_wellplate_300ul_Vb_EnduraPlate_height_volume_data = {
-  0.0: 0.0,
-  0.17: 4.0,
-  0.8: 8.24,
-  2.28: 20.116,
-  6.57: 70.0,
-  9.17: 120.0,
-  13.18: 220.2,
-  18.5: 326.6,
+  **_enduraplate_height_to_volume,
+  21.11: 378.8,
 }
 
 
@@ -277,17 +295,11 @@ def thermo_AB_96_wellplate_300ul_Vb_MicroAmp_Lid(name: str) -> Lid:
   raise NotImplementedError("This lid is not currently defined.")
 
 
-# Height above the cavity bottom (mm) to volume (uL), linear between points.
+# Height above the cavity bottom (mm) to volume (uL), linear between points: the calibration data,
+# continued along its last segment to 5 % past the cavity's depth (22.5 mm).
 _thermo_AB_96_wellplate_300ul_Vb_MicroAmp_height_volume_data = {
-  0.0: 0.0,
-  1.69: 4.0,
-  2.35: 8.45,
-  3.9: 20.105,
-  5.87: 40.889,
-  8.49: 70.0,
-  14.82: 220.667,
-  16.65: 261.385,
-  22.5: 396.385,
+  **_microamp_height_to_volume,
+  23.625: 422.346,
 }
 
 

@@ -37,32 +37,44 @@
                     "volume": 4.0
                   },
                   {
-                    "height": 2.35,
-                    "volume": 8.45
+                    "height": 2.29,
+                    "volume": 8.0
                   },
                   {
-                    "height": 3.9,
-                    "volume": 20.105
+                    "height": 3.89,
+                    "volume": 20.0
                   },
                   {
-                    "height": 5.87,
-                    "volume": 40.889
+                    "height": 5.79,
+                    "volume": 40.0
                   },
                   {
                     "height": 8.49,
                     "volume": 70.0
                   },
                   {
-                    "height": 14.82,
-                    "volume": 220.667
+                    "height": 10.59,
+                    "volume": 120.0
                   },
                   {
-                    "height": 16.65,
-                    "volume": 261.385
+                    "height": 12.69,
+                    "volume": 170.0
                   },
                   {
-                    "height": 22.5,
-                    "volume": 396.385
+                    "height": 14.79,
+                    "volume": 220.0
+                  },
+                  {
+                    "height": 16.59,
+                    "volume": 260.0
+                  },
+                  {
+                    "height": 17.89,
+                    "volume": 290.0
+                  },
+                  {
+                    "height": 23.625,
+                    "volume": 422.346
                   }
                 ],
                 "bottomType": "WELL_BOTTOM_TYPE_V",

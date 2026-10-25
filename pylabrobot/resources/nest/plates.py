@@ -11,7 +11,7 @@ from pylabrobot.resources.well import (
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _nest_1_troughplate_195000uL_Vb_height_volume_data = {
   0.0: 0.0,
-  25.85: 201009.6,
+  26.85: 208785.6,
 }
 
 
@@ -55,7 +55,7 @@ def nest_1_troughplate_195000uL_Vb(name: str) -> Plate:
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _nest_1_troughplate_185000uL_Vb_height_volume_data = {
   0.0: 0.0,
-  25.85: 201009.6,
+  26.85: 208785.6,
 }
 
 
@@ -106,7 +106,7 @@ def nest_1_troughplate_185000uL_Vb(name: str) -> Plate:
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _nest_8_troughplate_22000uL_Vb_height_volume_data = {
   0.0: 0.0,
-  25.85: 22786.775,
+  26.85: 23668.275,
 }
 
 
@@ -155,7 +155,7 @@ def nest_8_troughplate_22000uL_Vb(name: str) -> Plate:
 # Height above the cavity bottom (mm) to volume (uL), linear between points.
 _nest_12_troughplate_15000uL_Vb_height_volume_data = {
   0.0: 0.0,
-  25.85: 15092.264,
+  26.85: 15676.104,
 }
 
 
