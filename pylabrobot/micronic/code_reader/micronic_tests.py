@@ -10,13 +10,13 @@ from pylabrobot.io.command_line import CommandLineResult, CommandLineTransport
 from pylabrobot.micronic import MicronicError, MicronicRD235, SaneScanner, TwainScanner
 from pylabrobot.micronic.code_reader.driver import (
   DecodeResult,
+  RackScanEntry,
+  RackScanResult,
   cluster_axis,
   decode_image,
   find_duplicate_ids,
   is_tube_id,
   iter_positions,
-  RackScanEntry,
-  RackScanResult,
   rack_position,
   rack_scan_reads,
 )

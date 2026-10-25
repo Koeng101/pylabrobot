@@ -56,4 +56,3 @@ ImageXpress Pico
     Exposure
     Gain
     FocalPosition
-    WellBottomType

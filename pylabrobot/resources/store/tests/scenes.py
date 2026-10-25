@@ -25,6 +25,7 @@ from pylabrobot.resources import (
 )
 from pylabrobot.resources.celltreat.plates import celltreat_96_wellplate_350uL_Ub
 from pylabrobot.resources.corning.plates import cor_96_wellplate_360uL_Fb
+from pylabrobot.resources.end_effector import MechanicalGripper
 from pylabrobot.resources.eppendorf.tubes import eppendorf_tube_1500uL_Vb
 from pylabrobot.resources.hamilton import (
   HamiltonSTARDeck,
@@ -41,7 +42,6 @@ from pylabrobot.resources.hamilton.mfx_modules import (
 )
 from pylabrobot.resources.hamilton.trough_carriers import Trough_CAR_4R200_A00
 from pylabrobot.resources.hamilton.troughs import hamilton_1_trough_200mL_Vb
-from pylabrobot.resources.end_effector import MechanicalGripper
 from pylabrobot.resources.hamilton.tube_carriers import hamilton_tube_carrier_12_b00
 from pylabrobot.resources.manipulator import LinkBody
 from pylabrobot.resources.n_channel_pipettes import NChannelPipette, TipMountingShaft

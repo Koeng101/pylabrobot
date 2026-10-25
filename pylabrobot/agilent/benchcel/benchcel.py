@@ -100,8 +100,8 @@ from pylabrobot.events import event_operation, handle_reference, is_event_bus_ac
 from pylabrobot.io.socket import Socket
 from pylabrobot.resources import Coordinate, Rotation
 from pylabrobot.resources.store import StoreError, build, devices, handles
-from pylabrobot.resources.store.errors import plr_error
 from pylabrobot.resources.store.client import ResourceStore
+from pylabrobot.resources.store.errors import plr_error
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 

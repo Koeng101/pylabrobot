@@ -1,6 +1,7 @@
 """Barcodes read checked against the store, and barcodes recorded once."""
 
 import unittest
+from typing import Any, Dict
 
 from pylabrobot.resources import Coordinate
 from pylabrobot.resources.store import build, handles
@@ -43,7 +44,7 @@ async def rack_with_tubes(store: ResourceStore, tubes: dict) -> handles.TubeRack
   )
   assert isinstance(rack, handles.TubeRack)
   for position, barcode in tubes.items():
-    extra = {} if barcode is None else {"barcode": code(barcode)}
+    extra: Dict[str, Any] = {} if barcode is None else {"barcode": code(barcode)}
     tube = build.resource(
       f"tube_{position}",
       Coordinate(8, 8, 40),
