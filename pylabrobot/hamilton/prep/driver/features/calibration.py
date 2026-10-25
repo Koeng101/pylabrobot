@@ -553,7 +553,7 @@ class CalibrationSession:
           PrepCmd.TipPositionParameters.for_op(
             self._cal._channel_enum(ch),
             spot.placed.top,
-            spot.tip,
+            spot.tip_for_pickup(),
             z_seek_offset=z_seek_offset,
           )
         )
@@ -598,7 +598,7 @@ class CalibrationSession:
       tip_position = PrepCmd.TipPositionParameters.for_op(
         PrepCmd.ChannelIndex.MPHChannel,
         ref_spot.placed.top,
-        ref_spot.tip,
+        ref_spot.tip_for_pickup(),
         z_seek_offset=z_seek_offset,
       )
 

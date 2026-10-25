@@ -40,7 +40,14 @@ from pylabrobot.resources.store.client import ResourceStore
 from pylabrobot.resources.store.v1 import store_pb2 as spb
 from pylabrobot.resources.store.v1 import types_pb2 as pb
 
-from ..deck import PrepDeckParts, is_prep_deck, name_prefix_of, prep_deck, read_prep_deck
+from ..deck import (
+  PrepDeckParts,
+  is_prep_deck,
+  name_prefix_of,
+  prep_deck,
+  read_prep_deck,
+  warn_of_resources_above_safe_height,
+)
 from . import prep_commands as PrepCmd
 from .configuration import DeviceConfiguration, read_configuration, to_jsonable
 from .errors import PREP_ERROR_CODES, PrepMethodNotFoundError
@@ -596,6 +603,8 @@ class PrepDriver:
       await self._place_reported_sites()
       await self._create_capability_resources()
       await self._seat_heater_shaker()
+      if self.parts is not None and self.deck is not None:
+        await warn_of_resources_above_safe_height(self.deck)
 
       if any(tips) and plate_held:
         attached = await self.pipettes.request_attached_tip_information(tips.index(True))

@@ -289,6 +289,15 @@ class TestHead96Tips(unittest.IsolatedAsyncioTestCase):
     )
     return await self.store.create(lid, name="lid", parent=rack)
 
+  async def test_discarding_with_no_96_trash_names_the_trash_it_looked_for(self):
+    await self.head.pick_up_tips(self.tip_rack)
+    await self.trash.delete()
+    with self.assertRaisesRegex(
+      RuntimeError, "no resource named 'test_deck_trash_core96'"
+    ) as caught:
+      await self.head.discard_tips()
+    self.assertNotIn("with_trash96", str(caught.exception))
+
   async def test_a_covered_rack_is_not_picked_up_from_nor_dropped_into(self):
     lid = await self.lid(self.tip_rack)
     with self.assertRaisesRegex(ValueError, "pick up tips from 'tip_rack_01': it is not available"):
@@ -1381,6 +1390,23 @@ class TestHead96AspirateDispense(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(await self.trough.get_volume(), 96 * 40.0)
     self.assertEqual(await self.tip_volumes(), {0.0})
     self.assertEqual(self.head.piston_position, 0.0)
+
+  async def test_a_container_that_states_no_maximum_takes_what_is_dispensed(self):
+    trough_plate = cast(handles.Resource, await self.trough.get_parent())
+    holder = cast(handles.Resource, await trough_plate.get_parent())
+    definition = pb.ResourceDefinition()
+    definition.CopyFrom(library.get_model("agenbio_1_troughplate_190mL_Fl").definition)
+    definition.attributes.itemized.grid.item.attributes.container.ClearField("max_volume")
+    await trough_plate.delete()
+    unbounded = cast(
+      handles.Plate, await self.deck.store.create(definition, name="trough", parent=holder)
+    )
+    well = unbounded.get_well(0)
+    await well.set_volume_tracking(True)
+    await self.head.aspirate(self.plate, piston_volume=40.0, liquid_height=2.0)
+    await self.head.dispense(well, piston_volume=40.0, jet=True, blow_out=True)
+    self.assertEqual(self.sent[-1][0], "ED")
+    self.assertEqual(await well.get_volume(), 96 * 40.0)
 
   async def test_capacitive_draws_the_air_first_then_under_the_surface_found(self):
     await self.trough.set_volume(100_000.0)

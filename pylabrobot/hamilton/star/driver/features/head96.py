@@ -1097,8 +1097,10 @@ class Head96(Head):
       raise RuntimeError("tip commands are placed from the deck; this driver was given none")
     trash = await self._driver._find_on_deck(self._driver._deck_component_name("trash_core96"))
     if trash is None:
+      name = self._driver._deck_component_name("trash_core96")
       raise RuntimeError(
-        "Trash area for 96-well plates was not created. Initialize with `with_trash96=True`."
+        f"the deck has no 96-head trash: no resource named '{name}' is on it. A STAR deck made "
+        "from its model has one; put one back, or drop the tips with `drop_tips`."
       )
     await self.drop_tips(trash, **kwargs)
 
@@ -3069,6 +3071,9 @@ class Head96(Head):
         needed[container.id] = needed.get(container.id, 0.0) + moved
       unique = list({c.id: c for c in givers}.values())
       for container, node in zip(unique, await model.get_nodes(anchor.store, unique)):
+        # A container that states no maximum has no room to run out of.
+        if not node.attributes.container.HasField("max_volume"):
+          continue
         free = node.attributes.container.max_volume - node.state.volume.pending_volume
         if needed[container.id] > free + 1e-6:
           raise error(

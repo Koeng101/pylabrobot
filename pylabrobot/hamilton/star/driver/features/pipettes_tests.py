@@ -2036,6 +2036,17 @@ class TestTipHandling(unittest.IsolatedAsyncioTestCase):
     with self.assertRaises(RuntimeError):
       await pipettes.return_tips()
 
+  async def test_a_container_not_on_the_deck_is_refused_with_a_value_error(self):
+    pipettes, rack, _ = await channels_over_a_rack()
+    deck = pipettes._driver.deck
+    assert deck is not None
+    await pipettes.pick_up_tips([rack.get_tip_spot("A1")])
+    loose = cast(
+      handles.Plate, await deck.store.create("cor_96_wellplate_360uL_Fb", name="loose")
+    )
+    with self.assertRaisesRegex(ValueError, "not in the subtree"):
+      await pipettes.aspirate([cast(handles.Container, loose.get_item("A1"))], [10.0], [0])
+
   async def test_a_discarded_tip_belongs_to_nothing(self):
     from pylabrobot.resources.store.errors import StoreError
 

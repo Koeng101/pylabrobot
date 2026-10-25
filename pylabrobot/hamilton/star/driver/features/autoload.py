@@ -10,6 +10,7 @@ from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_dat
 from pylabrobot.hamilton.star.driver import model
 from pylabrobot.resources.barcode import Barcode1DSymbology, Barcode2DSymbology
 from pylabrobot.resources.store import handles
+from pylabrobot.resources.store.errors import StoreError
 
 if TYPE_CHECKING:
   from pylabrobot.hamilton.star.driver.master import STARDriver
@@ -1494,8 +1495,8 @@ class Autoload:
       perform_tray_presence_check: whether to confirm the loading tray is not already holding it.
       park_after: whether to park the autoload once the carrier is out.
     Raises:
-      ValueError: If the carrier ends outside the tracks this device has, if the deck sensors do
-        not see it, or if it is already on the loading tray.
+      ValueError: If the carrier is not on the deck, ends outside the tracks this device has, the
+        deck sensors do not see it, or it is already on the loading tray.
       RuntimeError: If setup has not run, or the driver was given no deck, so a carrier has no
         track to unload from.
     """
@@ -1505,7 +1506,10 @@ class Autoload:
 
     # The autoload addresses a carrier by its rightmost track, which is the one the deck sensors
     # report it at too. The tracks the carrier covers run from the leftmost it sits over to that.
-    left_track, track = await deck.tracks_of(carrier)
+    try:
+      left_track, track = await deck.tracks_of(carrier)
+    except StoreError as error:
+      raise model.placement_error(error) from error
     tracks = self.track_range
     if track not in tracks:
       raise ValueError(f"track must be between {tracks[0]} and {tracks[-1]}, is {track}")
@@ -1621,8 +1625,8 @@ class Autoload:
       "container_barcodes".
 
     Raises:
-      ValueError: If the carrier ends outside the tracks this device has, or the loading tray
-        holds no carrier at its track.
+      ValueError: If the carrier is not on the deck, ends outside the tracks this device has, or
+        the loading tray holds no carrier at its track.
       RuntimeError: If setup has not run, or the driver was given no deck, so a carrier has no
         track to load to.
     """
@@ -1631,7 +1635,10 @@ class Autoload:
       raise RuntimeError("this driver has no deck, so a carrier has no track to load to")
 
     # The autoload addresses a carrier by its rightmost track, which is where it ends on the deck.
-    _, track = await deck.tracks_of(carrier)
+    try:
+      _, track = await deck.tracks_of(carrier)
+    except StoreError as error:
+      raise model.placement_error(error) from error
     tracks = self.track_range
     if track not in tracks:
       raise ValueError(f"track must be between {tracks[0]} and {tracks[-1]}, is {track}")

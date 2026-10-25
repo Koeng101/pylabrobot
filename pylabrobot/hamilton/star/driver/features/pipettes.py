@@ -2234,6 +2234,7 @@ class Pipettes:
 
     Raises:
       RuntimeError: The driver was given no deck.
+      ValueError: A resource is not on the deck, or has no location.
     """
     deck = self._driver.deck
     if deck is None:
@@ -2253,7 +2254,9 @@ class Pipettes:
       unique, response.results[: len(unique)], response.results[len(unique) :]
     ):
       if located.HasField("issue"):
-        raise StoreError(located.issue.problem, located.issue.message, resource.name)
+        raise model.placement_error(
+          StoreError(located.issue.problem, located.issue.message, resource.name)
+        )
       node = nodes[resource.id]
       size = node.attributes.size
       turned = to_rotation(located.absolute_rotation)

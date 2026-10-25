@@ -40,6 +40,26 @@ def raise_tracking_error(error: StoreError) -> NoReturn:
   raise mapped from error
 
 
+# What the store refuses to place a resource for that PLR raised as a `ValueError`: one not under
+# the deck, or with no location.
+PLACEMENT_PROBLEMS = frozenset({pb.PROBLEM_NOT_IN_FRAME, pb.PROBLEM_NO_LOCATION})
+
+
+def placement_error(error: StoreError) -> Exception:
+  """A store's refusal to say where a resource is, as the exception PLR raised for it.
+
+  Args:
+    error: what the store refused with.
+
+  Returns:
+    A `ValueError` for a resource not on the deck or with no location, carrying the store's text;
+    the error itself for any other problem.
+  """
+  if error.problem in PLACEMENT_PROBLEMS:
+    return ValueError(str(error))
+  return error
+
+
 def ref(resource: handles.Resource) -> pb.ResourceRef:
   return pb.ResourceRef(id=resource.id)
 
