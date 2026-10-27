@@ -84,7 +84,7 @@ message PutModelRequest {
 }
 
 message GetModelRequest {
-  // A model's name; PLR's stores also know the deprecated names of PLR's labware, as aliases.
+  // A model's name; PLR's stores also know the names of PLR's deprecated labware factories.
   string name = 1;
 }
 
