@@ -53,46 +53,46 @@ class ServerInfo(_message.Message):
     def __init__(self, api_version: _Optional[str] = ..., implementation: _Optional[str] = ..., implementation_version: _Optional[str] = ..., instance_id: _Optional[str] = ..., revision: _Optional[int] = ...) -> None: ...
 
 class Lock(_message.Message):
-    __slots__ = ("token", "root_id", "holder", "acquired_at")
+    __slots__ = ("token", "resource_id", "holder", "acquired_at")
     TOKEN_FIELD_NUMBER: _ClassVar[int]
-    ROOT_ID_FIELD_NUMBER: _ClassVar[int]
+    RESOURCE_ID_FIELD_NUMBER: _ClassVar[int]
     HOLDER_FIELD_NUMBER: _ClassVar[int]
     ACQUIRED_AT_FIELD_NUMBER: _ClassVar[int]
     token: bytes
-    root_id: bytes
+    resource_id: bytes
     holder: str
     acquired_at: _timestamp_pb2.Timestamp
-    def __init__(self, token: _Optional[bytes] = ..., root_id: _Optional[bytes] = ..., holder: _Optional[str] = ..., acquired_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    def __init__(self, token: _Optional[bytes] = ..., resource_id: _Optional[bytes] = ..., holder: _Optional[str] = ..., acquired_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class AcquireLockRequest(_message.Message):
-    __slots__ = ("root", "holder", "wait")
-    ROOT_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("resource", "holder", "wait")
+    RESOURCE_FIELD_NUMBER: _ClassVar[int]
     HOLDER_FIELD_NUMBER: _ClassVar[int]
     WAIT_FIELD_NUMBER: _ClassVar[int]
-    root: _types_pb2.ResourceRef
+    resource: _types_pb2.ResourceRef
     holder: str
     wait: _duration_pb2.Duration
-    def __init__(self, root: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., holder: _Optional[str] = ..., wait: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...) -> None: ...
+    def __init__(self, resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., holder: _Optional[str] = ..., wait: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...) -> None: ...
 
 class ReleaseLockRequest(_message.Message):
-    __slots__ = ("root", "token", "force")
-    ROOT_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("resource", "token", "force")
+    RESOURCE_FIELD_NUMBER: _ClassVar[int]
     TOKEN_FIELD_NUMBER: _ClassVar[int]
     FORCE_FIELD_NUMBER: _ClassVar[int]
-    root: _types_pb2.ResourceRef
+    resource: _types_pb2.ResourceRef
     token: bytes
     force: bool
-    def __init__(self, root: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., token: _Optional[bytes] = ..., force: _Optional[bool] = ...) -> None: ...
+    def __init__(self, resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., token: _Optional[bytes] = ..., force: _Optional[bool] = ...) -> None: ...
 
 class ReleaseLockResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
 class GetLockRequest(_message.Message):
-    __slots__ = ("root",)
-    ROOT_FIELD_NUMBER: _ClassVar[int]
-    root: _types_pb2.ResourceRef
-    def __init__(self, root: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ...) -> None: ...
+    __slots__ = ("resource",)
+    RESOURCE_FIELD_NUMBER: _ClassVar[int]
+    resource: _types_pb2.ResourceRef
+    def __init__(self, resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ...) -> None: ...
 
 class GetLockResponse(_message.Message):
     __slots__ = ("lock",)

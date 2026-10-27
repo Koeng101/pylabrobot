@@ -33,19 +33,25 @@ message ServerInfo {
 }
 
 // ============================================================================================
-// Locks: one per root. A call changing a root another holder has locked is refused; a root nobody
-// has locked is changed atomically for that one call.
+// Locks: on a resource and everything under it, so that two machines in one lab are locked apart.
+// Two holders' locks never overlap: a lock is refused while another holder has one on the same
+// resource, on what it is in, or on anything under it. A call changing anything inside another
+// holder's locked subtree is refused, and so is one moving or deleting a resource that holds such
+// a subtree; putting a child into a resource only changes the resource. A call that changes two
+// holders' subtrees, a plate moved from one machine into another, sends both tokens. Whatever
+// nobody has locked is changed atomically for that one call.
 // ============================================================================================
 
 message Lock {
   bytes token = 1;
-  bytes root_id = 2;
+  // The resource locked, with everything under it.
+  bytes resource_id = 2;
   string holder = 3;
   google.protobuf.Timestamp acquired_at = 4;
 }
 
 message AcquireLockRequest {
-  ResourceRef root = 1;
+  ResourceRef resource = 1;
   // Who holds it, for people reading `GetLock`: "star-01 protocol 42".
   string holder = 2;
   // How long to wait for it; unset fails at once when it is held.
@@ -53,7 +59,7 @@ message AcquireLockRequest {
 }
 
 message ReleaseLockRequest {
-  ResourceRef root = 1;
+  ResourceRef resource = 1;
   bytes token = 2;
   // Release a lock another holder has: a person, after checking the device.
   bool force = 3;
@@ -62,11 +68,11 @@ message ReleaseLockRequest {
 message ReleaseLockResponse {}
 
 message GetLockRequest {
-  ResourceRef root = 1;
+  ResourceRef resource = 1;
 }
 
 message GetLockResponse {
-  // Unset when nobody holds it.
+  // The lock on the resource or on what it is in; unset when there is none.
   optional Lock lock = 1;
 }
 

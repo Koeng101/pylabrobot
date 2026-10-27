@@ -144,6 +144,9 @@ class _Operation:
   holder: str
   created_at: Timestamp
   items: List[Item]
+  # What its lock check covered when staged, checked again when it is resolved.
+  changed: List[Node] = field(default_factory=list)
+  moved: List[Node] = field(default_factory=list)
 
   def message(self) -> pb.Operation:
     return pb.Operation(
@@ -555,41 +558,101 @@ class Engine:
     )
 
   # -- locks -------------------------------------------------------------------------------------
+  #
+  # A lock is on a resource and everything under it. Two holders' locks never overlap, so the
+  # machines of one lab can be locked apart, and a move between two of them carries both tokens.
 
-  def lock_holder(self, root: Node) -> Optional[spb.Lock]:
-    return self.locks.get(root.id)
+  def _held(self) -> List[Tuple[Node, spb.Lock]]:
+    """Every lock, with the resource it is on; a lock on a resource since deleted is dropped."""
+    for gone in [i for i in self.locks if i not in self.nodes]:
+      del self.locks[gone]
+    return [(self.nodes[i], lock) for i, lock in self.locks.items()]
 
-  def acquire_lock(self, root: Node, holder: str) -> Optional[spb.Lock]:
-    """A lock on `root` for `holder`, or None when someone else holds it."""
-    if root.parent is not None:
-      raise ServerError(pb.PROBLEM_WRONG_KIND, f"'{root.name}' is not a root", root.name)
-    if root.id in self.locks:
+  def lock_holder(self, node: Node) -> Optional[spb.Lock]:
+    """The lock on `node` or on what it is in; None when there is none."""
+    self._held()
+    current: Optional[Node] = node
+    while current is not None:
+      lock = self.locks.get(current.id)
+      if lock is not None:
+        return lock
+      current = current.parent
+    return None
+
+  def overlapping_lock(self, node: Node) -> Optional[Tuple[Node, spb.Lock]]:
+    """A lock a new one on `node` would overlap, with the resource it is on: one on `node`, on
+    what it is in, or on anything under it. None when there is none."""
+    for locked, lock in self._held():
+      if g.is_in_subtree_of(node, locked) or g.is_in_subtree_of(locked, node):
+        return locked, lock
+    return None
+
+  def acquire_lock(self, node: Node, holder: str) -> Optional[spb.Lock]:
+    """A lock on `node` and everything under it for `holder`, or None when it would overlap a lock
+    already held (see `overlapping_lock`)."""
+    if self.overlapping_lock(node) is not None:
       return None
-    lock = spb.Lock(token=uuid.uuid4().bytes, root_id=root.id, holder=holder, acquired_at=_now())
-    self.locks[root.id] = lock
+    lock = spb.Lock(
+      token=uuid.uuid4().bytes, resource_id=node.id, holder=holder, acquired_at=_now()
+    )
+    self.locks[node.id] = lock
     return lock
 
-  def release_lock(self, root: Node, token: bytes, force: bool) -> None:
-    lock = self.locks.get(root.id)
+  def release_lock(self, node: Node, token: bytes, force: bool) -> None:
+    """Release the lock on `node`; one with another token only when forced.
+
+    Raises:
+      ServerError: The lock on it has another token, and the release is not forced.
+    """
+    lock = self.locks.get(node.id)
     if lock is None:
       return
     if lock.token != token and not force:
       raise ServerError(
-        pb.PROBLEM_LOCKED, f"'{root.name}' is locked by {lock.holder}, not this token", root.name
+        pb.PROBLEM_LOCKED, f"'{node.name}' is locked by {lock.holder}, not this token", node.name
       )
-    del self.locks[root.id]
+    del self.locks[node.id]
 
-  def check_locks(self, nodes: Iterable[Node], tokens: Sequence[bytes]) -> None:
-    """Refuse a change to a root another holder has locked.
+  def check_locks(
+    self, nodes: Iterable[Node], tokens: Sequence[bytes], moved: Iterable[Node] = ()
+  ) -> None:
+    """Refuse a change inside a subtree another holder has locked.
+
+    Args:
+      nodes: What the change changes in place: a parent given a child, a container's volume.
+      tokens: The locks the caller holds.
+      moved: What the change moves or deletes, with everything under it: also refused when it
+        holds a subtree another holder has locked.
 
     Raises:
-      ServerError: A root of one of `nodes` is locked by a token not among `tokens`.
+      ServerError: One of them is in another holder's locked subtree, or a moved one holds one.
     """
-    for node in nodes:
-      root = node.root()
-      lock = self.locks.get(root.id)
-      if lock is not None and lock.token not in tokens:
-        raise ServerError(pb.PROBLEM_LOCKED, f"'{root.name}' is locked by {lock.holder}", root.name)
+    held = [(locked, lock) for locked, lock in self._held() if lock.token not in tokens]
+    if not held:
+      return
+    moved = list(moved)
+    for node in [*nodes, *moved]:
+      for locked, lock in held:
+        if g.is_in_subtree_of(node, locked):
+          where = "is" if node is locked else f"is in '{locked.name}', which is"
+          raise ServerError(
+            pb.PROBLEM_LOCKED, f"'{node.name}' {where} locked by {lock.holder}", node.name
+          )
+    for node in moved:
+      for locked, lock in held:
+        if g.is_in_subtree_of(locked, node):
+          raise ServerError(
+            pb.PROBLEM_LOCKED,
+            f"'{node.name}' holds '{locked.name}', which is locked by {lock.holder}",
+            node.name,
+          )
+
+  def holder_of(self, tokens: Sequence[bytes]) -> str:
+    """Who holds the first of `tokens` that is a lock; empty when none is."""
+    for lock in self.locks.values():
+      if lock.token in tokens:
+        return lock.holder
+    return ""
 
   # -- models ------------------------------------------------------------------------------------
 
@@ -731,9 +794,10 @@ class Engine:
     """Take a resource and everything under it out of the store.
 
     Raises:
-      ServerError: Its root is locked, or it is in a stack growing in z, under the top item.
+      ServerError: It is locked by another holder, or holds what is, or it is in a stack growing in
+        z, under the top item.
     """
-    self.check_locks([node], tokens)
+    self.check_locks([], tokens, moved=[node])
     check_stack_top(node, "be deleted")
     self.remove(node, [])
 
@@ -953,7 +1017,7 @@ class Engine:
         children and no location is given.
     """
     child, parent = self.resolve(request.child), self.resolve(request.parent)
-    self.check_locks([child, parent], tokens)
+    self.check_locks([parent], tokens, moved=[child])
     self.check_assignment(child, parent)
     self.check_names_fit(child, parent)
     where = request.WhichOneof("where")
@@ -1006,7 +1070,7 @@ class Engine:
     parent = node.parent
     if parent is None:
       return
-    self.check_locks([node], tokens)
+    self.check_locks([], tokens, moved=[node])
     check_stack_top(node, "be taken out")
     self.check_names_fit(node, None)
     self.move(node, None, None, None, steps)
@@ -1420,18 +1484,35 @@ class Engine:
 
   # -- operations --------------------------------------------------------------------------------
 
-  def stage(self, root: Node, kind: str, holder: str, items: List[Item]) -> _Operation:
+  def stage(
+    self,
+    root: Node,
+    kind: str,
+    holder: str,
+    items: List[Item],
+    changed: Sequence[Node] = (),
+    moved: Sequence[Node] = (),
+  ) -> _Operation:
+    """Keep staged items as one operation, under `root`, the root of the frame it was asked in.
+
+    Args:
+      changed: What it changes in place, and `moved`, what it moves; resolving it is checked
+        against the locks on them, as staging was.
+    """
     op = _Operation(
-      id=uuid.uuid4().bytes, root=root, kind=kind, holder=holder, created_at=_now(), items=items
+      id=uuid.uuid4().bytes,
+      root=root,
+      kind=kind,
+      holder=holder,
+      created_at=_now(),
+      items=items,
+      changed=list(changed),
+      moved=list(moved),
     )
     self.operations[op.id] = op
     self._touched_operations[op.id] = op
     self._pending_index = None
     return op
-
-  def holder_of(self, root: Node, tokens: Sequence[bytes]) -> str:
-    lock = self.locks.get(root.id)
-    return lock.holder if lock is not None and lock.token in tokens else ""
 
   def resolve_operation(
     self, operation_id: bytes, outcomes: Sequence[spb.ItemOutcome], tokens: Sequence[bytes]
@@ -1444,7 +1525,11 @@ class Engine:
     op = self.operations.get(operation_id)
     if op is None:
       raise ServerError(pb.PROBLEM_NOT_FOUND, f"no operation {operation_id.hex()}")
-    self.check_locks([op.root], tokens)
+    self.check_locks(
+      [n for n in op.changed if n.id in self.nodes],
+      tokens,
+      moved=[n for n in op.moved if n.id in self.nodes],
+    )
     for outcome in outcomes:
       if not 0 <= outcome.item < len(op.items):
         raise ServerError(pb.PROBLEM_OUT_OF_RANGE, f"operation has no item {outcome.item}")

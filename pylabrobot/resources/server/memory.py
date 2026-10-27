@@ -153,16 +153,13 @@ class MemoryStore(ResourceService, ResourcePrimitivesService):
     deadline = asyncio.get_running_loop().time() + wait
     while True:
       lock = await self._call(
-        lambda: self.engine.acquire_lock(self.engine.resolve(request.root), request.holder)
+        lambda: self.engine.acquire_lock(self.engine.resolve(request.resource), request.holder)
       )
       if lock is not None:
         return lock
       remaining = deadline - asyncio.get_running_loop().time()
       if remaining <= 0:
-        held = await self._call(lambda: self.engine.lock_holder(self.engine.resolve(request.root)))
-        raise ConnectError(
-          Code.ABORTED, f"the root is locked by {held.holder if held is not None else 'someone'}"
-        )
+        raise ConnectError(Code.ABORTED, await self._call(lambda: self._overlap(request.resource)))
       condition = self._condition()
       async with condition:
         try:
@@ -170,12 +167,23 @@ class MemoryStore(ResourceService, ResourcePrimitivesService):
         except asyncio.TimeoutError:
           pass
 
+  def _overlap(self, ref: pb.ResourceRef) -> str:
+    """Why a lock on `ref` cannot be had now: the lock it would overlap."""
+    node = self.engine.resolve(ref)
+    overlap = self.engine.overlapping_lock(node)
+    if overlap is None:
+      return f"'{node.name}' is locked"
+    locked, lock = overlap
+    if locked is node:
+      return f"'{node.name}' is locked by {lock.holder}"
+    return f"'{node.name}' overlaps '{locked.name}', locked by {lock.holder}"
+
   async def release_lock(
     self, request: spb.ReleaseLockRequest, ctx: RequestContext
   ) -> spb.ReleaseLockResponse:
     await self._call(
       lambda: self.engine.release_lock(
-        self.engine.resolve(request.root), request.token, request.force
+        self.engine.resolve(request.resource), request.token, request.force
       )
     )
     condition = self._condition()
@@ -185,7 +193,7 @@ class MemoryStore(ResourceService, ResourcePrimitivesService):
 
   async def get_lock(self, request: spb.GetLockRequest, ctx: RequestContext) -> spb.GetLockResponse:
     def work() -> spb.GetLockResponse:
-      lock = self.engine.lock_holder(self.engine.resolve(request.root))
+      lock = self.engine.lock_holder(self.engine.resolve(request.resource))
       return spb.GetLockResponse(lock=lock) if lock is not None else spb.GetLockResponse()
 
     return await self._call(work)
@@ -282,7 +290,12 @@ class MemoryStore(ResourceService, ResourcePrimitivesService):
   ) -> spb.UpdateResourcesResponse:
     def work() -> spb.UpdateResourcesResponse:
       for update in request.updates:
-        self.engine.check_locks(self.engine.touched_by(update), request.lock_tokens)
+        touched = self.engine.touched_by(update)
+        # Turning a resource moves everything under it.
+        if update.WhichOneof("update") == "rotation":
+          self.engine.check_locks([], request.lock_tokens, moved=touched)
+        else:
+          self.engine.check_locks(touched, request.lock_tokens)
       issues = [
         issue
         for index, update in enumerate(request.updates)
@@ -430,8 +443,9 @@ class MemoryStore(ResourceService, ResourcePrimitivesService):
     self, request: spb.RecordDevicePositionsRequest, ctx: RequestContext
   ) -> spb.RecordDevicePositionsResponse:
     def work() -> spb.RecordDevicePositionsResponse:
+      # A part reported somewhere else moves everything under it.
       self.engine.check_locks(
-        [self.engine.resolve(p.resource) for p in request.positions], request.lock_tokens
+        [], request.lock_tokens, moved=[self.engine.resolve(p.resource) for p in request.positions]
       )
       moved: List[Node] = []
       for position in request.positions:

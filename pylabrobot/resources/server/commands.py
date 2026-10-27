@@ -147,7 +147,9 @@ def begin_tool_pickup(
   for lidded in rack_lids.values():
     issues.add(pb.PROBLEM_LID_ON, f"'{lidded.name}' has its lid on", lidded, -1)
   issues.check()
-  engine.check_locks([frame] + [n for s, sh, _ in plans for n in (s, sh)], request.lock_tokens)
+  # The frame is only read: what moves is a tool, from its source onto its shaft.
+  changed = [n for s, sh, _ in plans for n in (s, sh)]
+  engine.check_locks(changed, request.lock_tokens)
 
   placements: g.Placements = {}
   answers = [engine.placement(source, frame, placements) for source, _, _ in plans]
@@ -176,7 +178,7 @@ def begin_tool_pickup(
       spb.ToolPickupPlan(item=index, tool=engine.node_message(tool), source=placement)
     )
   op = engine.stage(
-    frame.root(), "BeginToolPickup", engine.holder_of(frame.root(), request.lock_tokens), items
+    frame.root(), "BeginToolPickup", engine.holder_of(request.lock_tokens), items, changed
   )
   response.operation.CopyFrom(op.message())
   response.context_shafts.extend(_context(engine, request.context_shafts))
@@ -226,7 +228,8 @@ def begin_tool_drop(engine: Engine, request: spb.BeginToolDropRequest) -> spb.Be
         )
     plans.append((shaft, tool, destination))
   issues.check()
-  engine.check_locks([frame] + [n for s, _, d in plans for n in (s, d)], request.lock_tokens)
+  changed = [n for s, _, d in plans for n in (s, d)]
+  engine.check_locks(changed, request.lock_tokens)
 
   placements: g.Placements = {}
   answers = [engine.placement(destination, frame, placements) for _, _, destination in plans]
@@ -265,7 +268,7 @@ def begin_tool_drop(engine: Engine, request: spb.BeginToolDropRequest) -> spb.Be
     items.append(staged)
     response.items.append(plan)
   op = engine.stage(
-    frame.root(), "BeginToolDrop", engine.holder_of(frame.root(), request.lock_tokens), items
+    frame.root(), "BeginToolDrop", engine.holder_of(request.lock_tokens), items, changed
   )
   response.operation.CopyFrom(op.message())
   response.context_shafts.extend(_context(engine, request.context_shafts))
@@ -329,7 +332,8 @@ def begin_liquid_transfer(
       pending[id(taker)] = held(taker) + item.volume
     plans.append((container, tip, item.volume))
   issues.check()
-  engine.check_locks([frame] + [c for c, _, _ in plans], request.lock_tokens)
+  changed = [c for c, _, _ in plans]
+  engine.check_locks(changed, request.lock_tokens)
 
   placements: g.Placements = {}
   answers = [engine.placement(container, frame, placements) for container, _, _ in plans]
@@ -354,7 +358,7 @@ def begin_liquid_transfer(
       spb.TransferPlan(item=index, container=placement, tip=engine.node_message(tip))
     )
   op = engine.stage(
-    frame.root(), "BeginLiquidTransfer", engine.holder_of(frame.root(), request.lock_tokens), items
+    frame.root(), "BeginLiquidTransfer", engine.holder_of(request.lock_tokens), items, changed
   )
   response.operation.CopyFrom(op.message())
   return response
@@ -383,7 +387,7 @@ def begin_resource_pickup(
   """Stage a resource moving onto what carries it, where it is held, turned as it is."""
   frame = engine.resolve(request.frame)
   resource, carrier = engine.resolve(request.resource), engine.resolve(request.carrier)
-  engine.check_locks([frame, resource, carrier], request.lock_tokens)
+  engine.check_locks([carrier], request.lock_tokens, moved=[resource])
   check_stack_top(resource, "be picked up")
   if g.is_in_subtree_of(carrier, resource):
     raise ServerError(
@@ -416,8 +420,10 @@ def begin_resource_pickup(
   op = engine.stage(
     frame.root(),
     "BeginResourcePickup",
-    engine.holder_of(frame.root(), request.lock_tokens),
+    engine.holder_of(request.lock_tokens),
     [staged],
+    changed=[carrier],
+    moved=[resource],
   )
   response.operation.CopyFrom(op.message())
   return response
@@ -477,7 +483,7 @@ def begin_resource_place(
     rotation = g.rotation_in_destination(
       resource, destination, frame, request.rotation_applied_by_move
     )
-  engine.check_locks([frame, resource, target], request.lock_tokens)
+  engine.check_locks([target], request.lock_tokens, moved=[resource])
   engine.check_names_fit(resource, target)
   height = _grip(resource, request.grip)
   grip = g.grip_location(resource, place, frame, height)
@@ -506,8 +512,10 @@ def begin_resource_place(
   op = engine.stage(
     frame.root(),
     "BeginResourcePlace",
-    engine.holder_of(frame.root(), request.lock_tokens),
+    engine.holder_of(request.lock_tokens),
     [staged],
+    changed=[target],
+    moved=[resource],
   )
   response.operation.CopyFrom(op.message())
   return response
@@ -648,7 +656,7 @@ def apply_changes(engine: Engine, request: ppb.ApplyChangesRequest) -> ppb.Apply
   if request.staged and items:
     root = touched[0].root() if touched else None
     if root is not None:
-      op = engine.stage(root, "ApplyChanges", engine.holder_of(root, request.lock_tokens), items)
+      op = engine.stage(root, "ApplyChanges", engine.holder_of(request.lock_tokens), items, touched)
       response.operation.CopyFrom(op.message())
   seen = set()
   for node in changed:

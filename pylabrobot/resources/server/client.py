@@ -335,25 +335,31 @@ class ResourceServer:
 
   @contextlib.asynccontextmanager
   async def lock(
-    self, root: handles.Resource, holder: str, wait: Optional[float] = None
+    self, resource: handles.Resource, holder: str, wait: Optional[float] = None
   ) -> AsyncIterator[pb.ResourceRef]:
-    """Hold a root's lock while the block runs; only this client may change the root meanwhile.
+    """Hold a lock on a resource and everything under it while the block runs; only this client
+    may change any of it meanwhile. Two machines in one lab can each be locked by their own
+    holder.
 
     Args:
-      root: A root: a deck, a device.
+      resource: What to lock: a machine, a deck, a lab.
       holder: Who holds it, for people reading the lock: "star-01 protocol 42".
-      wait: How long to wait for another holder to release it, in seconds; unset fails at once.
+      wait: How long to wait for overlapping locks to be released, in seconds; unset fails at
+        once.
 
     Raises:
-      ServerError: Another holder has it, and did not release it in time.
+      ServerError: Another holder has a lock on it, on what it is in, or on something under it,
+        and did not release it in time.
     """
-    request = spb.AcquireLockRequest(root=root.ref, holder=holder)
+    request = spb.AcquireLockRequest(resource=resource.ref, holder=holder)
     if wait is not None:
       request.wait.FromTimedelta(datetime.timedelta(seconds=wait))
     lock = await self.commands.acquire_lock(request)
     self.lock_tokens.append(lock.token)
     try:
-      yield root.ref
+      yield resource.ref
     finally:
       self.lock_tokens.remove(lock.token)
-      await self.commands.release_lock(spb.ReleaseLockRequest(root=root.ref, token=lock.token))
+      await self.commands.release_lock(
+        spb.ReleaseLockRequest(resource=resource.ref, token=lock.token)
+      )
