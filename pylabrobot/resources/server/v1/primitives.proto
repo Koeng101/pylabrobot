@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-// The store's low-level changes, for building new uses of resources: a device or a process the
+// The server's low-level changes, for building new uses of resources: a device or a process the
 // command API does not have a call for yet. PLR's drivers do not use this service, and the
-// store's conformance tests are written against the command API, not against this.
+// server's conformance tests are written against the command API, not against this.
 package pylabrobot.resources.server.v1;
 
 import "pylabrobot/resources/server/v1/types.proto";

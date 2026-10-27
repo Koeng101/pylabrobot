@@ -1,16 +1,16 @@
 syntax = "proto3";
 
-// The resource store: the one place PLR keeps the resource tree, its geometry and its state.
+// The resource server: the one place PLR keeps the resource tree, its geometry and its state.
 //
-// Every store - in-memory, SQLAlchemy, or another - serves `ResourceService`, and PLR talks
+// Every server - in-memory, SQLAlchemy, or another - serves `ResourceService`, and PLR talks
 // to all of them through one client. This is the command API: every call names something PLR does,
 // and it is the whole of what PLR uses. The low-level changes in `primitives.proto` are for
 // building new uses of resources, not for PLR.
 //
-// Division of labour: the store answers everything about the resource model - where a thing is
+// Division of labour: the server answers everything about the resource model - where a thing is
 // along whose axes, how big it is once turned, what a height holds, where a child seats - and
 // keeps its state. A driver plans motion (batches, channel spacing, traverse heights) from what
-// the store answers, and tells the store what the device did.
+// the server answers, and tells the server what the device did.
 package pylabrobot.resources.server.v1;
 
 import "google/protobuf/duration.proto";
@@ -18,7 +18,7 @@ import "google/protobuf/timestamp.proto";
 import "pylabrobot/resources/server/v1/types.proto";
 
 // ============================================================================================
-// The store itself
+// The server itself
 // ============================================================================================
 
 message GetServerInfoRequest {}
@@ -84,11 +84,11 @@ message PutModelRequest {
 }
 
 message GetModelRequest {
-  // A model's name; PLR's stores also know the names of PLR's deprecated labware factories.
+  // A model's name; PLR's servers also know the names of PLR's deprecated labware factories.
   string name = 1;
 }
 
-// The models put in the store, by name. PLR's own stores start with PLR's labware put in.
+// The models put in the server, by name. PLR's own servers start with PLR's labware put in.
 message ListModelsRequest {
   ResourceKind kind = 1;
   int32 page_size = 2;
@@ -106,7 +106,7 @@ message ListModelsResponse {
 
 message CreateResource {
   oneof source {
-    // A stored model, by name: the resource refers to it, and follows it when it changes.
+    // A model the server keeps, by name: the resource refers to it, and follows it when it changes.
     string model = 1;
     // A definition of its own, kept for it alone and not listed as a model.
     ResourceDefinition definition = 2;
@@ -334,7 +334,7 @@ message FindResourcesAtResponse {
 message DevicePosition {
   ResourceRef resource = 1;
   // Unset: `location` is relative to the parent, along its axes. Set: `location` is where
-  // `reference_point` is, in this frame along its axes, and the store converts.
+  // `reference_point` is, in this frame along its axes, and the server converts.
   optional ResourceRef frame = 2;
   PartialVec3 location = 3;
   // From the resource's left front bottom corner; unset is that corner. A pipette channel's
@@ -364,7 +364,7 @@ message Measurement {
   oneof measurement {
     // A volume measured in a container or a tip.
     double volume = 1;
-    // A liquid surface found, above the cavity bottom; the store converts it to a volume.
+    // A liquid surface found, above the cavity bottom; the server converts it to a volume.
     double liquid_height = 2;
     // Whether a shaft or spot was sensed holding a tool. Recorded, and an issue when the model
     // disagrees; the tree is not changed.
@@ -564,7 +564,7 @@ message BeginResourcePlaceRequest {
   ResourceRef resource = 3;
   oneof destination {
     ResourceRef destination_resource = 4;
-    // Its origin's location in the frame. The store finds what is there; an empty place puts it
+    // Its origin's location in the frame. The server finds what is there; an empty place puts it
     // on the frame itself.
     Vec3 destination_location = 5;
   }
