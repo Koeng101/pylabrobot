@@ -9,7 +9,7 @@ from typing import List, cast
 
 import pylabrobot.hamilton.star.driver.master as master
 import pylabrobot.hamilton.star.driver.simulator as simulator
-from pylabrobot.hamilton.star.conftest import BARE_X_ARM
+from pylabrobot.hamilton.star.conftest import BARE_X_ARM, make_deck
 from pylabrobot.hamilton.star.device import RECORDING_STAR, RECORDING_STAR_HEAD384
 from pylabrobot.hamilton.star.driver.configuration import (
   DeviceConfiguration,
@@ -19,7 +19,8 @@ from pylabrobot.hamilton.star.driver.features.autoload import Autoload
 from pylabrobot.hamilton.star.driver.features.head96 import Head96
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.hamilton import STARDeck, STARLetDeck
+from pylabrobot.resources.server import library
+from pylabrobot.resources.server.v1 import types_pb2 as pb
 from pylabrobot.serializer import serialize
 
 # The device this package ships a recording of, read through the one reader there is: tests need a
@@ -106,10 +107,10 @@ class TestXArm(unittest.IsolatedAsyncioTestCase):
 
   async def test_before_setup(self):
     with self.assertRaises(RuntimeError):
-      STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR).x_arm
+      STARSimulationDriver(deck=await make_deck(), declared_configuration_json=RECORDING_STAR).x_arm
 
   async def test_one_arm(self):
-    star = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+    star = STARSimulationDriver(deck=await make_deck(), declared_configuration_json=RECORDING_STAR)
     await star.setup()
     self.assertIs(star.x_arm, star.left_x_arm)
 
@@ -119,7 +120,7 @@ class TestXArm(unittest.IsolatedAsyncioTestCase):
       right_arm=BARE_X_ARM,
     )
     star = STARSimulationDriver(
-      deck=STARDeck(),
+      deck=await make_deck(),
       declared_configuration_json=declaring(device=both),
     )
     await star.setup()
@@ -129,7 +130,7 @@ class TestXArm(unittest.IsolatedAsyncioTestCase):
   async def test_no_arms(self):
     neither = dataclasses.replace(RECORDED_DEVICE, left_arm=None, right_arm=None)
     star = STARSimulationDriver(
-      deck=STARDeck(),
+      deck=await make_deck(),
       declared_configuration_json=declaring(device=neither),
     )
     await star.setup()
@@ -142,11 +143,19 @@ class TestSimulation(unittest.IsolatedAsyncioTestCase):
 
   async def test_simulation_needs_a_deck(self):
     with self.assertRaises(ValueError):
-      STARSimulationDriver()
+      await STARSimulationDriver(declared_configuration_json=RECORDING_STAR).setup()
 
 
 class TestTipTypeTable(unittest.IsolatedAsyncioTestCase):
   """Each tip model gets one entry in the device's tip type table, never the grip tool's."""
+
+  @staticmethod
+  def tip(model: str, name: str) -> pb.ResourceAttributes:
+    """A tip of a model, as the server holds one."""
+    attributes = pb.ResourceAttributes()
+    attributes.CopyFrom(library.get_model(model).definition.attributes)
+    attributes.name = name
+    return attributes
 
   def setUp(self):
     self.driver = master.STARDriver.__new__(master.STARDriver)
@@ -155,30 +164,24 @@ class TestTipTypeTable(unittest.IsolatedAsyncioTestCase):
     self.driver.define_tip_needle = self.define  # type: ignore[method-assign]
 
   async def test_tips_of_one_kind_share_one_index(self):
-    from pylabrobot.resources.hamilton import hamilton_tip_10uL, hamilton_tip_300uL
-
     assign = self.driver.get_or_assign_tip_type_index
-    a = await assign(hamilton_tip_300uL(name="rack_A1#0"))
-    b = await assign(hamilton_tip_300uL(name="rack_B1#0"))
-    c = await assign(hamilton_tip_10uL(name="rack_C1#0"))
+    a = await assign(self.tip("hamilton_tip_300uL", "rack_A1#0"))
+    b = await assign(self.tip("hamilton_tip_300uL", "rack_B1#0"))
+    c = await assign(self.tip("hamilton_tip_10uL", "rack_C1#0"))
     self.assertEqual((a, b, c), (1, 1, 2))
     self.assertEqual(self.define.await_count, 2)
 
   async def test_the_grip_tool_s_entry_is_skipped(self):
-    from pylabrobot.resources.hamilton import hamilton_tip_300uL
-
     self.driver._tip_type_indices = {f"model_{i}": i for i in range(1, 14)}
-    index = await self.driver.get_or_assign_tip_type_index(hamilton_tip_300uL(name="tip"))
+    index = await self.driver.get_or_assign_tip_type_index(self.tip("hamilton_tip_300uL", "tip"))
     self.assertEqual(index, 15)
     self.assertEqual(self.define.await_args_list[0].kwargs["tip_type_table_index"], 15)
 
   async def test_a_full_table_is_refused_before_anything_is_written(self):
-    from pylabrobot.resources.hamilton import hamilton_tip_300uL
-
     free = [i for i in range(1, 100) if i != master.CORE_GRIPPER_TIP_TYPE_INDEX]
     self.driver._tip_type_indices = {f"model_{i}": i for i in free}
     with self.assertRaisesRegex(ValueError, "the tip type table is full: 98 tip types"):
-      await self.driver.get_or_assign_tip_type_index(hamilton_tip_300uL(name="tip"))
+      await self.driver.get_or_assign_tip_type_index(self.tip("hamilton_tip_300uL", "tip"))
     self.define.assert_not_awaited()
 
 
@@ -235,7 +238,7 @@ class TestDeclaredConfiguration(unittest.IsolatedAsyncioTestCase):
   against the declaration as it does on a physical device."""
 
   async def test_setup_checks_what_the_device_answered(self):
-    star = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+    star = STARSimulationDriver(deck=await make_deck(), declared_configuration_json=RECORDING_STAR)
     check = master.STARDriver._check_declared_against
     with unittest.mock.patch.object(
       master.STARDriver, "_check_declared_against", autospec=True, side_effect=check
@@ -245,7 +248,7 @@ class TestDeclaredConfiguration(unittest.IsolatedAsyncioTestCase):
     self.assertIsNot(star.configuration, star.declared["device"])
 
   async def test_a_device_that_is_not_what_was_declared_is_refused(self):
-    star = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+    star = STARSimulationDriver(deck=await make_deck(), declared_configuration_json=RECORDING_STAR)
     star.simulated_configuration = dataclasses.replace(
       star.simulated_configuration, autoload_installed=False
     )
@@ -257,7 +260,9 @@ class TestDeckSize(unittest.IsolatedAsyncioTestCase):
   """Discovery refuses a deck built for another frame before anything moves."""
 
   async def test_a_starlet_deck_on_a_star_is_refused_before_initialization(self):
-    star = STARSimulationDriver(deck=STARLetDeck(), declared_configuration_json=RECORDING_STAR)
+    star = STARSimulationDriver(
+      deck=await make_deck("STARLetDeck"), declared_configuration_json=RECORDING_STAR
+    )
     sent: List[str] = []
     sent_before_stop: List[List[str]] = []
     send, stop = star.send_command, star.stop
@@ -282,7 +287,7 @@ class TestRepeatedSetup(unittest.IsolatedAsyncioTestCase):
   """Setup is repeatable: a second one re-reads the device over the link the first one opened."""
 
   async def test_a_second_setup_does_not_open_the_link_again(self):
-    star = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+    star = STARSimulationDriver(deck=await make_deck(), declared_configuration_json=RECORDING_STAR)
     with unittest.mock.patch.object(star, "_open", wraps=star._open) as opened:
       await star.setup()
       await star.setup()
@@ -333,8 +338,11 @@ class TestSetupSequence(unittest.IsolatedAsyncioTestCase):
   async def run_setup(
     self, device_up: bool, head_up: bool, eject_position: bool, trash96: bool = True
   ) -> List[str]:
+    deck = await make_deck()
+    if not trash96:
+      await (await deck.get_resource("deck_trash_core96")).delete()
     star = simulator.STARSimulationDriver(
-      deck=STARDeck(with_trash96=trash96),
+      deck=deck,
       initialized=device_up,
       declared_configuration_json=RECORDING_STAR,
     )
@@ -404,7 +412,7 @@ class TestSetupSequence(unittest.IsolatedAsyncioTestCase):
   async def test_channels_left_as_they_are_still_have_their_pistons_read(self):
     """A device already up with nothing mounted skips the channels' initialization."""
     star = simulator.STARSimulationDriver(
-      deck=STARDeck(), initialized=True, declared_configuration_json=RECORDING_STAR
+      deck=await make_deck(), initialized=True, declared_configuration_json=RECORDING_STAR
     )
     with recorded_moves() as moves:
       await star.setup()
@@ -417,7 +425,7 @@ class TestSetupSequence(unittest.IsolatedAsyncioTestCase):
     """A STAR deck carries a trash for the 96-head, and a head with no eject location of its own is
     initialized over it, centred, as legacy does."""
     star = simulator.STARSimulationDriver(
-      deck=STARDeck(), initialized=True, declared_configuration_json=RECORDING_STAR
+      deck=await make_deck(), initialized=True, declared_configuration_json=RECORDING_STAR
     )
     star.initialized["H0"] = False
     head = cast(Head96, star.head96)
@@ -429,7 +437,7 @@ class TestSetupSequence(unittest.IsolatedAsyncioTestCase):
     self.assertIn("EI 96-head", moves)
     self.assertEqual(
       head.configuration.tip_discard_location,
-      head._position_centred_in(star.deck.get_resource("trash_core96")),
+      await head._position_centred_in(await star.deck.get_resource("deck_trash_core96")),
     )
 
   async def test_a_feature_left_down_is_named_once_setup_has_run(self):
@@ -470,19 +478,21 @@ class TestChannelResources(unittest.IsolatedAsyncioTestCase):
 
   async def test_a_channel_without_a_width_is_refused_rather_than_skipped(self):
     """Skipping one would put every later channel's resource one out of step with its channel."""
-    driver = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+    driver = STARSimulationDriver(
+      deck=await make_deck(), declared_configuration_json=RECORDING_STAR
+    )
     await driver.setup()
     pipettes = driver.pipettes
     assert pipettes is not None
     channels = [resource.name for resource in pipettes.resources]
     self.assertEqual(
       channels,
-      [driver._component_name(f"pipette_channel_{channel}") for channel in range(len(channels))],
+      [await driver._component_name(f"pipette_channel_{ch}") for ch in range(len(channels))],
     )
 
     pipettes.configuration.channels[2].width = None
     for resource in list(pipettes.resources):
-      resource.parent.unassign_child_resource(resource)  # type: ignore[union-attr]
+      await resource.delete()
     with self.assertRaises(RuntimeError):
       await driver._create_pipette_resources()
     await driver.stop()
@@ -510,7 +520,7 @@ class TestEveryConfiguration(unittest.IsolatedAsyncioTestCase):
                 autoload=autoload,
               ):
                 driver = STARSimulationDriver(
-                  deck=STARDeck(),
+                  deck=await make_deck(),
                   declared_configuration_json=declaring_a_device(
                     channels=channels,
                     head96=head96,
@@ -528,3 +538,7 @@ class TestEveryConfiguration(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(arm.head384 is not None, head384)
                 self.assertEqual(arm.iswap is not None, iswap)
                 self.assertEqual(driver.autoload is not None, autoload)
+                # Fitted, the autoload's belt frame is drawn where the deck's front panel was.
+                assert driver.deck is not None
+                drawn = (await driver.deck.attributes()).display_model
+                self.assertEqual(drawn, "star_autoload_tray_belt_frame" if autoload else "")

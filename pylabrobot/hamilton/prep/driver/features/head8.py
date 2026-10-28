@@ -1396,7 +1396,7 @@ class Head8:
         "disable_volume_correction sends the volume as given; a class would correct it"
       )
     liquid, piston, classes = get_volumes_and_classes(
-      containers,
+      [c.name for c in containers],
       list(range(NUM_PROBES)),
       self._require_mounted_tips(),
       None if disable_volume_correction else [volume] * NUM_PROBES,

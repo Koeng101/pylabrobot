@@ -5660,10 +5660,40 @@
         }
       ],
       "result": null,
-      "removed": [
-        "tips_tipspot_A1#0",
-        "tips_tipspot_B1#0",
-        "tips_tipspot_D1#0"
+      "resources": [
+        {
+          "name": "tips_tipspot_A1#0",
+          "parent": "STARlet_deck_trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -4.1,
+            116.5,
+            0.0
+          ],
+          "volume": 10.0
+        },
+        {
+          "name": "tips_tipspot_B1#0",
+          "parent": "STARlet_deck_trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -4.1,
+            116.5,
+            0.0
+          ],
+          "volume": 0.0
+        },
+        {
+          "name": "tips_tipspot_D1#0",
+          "parent": "STARlet_deck_trash",
+          "kind": "RESOURCE_KIND_TIP",
+          "location": [
+            -4.1,
+            116.5,
+            0.0
+          ],
+          "volume": 30.0
+        }
       ]
     },
     {
@@ -5995,6 +6025,39 @@
         137.1
       ],
       "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_A1#0",
+      "parent": "STARlet_deck_trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -4.1,
+        116.5,
+        0.0
+      ],
+      "volume": 10.0
+    },
+    {
+      "name": "tips_tipspot_B1#0",
+      "parent": "STARlet_deck_trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -4.1,
+        116.5,
+        0.0
+      ],
+      "volume": 0.0
+    },
+    {
+      "name": "tips_tipspot_D1#0",
+      "parent": "STARlet_deck_trash",
+      "kind": "RESOURCE_KIND_TIP",
+      "location": [
+        -4.1,
+        116.5,
+        0.0
+      ],
+      "volume": 30.0
     },
     {
       "name": "tip_carrier",

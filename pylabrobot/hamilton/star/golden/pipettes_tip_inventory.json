@@ -5461,7 +5461,10 @@
         "P1RD",
         "C0RT"
       ],
-      "error": "HasTipError: channels [0] still sense a tip after probing",
+      "result": {
+        "tips_tipspot_A1": true,
+        "tips_tipspot_B1": false
+      },
       "resources": [
         {
           "name": "STARlet_left_x_arm",
@@ -5558,9 +5561,314 @@
     {
       "call": "probe_tip_inventory(tips['A2:H2'], use_channels=[0, 1]), F2 empty on the device",
       "sent": [
+        "C0RT",
+        "C0TPxp01269 01269 00000&yp2418 2328 0000&tm1 1 0&tt01tp2244tz2164th2828td0",
+        "C0RY",
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            }
+          ]
+        },
+        "C0TRxp01269 01269 00000&yp2418 2328 0000&tm1 1 0&tp2244tz2164th2828te2828ti1",
+        "C0RY",
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            }
+          ]
+        },
+        "C0TPxp01269 01269 00000&yp2238 2148 0000&tm1 1 0&tt01tp2244tz2164th2828td0",
+        "C0RY",
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            }
+          ]
+        },
+        "C0TRxp01269 01269 00000&yp2238 2148 0000&tm1 1 0&tp2244tz2164th2828te2828ti1",
+        "C0RY",
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            }
+          ]
+        },
+        "C0TPxp01269 01269 00000&yp2058 1968 0000&tm1 1 0&tt01tp2244tz2164th2828td0 -> C0TPid0000er99/00 P208/75",
+        "C0RT",
+        {
+          "concurrently": [
+            {
+              "task": "SimulatedPipettes.move_stop_disc_to_z_position",
+              "sent": [
+                "P1ZAza26362zv11652zr075zw3",
+                "P1RZ"
+              ]
+            },
+            {
+              "task": "SimulatedPipettes.move_stop_disc_to_z_position",
+              "sent": [
+                "P2ZAza26362zv11652zr075zw3",
+                "P2RZ"
+              ]
+            }
+          ]
+        },
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        "C0TRxp01269 00000&yp2058 0000&tm1 0&tp2244tz2164th2828te2828ti1",
+        "C0RY",
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        "P1RD",
+        "C0TPxp01269 01269 00000&yp1878 1788 0000&tm1 1 0&tt01tp2244tz2164th2828td0",
+        "C0RY",
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            }
+          ]
+        },
+        "C0TRxp01269 01269 00000&yp1878 1788 0000&tm1 1 0&tp2244tz2164th2828te2828ti1",
+        "C0RY",
+        "C0RY",
+        "P1RZ",
+        "P2RZ",
+        "P3RZ",
+        "P4RZ",
+        "P5RZ",
+        "P6RZ",
+        "P7RZ",
+        "P8RZ",
+        {
+          "concurrently": [
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P1RD"
+              ]
+            },
+            {
+              "task": "Pipettes.dispensing_drive_request_uL_position",
+              "sent": [
+                "P2RD"
+              ]
+            }
+          ]
+        },
         "C0RT"
       ],
-      "error": "HasTipError: channels [0] hold a tip: probe with empty channels"
+      "result": {
+        "tips_tipspot_A2": true,
+        "tips_tipspot_B2": true,
+        "tips_tipspot_C2": true,
+        "tips_tipspot_D2": true,
+        "tips_tipspot_E2": true,
+        "tips_tipspot_F2": false,
+        "tips_tipspot_G2": true,
+        "tips_tipspot_H2": true
+      },
+      "resources": [
+        {
+          "name": "STARlet_left_x_arm",
+          "parent": "STARlet_deck",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            -96.1,
+            -39.5,
+            334.7
+          ]
+        },
+        {
+          "name": "STARlet_pipette_channel_0",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            222.81,
+            -43.9
+          ]
+        },
+        {
+          "name": "STARlet_pipette_channel_1",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            213.81,
+            -43.9
+          ]
+        },
+        {
+          "name": "STARlet_pipette_channel_2",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            204.81,
+            8.0
+          ]
+        },
+        {
+          "name": "STARlet_pipette_channel_3",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            195.81,
+            -43.9
+          ]
+        },
+        {
+          "name": "STARlet_pipette_channel_4",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            186.81,
+            8.0
+          ]
+        },
+        {
+          "name": "STARlet_pipette_channel_5",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            177.81,
+            -43.9
+          ]
+        },
+        {
+          "name": "STARlet_pipette_channel_6",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            168.81,
+            8.0
+          ]
+        },
+        {
+          "name": "STARlet_pipette_channel_7",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            159.81,
+            8.0
+          ]
+        }
+      ]
     },
     {
       "call": "stop()",
@@ -5636,7 +5944,7 @@
           "kind": "RESOURCE_KIND_RESOURCE",
           "location": [
             218.51,
-            276.81,
+            222.81,
             8.0
           ]
         },
@@ -5646,7 +5954,7 @@
           "kind": "RESOURCE_KIND_RESOURCE",
           "location": [
             218.51,
-            267.81,
+            213.81,
             8.0
           ]
         },
@@ -5656,7 +5964,7 @@
           "kind": "RESOURCE_KIND_RESOURCE",
           "location": [
             218.51,
-            249.81,
+            195.81,
             8.0
           ]
         },
@@ -5666,7 +5974,7 @@
           "kind": "RESOURCE_KIND_RESOURCE",
           "location": [
             218.51,
-            231.81,
+            177.81,
             8.0
           ]
         }
@@ -9105,7 +9413,7 @@
       "parent": "STARlet_deck",
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
-        -105.1,
+        -96.1,
         -39.5,
         334.7
       ]
@@ -9116,7 +9424,7 @@
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
         218.51,
-        276.81,
+        222.81,
         8.0
       ]
     },
@@ -9136,7 +9444,7 @@
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
         218.51,
-        267.81,
+        213.81,
         8.0
       ]
     },
@@ -9156,7 +9464,7 @@
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
         218.51,
-        258.81,
+        204.81,
         8.0
       ]
     },
@@ -9176,7 +9484,7 @@
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
         218.51,
-        249.81,
+        195.81,
         8.0
       ]
     },
@@ -9196,7 +9504,7 @@
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
         218.51,
-        240.81,
+        186.81,
         8.0
       ]
     },
@@ -9216,7 +9524,7 @@
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
         218.51,
-        231.81,
+        177.81,
         8.0
       ]
     },
@@ -9236,7 +9544,7 @@
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
         218.51,
-        222.81,
+        168.81,
         8.0
       ]
     },
@@ -9256,7 +9564,7 @@
       "kind": "RESOURCE_KIND_RESOURCE",
       "location": [
         218.51,
-        213.81,
+        159.81,
         8.0
       ]
     },

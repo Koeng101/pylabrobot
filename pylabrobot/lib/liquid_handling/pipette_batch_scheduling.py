@@ -31,10 +31,12 @@ import logging
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Collection, Dict, FrozenSet, List, Optional, Tuple
+from typing import Collection, Dict, FrozenSet, Hashable, List, Optional, Tuple
 
 from pylabrobot.lib.liquid_handling.channel_positioning import (
-  compute_nonconsecutive_channel_offsets,
+  ChannelFootprint,
+  footprint_of,
+  nonconsecutive_channel_offsets,
 )
 from pylabrobot.resources.container import Container
 from pylabrobot.resources.coordinate import Coordinate
@@ -43,6 +45,33 @@ from pylabrobot.resources.resource import Resource
 logger = logging.getLogger(__name__)
 
 # --- Data types ---
+
+
+@dataclass(frozen=True)
+class ChannelTarget:
+  """What planning needs of one job's container.
+
+  Attributes:
+    key: Which container it is: jobs with equal keys share one. A server id, or `id()` of an object.
+    footprint: The container, as placing channels in it needs it.
+    center: Its centre centre bottom, in the frame the plan is in.
+  """
+
+  key: Hashable
+  footprint: ChannelFootprint
+  center: Coordinate
+
+
+def targets_of(containers: List[Container], wrt_resource: Resource) -> List[ChannelTarget]:
+  """Each container's target, read from PLR's `Resource` classes, in `wrt_resource`'s frame."""
+  return [
+    ChannelTarget(
+      key=id(container),
+      footprint=footprint_of(container),
+      center=container.get_location_wrt(wrt_resource, x="c", y="c", z="b"),
+    )
+    for container in containers
+  ]
 
 
 @dataclass
@@ -189,13 +218,32 @@ def is_valid_batch(
   x_tolerance: float,
   resource_offsets: Optional[List[Coordinate]] = None,
 ) -> Optional[Dict[int, Coordinate]]:
+  """`is_valid_target_batch` for containers held in this process."""
+  return is_valid_target_batch(
+    job_indices,
+    use_channels,
+    targets_of(containers, wrt_resource),
+    channel_spacings,
+    x_tolerance,
+    resource_offsets,
+  )
+
+
+def is_valid_target_batch(
+  job_indices: Collection[int],
+  use_channels: List[int],
+  targets: List[ChannelTarget],
+  channel_spacings: List[float],
+  x_tolerance: float,
+  resource_offsets: Optional[List[Coordinate]] = None,
+) -> Optional[Dict[int, Coordinate]]:
   """Validate a candidate batch against all physical constraints, cheapest first.
 
   Checks, in order:
     1. Unique channels — O(k), prunes most candidates instantly.
     2. Same X — O(k), uses container centers (X isn't shifted by auto-spread).
     3. Container fit — per container, calls
-       :func:`compute_nonconsecutive_channel_offsets` to see if the channels
+       :func:`nonconsecutive_channel_offsets` to see if the channels
        targeting it can coexist (respecting no-go zones). Skipped when
        *resource_offsets* is provided. This is the expensive check.
     4. Y spacing between adjacent channels — O(k) on resolved positions.
@@ -212,7 +260,7 @@ def is_valid_batch(
   if len({use_channels[j] for j in jobs}) != len(jobs):
     return None
 
-  centers = [containers[j].get_location_wrt(wrt_resource, x="c", y="c", z="b") for j in jobs]
+  centers = [targets[j].center for j in jobs]
 
   # 2. Same X (container center + any user X offset; auto-spread only moves Y).
   if len(jobs) > 1:
@@ -226,15 +274,15 @@ def is_valid_batch(
   # 3. Container fit → per-channel Y offset (skipped when user supplies offsets).
   y_offsets: Dict[int, float] = {j: 0.0 for j in jobs}
   if resource_offsets is None:
-    by_container: Dict[int, List[int]] = defaultdict(list)
+    by_container: Dict[Hashable, List[int]] = defaultdict(list)
     for j in jobs:
-      by_container[id(containers[j])].append(j)
+      by_container[targets[j].key].append(j)
     for cjobs in by_container.values():
-      c = containers[cjobs[0]]
-      if len(cjobs) == 1 and not getattr(c, "no_go_zones", ()):
+      footprint = targets[cjobs[0]].footprint
+      if len(cjobs) == 1 and not footprint.no_go_zones:
         continue  # single channel, no no-go zones — center is fine.
-      offsets = compute_nonconsecutive_channel_offsets(
-        c,
+      offsets = nonconsecutive_channel_offsets(
+        footprint,
         [use_channels[j] for j in cjobs],
         channel_spacings,
       )
@@ -244,23 +292,23 @@ def is_valid_batch(
         y_offsets[j] = off.y
 
   # Resolve absolute targets.
-  targets: Dict[int, Coordinate] = {}
+  resolved: Dict[int, Coordinate] = {}
   for k, j in enumerate(jobs):
     ox = resource_offsets[j].x if resource_offsets is not None else 0.0
     oy = resource_offsets[j].y if resource_offsets is not None else y_offsets[j]
-    targets[j] = Coordinate(centers[k].x + ox, centers[k].y + oy, 0.0)
+    resolved[j] = Coordinate(centers[k].x + ox, centers[k].y + oy, 0.0)
 
   if len(jobs) == 1:
-    return targets
+    return resolved
 
   # 4. Y spacing between adjacent channels.
   jobs_sorted = sorted(jobs, key=lambda j: use_channels[j])
   for lo, hi in zip(jobs_sorted, jobs_sorted[1:]):
     required = _span_required(channel_spacings, use_channels[lo], use_channels[hi])
-    if targets[lo].y - targets[hi].y < required - 1e-9:
+    if resolved[lo].y - resolved[hi].y < required - 1e-9:
       return None
 
-  return targets
+  return resolved
 
 
 def _build_channel_batch(
@@ -291,6 +339,23 @@ def enumerate_valid_batches(
   x_tolerance: float,
   resource_offsets: Optional[List[Coordinate]] = None,
 ) -> List[ChannelBatch]:
+  """`enumerate_valid_target_batches` for containers held in this process."""
+  return enumerate_valid_target_batches(
+    use_channels,
+    targets_of(containers, wrt_resource),
+    channel_spacings,
+    x_tolerance,
+    resource_offsets,
+  )
+
+
+def enumerate_valid_target_batches(
+  use_channels: List[int],
+  targets: List[ChannelTarget],
+  channel_spacings: List[float],
+  x_tolerance: float,
+  resource_offsets: Optional[List[Coordinate]] = None,
+) -> List[ChannelBatch]:
   """Enumerate every valid batch by backtracking, returning ChannelBatch objects.
 
   Jobs are visited in channel-ascending order; an invalid candidate prunes its subtree.
@@ -301,12 +366,11 @@ def enumerate_valid_batches(
 
   def backtrack(start: int, current: List[int]):
     if current:
-      resolved = is_valid_batch(
+      resolved = is_valid_target_batch(
         current,
         use_channels,
-        containers,
+        targets,
         channel_spacings,
-        wrt_resource,
         x_tolerance,
         resource_offsets,
       )
@@ -369,19 +433,44 @@ def plan_batches(
   x_tolerance: float,
   resource_offsets: Optional[List[Coordinate]] = None,
 ) -> List[ChannelBatch]:
+  """`plan_target_batches` for containers held in this process.
+
+  Raises:
+    ValueError: As `plan_target_batches`.
+  """
+  if len(use_channels) != len(containers):
+    raise ValueError(
+      f"use_channels and containers must have the same length, "
+      f"got {len(use_channels)} and {len(containers)}."
+    )
+  return plan_target_batches(
+    use_channels,
+    targets_of(containers, wrt_resource),
+    channel_spacings,
+    x_tolerance,
+    resource_offsets,
+  )
+
+
+def plan_target_batches(
+  use_channels: List[int],
+  targets: List[ChannelTarget],
+  channel_spacings: List[float],
+  x_tolerance: float,
+  resource_offsets: Optional[List[Coordinate]] = None,
+) -> List[ChannelBatch]:
   """Container-aware, optimal batch planning (respects no-go zones).
 
   Decides the per-container spread *per candidate batch* by asking
-  :func:`compute_nonconsecutive_channel_offsets` whether the channels
+  :func:`nonconsecutive_channel_offsets` whether the channels
   targeting each container physically coexist in it given its geometry and
   no-go zones. Pairs that behavior with minimum exact-cover partition
   (:func:`minimum_exact_cover`) so the returned plan uses the fewest batches.
 
   Args:
-    use_channels: Channel indices being used (parallel to *containers*).
-    containers: Target Container objects, one per channel.
+    use_channels: Channel indices being used (parallel to *targets*).
+    targets: Each job's container and where it is, one per channel.
     channel_spacings: Per-channel minimum Y spacing (mm).
-    wrt_resource: Reference resource for computing absolute positions.
     x_tolerance: Positions within this tolerance share a batch (pairwise).
     resource_offsets: Optional explicit XYZ offsets from container centers.
       When provided, auto-spread and no-go-zone checks are skipped (user is
@@ -392,10 +481,10 @@ def plan_batches(
   """
   if x_tolerance <= 0:
     raise ValueError(f"x_tolerance must be > 0, got {x_tolerance}.")
-  if len(use_channels) != len(containers):
+  if len(use_channels) != len(targets):
     raise ValueError(
       f"use_channels and containers must have the same length, "
-      f"got {len(use_channels)} and {len(containers)}."
+      f"got {len(use_channels)} and {len(targets)}."
     )
   if len(use_channels) == 0:
     raise ValueError("use_channels must not be empty.")
@@ -411,11 +500,10 @@ def plan_batches(
       f"(max channel index is {max_ch}), got {len(channel_spacings)}."
     )
 
-  valid = enumerate_valid_batches(
+  valid = enumerate_valid_target_batches(
     use_channels,
-    containers,
+    targets,
     channel_spacings,
-    wrt_resource,
     x_tolerance,
     resource_offsets,
   )

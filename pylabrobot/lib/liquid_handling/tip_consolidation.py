@@ -6,24 +6,44 @@ execution remain the caller's responsibility.
 """
 
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, Generic, List, Optional, Sequence, Tuple, TypeVar
 
 from pylabrobot.resources import Tip, TipRack, TipSpot
 
+S = TypeVar("S")
+T = TypeVar("T")
+
 
 @dataclass
-class TipTransferBatch:
+class TipTransferBatch(Generic[S]):
   """Parallel origin, target, and channel lists for one pickup/drop cycle."""
 
-  origin_tip_spots: List[TipSpot]
-  target_tip_spots: List[TipSpot]
+  origin_tip_spots: List[S]
+  target_tip_spots: List[S]
   use_channels: List[int]
 
 
-def _merge_sublists(lists: List[List[TipSpot]], max_len: int) -> List[List[TipSpot]]:
+@dataclass(frozen=True)
+class RackTips(Generic[S, T]):
+  """A rack's spots as consolidation needs them, column-major.
+
+  Attributes:
+    name: The rack's name.
+    spots: Its spots.
+    xs: Each spot's X in the rack.
+    tips: The tip each spot holds; None where it holds none.
+  """
+
+  name: str
+  spots: Sequence[S]
+  xs: Sequence[float]
+  tips: Sequence[Optional[T]]
+
+
+def _merge_sublists(lists: List[List[S]], max_len: int) -> List[List[S]]:
   """Merge adjacent sublists up to max_len, splitting oversized columns."""
-  merged: List[List[TipSpot]] = []
-  buffer: List[TipSpot] = []
+  merged: List[List[S]] = []
+  buffer: List[S] = []
   for sublist in lists:
     for start in range(0, len(sublist), max_len):
       chunk = sublist[start : start + max_len]
@@ -36,10 +56,16 @@ def _merge_sublists(lists: List[List[TipSpot]], max_len: int) -> List[List[TipSp
   return merged
 
 
-def _column_key(tip_spot: TipSpot) -> Tuple[str, float]:
-  """Group tip spots by parent rack name and local X coordinate."""
-  assert tip_spot.parent is not None and tip_spot.location is not None
-  return (tip_spot.parent.name, round(tip_spot.location.x, 3))
+def rack_tips_of(tip_rack: TipRack) -> RackTips[TipSpot, Tip]:
+  """A rack's spots, read from PLR's `Resource` classes."""
+  spots = tip_rack.get_all_items()
+  xs = []
+  for spot in spots:
+    if spot.location is None:
+      raise ValueError(f"{spot.name} has no location")
+    xs.append(spot.location.x)
+  tips = [spot.tracker.get_tip() if spot.tracker.has_tip else None for spot in spots]
+  return RackTips(name=tip_rack.name, spots=spots, xs=xs, tips=tips)
 
 
 def plan_tip_consolidation(
@@ -47,7 +73,28 @@ def plan_tip_consolidation(
   num_channels: int,
   can_pick_up_tip: Callable[[int, Tip], bool],
   use_channels: Optional[List[int]] = None,
-) -> List[TipTransferBatch]:
+) -> List[TipTransferBatch[TipSpot]]:
+  """`plan_consolidation` for racks held in this process.
+
+  Raises:
+    ValueError: As `plan_consolidation`.
+  """
+  return plan_consolidation(
+    [rack_tips_of(tip_rack) for tip_rack in tip_racks],
+    num_channels,
+    can_pick_up_tip,
+    model_of=lambda tip: tip.model,
+    use_channels=use_channels,
+  )
+
+
+def plan_consolidation(
+  racks: List[RackTips[S, T]],
+  num_channels: int,
+  can_pick_up_tip: Callable[[int, T], bool],
+  model_of: Callable[[T], Optional[str]],
+  use_channels: Optional[List[int]] = None,
+) -> List[TipTransferBatch[S]]:
   """Plan consolidation of partially filled racks, grouped by tip model.
 
   Full and empty racks are ignored. Within each model, racks are filled in order
@@ -57,10 +104,11 @@ def plan_tip_consolidation(
   chunks of destination spots.
 
   Args:
-    tip_racks: Racks whose tracked tip inventory should be consolidated.
+    racks: Racks whose tip inventory should be consolidated.
     num_channels: Number of channels on the device.
     can_pick_up_tip: Predicate accepting a channel index and a tip. Used to select
       compatible channels separately for each model when use_channels is omitted.
+    model_of: A tip's model; None when it has none.
     use_channels: Explicit channel selection, in execution order. The caller is
       responsible for ensuring these channels can handle the tips.
 
@@ -78,43 +126,42 @@ def plan_tip_consolidation(
     if any(channel < 0 or channel >= num_channels for channel in use_channels):
       raise ValueError(f"use_channels must be in range [0, {num_channels - 1}].")
 
-  clusters_by_model: Dict[str, List[Tuple[TipRack, int]]] = {}
-  for tip_rack in tip_racks:
-    spots = tip_rack.get_all_items()
-    occupied = [spot for spot in spots if spot.tracker.has_tip]
-    if not occupied or len(occupied) == len(spots):
+  clusters_by_model: Dict[str, List[Tuple[RackTips[S, T], int]]] = {}
+  for rack in racks:
+    held = [tip for tip in rack.tips if tip is not None]
+    if not held or len(held) == len(rack.spots):
       continue
 
-    model = occupied[0].tracker.get_tip().model
-    if model is None or any(spot.tracker.get_tip().model is None for spot in occupied[1:]):
+    model = model_of(held[0])
+    if model is None or any(model_of(tip) is None for tip in held[1:]):
       raise ValueError("Tip models must be defined for consolidation.")
-    if any(spot.tracker.get_tip().model != model for spot in occupied[1:]):
-      raise ValueError(
-        f"Tip rack {tip_rack.name} has mixed tip models, cannot consolidate: "
-        f"{[spot.tracker.get_tip() for spot in occupied]}"
-      )
-    clusters_by_model.setdefault(model, []).append((tip_rack, len(spots) - len(occupied)))
+    if any(model_of(tip) != model for tip in held[1:]):
+      raise ValueError(f"Tip rack {rack.name} has mixed tip models, cannot consolidate: {held}")
+    clusters_by_model.setdefault(model, []).append((rack, len(rack.spots) - len(held)))
 
-  batches: List[TipTransferBatch] = []
+  batches: List[TipTransferBatch[S]] = []
   for rack_list in clusters_by_model.values():
     rack_list.sort(key=lambda entry: entry[1])
-    all_spots = [spot for rack, _ in rack_list for spot in rack.get_all_items()]
-    presence = [spot.tracker.has_tip for spot in all_spots]
-    num_tips = sum(presence)
+    entries = [
+      (spot, (rack.name, round(x, 3)), tip)
+      for rack, _ in rack_list
+      for spot, x, tip in zip(rack.spots, rack.xs, rack.tips)
+    ]
+    num_tips = sum(1 for _, _, tip in entries if tip is not None)
     origins = [
-      spot
-      for index, (spot, has_tip) in enumerate(zip(all_spots, presence))
-      if has_tip and index >= num_tips
+      (spot, tip)
+      for index, (spot, _, tip) in enumerate(entries)
+      if tip is not None and index >= num_tips
     ]
     targets = [
-      spot
-      for index, (spot, has_tip) in enumerate(zip(all_spots, presence))
-      if not has_tip and index < num_tips
+      (spot, column)
+      for index, (spot, column, tip) in enumerate(entries)
+      if tip is None and index < num_tips
     ]
     if not targets:
       continue
 
-    tip = origins[0].tracker.get_tip()
+    tip = origins[0][1]
     channels = (
       [channel for channel in range(num_channels) if can_pick_up_tip(channel, tip)]
       if use_channels is None
@@ -124,21 +171,20 @@ def plan_tip_consolidation(
       raise ValueError(f"No channel capable of handling tips on deck: {tip}")
 
     if len(channels) >= 8:
-      columns: Dict[Tuple[str, float], List[TipSpot]] = {}
-      for spot in sorted(targets, key=_column_key):
-        columns.setdefault(_column_key(spot), []).append(spot)
+      columns: Dict[Tuple[str, float], List[S]] = {}
+      for spot, column in sorted(targets, key=lambda target: target[1]):
+        columns.setdefault(column, []).append(spot)
       target_batches = _merge_sublists(list(columns.values()), max_len=8)
     else:
-      target_batches = [
-        targets[i : i + len(channels)] for i in range(0, len(targets), len(channels))
-      ]
+      spots = [spot for spot, _ in targets]
+      target_batches = [spots[i : i + len(channels)] for i in range(0, len(spots), len(channels))]
 
     origin_index = 0
     for target_spots in target_batches:
       count = len(target_spots)
       batches.append(
         TipTransferBatch(
-          origin_tip_spots=origins[origin_index : origin_index + count],
+          origin_tip_spots=[spot for spot, _ in origins[origin_index : origin_index + count]],
           target_tip_spots=target_spots,
           use_channels=channels[:count],
         )

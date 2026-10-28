@@ -30,7 +30,7 @@ from pylabrobot.hamilton.star.device import STARDevice
 from pylabrobot.hamilton.star.driver.errors import STARFirmwareError, check_fw_string_error
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
 from pylabrobot.testing import recorder as recording
-from pylabrobot.testing.golden import snapshot_changes, snapshot_resources
+from pylabrobot.testing.golden import snapshot_changes, snapshot_server
 
 # What a hook given to `STARRecorder.fail` is handed: the command's own parameters.
 Hook = Callable[[Dict[str, Any]], None]
@@ -83,7 +83,7 @@ class STARRecorder(recording.Recorder):
   """Records each step of a scenario on a simulated STAR: what was sent, what the call returned or
   raised, and what it changed in the device's resource tree.
 
-  A step's resources are the entries `snapshot_resources` gives that the step added or changed,
+  A step's resources are the entries `snapshot_store` gives that the step added or changed,
   and the names of the ones it removed; the record ends with the whole tree. Recording the whole
   tree after every step would repeat hundreds of unchanged entries per step.
   """
@@ -248,8 +248,9 @@ class STARRecorder(recording.Recorder):
     entry["error"] = described(error)
 
   async def snapshot(self) -> List[Dict[str, Any]]:
-    """The device's tree as it is now."""
-    return snapshot_resources(self.device)
+    """The device's tree as the server holds it now."""
+    assert self.device.body is not None, "the device's resources have not been made"
+    return await snapshot_server(self.device.server, self.device.body)
 
   async def built(self, call: str) -> None:
     """Record the device as the scenario built it, before anything was sent: the whole tree.
