@@ -14,7 +14,7 @@ import itertools
 import logging
 from typing import Tuple
 
-from pylabrobot.hamilton.star.device import STARDevice, STARlet
+from pylabrobot.legacy.hamilton.star.device import STARDevice, STARlet
 from pylabrobot.resources import set_volume_tracking
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.corning import cor_96_wellplate_360uL_Fb
