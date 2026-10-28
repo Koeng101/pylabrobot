@@ -308,6 +308,9 @@ message DevicePosition {
   // Rotation drives the part carries, by name: each one's angle as it reports it, in degrees,
   // merged into its `drive_angles`.
   map<string, double> drive_angles = 7;
+  // A pipette channel's or head's dispensing drive: the piston's position, as the volume it has
+  // drawn, in uL. Kept in its state as `piston_volume`.
+  optional double piston_volume = 8;
 }
 
 message RecordDevicePositionsRequest {
@@ -330,6 +333,9 @@ message Measurement {
     // disagrees; the tree is not changed.
     bool tool_present = 3;
     Barcode barcode = 4;
+    // Whether a gripper senses something between its jaws. Kept in its state as `gripped`; the
+    // tree is not changed.
+    bool gripped = 6;
   }
   ResourceRef resource = 5;
 }
@@ -597,7 +603,7 @@ enum ChangeAspect {
   CHANGE_ASPECT_UNSPECIFIED = 0;
   // Its parent, its position among the parent's children, its location or its rotation.
   CHANGE_ASPECT_PLACEMENT = 1;
-  // Its volume, tracking, jaw width or tips made.
+  // Its volume, tracking, jaw width, tips made, drive angles, piston volume or whether it grips.
   CHANGE_ASPECT_STATE = 2;
   // Anything else about what it is: metadata, barcode, spec, or its model changing.
   CHANGE_ASPECT_ATTRIBUTES = 3;

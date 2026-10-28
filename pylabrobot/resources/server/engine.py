@@ -1311,6 +1311,9 @@ class Engine:
       self.set_attributes(
         node, steps, lambda: node.state.drive_angles.update(dict(position.drive_angles))
       )
+    if position.HasField("piston_volume"):
+      volume = position.piston_volume
+      self.set_attributes(node, steps, lambda: setattr(node.state, "piston_volume", volume))
     return node
 
   def record_measurement(
@@ -1345,6 +1348,10 @@ class Engine:
           item=index,
         )
       )
+    if which == "gripped":
+      gripped = measurement.gripped
+      self.set_attributes(node, steps, lambda: setattr(node.state, "gripped", gripped))
+      return spb.MeasurementResult()
     if which == "barcode":
       self.set_barcode(
         pb.SetBarcode(resource=pb.ResourceRef(id=node.id), barcode=measurement.barcode), steps

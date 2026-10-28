@@ -855,7 +855,9 @@ class HeadTool(Resource):
 
 
 class PipetteChannel(Resource):
-  pass
+  async def get_piston_volume(self) -> float:
+    """Where its piston stands, as the volume it has drawn, in uL; 0.0 at rest."""
+    return (await self.state()).piston_volume
 
 
 class TipMountingShaft(Resource):
@@ -868,7 +870,9 @@ class TipMountingShaft(Resource):
 
 
 class NChannelPipette(Resource):
-  pass
+  async def get_piston_volume(self) -> float:
+    """Where its piston stands, as the volume it has drawn, in uL; 0.0 at rest."""
+    return (await self.state()).piston_volume
 
 
 class LinkBody(Resource):
@@ -878,6 +882,11 @@ class LinkBody(Resource):
 class MechanicalGripper(Resource):
   async def get_jaw_width(self) -> float:
     return (await self.state()).jaw_width
+
+  async def get_gripped(self) -> Optional[bool]:
+    """Whether it last sensed something between its jaws; None until it has been asked."""
+    state = await self.state()
+    return state.gripped if state.HasField("gripped") else None
 
 
 HANDLE_TYPES: Dict[int, Type[Resource]] = {

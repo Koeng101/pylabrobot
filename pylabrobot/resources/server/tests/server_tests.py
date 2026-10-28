@@ -821,6 +821,27 @@ class DeviceTests(ServerTestCase):
     )
     self.assertEqual(measured.results[0].issue.problem, pb.PROBLEM_NO_TIP)
 
+  async def test_a_piston_is_kept_where_it_was_reported(self):
+    self.assertFalse((await self.node(ref("channel_0"))).state.HasField("piston_volume"))
+    await self.commands.record_device_positions(
+      spb.RecordDevicePositionsRequest(
+        positions=[spb.DevicePosition(resource=ref("channel_0"), piston_volume=42.5)]
+      )
+    )
+    self.assertEqual((await self.node(ref("channel_0"))).state.piston_volume, 42.5)
+
+  async def test_a_sensed_grip_is_kept_and_the_tree_is_left(self):
+    before = await self.children(ref("channel_0"))
+    measured = await self.commands.record_measurements(
+      spb.RecordMeasurementsRequest(
+        measurements=[spb.Measurement(resource=ref("channel_0"), gripped=True)]
+      )
+    )
+    self.assertFalse(measured.results[0].HasField("issue"))
+    node = await self.node(ref("channel_0"))
+    self.assertTrue(node.state.HasField("gripped") and node.state.gripped)
+    self.assertEqual(await self.children(ref("channel_0")), before)
+
 
 class OperationTests(ServerTestCase):
   async def test_unresolved_operations_are_listed_until_resolved(self):
