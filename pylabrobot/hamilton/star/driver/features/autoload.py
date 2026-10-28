@@ -4,7 +4,7 @@ import datetime
 import logging
 import string
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, TypedDict, Union, cast
 
 from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_date
 from pylabrobot.hamilton.star.driver import model
@@ -85,6 +85,15 @@ def _tracks_from_presence_mask(mask: str) -> List[int]:
     for bit in range(4)
     if int(digit, 16) & (1 << bit)
   ]
+
+
+class LoadedCarrier(TypedDict):
+  """What `Autoload.load_carrier` read off a carrier as it loaded it."""
+
+  # The carrier's own barcode; None when it was not asked for, or not read.
+  carrier_barcode: Optional[str]
+  # Each container position's barcode, by position; None where none was read.
+  container_barcodes: Dict[int, Optional[str]]
 
 
 @dataclass
@@ -1601,7 +1610,7 @@ class Autoload:
     width_of_reading_window: float = 38.0,
     reading_speed: float = 128.1,
     park_after: bool = True,
-  ) -> dict:
+  ) -> LoadedCarrier:
     """Load a carrier from the loading tray onto the deck, reading what it carries on the way.
 
     The carrier goes to the track it is assigned to on the deck, so the resource model decides
