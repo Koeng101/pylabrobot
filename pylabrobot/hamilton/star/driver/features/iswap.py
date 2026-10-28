@@ -734,12 +734,8 @@ class iSWAP:
     self._driver = driver
     self.configuration = configuration or iSWAPConfiguration()
     self.resource: Optional[handles.Resource] = None
-    self.gripped: Optional[bool] = None
-    """Whether the arm is holding something, as it last reported.
-
-    None until anything has asked. Set by `request_plate_gripped`, which is the only thing that
-    knows: the arm reports it from the fingers themselves, so a plate is not something this driver
-    can infer from the commands it sent."""
+    # Whether the arm is holding something, as it last reported; `get_gripped` reads it.
+    self._gripped: Optional[bool] = None
     self.link_1: Optional[handles.LinkBody] = None
     self.gripper: Optional[handles.MechanicalGripper] = None
 
@@ -2392,16 +2388,35 @@ class iSWAP:
     """Read whether the arm is holding something between its fingers.
 
     The arm's own answer, not the model's: the gripper reports it, so a plate taken or dropped by
-    anything other than this driver still shows up. `gripped` is what the model says, and the two
-    disagreeing means the model has lost track of what the arm is carrying.
+    anything other than this driver still shows up. It is recorded on the gripper, and
+    `get_gripped` reads it back; what the gripper carries in the tree is what the model says, and
+    the two disagreeing means the model has lost track of what the arm is carrying.
 
     Returns:
       True while it holds something.
     """
     resp = await self._driver.send_command(module="C0", command="QP", subsystem="R0", fmt="ph#")
     gripped = cast(int, resp["ph"]) == 1
-    self.gripped = gripped
+    self._gripped = gripped
+    if self.gripper is not None:
+      await self.gripper.server.commands.record_measurements(
+        spb.RecordMeasurementsRequest(
+          measurements=[spb.Measurement(resource=self.gripper.ref, gripped=gripped)]
+        )
+      )
     return gripped
+
+  async def get_gripped(self) -> Optional[bool]:
+    """Whether the arm is holding something, as it last reported.
+
+    Set by `request_plate_gripped`, which is the only thing that knows: the arm reports it from the
+    fingers themselves, so a plate is not something this driver can infer from the commands it
+    sent.
+
+    Returns:
+      Whether it held something when last asked; None until anything has asked.
+    """
+    return self._gripped
 
   async def _unchecked_fw_gripper_move_to_jaw_position_increments(
     self,

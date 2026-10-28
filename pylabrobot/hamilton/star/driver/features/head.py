@@ -452,7 +452,7 @@ class Head:
     self._layout: Optional[HeadLayout] = None
     self.configuration = configuration
     # Where the piston stands, in uL, as last read or moved; 0.0 at rest.
-    self.piston_position: float = 0.0
+    self._piston_position = 0.0
 
   # -- the raw register access these share ---------------------------------------------------------
 
@@ -1463,14 +1463,33 @@ class Head:
     """Read where the head's dispensing drive stands, in uL, and record it. `RD`.
 
     Returns:
-      The piston's position in uL, 0.0 at rest; air and liquid alike. Kept on `piston_position`.
+      The piston's position in uL, 0.0 at rest; air and liquid alike. `get_piston_position` reads it.
     """
     resp = await self._driver.send_command(
       module=self.configuration.module, command="RD", fmt="rd##### (n)"
     )
     increments = cast(List[int], resp["rd"])[1]  # [0] = firmware counter, [1] = hardware counter
-    self.piston_position = self.configuration.dispensing_drive_increments_to_uL(increments)
-    return self.piston_position
+    await self._set_piston_position(
+      self.configuration.dispensing_drive_increments_to_uL(increments)
+    )
+    return self._piston_position
+
+  async def get_piston_position(self) -> float:
+    """Where the head's piston stands, as this driver last read or sent it.
+
+    Returns:
+      The piston's position, as the volume it has drawn, in uL; 0.0 at rest, air and liquid
+      alike.
+    """
+    return self._piston_position
+
+  async def _set_piston_position(self, uL: float) -> None:
+    """Keep where the piston stands, and record it on the head when the head is modelled."""
+    self._piston_position = uL
+    if self.resource is not None:
+      await model.record_positions(
+        self.resource.server, [spb.DevicePosition(resource=self.resource.ref, piston_volume=uL)]
+      )
 
   async def _record_piston_position(self) -> None:
     """Read where the piston came to rest, and record it; a failed read is logged and swallowed."""
@@ -1490,7 +1509,7 @@ class Head:
   ):
     """Move the dispensing drive to an absolute piston position, and record it. `DQ`.
 
-    Where it was sent is kept on `piston_position`; after a failed move, it is read back.
+    Where it was sent is recorded; after a failed move, it is read back.
 
     Args:
       volume: where to send the piston, as the volume it would hold, in uL.
@@ -1544,7 +1563,7 @@ class Head:
     except BaseException:
       await self._record_piston_position()
       raise
-    self.piston_position = c.dispensing_drive_increments_to_uL(increments)
+    await self._set_piston_position(c.dispensing_drive_increments_to_uL(increments))
     return resp
 
   # -- x, y and z together -------------------------------------------------------------------------

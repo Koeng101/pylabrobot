@@ -7123,7 +7123,8 @@
             -175.7,
             189.8,
             -29.8
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_A1#0",
@@ -9275,7 +9276,8 @@
             -175.7,
             189.7,
             -29.8
-          ]
+          ],
+          "piston_volume": 53.4
         },
         {
           "name": "tips_tipspot_A1#0",
@@ -11417,6 +11419,17 @@
           "volume": 190.0
         },
         {
+          "name": "STARlet_head96",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            -175.7,
+            189.7,
+            -29.8
+          ],
+          "piston_volume": 13.4
+        },
+        {
           "name": "tips_tipspot_A1#0",
           "parent": "STARlet_head96_tipmountingshaft_A1",
           "kind": "RESOURCE_KIND_TIP",
@@ -12618,7 +12631,8 @@
             -175.7,
             382.05,
             9.3
-          ]
+          ],
+          "piston_volume": 13.4
         }
       ]
     },
@@ -12814,7 +12828,8 @@
             -175.7,
             382.0,
             -29.8
-          ]
+          ],
+          "piston_volume": 35.7
         },
         {
           "name": "tips_tipspot_A1#0",
@@ -13902,6 +13917,17 @@
             5.88
           ],
           "volume": 100022.3168
+        },
+        {
+          "name": "STARlet_head96",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            -175.7,
+            382.0,
+            -29.8
+          ],
+          "piston_volume": 8.4
         },
         {
           "name": "tips_tipspot_A1#0",
@@ -15024,7 +15050,8 @@
             -175.7,
             198.0,
             9.3
-          ]
+          ],
+          "piston_volume": 8.4
         }
       ]
     },
@@ -16151,7 +16178,8 @@
             -175.7,
             189.8,
             -81.7
-          ]
+          ],
+          "piston_volume": 8.39
         }
       ]
     },
@@ -16211,7 +16239,8 @@
             -175.7,
             189.8,
             -29.8
-          ]
+          ],
+          "piston_volume": 8.39
         },
         {
           "name": "tips_tipspot_A1#0",
@@ -18369,7 +18398,8 @@
             -175.7,
             189.7,
             9.3
-          ]
+          ],
+          "piston_volume": 20.0
         },
         {
           "name": "tips_tipspot_A1#0",
@@ -20552,7 +20582,8 @@
             -175.7,
             126.8,
             -81.7
-          ]
+          ],
+          "piston_volume": 20.0
         }
       ]
     },
@@ -20622,7 +20653,8 @@
             -175.7,
             285.8,
             -29.8
-          ]
+          ],
+          "piston_volume": 218.19
         }
       ]
     },
@@ -20674,6 +20706,17 @@
       ],
       "result": null,
       "resources": [
+        {
+          "name": "STARlet_head96",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_N_CHANNEL_PIPETTE",
+          "location": [
+            -175.7,
+            285.8,
+            -29.8
+          ],
+          "piston_volume": 20.0
+        },
         {
           "name": "gappy_tipspot_B1#0",
           "parent": "STARlet_head96_tipmountingshaft_B1",
@@ -21784,7 +21827,8 @@
             -175.7,
             382.05,
             9.3
-          ]
+          ],
+          "piston_volume": 20.0
         }
       ]
     },
@@ -21855,7 +21899,8 @@
             -175.7,
             285.8,
             -81.7
-          ]
+          ],
+          "piston_volume": 20.0
         }
       ]
     },
@@ -23020,7 +23065,25 @@
             -175.7,
             285.8,
             9.3
-          ]
+          ],
+          "piston_volume": 20.0
+        },
+        {
+          "name": "STARlet_iswap_gripper",
+          "parent": "STARlet_iswap_link_1",
+          "kind": "RESOURCE_KIND_MECHANICAL_GRIPPER",
+          "location": [
+            105.5,
+            25.75,
+            -20.3
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "jaw_width": 72.618,
+          "gripped": false
         }
       ]
     }
@@ -28701,7 +28764,8 @@
         -175.7,
         285.8,
         9.3
-      ]
+      ],
+      "piston_volume": 20.0
     },
     {
       "name": "STARlet_head96_tipmountingshaft_A1",
@@ -29712,7 +29776,8 @@
         0.0,
         270.0
       ],
-      "jaw_width": 72.618
+      "jaw_width": 72.618,
+      "gripped": false
     },
     {
       "name": "STARlet_iswap_gripper_body",

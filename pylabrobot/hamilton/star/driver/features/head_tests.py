@@ -1192,27 +1192,27 @@ class TestHead96PistonModel(unittest.IsolatedAsyncioTestCase):
     self.rd = [1, 5170]
     expected = self.head.configuration.dispensing_drive_increments_to_uL(5170)
     self.assertEqual(await self.head.dispensing_drive_request_uL_position(), expected)
-    self.assertEqual(self.head.piston_position, expected)
+    self.assertEqual(await self.head.get_piston_position(), expected)
 
   async def test_initialization_reads_the_piston(self):
     self.rd = [0, 1000]
     await self.head.initialize(tip_discard_location=Coordinate(400.0, 300.0, 200.0))
     expected = self.head.configuration.dispensing_drive_increments_to_uL(1000)
-    self.assertEqual(self.head.piston_position, expected)
+    self.assertEqual(await self.head.get_piston_position(), expected)
 
   async def test_strokes_move_the_model_as_the_drive_counts(self):
     await self.head._aspirate_in_place(100.0)
-    self.assertEqual(self.head.piston_position, self.as_counted(100.0))
+    self.assertEqual(await self.head.get_piston_position(), self.as_counted(100.0))
     await self.head._dispense_in_place(60.0, stop_back_volume=2.0)
     expected = self.as_counted(100.0) - self.as_counted(60.0) + self.as_counted(2.0)
-    self.assertAlmostEqual(self.head.piston_position, expected, places=2)
+    self.assertAlmostEqual(await self.head.get_piston_position(), expected, places=2)
     # Pushing out more than it holds leaves the piston at rest.
     await self.head._dispense_in_place(500.0)
-    self.assertEqual(self.head.piston_position, 0.0)
+    self.assertEqual(await self.head.get_piston_position(), 0.0)
 
   async def test_the_dispensing_drive_move_records_where_it_was_sent(self):
     await self.head.move_dispensing_drive_to_position(218.19)
-    self.assertEqual(self.head.piston_position, self.as_counted(218.19))
+    self.assertEqual(await self.head.get_piston_position(), self.as_counted(218.19))
 
   async def test_a_failed_command_reads_the_piston_back(self):
     moves = {
@@ -1224,11 +1224,11 @@ class TestHead96PistonModel(unittest.IsolatedAsyncioTestCase):
       with self.subTest(command=failing):
         self.failing = failing
         self.rd = [0, 1234]
-        self.head.piston_position = 50.0
+        self.head._piston_position = 50.0
         with self.assertRaises(STARFirmwareError):
           await move()
         expected = self.head.configuration.dispensing_drive_increments_to_uL(1234)
-        self.assertEqual(self.head.piston_position, expected)
+        self.assertEqual(await self.head.get_piston_position(), expected)
 
 
 class TestDispensingDriveUnits(unittest.IsolatedAsyncioTestCase):
@@ -1305,7 +1305,7 @@ class TestHead96AspirateDispense(unittest.IsolatedAsyncioTestCase):
       return record
 
     async def piston() -> float:
-      return self.head.piston_position + self.moved
+      return self.head._piston_position + self.moved
 
     self.head._unchecked_fw_aspirate = recorder("EA")  # type: ignore[method-assign]
     self.head._unchecked_fw_dispense = recorder("ED")  # type: ignore[method-assign]
@@ -1368,7 +1368,7 @@ class TestHead96AspirateDispense(unittest.IsolatedAsyncioTestCase):
     )
     self.assertEqual(await self.well_volumes(), {150.0})
     self.assertEqual(await self.tip_volumes(), {50.0})
-    self.assertEqual(self.head.piston_position, 53.4)
+    self.assertEqual(await self.head.get_piston_position(), 53.4)
 
   async def test_off_into_a_trough_centres_the_array_and_books_96_times(self):
     await self.head.aspirate(self.plate, piston_volume=40.0, liquid_height=2.0)
@@ -1392,7 +1392,7 @@ class TestHead96AspirateDispense(unittest.IsolatedAsyncioTestCase):
     )
     self.assertEqual(await self.trough.get_volume(), 96 * 40.0)
     self.assertEqual(await self.tip_volumes(), {0.0})
-    self.assertEqual(self.head.piston_position, 0.0)
+    self.assertEqual(await self.head.get_piston_position(), 0.0)
 
   async def test_a_container_that_states_no_maximum_takes_what_is_dispensed(self):
     trough_plate = cast(handles.Resource, await self.trough.get_parent())
@@ -1435,7 +1435,7 @@ class TestHead96AspirateDispense(unittest.IsolatedAsyncioTestCase):
     self.assertAlmostEqual(fields["surface_following_distance"], drop * 10, delta=1)
     # Set to what the search measured, to the Z drive's resolution, then 96 draws booked.
     self.assertAlmostEqual(await self.trough.get_volume(), 100_000.0 - 96 * 20.0, delta=50)
-    self.assertEqual(self.head.piston_position, 30.0)
+    self.assertEqual(await self.head.get_piston_position(), 30.0)
 
   async def test_capacitive_immersion_and_following_stop_at_the_floor(self):
     await self.trough.set_volume(2_000.0)
@@ -1544,7 +1544,7 @@ class TestHead96AspirateDispense(unittest.IsolatedAsyncioTestCase):
       await self.head.aspirate(self.plate, piston_volume=50.0)
     self.assertEqual(await self.well_volumes(), {200.0})
     self.assertEqual(await self.tip_volumes(), {0.0})
-    self.assertEqual(self.head.piston_position, 0.0)
+    self.assertEqual(await self.head.get_piston_position(), 0.0)
     self.assertEqual(await self.head.request_z_position(), self.head.configuration.z_range[1])
 
   async def test_what_a_failed_command_moved_is_booked_from_the_piston(self):

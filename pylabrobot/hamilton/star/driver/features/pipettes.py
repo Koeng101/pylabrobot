@@ -615,7 +615,7 @@ class Pipettes:
     # command has been resolved: the device carries that while the command runs.
     self.carried_while_staged: Optional[List[Optional[pb.ResourceNode]]] = None
     # Where each piston stands, in uL, by channel, as last read; empty until a piston is read.
-    self.piston_positions: List[float] = []
+    self._piston_positions: List[float] = []
     # The transport air each channel's tip holds, in uL, by channel: an aspirate adds its own, and
     # the next dispense pushes it all out ahead of the liquid, then draws its own.
     self._held_transport_air: Dict[int, float] = {}
@@ -1907,17 +1907,48 @@ class Pipettes:
       channel: which channel, 0-indexed from the back.
 
     Returns:
-      The piston's position in uL, 0.0 at rest; air and liquid alike. Kept on `piston_positions`.
+      The piston's position in uL, 0.0 at rest; air and liquid alike. `get_piston_positions` reads it.
     """
     self._require_channel(channel)
     resp = await self._driver.send_command(
       module=self.channel_id(channel), command="RD", fmt="rd#####"
     )
     uL = self.configuration.dispensing_drive_increments_to_uL(cast(int, resp["rd"]))
-    # The channels not read yet stand at rest, where initialization leaves every piston.
-    self.piston_positions += [0.0] * (self.num_channels - len(self.piston_positions))
-    self.piston_positions[channel] = uL
+    await self._set_piston_positions({channel: uL})
     return uL
+
+  async def get_piston_positions(self) -> List[float]:
+    """Where each channel's piston stands, as this driver last read or sent it.
+
+    Returns:
+      Each channel's piston position, as the volume it has drawn, in uL, by channel; 0.0 at rest,
+      air and liquid alike. Empty until a position has been read or sent.
+    """
+    return list(self._piston_positions)
+
+  def _piston_at(self, channel: int) -> float:
+    """Where one channel's piston stands; one not read yet is at rest."""
+    return self._piston_positions[channel] if channel < len(self._piston_positions) else 0.0
+
+  async def _set_piston_positions(self, positions: Dict[int, float]) -> None:
+    """Keep where pistons stand, and record them on the channels when they are modelled.
+
+    Args:
+      positions: each piston's position in uL, by channel. The channels not read yet stand at
+        rest, where initialization leaves every piston.
+    """
+    self._piston_positions += [0.0] * (self.num_channels - len(self._piston_positions))
+    for channel, uL in positions.items():
+      self._piston_positions[channel] = uL
+    modelled = {c: uL for c, uL in positions.items() if c < len(self.resources)}
+    if modelled:
+      await model.record_positions(
+        self.resources[0].server,
+        [
+          spb.DevicePosition(resource=self.resources[c].ref, piston_volume=uL)
+          for c, uL in modelled.items()
+        ],
+      )
 
   async def dispensing_drives_request_uL_positions(
     self, use_channels: Optional[List[int]] = None
@@ -2016,8 +2047,7 @@ class Pipettes:
       channel, increments, clearance_steps, dv, dr, current_limit
     )
     drawn = c.dispensing_drive_increments_to_uL(increments)
-    self.piston_positions += [0.0] * (self.num_channels - len(self.piston_positions))
-    self.piston_positions[channel] = round(self.piston_positions[channel] + drawn, 1)
+    await self._set_piston_positions({channel: round(self._piston_at(channel) + drawn, 1)})
     return drawn
 
   # -- x and y together ----------------------------------------------------------------------------
@@ -5891,7 +5921,7 @@ class Pipettes:
       outcomes = [spb.ItemOutcome(item=item, succeeded=False) for item in range(len(jobs))]
       if tracking:
         for index, (channel, job) in enumerate(zip(batch.channels, jobs)):
-          before = self.piston_positions[channel]
+          before = self._piston_positions[channel]
           try:
             now = await self.dispensing_drive_request_uL_position(channel)
           except Exception:
@@ -5911,8 +5941,12 @@ class Pipettes:
       staged.operation,
       [spb.ItemOutcome(item=item, succeeded=True) for item in range(len(jobs))],
     )
-    for channel, job in zip(batch.channels, jobs):
-      self.piston_positions[channel] = piston_after(self.piston_positions[channel], job)
+    await self._set_piston_positions(
+      {
+        channel: piston_after(self._piston_at(channel), job)
+        for channel, job in zip(batch.channels, jobs)
+      }
+    )
 
   # -- aspirating ---------------------------------------------------------------------------------
 
@@ -6712,7 +6746,7 @@ class Pipettes:
     # Each tip the same, from what it holds.
     c = self.configuration
     room = c.dispensing_drive_increments_to_uL(c.dispensing_drive_volume_range_increments[1])
-    standing = {channel: self.piston_positions[channel] for channel in channel_of}
+    standing = {channel: self._piston_positions[channel] for channel in channel_of}
     filled = {channel: tips[job].state.volume.volume for job, channel in enumerate(channel_of)}
     for job, channel in enumerate(channel_of):
       travel = blow_out_air[job] + max(pre_wetting[job], drawn[job] + transport_air[job])
@@ -6720,7 +6754,7 @@ class Pipettes:
         raise ValueError(
           f"channel {channel}'s piston would stand at {standing[channel] + travel:.1f} uL drawing "
           f"from {containers[job].name}, past its drive's {room:.1f} uL; it holds "
-          f"{self.piston_positions[channel]:.1f} uL now"
+          f"{self._piston_positions[channel]:.1f} uL now"
         )
       if filled[channel] + travel > tips[job].attributes.tip.maximal_volume:
         raise ValueError(
@@ -7519,7 +7553,7 @@ class Pipettes:
     blow_out_air = per_container_settings["blow_out_air_volumes"] or [0.0] * n
     # From where it stands, each piston has to have the travel for its dispenses, and each
     # container the room for them, cycle by cycle.
-    standing = {channel: self.piston_positions[channel] for channel in channel_of}
+    standing = {channel: self._piston_positions[channel] for channel in channel_of}
     air = {channel: self._held_transport_air.get(channel, 0.0) for channel in channel_of}
     air_ahead: List[float] = []
     travels: List[float] = []
