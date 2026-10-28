@@ -91,7 +91,7 @@ class TestConstruction(unittest.IsolatedAsyncioTestCase):
     new ones."""
     first = STAR(simulation=True)
     await first.create_resources()
-    again = STAR(simulation=True, server=first.server)
+    again = STAR(simulation=True, resource_server=first.resource_server)
     await again.create_resources()
     self.assertEqual(again.body, first.body)
     self.assertEqual(again.deck, first.deck)
@@ -221,7 +221,7 @@ class TestComponentNames(unittest.IsolatedAsyncioTestCase):
           declared_configuration_json=recording,
           extension_housing=not side_panel,
           left_side_panel_installed=side_panel,
-          server=server,
+          resource_server=server,
         )
         await star.create_resources()
         assert star.deck is not None and star.body is not None
@@ -287,7 +287,7 @@ class TestTurnedDevice(unittest.IsolatedAsyncioTestCase):
           placed = []
           for rotation in (0, angle):
             device = factory(simulation=True, name="device")
-            room = await device.server.create(
+            room = await device.resource_server.create(
               build.resource("room", Coordinate(9000, 9000, 3000), location=Coordinate.zero()),
               name="room",
             )
@@ -296,7 +296,7 @@ class TestTurnedDevice(unittest.IsolatedAsyncioTestCase):
             await device.body.rotate(z=rotation)
             await room.assign_child_resource(device.body, location=Coordinate(4000, 4000, 0))
             await device.setup()
-            response = await device.server.commands.get_resources(
+            response = await device.resource_server.commands.get_resources(
               spb.GetResourcesRequest(resources=[device.body.ref], depth=-1)
             )
             placed.append(

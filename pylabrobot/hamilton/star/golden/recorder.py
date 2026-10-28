@@ -250,7 +250,7 @@ class STARRecorder(recording.Recorder):
   async def snapshot(self) -> List[Dict[str, Any]]:
     """The device's tree as the server holds it now."""
     assert self.device.body is not None, "the device's resources have not been made"
-    return await snapshot_server(self.device.server, self.device.body)
+    return await snapshot_server(self.device.resource_server, self.device.body)
 
   async def built(self, call: str) -> None:
     """Record the device as the scenario built it, before anything was sent: the whole tree.
