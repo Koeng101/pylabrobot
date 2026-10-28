@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+// What a client keeps of a served device, so what the device's attributes hold reads without a
+// call: each feature's configuration, and the resources its parts are. The server says when it
+// changed: every response carries the `star-description-revision` header, and a client whose
+// revision differs asks for it again.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/autoload.proto";
+import "pylabrobot/hamilton/star/server/v1/core_grippers.proto";
+import "pylabrobot/hamilton/star/server/v1/driver.proto";
+import "pylabrobot/hamilton/star/server/v1/front_cover.proto";
+import "pylabrobot/hamilton/star/server/v1/head384.proto";
+import "pylabrobot/hamilton/star/server/v1/head96.proto";
+import "pylabrobot/hamilton/star/server/v1/iswap.proto";
+import "pylabrobot/hamilton/star/server/v1/pipettes.proto";
+import "pylabrobot/hamilton/star/server/v1/x_arm.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+message DescribeRequest {}
+
+// The device: what it is, and its resources. Unset resources are not made yet.
+message Description {
+  string name = 1;
+  // "STAR", "STARlet" or "STARPlus".
+  string model = 2;
+  pylabrobot.resources.server.v1.ResourceRef body = 3;
+  pylabrobot.resources.server.v1.ResourceRef deck = 4;
+  pylabrobot.resources.server.v1.ResourceRef left_side_panel = 5;
+  pylabrobot.resources.server.v1.ResourceRef left_extension_housing = 6;
+  bool extension_housing = 7;
+  bool left_side_panel_installed = 8;
+  DriverDescription driver = 9;
+}
+
+// The driver, and the features discovery found. A feature is unset until setup has found it.
+message DriverDescription {
+  // Whether the link is open.
+  bool connected = 1;
+  DeviceConfiguration configuration = 2;
+  // Each module's firmware, by feature.
+  map<string, string> firmware = 3;
+  // The channels counted at setup.
+  optional int32 num_channels = 4;
+  // The declared configuration the driver read, as the file it read holds it; empty when none
+  // was declared.
+  string declared_json = 5;
+  XArmDescription left_x_arm = 6;
+  XArmDescription right_x_arm = 7;
+  AutoloadDescription autoload = 8;
+  FrontCoverDescription front_cover = 9;
+}
+
+// An X-arm, and what it carries. Its configuration is the device's, `left_arm` or `right_arm`.
+message XArmDescription {
+  pylabrobot.resources.server.v1.ResourceRef resource = 1;
+  PipettesDescription pipettes = 2;
+  Head96Description head96 = 3;
+  Head384Description head384 = 4;
+  ISwapDescription iswap = 5;
+  CoreGrippersDescription core_grippers = 6;
+  XArmSettings settings = 7;
+}
+
+message PipettesDescription {
+  PipettesConfiguration configuration = 1;
+  // One per channel, in channel order, once the channels are modelled.
+  repeated pylabrobot.resources.server.v1.ResourceRef resources = 2;
+  repeated pylabrobot.resources.server.v1.ResourceRef shafts = 3;
+  PipettesSettings settings = 4;
+}
+
+message Head96Description {
+  Head96Configuration configuration = 1;
+  pylabrobot.resources.server.v1.ResourceRef resource = 2;
+  // Each tip mounting shaft, by its position, "A1" say.
+  map<string, pylabrobot.resources.server.v1.ResourceRef> shafts = 3;
+  // The drive defaults are unset where the head has none.
+  Head96Settings settings = 4;
+}
+
+message Head384Description {
+  Head384Configuration configuration = 1;
+  pylabrobot.resources.server.v1.ResourceRef resource = 2;
+  map<string, pylabrobot.resources.server.v1.ResourceRef> shafts = 3;
+  Head384Settings settings = 4;
+}
+
+message ISwapDescription {
+  ISwapConfiguration configuration = 1;
+  pylabrobot.resources.server.v1.ResourceRef resource = 2;
+  pylabrobot.resources.server.v1.ResourceRef link_1 = 3;
+  pylabrobot.resources.server.v1.ResourceRef gripper = 4;
+  ISwapSettings settings = 5;
+}
+
+message CoreGrippersDescription {
+  CoreGrippersConfiguration configuration = 1;
+  CoreGrippersSettings settings = 2;
+}
+
+message AutoloadDescription {
+  AutoloadConfiguration configuration = 1;
+  pylabrobot.resources.server.v1.ResourceRef resource = 2;
+}
+
+message FrontCoverDescription {
+  FrontCoverConfiguration configuration = 1;
+}

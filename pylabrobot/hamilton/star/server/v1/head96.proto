@@ -1,0 +1,576 @@
+syntax = "proto3";
+
+// The 96-head: what it shares with the 384-head, and its own tips and liquid handling.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/head.proto";
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+// The 96-head's facts: its module, its drives, and what discovery read.
+message Head96Configuration {
+  string module = 1;
+  string retract_command = 2;
+  string initialize_command = 3;
+  string tip_presence_command = 4;
+  string position_command = 5;
+  string y_parameter = 6;
+  string z_parameter = 7;
+  string z_end_parameter = 8;
+  string x_offset_parameter = 9;
+  map<int32, string> head_types = 10;
+  map<string, int32> drive_parameters = 11;
+  int32 first_documented_firmware_year = 12;
+  optional string firmware_version = 13;
+  Date firmware_date = 14;
+  optional double x_offset = 15;
+  double channel_pitch = 16;
+  int32 channel_columns = 17;
+  int32 channel_rows = 18;
+  double body_size_z = 19;
+  double min_x_clear_of_left_side_panel = 20;
+  double min_tool_bottom_z = 21;
+  optional bool supports_clot_monitoring_clld = 22;
+  optional string head_type = 23;
+  pylabrobot.resources.server.v1.Vec3 tip_discard_location = 24;
+  DoubleRange z_range = 25;
+  double z_drive_mm_per_increment = 26;
+  double y_drive_mm_per_increment = 27;
+  double y_drive_acceleration_mm_per_increment = 28;
+  double z_drive_acceleration_mm_per_increment = 29;
+  double dispensing_drive_mm_per_increment = 30;
+  int32 dispensing_drive_speed_increments_per_unit = 31;
+  int32 dispensing_drive_acceleration_increments_per_unit = 32;
+  Int32Range z_speed_range_increments = 33;
+  Int32Range z_acceleration_range_increments = 34;
+  int32 predefined_y_position_origin = 35;
+  int32 predefined_z_position_origin = 36;
+  repeated string predefined_y_slots = 37;
+  StringInt32Map predefined_y_positions_increments = 38;
+  repeated string predefined_z_slots = 39;
+  StringInt32Map predefined_z_positions_increments = 40;
+  double traversal_z_position = 41;
+  int32 y_drive_current_limit_default = 42;
+  int32 z_drive_current_limit_default = 43;
+  Int32Range current_limit_range = 44;
+  Int32Range dispensing_drive_current_limit_range = 45;
+  int32 y_speed_default_increments = 46;
+  int32 y_acceleration_default_increments = 47;
+  int32 z_speed_default_increments = 48;
+  int32 z_acceleration_default_increments = 49;
+  optional double y_drive_speed_firmware_reported = 50;
+  optional double y_drive_acceleration_firmware_reported = 51;
+  optional double z_drive_speed_firmware_reported = 52;
+  optional double z_drive_acceleration_firmware_reported = 53;
+  optional double squeezer_drive_speed_firmware_reported = 54;
+  optional double squeezer_drive_acceleration_firmware_reported = 55;
+  optional StopDiscType stop_disc_type = 56;
+  optional Head96InstrumentType instrument_type = 57;
+  double dispensing_drive_uL_per_increment = 58;
+  double squeezer_drive_mm_per_increment = 59;
+  DoubleRange tip_command_y_range = 60;
+  double dispensing_drive_position_before_rack_pickup = 61;
+  Int32Range pipetting_volume_range_increments = 62;
+  Int32Range pipetting_speed_range_increments = 63;
+  Int32Range pipetting_distance_range_increments = 64;
+  Int32Range immersion_depth_range_increments = 65;
+  Int32Range surface_following_distance_range_increments = 66;
+  Int32Range swap_speed_range_increments = 67;
+  Int32Range transport_air_volume_range_increments = 68;
+  Int32Range stop_back_volume_range_increments = 69;
+  Int32Range side_touch_off_distance_range_increments = 70;
+  Int32Range settling_time_range_increments = 71;
+  Int32Range mix_cycles_range = 72;
+  Int32Range second_section_ratio_range_increments = 73;
+  Int32Range lld_sensitivity_range = 74;
+  Int32Range limit_curve_index_range = 75;
+  int32 y_increment_floor = 76;
+}
+
+message Head96DiscoverRequest {
+}
+
+message Head96DiscoverResponse {
+}
+
+message Head96InitializeRequest {
+  // Where to eject, in deck mm, at head channel A1. Defaults to
+  // `configuration.tip_discard_location`.
+  pylabrobot.resources.server.v1.Vec3 tip_discard_location = 1;
+  // Z to leave the head at, in mm. Defaults to `configuration.traversal_z_position`.
+  optional double minimum_traverse_height_end = 2;
+  // How long to wait for the device to answer, in seconds.
+  optional int32 read_timeout = 3;
+}
+
+message Head96InitializeResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message Head96PickUpTipsRequest {
+  // A 96 tip rack. Spots without a tip give none.
+  pylabrobot.resources.server.v1.ResourceRef tip_rack = 1;
+  // Added to where channel A1 goes, in mm, after the spots under the channels are known: a
+  // correction to where the model puts the rack, not a way to choose other spots.
+  pylabrobot.resources.server.v1.Vec3 offset = 2;
+  // `from_rack` sends the dispensing drive down first, since the device does not; `from_waste` and
+  // `full_blowout` move the plunger up before mounting.
+  optional Head96TipPickupMethod tip_pickup_method = 3;
+  // In mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_end = 4;
+  // In mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_start = 5;
+  // The head channel placed over `tip_spot`, A1 to H12.
+  optional string channel = 6;
+  // The spot `channel` is placed over, A1 to H12.
+  optional string tip_spot = 7;
+}
+
+message Head96PickUpTipsResponse {
+}
+
+message Head96DropTipsRequest {
+  // A 96 tip rack, or anything else, such as the trash.
+  pylabrobot.resources.server.v1.ResourceRef resource = 1;
+  // Added to where the head goes, in mm. Into a tip rack, after the spots under the channels are
+  // known, as for `pick_up_tips`.
+  pylabrobot.resources.server.v1.Vec3 offset = 2;
+  // In mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_end = 3;
+  // In mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_start = 4;
+  // The head channel placed over `tip_spot`, A1 to H12. A tip rack only.
+  optional string channel = 5;
+  // The spot `channel` is placed over, A1 to H12. A tip rack only.
+  optional string tip_spot = 6;
+}
+
+message Head96DropTipsResponse {
+}
+
+message Head96ReturnTipsRequest {
+  // Passed on to `drop_tips`:
+  // added to where the head goes, in mm. Into a tip rack, after the spots under the channels are
+  // known, as for `pick_up_tips`.
+  pylabrobot.resources.server.v1.Vec3 offset = 1;
+  // In mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_end = 2;
+  // In mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_start = 3;
+  // The head channel placed over `tip_spot`, A1 to H12. A tip rack only.
+  optional string channel = 4;
+  // The spot `channel` is placed over, A1 to H12. A tip rack only.
+  optional string tip_spot = 5;
+}
+
+message Head96ReturnTipsResponse {
+}
+
+message Head96DiscardTipsRequest {
+  // Passed on to `drop_tips`:
+  // added to where the head goes, in mm. Into a tip rack, after the spots under the channels are
+  // known, as for `pick_up_tips`.
+  pylabrobot.resources.server.v1.Vec3 offset = 1;
+  // In mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_end = 2;
+  // In mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_start = 3;
+  // The head channel placed over `tip_spot`, A1 to H12. A tip rack only.
+  optional string channel = 4;
+  // The spot `channel` is placed over, A1 to H12. A tip rack only.
+  optional string tip_spot = 5;
+}
+
+message Head96DiscardTipsResponse {
+}
+
+message Head96RequestLastLldZPositionRequest {
+}
+
+message Head96RequestLastLldZPositionResponse {
+  // The stop disc's Z position at detection, in mm.
+  double last_lld_z_position = 1;
+}
+
+message Head96ProbeZUsingClldRequest {
+  // Tip bottom height to search from, in mm. The highest when unset.
+  optional double search_start_position = 1;
+  // Lowest tip bottom height, in mm. The lowest when unset.
+  optional double search_end_position = 2;
+  // Tips below the stop disc, in mm. Measured when unset.
+  optional double tip_overhang = 3;
+  // To the search start, in mm/s. `z_drive_speed_default` when unset.
+  optional double approach_speed = 4;
+  // In mm/s. `default_clld_search_speed` when unset.
+  optional double search_speed = 5;
+  // In mm/s2. `default_clld_acceleration` when unset.
+  optional double acceleration = 6;
+  // `z_drive_current_limit_default` when unset.
+  optional int32 current_limit = 7;
+  // Which cLLD sensors trigger.
+  optional LLDSensor lld_sensor = 8;
+  // 0 to 1023. `default_clld_detection_edge` when unset.
+  optional int32 detection_edge = 9;
+  // 0 to 1023. `default_clld_detection_drop` when unset.
+  optional int32 detection_drop = 10;
+  // 0 moves down after detection, 1 up.
+  optional int32 post_detection_trajectory = 11;
+  // In mm. `default_clld_post_detection_distance` when unset.
+  optional double post_detection_distance = 12;
+  // Never go below `search_end_position` after detection.
+  optional bool limit_immersion_to_search_end = 13;
+  // Raise the head to safe Z afterwards.
+  optional bool move_to_safe_z_position_after = 14;
+}
+
+message Head96ProbeZUsingClldResponse {
+  // The tip bottom height at detection, in mm.
+  double height = 1;
+}
+
+message Head96ProbeLiquidHeightRequest {
+  // A plate (well A1, or its one well), a container, or wells (the first).
+  oneof resource {
+    pylabrobot.resources.server.v1.ResourceRef resource_resource = 1;
+    ResourceRefList resource_each = 2;
+  }
+  // Added to where head channel A1 goes, in mm; its z is not used.
+  pylabrobot.resources.server.v1.Vec3 offset = 3;
+  // Which cLLD sensors trigger.
+  optional LLDSensor lld_sensor = 4;
+  // In mm/s. `default_clld_search_speed` when unset.
+  optional double search_speed = 5;
+  // How many searches; the heights are averaged.
+  optional int32 n_replicates = 6;
+  // Tip bottom raised to before the move, in mm. Safe Z when unset.
+  optional double minimum_traverse_height_start = 7;
+  // Where the tips are left, in mm. Safe Z when unset.
+  optional double minimum_traverse_height_end = 8;
+}
+
+message Head96ProbeLiquidHeightResponse {
+  // How high the liquid stands above the cavity bottom, in mm; 0.0 where none was met.
+  double height = 1;
+}
+
+message Head96ProbeLiquidVolumeRequest {
+  oneof resource {
+    pylabrobot.resources.server.v1.ResourceRef resource_resource = 1;
+    ResourceRefList resource_each = 2;
+  }
+  pylabrobot.resources.server.v1.Vec3 offset = 3;
+  optional LLDSensor lld_sensor = 4;
+  optional double search_speed = 5;
+  optional int32 n_replicates = 6;
+  optional double minimum_traverse_height_start = 7;
+  optional double minimum_traverse_height_end = 8;
+}
+
+message Head96ProbeLiquidVolumeResponse {
+  // The volume, in uL; what its function makes of 0.0 where no liquid was met.
+  double volume = 1;
+}
+
+message Head96AspirateRequest {
+  // A plate of 96 wells or of one, its 96 wells, or a container.
+  oneof resource {
+    pylabrobot.resources.server.v1.ResourceRef resource_resource = 1;
+    ResourceRefList resource_each = 2;
+  }
+  // Liquid per channel, corrected by a liquid class. One of this and `piston_volume`.
+  optional double volume = 3;
+  // Added to where head channel A1 goes, in mm. Its z is ignored under CAPACITIVE.
+  pylabrobot.resources.server.v1.Vec3 offset = 4;
+  // Where an OFF draw goes above the cavity bottom, in mm. Refused under CAPACITIVE.
+  optional double liquid_height = 5;
+  // OFF, or CAPACITIVE to find the surface first; the head has no other. OFF when unset; CAPACITIVE
+  // under `auto_surface_following`.
+  optional LLDMode lld_mode = 6;
+  // In uL/s. The class's, else 100.0, when unset.
+  optional double flow_rate = 7;
+  // Looked up for the tip, water, `jet` and `blow_out` when unset.
+  LiquidClass hamilton_liquid_class = 8;
+  // Whether the later dispense is a jet, for the lookup.
+  optional bool jet = 9;
+  // Whether the later dispense blows out, for the lookup.
+  optional bool blow_out = 10;
+  // What the piston draws per channel, in uL, as given.
+  optional double piston_volume = 11;
+  // Which cLLD sensors trigger, under CAPACITIVE.
+  optional LLDSensor lld_sensor = 12;
+  // Of the driver's own search, in mm/s.
+  optional double search_speed = 13;
+  // Down to that search's start, in mm/s. `z_drive_speed_default` when unset.
+  optional double approach_speed = 14;
+  // Air drawn before the liquid, in uL. The class's, else 0.0, when unset.
+  optional double blow_out_air_volume = 15;
+  // How far into the liquid, in mm; negative is out of it. Under CAPACITIVE,
+  // `default_aspirate_immersion_depth` when unset, and never below the floor.
+  optional double immersion_depth = 16;
+  // How low the tips may go, in mm on the deck. The cavity bottom when unset.
+  optional double minimum_allowed_z_position_during = 17;
+  // Drawn and returned first, in uL. The class's, else 0.0, when unset.
+  optional double pre_wetting_volume = 18;
+  // Mixed before the draw; Unset for no mixing. Its auto surface following needs a surface, as the
+  // call's.
+  Mix pre_mix = 19;
+  // Mixing depth under the surface, in mm.
+  optional double mix_position_from_liquid_surface = 20;
+  // How far the tips follow the sinking surface, in mm.
+  optional double surface_following_distance = 21;
+  // Follow by how far the drawn liquid lowers the surface found, or at `liquid_height` under OFF;
+  // never below the floor. Refused beside a distance.
+  optional bool auto_surface_following = 22;
+  // Height of the container's narrower lower section, in mm.
+  optional double second_section_height = 23;
+  // That section's bottom to top ratio, in tenths.
+  optional double second_section_ratio = 24;
+  // Wait in the liquid, in s. The class's, else 0.0, when unset.
+  optional double settling_time = 25;
+  // Speed of leaving the liquid, in mm/s. The class's, else 100.0, when unset.
+  optional double swap_speed = 26;
+  // Rise before drawing transport air, in mm.
+  optional double pull_out_distance_transport_air = 27;
+  // Air drawn after the liquid, in uL. The class's, else 0.0, when unset.
+  optional double transport_air_volume = 28;
+  // TADM limit curve, 0 for none.
+  optional int32 limit_curve_index = 29;
+  // Tip bottom height to travel at, in mm. `configuration.traversal_z_position` when unset; safe Z
+  // under CAPACITIVE.
+  optional double minimum_traverse_height_start = 30;
+  // Where the tips are left, in mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_end = 31;
+}
+
+message Head96AspirateResponse {
+}
+
+message Head96DispenseRequest {
+  // A plate of 96 wells or of one, its 96 wells, or a container.
+  oneof resource {
+    pylabrobot.resources.server.v1.ResourceRef resource_resource = 1;
+    ResourceRefList resource_each = 2;
+  }
+  // Liquid per channel, corrected by a liquid class. One of this and `piston_volume`.
+  optional double volume = 3;
+  // Added to where head channel A1 goes, in mm. Its z is ignored under CAPACITIVE.
+  pylabrobot.resources.server.v1.Vec3 offset = 4;
+  // Where an OFF dispense goes above the cavity bottom, in mm. Refused under CAPACITIVE.
+  optional double liquid_height = 5;
+  // OFF, or CAPACITIVE to find the surface first; the head has no other. OFF when unset; CAPACITIVE
+  // under `auto_surface_following`.
+  optional LLDMode lld_mode = 6;
+  // In uL/s. The class's, else 120.0, when unset.
+  optional double flow_rate = 7;
+  // Looked up for the tip, water, `jet` and `blow_out` when unset.
+  LiquidClass hamilton_liquid_class = 8;
+  // A jet from above the liquid, rather than at the surface.
+  optional bool jet = 9;
+  // The blow-out air follows the liquid out.
+  optional bool blow_out = 10;
+  // The tips are emptied where they stand; the model books what they hold.
+  optional bool empty = 11;
+  // What the piston pushes out per channel, in uL, as given.
+  optional double piston_volume = 12;
+  // Which cLLD sensors trigger, under CAPACITIVE.
+  optional LLDSensor lld_sensor = 13;
+  // Of the driver's own search, in mm/s.
+  optional double search_speed = 14;
+  // Down to that search's start, in mm/s. `z_drive_speed_default` when unset.
+  optional double approach_speed = 15;
+  // Sideways move against the wall to shed the drop, in mm.
+  optional double side_touch_off_distance = 16;
+  // How far into the liquid, in mm; negative is out of it.
+  optional double immersion_depth = 17;
+  // How low the tips may go, in mm on the deck. The cavity bottom when unset.
+  optional double minimum_allowed_z_position_during = 18;
+  // Air pushed out before the liquid, in uL. The class's, else 0.0, when unset.
+  optional double transport_air_volume = 19;
+  // The flow the dispense ends at, in uL/s. The class's, else 5.0, when unset.
+  optional double cut_off_speed = 20;
+  // Drawn back after the dispense, in uL. The class's, else 0.0, when unset.
+  optional double stop_back_volume = 21;
+  // How far the tips follow the rising surface, in mm.
+  optional double surface_following_distance = 22;
+  // Follow by how far the dispensed liquid raises the surface found, or at `liquid_height` under
+  // OFF; never above the top. Refused beside a distance.
+  optional bool auto_surface_following = 23;
+  // Height of the container's narrower lower section, in mm.
+  optional double second_section_height = 24;
+  // That section's bottom to top ratio, in tenths.
+  optional double second_section_ratio = 25;
+  // Air pushed out after the liquid in a blow-out mode, in uL. The class's, else 0.0, when unset.
+  optional double blow_out_air_volume = 26;
+  // Mixed after the dispense; Unset for no mixing. Its auto surface following needs a surface, as
+  // the call's.
+  Mix post_mix = 27;
+  // Mixing depth under the surface, in mm.
+  optional double mix_position_from_liquid_surface = 28;
+  // Wait after the dispense, in s. The class's, else 0.0, when unset.
+  optional double settling_time = 29;
+  // Speed of leaving the liquid, in mm/s. The class's, else 10.0, when unset.
+  optional double swap_speed = 30;
+  // Rise before drawing transport air, in mm.
+  optional double pull_out_distance_transport_air = 31;
+  // TADM limit curve, 0 for none.
+  optional int32 limit_curve_index = 32;
+  // Tip bottom height to travel at, in mm. `configuration.traversal_z_position` when unset; safe Z
+  // under CAPACITIVE.
+  optional double minimum_traverse_height_start = 33;
+  // Where the tips are left, in mm. `configuration.traversal_z_position` when unset.
+  optional double minimum_traverse_height_end = 34;
+}
+
+message Head96DispenseResponse {
+}
+
+message Head96MixRequest {
+  // A plate (well A1, or its one well), a container, or wells (the first).
+  oneof resource {
+    pylabrobot.resources.server.v1.ResourceRef resource_resource = 1;
+    ResourceRefList resource_each = 2;
+  }
+  // Volume, repetitions, flow rate and surface following distance.
+  Mix mix = 3;
+  // Added to where head channel A1 goes, in mm. Its z is ignored under CAPACITIVE.
+  pylabrobot.resources.server.v1.Vec3 offset = 4;
+  // Tip bottom raised to before the move, in mm. Safe Z when unset.
+  optional double minimum_traverse_height_start = 5;
+  // OFF, or CAPACITIVE to find the surface first; the head has no other. OFF when unset; CAPACITIVE
+  // under `mix.auto_surface_following`, which OFF refuses.
+  optional LLDMode lld_mode = 6;
+  // Which cLLD sensors trigger, under CAPACITIVE.
+  optional LLDSensor lld_sensor = 7;
+  // In mm/s, under CAPACITIVE. `default_clld_search_speed` when unset.
+  optional double search_speed = 8;
+  // To just above the well, in mm/s. `default_mix_descent_speed` when unset.
+  optional double descent_speed = 9;
+  // Air drawn before mixing and expelled after, in uL; 0 skips it.
+  // `default_mix_blow_out_air_volume` when unset.
+  optional double blow_out_air_volume = 10;
+  // How far below the surface found the tips mix, in mm, under CAPACITIVE.
+  // `default_mix_position_from_liquid_surface` when unset.
+  optional double mix_position_from_liquid_surface = 11;
+  // Into and out of the well, in mm/s. `default_mix_swap_speed` when unset.
+  optional double swap_speed = 12;
+  // Wait after the last stroke, in s.
+  optional double settling_time = 13;
+  // Tip bottom height after mixing, in mm. Safe Z when unset.
+  optional double minimum_traverse_height_end = 14;
+}
+
+message Head96MixResponse {
+}
+
+// The defaults Head96 uses where a call names none. A STAR server takes them from its
+// settings file; unset fields keep the defaults in the code.
+message Head96Settings {
+  // CLLD search speed, in mm/s.
+  optional double default_clld_search_speed = 1;
+  // CLLD search acceleration, in mm/s2.
+  optional double default_clld_acceleration = 2;
+  // CLLD edge steepness, 0 to 1023.
+  optional int32 default_clld_detection_edge = 3;
+  // CLLD offset after the edge, 0 to 1023.
+  optional int32 default_clld_detection_drop = 4;
+  // How far the head moves after detection, in mm; positive up.
+  optional double default_clld_post_detection_distance = 5;
+  // Mix: down to just above the well, in mm/s.
+  optional double default_mix_descent_speed = 6;
+  // Mix: into and out of the well, in mm/s.
+  optional double default_mix_swap_speed = 7;
+  // Mix: air drawn above the well and expelled there after, in uL.
+  optional double default_mix_blow_out_air_volume = 8;
+  // Mix under cLLD: how far below the surface found the tips mix, in mm.
+  optional double default_mix_position_from_liquid_surface = 9;
+  // Aspirate under cLLD: how far below the surface found the tips draw, in mm.
+  optional double default_aspirate_immersion_depth = 10;
+  // In uL/s: how fast the dispensing drive moves when a move names no speed.
+  optional double default_dispensing_drive_speed = 11;
+  // In uL/s2: how hard the dispensing drive accelerates when a move names no acceleration.
+  optional double default_dispensing_drive_acceleration = 12;
+}
+
+service Head96Service {
+  // Read what head this is, put its resolutions in place, then take its squeezer defaults.
+  rpc Discover(Head96DiscoverRequest) returns (Head96DiscoverResponse);
+  // Initialize the head, discarding whatever is mounted on it, and read where its piston stands.
+  rpc Initialize(Head96InitializeRequest) returns (Head96InitializeResponse);
+  // Pick up tips from a rack on the head, as legacy's `pick_up_tips96`. `C0 EP`.
+  rpc PickUpTips(Head96PickUpTipsRequest) returns (Head96PickUpTipsResponse);
+  // Drop the head's tips into a tip rack or anywhere else, as legacy's `drop_tips96`. `C0 ER`.
+  rpc DropTips(Head96DropTipsRequest) returns (Head96DropTipsResponse);
+  // Put the head's tips back in the tip rack they were picked up from.
+  rpc ReturnTips(Head96ReturnTipsRequest) returns (Head96ReturnTipsResponse);
+  // Drop the head's tips into the deck's 96-head trash, whatever the model says it carries.
+  rpc DiscardTips(Head96DiscardTipsRequest) returns (Head96DiscardTipsResponse);
+  // Request where the stop disc was when the last cLLD search detected. `H0 RH`.
+  rpc RequestLastLldZPosition(Head96RequestLastLldZPositionRequest) returns (Head96RequestLastLldZPositionResponse);
+  // Lower the head's tips until its cLLD triggers, and read the tip bottom height it detected at.
+  rpc ProbeZUsingClld(Head96ProbeZUsingClldRequest) returns (Head96ProbeZUsingClldResponse);
+  // Find the liquid surface in a container with the whole head, and say how high it stands.
+  rpc ProbeLiquidHeight(Head96ProbeLiquidHeightRequest) returns (Head96ProbeLiquidHeightResponse);
+  // Find the liquid as `probe_liquid_height` does, and say how much there is.
+  rpc ProbeLiquidVolume(Head96ProbeLiquidVolumeRequest) returns (Head96ProbeLiquidVolumeResponse);
+  // Draw liquid with the whole head, in one `C0 EA`.
+  rpc Aspirate(Head96AspirateRequest) returns (Head96AspirateResponse);
+  // Dispense liquid with the whole head, in one `C0 ED`.
+  rpc Dispense(Head96DispenseRequest) returns (Head96DispenseResponse);
+  // Mix in place with the whole head, then `mix.repetitions` strokes.
+  rpc Mix(Head96MixRequest) returns (Head96MixResponse);
+  // Request one of the head's stored drive parameters.
+  rpc RequestDriveParameter(HeadRequestDriveParameterRequest) returns (HeadRequestDriveParameterResponse);
+  // Write one of the head's stored drive parameters.
+  rpc SetDriveParameter(HeadSetDriveParameterRequest) returns (HeadSetDriveParameterResponse);
+  // Request the head's firmware version and build date.
+  rpc RequestFirmwareVersion(HeadRequestFirmwareVersionRequest) returns (HeadRequestFirmwareVersionResponse);
+  // Request the head's configuration, undecoded.
+  rpc RequestHardware(HeadRequestHardwareRequest) returns (HeadRequestHardwareResponse);
+  // Request which head is fitted.
+  rpc RequestHeadType(HeadRequestHeadTypeRequest) returns (HeadRequestHeadTypeResponse);
+  // Request the X distance from the X-arm carriage center to head channel A1.
+  rpc RequestXOffset(HeadRequestXOffsetRequest) returns (HeadRequestXOffsetResponse);
+  // Request the Y positions the head has stored, in mm.
+  rpc RequestPredefinedYPositions(HeadRequestPredefinedYPositionsRequest) returns (HeadRequestPredefinedYPositionsResponse);
+  // Request the Z positions the head has stored, in mm.
+  rpc RequestPredefinedZPositions(HeadRequestPredefinedZPositionsRequest) returns (HeadRequestPredefinedZPositionsResponse);
+  // Request what the firmware holds about the head carrying tips.
+  rpc RequestTipPresence(HeadRequestTipPresenceRequest) returns (HeadRequestTipPresenceResponse);
+  // Record where the head is on the resource that models it.
+  rpc UpdateLocationByReferencePoint(HeadUpdateLocationByReferencePointRequest) returns (HeadUpdateLocationByReferencePointResponse);
+  // Where the model has channel A1's axis end, in mm on the deck.
+  rpc GetReferencePointLocation(HeadGetReferencePointLocationRequest) returns (HeadGetReferencePointLocationResponse);
+  // Request where along Y the head is.
+  rpc RequestYPosition(HeadRequestYPositionRequest) returns (HeadRequestYPositionResponse);
+  // Request the head's Z-drive position, at its lowest fixed feature.
+  rpc RequestZPosition(HeadRequestZPositionRequest) returns (HeadRequestZPositionResponse);
+  // Measure where head channel A1 is, with whatever it carries taken into account.
+  rpc RequestLocation(HeadRequestLocationRequest) returns (HeadRequestLocationResponse);
+  // Measure how far the tips the head carries stand below its own reference point.
+  rpc RequestTipOverhang(HeadRequestTipOverhangRequest) returns (HeadRequestTipOverhangResponse);
+  // Request where along X channel A1 is, in deck mm.
+  rpc RequestXPosition(HeadRequestXPositionRequest) returns (HeadRequestXPositionResponse);
+  // Move channel A1 along X. The whole arm travels, with everything else it carries.
+  rpc MoveToXPosition(HeadMoveToXPositionRequest) returns (HeadMoveToXPositionResponse);
+  // Move the head along Y. This moves it, and nothing else on the arm.
+  rpc MoveToYPosition(HeadMoveToYPositionRequest) returns (HeadMoveToYPositionResponse);
+  // Move head channel A1 over (x, y): the head up first, then X and Y together.
+  rpc MoveToXyPosition(HeadMoveToXyPositionRequest) returns (HeadMoveToXyPositionResponse);
+  // Retracts the head with the firmware's own retract and reads its stop disc z-position.
+  rpc ProbeZMax(HeadProbeZMaxRequest) returns (HeadProbeZMaxResponse);
+  // Move the head's stop disc along Z. This moves it, and nothing else on the arm.
+  rpc MoveStopDiscToZPosition(HeadMoveStopDiscToZPositionRequest) returns (HeadMoveStopDiscToZPositionResponse);
+  // Move the bottom of what the head carries along Z. This moves it, and nothing else on the arm.
+  rpc MoveToolBottomToZPosition(HeadMoveToolBottomToZPositionRequest) returns (HeadMoveToolBottomToZPositionResponse);
+  // Move the head up to its safe Z: the top of the window setup probed.
+  rpc MoveToSafeZ(HeadMoveToSafeZRequest) returns (HeadMoveToSafeZResponse);
+  // Read where the head's dispensing drive stands, in uL, and record it. `RD`.
+  rpc DispensingDriveRequestULPosition(HeadDispensingDriveRequestULPositionRequest) returns (HeadDispensingDriveRequestULPositionResponse);
+  // Where the head's piston stands, as this driver last read or sent it.
+  rpc GetPistonPosition(HeadGetPistonPositionRequest) returns (HeadGetPistonPositionResponse);
+  // Move the dispensing drive to an absolute piston position, and record it. `DQ`.
+  rpc MoveDispensingDriveToPosition(HeadMoveDispensingDriveToPositionRequest) returns (HeadMoveDispensingDriveToPositionResponse);
+  // Send the head to its park position. This moves it in Z, then in Y.
+  rpc Park(HeadParkRequest) returns (HeadParkResponse);
+}

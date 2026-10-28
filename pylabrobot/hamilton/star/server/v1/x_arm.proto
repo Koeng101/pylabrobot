@@ -1,0 +1,161 @@
+syntax = "proto3";
+
+// The X-arms: where each is along its rail. Every request names the arm it is for.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+
+// One X-arm, as the device's `left_arm` and `right_arm` hold it.
+message XArmConfiguration {
+  bool pip_installed = 1;
+  bool iswap_installed = 2;
+  bool head96_installed = 3;
+  bool nano_pipettor_installed = 4;
+  bool head384_installed = 5;
+  bool xl_channels_installed = 6;
+  bool tube_gripper_installed = 7;
+  bool imaging_channel_installed = 8;
+  bool robotic_channel_installed = 9;
+  bool gel_card_gripper_installed = 10;
+  bool puncher_handler_installed = 11;
+  optional double width = 12;
+  optional bool large = 13;
+  DoubleRange x_range = 14;
+  DoubleRange workspace_x_range = 15;
+  optional double wrap_size = 16;
+  optional string firmware_version = 17;
+  double x_mm_per_increment = 18;
+  Int32Range x_range_increments = 19;
+  Int32Range acceleration_level_range = 20;
+  double large_arm_size_x = 21;
+  double large_arm_reference_from_left = 22;
+}
+
+message XArmRequestFirmwareVersionRequest {
+  XArmSide side = 1;
+}
+
+message XArmRequestFirmwareVersionResponse {
+  // The version string and its build date, e.g. `("1.4S 2012-04-25", date(2012, 4, 25))`.
+  string version = 1;
+  Date date = 2;
+}
+
+message XArmRequestInitializationStatusRequest {
+  XArmSide side = 1;
+}
+
+message XArmRequestInitializationStatusResponse {
+  // Whether it is initialized.
+  bool initialized = 1;
+}
+
+message XArmDiscoverRequest {
+  XArmSide side = 1;
+}
+
+message XArmDiscoverResponse {
+}
+
+message XArmInitializeRequest {
+  XArmSide side = 1;
+  // The motor current limit. Defaults to `default_current_limit`.
+  optional int32 current_limit = 2;
+}
+
+message XArmInitializeResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message XArmUpdateLocationByReferencePointRequest {
+  XArmSide side = 1;
+  // Where the reference point is now, in mm.
+  double x = 2;
+}
+
+message XArmUpdateLocationByReferencePointResponse {
+}
+
+message XArmGetReferencePointXRequest {
+  XArmSide side = 1;
+}
+
+message XArmGetReferencePointXResponse {
+  // Where the model has it, or unset when nothing models it yet.
+  optional double reference_point_x = 1;
+}
+
+message XArmRequestPositionRequest {
+  XArmSide side = 1;
+}
+
+message XArmRequestPositionResponse {
+  // The position in mm.
+  double position = 1;
+}
+
+message XArmMoveToXPositionRequest {
+  XArmSide side = 1;
+  // Target X position in mm, at the arm's reference point. Must lie within the arm's travel range
+  // (`configuration.x_range`).
+  double x = 2;
+  // Which acceleration curve to use. Defaults to `default_acceleration_level`, gentler than the
+  // drive's own 4. The hardest curve leaves the arm oscillating about its target rather than
+  // approaching it, so it takes longer to come to rest and further still with a 96-head parked
+  // forward - it arrives either way, but the settling read below has more to wait for.
+  optional int32 acceleration_level = 3;
+  // The motor current limit. Defaults to `default_current_limit`.
+  optional int32 current_limit = 4;
+  // How many reads to spend waiting for the arm to come to rest. Each is a command round trip,
+  // about 10 ms, against a settle of 27 to 90 ms where this was measured.
+  optional int32 settle_reads = 5;
+}
+
+message XArmMoveToXPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message XArmMoveXRelativeRequest {
+  XArmSide side = 1;
+  // How far to move, in mm. Positive moves along the rail towards higher x, negative towards lower.
+  double distance = 2;
+  // Which acceleration curve to use.
+  optional int32 acceleration_level = 3;
+  // The motor current limit.
+  optional int32 current_limit = 4;
+}
+
+message XArmMoveXRelativeResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+// The defaults XArm uses where a call names none. A STAR server takes them from its
+// settings file; unset fields keep the defaults in the code.
+message XArmSettings {
+  optional int32 default_acceleration_level = 1;
+  optional int32 default_current_limit = 2;
+}
+
+service XArmService {
+  // Request the X-drive board's firmware version and build date.
+  rpc RequestFirmwareVersion(XArmRequestFirmwareVersionRequest) returns (XArmRequestFirmwareVersionResponse);
+  // Request whether this arm's drive reports itself initialized.
+  rpc RequestInitializationStatus(XArmRequestInitializationStatusRequest) returns (XArmRequestInitializationStatusResponse);
+  // Read what this arm is. Read-only: nothing moves.
+  rpc Discover(XArmDiscoverRequest) returns (XArmDiscoverResponse);
+  // Initialize this arm's drive. This moves it.
+  rpc Initialize(XArmInitializeRequest) returns (XArmInitializeResponse);
+  // Record where this arm is on the resource that models it.
+  rpc UpdateLocationByReferencePoint(XArmUpdateLocationByReferencePointRequest) returns (XArmUpdateLocationByReferencePointResponse);
+  // Where the model has this arm's reference point along X, in mm on the deck it stands on.
+  rpc GetReferencePointX(XArmGetReferencePointXRequest) returns (XArmGetReferencePointXResponse);
+  // Request where along its rail the arm is.
+  rpc RequestPosition(XArmRequestPositionRequest) returns (XArmRequestPositionResponse);
+  // Move the arm to an absolute X position.
+  rpc MoveToXPosition(XArmMoveToXPositionRequest) returns (XArmMoveToXPositionResponse);
+  // Move the arm by a distance from where it is now.
+  rpc MoveXRelative(XArmMoveXRelativeRequest) returns (XArmMoveXRelativeResponse);
+}

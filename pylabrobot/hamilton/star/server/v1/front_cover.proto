@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+// The front cover's lock.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+
+// The front cover's facts.
+message FrontCoverConfiguration {
+  map<string, int32> position_codes = 1;
+}
+
+message FrontCoverRequestStateRequest {
+}
+
+message FrontCoverRequestStateResponse {
+  // Which one, as named in `configuration.position_codes`.
+  FrontCoverState state = 1;
+}
+
+message FrontCoverEnableControlRequest {
+}
+
+message FrontCoverEnableControlResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message FrontCoverDisableControlRequest {
+}
+
+message FrontCoverDisableControlResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+service FrontCoverService {
+  // Request whether the cover is open or shut.
+  rpc RequestState(FrontCoverRequestStateRequest) returns (FrontCoverRequestStateResponse);
+  // Enable cover control: the interlock.
+  rpc EnableControl(FrontCoverEnableControlRequest) returns (FrontCoverEnableControlResponse);
+  // Disable cover control, so motion is no longer refused while the cover is open.
+  rpc DisableControl(FrontCoverDisableControlRequest) returns (FrontCoverDisableControlResponse);
+}

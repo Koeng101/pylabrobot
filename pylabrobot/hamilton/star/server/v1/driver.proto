@@ -1,0 +1,280 @@
+syntax = "proto3";
+
+// The STAR's driver: the device's own configuration and firmware, and its master module.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+import "pylabrobot/hamilton/star/server/v1/x_arm.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+// What the device reported at discovery, as `STARDriver.configuration` holds it.
+message DeviceConfiguration {
+  optional string serial_number = 1;
+  optional string firmware_version = 2;
+  Date firmware_date = 3;
+  bool pip_type_1000ul = 4;
+  bool kb_iswap_installed = 5;
+  bool main_front_cover_monitoring_installed = 6;
+  bool autoload_installed = 7;
+  bool wash_station_1_installed = 8;
+  bool wash_station_2_installed = 9;
+  bool temp_controlled_carrier_1_installed = 10;
+  bool temp_controlled_carrier_2_installed = 11;
+  int32 num_pip_channels = 12;
+  bool left_x_drive_large = 13;
+  bool head96_installed = 14;
+  bool right_x_drive_large = 15;
+  bool pump_station_1_installed = 16;
+  bool pump_station_2_installed = 17;
+  bool wash_station_1_type_cr = 18;
+  bool wash_station_2_type_cr = 19;
+  bool left_cover_installed = 20;
+  bool right_cover_installed = 21;
+  bool additional_front_cover_monitoring_installed = 22;
+  bool pump_station_3_installed = 23;
+  bool multi_channel_nano_pipettor_installed = 24;
+  bool head384_installed = 25;
+  bool xl_channels_installed = 26;
+  bool tube_gripper_installed = 27;
+  bool waste_direction_left = 28;
+  bool iswap_gripper_wide = 29;
+  bool additional_channel_nano_pipettor_installed = 30;
+  bool imaging_channel_installed = 31;
+  bool robotic_channel_installed = 32;
+  bool channel_order_ox_first = 33;
+  bool x0_interface_ham_can = 34;
+  bool park_heads_with_iswap_off = 35;
+  int32 configuration_data_3 = 36;
+  int32 instrument_size_slots = 37;
+  int32 autoload_size_slots = 38;
+  double tip_waste_x_position = 39;
+  XArmConfiguration left_arm = 40;
+  XArmConfiguration right_arm = 41;
+  double min_iswap_collision_free_position = 42;
+  double max_iswap_collision_free_position = 43;
+  double left_x_arm_width = 44;
+  double right_x_arm_width = 45;
+  int32 num_xl_channels = 46;
+  int32 num_robotic_channels = 47;
+  double min_raster_pitch_pip_channels = 48;
+  double min_raster_pitch_xl_channels = 49;
+  double min_raster_pitch_robotic_channels = 50;
+  double pip_maximal_y_position = 51;
+  double left_arm_min_y_position = 52;
+  double right_arm_min_y_position = 53;
+}
+
+message DriverSetupRequest {
+  // Do not run the device's own initialization procedure on a device that reports itself down. A
+  // device that reports itself up is still raised to Z safety, which is not motion this can
+  // decline: nothing may travel laterally while a channel is low.
+  optional bool skip_device_initialization = 1;
+  // Do not initialize the channels.
+  optional bool skip_pipettes = 2;
+  // Do not initialize or park the iSWAP.
+  optional bool skip_iswap = 3;
+  // Do not initialize the 96-head.
+  optional bool skip_head96 = 4;
+  // Do not initialize the 384-head.
+  optional bool skip_head384 = 5;
+  // Do not initialize or park the autoload.
+  optional bool skip_autoload = 6;
+}
+
+message DriverSetupResponse {
+}
+
+message DriverFeaturesBelowSafeZRequest {
+  // How far below the top of the window still counts as up, in mm.
+  optional double tolerance = 1;
+}
+
+message DriverFeaturesBelowSafeZResponse {
+  // One entry per channel, head, arm or wheel that is low, naming it and where it says it is. Empty
+  // when everything is up, which is the only state anything may travel laterally in.
+  repeated string features = 1;
+}
+
+message DriverStopRequest {
+}
+
+message DriverStopResponse {
+}
+
+message DriverSendCommandRequest {
+  // The module to address the command to.
+  string module = 1;
+  // The two-letter command code.
+  string command = 2;
+  optional bool auto_id = 3;
+  BoolList tip_pattern = 4;
+  optional int32 write_timeout = 5;
+  optional int32 read_timeout = 6;
+  optional string fmt = 7;
+  // Which subsystem the command drives, when that is not the module it is addressed to. Only a C0
+  // command needs it.
+  optional string subsystem = 8;
+  // The command's own parameters, by their two-letter names.
+  map<string, string> parameters = 9;
+}
+
+message DriverSendCommandResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message DriverSendRawCommandRequest {
+  string command = 1;
+  optional int32 write_timeout = 2;
+  optional int32 read_timeout = 3;
+  optional bool wait = 4;
+}
+
+message DriverSendRawCommandResponse {
+  // Whatever the device answered, or unset when nothing came back.
+  optional string reply = 1;
+}
+
+message DriverRequestDeviceSerialNumberRequest {
+}
+
+message DriverRequestDeviceSerialNumberResponse {
+  // The serial number the device answers.
+  string serial_number = 1;
+}
+
+message DriverRequestFirmwareVersionRequest {
+}
+
+message DriverRequestFirmwareVersionResponse {
+  // The version string and its build date, e.g. `("7.6S", date(2021, 11, 5))`.
+  string version = 1;
+  Date date = 2;
+}
+
+message DriverRequestCoverInputStatusRequest {
+}
+
+message DriverRequestCoverInputStatusResponse {
+  // Whether each of the three inputs is set.
+  bool input_1 = 1;
+  bool input_2 = 2;
+  bool input_3 = 3;
+}
+
+message DriverRequestMaximalRangesOfXDrivesRequest {
+}
+
+message DriverRequestMaximalRangesOfXDrivesResponse {
+  // The `(minimum, maximum)` X position in mm each drive can reach, keyed by side: `{"left": (min,
+  // max), "right": (min, max)}`.
+  map<string, DoubleRange> maximal_ranges_of_x_drives = 1;
+}
+
+message DriverRequestWorkingEnvelopesPerArmRequest {
+}
+
+message DriverRequestWorkingEnvelopesPerArmResponse {
+  // Per side, `(wrap_size, (workspace_min, workspace_max))` in mm, keyed by side. A `wrap_size` of
+  // 0 means that arm is not installed.
+  map<string, WorkingEnvelope> working_envelopes_per_arm = 1;
+}
+
+message DriverRequestDeviceConfigurationRequest {
+}
+
+message DriverRequestDeviceConfigurationResponse {
+  // What the device reports it carries.
+  DeviceConfiguration configuration = 1;
+}
+
+message DriverRequestInitializationStatusRequest {
+  // The module to ask. Defaults to the master, which reports for the device.
+  optional string module = 1;
+}
+
+message DriverRequestInitializationStatusResponse {
+  // True if the module is initialized.
+  bool initialized = 1;
+}
+
+message DriverDefineTipNeedleRequest {
+  // Which entry to write, 1 to 99.
+  int32 tip_type_table_index = 1;
+  // Whether the tip has a filter.
+  bool has_filter = 2;
+  // How far the tip stands proud of what holds it, in mm. Its total length past its fitting depth.
+  double tip_length = 3;
+  // What the tip holds, in uL. The firmware caps it at the channel's capacity.
+  double maximum_tip_volume = 4;
+  // Which collar the tip has, which is how the device identifies it.
+  TipSize tip_size = 5;
+  // Whether it is collected from a rack or out of wash liquid.
+  TipPickupMethod pickup_method = 6;
+}
+
+message DriverDefineTipNeedleResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message DriverGetOrAssignTipTypeIndexRequest {
+  // The tip to look up, as the server holds it.
+  pylabrobot.resources.server.v1.ResourceAttributes tip = 1;
+}
+
+message DriverGetOrAssignTipTypeIndexResponse {
+  // Its index in the device's tip type table.
+  int32 tip_type_index = 1;
+}
+
+message DriverDiscoverRequest {
+}
+
+message DriverDiscoverResponse {
+}
+
+message DriverInitializeRequest {
+  // How long to wait for the procedure, in seconds.
+  optional int32 read_timeout = 1;
+}
+
+message DriverInitializeResponse {
+  // Whether the device reported itself already initialized before this ran.
+  bool initialized = 1;
+}
+
+service DriverService {
+  // Connect to the device, find out what it is, and bring it up.
+  rpc Setup(DriverSetupRequest) returns (DriverSetupResponse);
+  // Which channels, heads, iSWAP and the autoload wheel report below where they are safe.
+  rpc FeaturesBelowSafeZ(DriverFeaturesBelowSafeZRequest) returns (DriverFeaturesBelowSafeZResponse);
+  // Close the link, leaving the device safe to move laterally.
+  rpc Stop(DriverStopRequest) returns (DriverStopResponse);
+  // Assemble a firmware command, send it, and parse the reply if a format is given.
+  rpc SendCommand(DriverSendCommandRequest) returns (DriverSendCommandResponse);
+  // Send a raw command to the device.
+  rpc SendRawCommand(DriverSendRawCommandRequest) returns (DriverSendRawCommandResponse);
+  // Request what the device calls itself.
+  rpc RequestDeviceSerialNumber(DriverRequestDeviceSerialNumberRequest) returns (DriverRequestDeviceSerialNumberResponse);
+  // Request the master's firmware version and build date.
+  rpc RequestFirmwareVersion(DriverRequestFirmwareVersionRequest) returns (DriverRequestFirmwareVersionResponse);
+  // Read the three inputs on the cover connector.
+  rpc RequestCoverInputStatus(DriverRequestCoverInputStatusRequest) returns (DriverRequestCoverInputStatusResponse);
+  // Request the maximal travel range of each X drive.
+  rpc RequestMaximalRangesOfXDrives(DriverRequestMaximalRangesOfXDrivesRequest) returns (DriverRequestMaximalRangesOfXDrivesResponse);
+  // Request the working envelope of each installed arm.
+  rpc RequestWorkingEnvelopesPerArm(DriverRequestWorkingEnvelopesPerArmRequest) returns (DriverRequestWorkingEnvelopesPerArmResponse);
+  // Request the device's installed hardware and geometry.
+  rpc RequestDeviceConfiguration(DriverRequestDeviceConfigurationRequest) returns (DriverRequestDeviceConfigurationResponse);
+  // Whether a module reports itself initialized.
+  rpc RequestInitializationStatus(DriverRequestInitializationStatusRequest) returns (DriverRequestInitializationStatusResponse);
+  // Write one entry of the device's tip type table.
+  rpc DefineTipNeedle(DriverDefineTipNeedleRequest) returns (DriverDefineTipNeedleResponse);
+  // The table index this tip is defined at, defining it if it is new to this session.
+  rpc GetOrAssignTipTypeIndex(DriverGetOrAssignTipTypeIndexRequest) returns (DriverGetOrAssignTipTypeIndexResponse);
+  // Read what device is on the other end, and build the subsystems it turns out to have.
+  rpc Discover(DriverDiscoverRequest) returns (DriverDiscoverResponse);
+  // Bring the device itself to a known state.
+  rpc Initialize(DriverInitializeRequest) returns (DriverInitializeResponse);
+}

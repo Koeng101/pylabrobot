@@ -1,0 +1,640 @@
+syntax = "proto3";
+
+// The autoload: its sled, its barcode scanner, and the carriers it loads.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+// The autoload's facts: its positions, its scanner, and its adjustment.
+message AutoloadConfiguration {
+  string module = 1;
+  optional string firmware_version = 2;
+  Date firmware_date = 3;
+  optional string autoload_type = 4;
+  map<string, int32> y_positions = 5;
+  map<string, int32> z_positions = 6;
+  map<string, int32> scanner_rotations = 7;
+  map<string, int32> barcode_reading_directions = 8;
+  StringInt32Map barcode_symbologies = 9;
+  StringInt32Map barcode_2d_symbologies = 10;
+  map<string, int32> scan_directions = 11;
+  double x_drive_mm_per_increment = 12;
+  optional bool loading_indicators_installed = 13;
+  optional int32 initialization_track = 14;
+  Date adjustment_date = 15;
+  optional bool adjusted = 16;
+  double drive_zero_on_the_deck = 17;
+  double reference_point_from_sled_left_edge = 18;
+  Int32Range x_drive_range_increments = 19;
+  Int32Range x_drive_speed_range_increments = 20;
+  int32 x_drive_speed_default = 21;
+  Int32Range x_drive_acceleration_ramp_range = 22;
+  int32 x_drive_acceleration_ramp_default = 23;
+  double z_drive_mm_per_increment = 24;
+  Int32Range z_drive_range_increments = 25;
+  Int32Range z_drive_speed_range_increments = 26;
+  int32 z_drive_speed_default = 27;
+  Int32Range z_drive_acceleration_ramp_range = 28;
+  int32 z_drive_acceleration_ramp_default = 29;
+  double y_drive_mm_per_increment = 30;
+  Int32Range y_drive_range_increments = 31;
+  Int32Range y_drive_speed_range_increments = 32;
+  int32 y_drive_speed_default = 33;
+  Int32Range y_drive_acceleration_ramp_range = 34;
+  int32 y_drive_acceleration_ramp_default = 35;
+  Int32Range motor_current_limit_range = 36;
+  int32 motor_current_limit_default = 37;
+  int32 acceleration_ramp_increments_per_second_squared = 38;
+}
+
+message AutoloadRequestFirmwareVersionRequest {
+}
+
+message AutoloadRequestFirmwareVersionResponse {
+  // The version string and its build date.
+  string version = 1;
+  Date date = 2;
+}
+
+message AutoloadRequestAutoloadTypeRequest {
+}
+
+message AutoloadRequestAutoloadTypeResponse {
+  // What it is, as named in `AUTOLOAD_TYPES`, or the code it answered with when that is not one of
+  // them.
+  string autoload_type = 1;
+}
+
+message AutoloadRequestAdjustmentStatusRequest {
+}
+
+message AutoloadRequestAdjustmentStatusResponse {
+  // The date of the adjustment, and whether the module considers itself adjusted. An unadjusted
+  // module's stored values are factory defaults rather than this unit's own.
+  Date adjustment_date = 1;
+  bool adjusted = 2;
+}
+
+message AutoloadRequestInitSlotRequest {
+}
+
+message AutoloadRequestInitSlotResponse {
+  // The track, counted from 1.
+  int32 init_slot = 1;
+}
+
+message AutoloadRequestAdjustmentValuesRequest {
+}
+
+message AutoloadRequestAdjustmentValuesResponse {
+  // The reply, as the module wrote it.
+  string adjustment_values = 1;
+}
+
+message AutoloadRequestModuleConfigurationRequest {
+}
+
+message AutoloadRequestModuleConfigurationResponse {
+  // How far one scanner step moves it, in mm, and whether the loading indicators are fitted.
+  double scanner_mm_per_step = 1;
+  bool loading_indicators_installed = 2;
+}
+
+message AutoloadRequestParameterRequest {
+  // The two-letter name, as the module's own command set writes it.
+  string parameter = 1;
+}
+
+message AutoloadRequestParameterResponse {
+  // The reply, as the module wrote it.
+  string value = 1;
+}
+
+message AutoloadRequestInitializationStatusRequest {
+}
+
+message AutoloadRequestInitializationStatusResponse {
+  // Whether it is initialized. It reports itself uninitialized again once the device's own
+  // initialization has run.
+  bool initialized = 1;
+}
+
+message AutoloadDiscoverRequest {
+}
+
+message AutoloadDiscoverResponse {
+}
+
+message AutoloadInitializeRequest {
+  // Whether to park it once it is up, leaving it clear of the deck.
+  optional bool park_after = 1;
+}
+
+message AutoloadInitializeResponse {
+}
+
+message AutoloadRequestTrackRequest {
+}
+
+message AutoloadRequestTrackResponse {
+  // The track, counted from 1, or 0 when it is at neither end of a track.
+  int32 track = 1;
+}
+
+message AutoloadRequestXPositionRequest {
+}
+
+message AutoloadRequestXPositionResponse {
+  // The position along the deck, in mm.
+  double x_position = 1;
+}
+
+message AutoloadUpdateLocationByReferencePointRequest {
+  // Where the wheel is along the deck, in mm.
+  double x = 1;
+}
+
+message AutoloadUpdateLocationByReferencePointResponse {
+}
+
+message AutoloadGetReferencePointXRequest {
+}
+
+message AutoloadGetReferencePointXResponse {
+  // Where the model has it, or unset when nothing models the sled yet.
+  optional double reference_point_x = 1;
+}
+
+message AutoloadMoveToTrackRequest {
+  // Which track to move to, counted from 1.
+  int32 track = 1;
+  // How fast to travel, in mm/s. Defaults to `configuration.x_drive_speed_default`.
+  optional double speed = 2;
+  // How hard to accelerate, in multiples of
+  // `configuration.acceleration_ramp_increments_per_second_squared`. Defaults to
+  // `configuration.x_drive_acceleration_ramp_default`.
+  optional int32 acceleration_ramp = 3;
+  // The motor current limit. Defaults to `configuration.motor_current_limit_default`.
+  optional int32 current_limit = 4;
+}
+
+message AutoloadMoveToTrackResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadMoveToXPositionRequest {
+  // Where to send the wheel along the deck, in mm, as `request_x_position` reports it.
+  double x = 1;
+  // How fast to travel, in mm/s. Defaults to `configuration.x_drive_speed_default`.
+  optional double speed = 2;
+  // How hard to accelerate, in multiples of
+  // `configuration.acceleration_ramp_increments_per_second_squared`. Defaults to
+  // `configuration.x_drive_acceleration_ramp_default`.
+  optional int32 acceleration_ramp = 3;
+  // The motor current limit. Defaults to `configuration.motor_current_limit_default`.
+  optional int32 current_limit = 4;
+}
+
+message AutoloadMoveToXPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadMoveXRelativeRequest {
+  // How far to move, in mm. Positive moves along the deck towards higher x, negative back towards
+  // the deck's origin.
+  double distance = 1;
+  // How fast to travel, in mm/s. Defaults to `configuration.x_drive_speed_default`.
+  optional double speed = 2;
+  // How hard to accelerate. Defaults to `configuration.x_drive_acceleration_ramp_default`.
+  optional int32 acceleration_ramp = 3;
+  // The motor current limit. Defaults to `configuration.motor_current_limit_default`.
+  optional int32 current_limit = 4;
+}
+
+message AutoloadMoveXRelativeResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadParkRequest {
+}
+
+message AutoloadParkResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadWheelRequestZPositionRequest {
+}
+
+message AutoloadWheelRequestZPositionResponse {
+  // The position in mm, from the drive's zero.
+  double z_position = 1;
+}
+
+message AutoloadWheelIsAtSafeZRequest {
+  // How far below the start of its travel still counts as being there, in mm. What the drive
+  // answers is its hardware counter, which comes to rest a step or two past the position it was
+  // sent to.
+  optional double tolerance = 1;
+}
+
+message AutoloadWheelIsAtSafeZResponse {
+  // True if the wheel stands no further than `tolerance` below the first increment of
+  // `z_drive_range_increments`.
+  bool at_safe_z = 1;
+}
+
+message AutoloadWheelMoveToSafeZRequest {
+}
+
+message AutoloadWheelMoveToSafeZResponse {
+  // The wheel's Z position, in mm.
+  double z_position = 1;
+}
+
+message AutoloadWheelMoveToZPositionRequest {
+  // Where to: in mm from the drive's zero, or one of the positions it knows by name, `below` or
+  // `above`.
+  oneof z {
+    double z_value = 1;
+    WheelZPosition z_named = 2;
+  }
+  // How fast to travel, in mm/s. Defaults to `configuration.z_drive_speed_default`.
+  optional double speed = 3;
+  // How hard to accelerate, in multiples of
+  // `configuration.acceleration_ramp_increments_per_second_squared`. Defaults to
+  // `configuration.z_drive_acceleration_ramp_default`.
+  optional int32 acceleration_ramp = 4;
+  // The motor current limit. Defaults to `configuration.motor_current_limit_default`.
+  optional int32 current_limit = 5;
+}
+
+message AutoloadWheelMoveToZPositionResponse {
+  // Where the wheel came to rest, in mm, as its drive reads it.
+  double z_position = 1;
+}
+
+message AutoloadWheelRequestYPositionRequest {
+}
+
+message AutoloadWheelRequestYPositionResponse {
+  // The position in mm, from the drive's zero.
+  double y_position = 1;
+}
+
+message AutoloadWheelMoveToYPositionRequest {
+  // Where to: in mm from the drive's zero, or one of the positions it knows by name,
+  // `loading_tray`, `carrier_identification` or `deck`.
+  oneof y {
+    double y_value = 1;
+    WheelYPosition y_named = 2;
+  }
+  // How fast to travel, in mm/s. Defaults to `configuration.y_drive_speed_default`.
+  optional double speed = 3;
+  // How hard to accelerate, in multiples of
+  // `configuration.acceleration_ramp_increments_per_second_squared`. Defaults to
+  // `configuration.y_drive_acceleration_ramp_default`.
+  optional int32 acceleration_ramp = 4;
+  // The motor current limit. Defaults to `configuration.motor_current_limit_default`.
+  optional int32 current_limit = 5;
+}
+
+message AutoloadWheelMoveToYPositionResponse {
+  // Where the carrier drive came to rest, in mm, as it reads it.
+  double y_position = 1;
+}
+
+message AutoloadScannerRequestRotationRequest {
+}
+
+message AutoloadScannerRequestRotationResponse {
+  // Which way it faces, or `undefined` when it sits at neither of the two stops.
+  ScannerRotation rotation = 1;
+}
+
+message AutoloadScannerMoveToPositionRequest {
+  // Which way to face. Only the two stops can be moved to, so `undefined` is refused.
+  ScannerRotation position = 1;
+  // Whether to hold the drive there once it arrives. The drive's own default is not to.
+  optional bool stop_torque = 2;
+}
+
+message AutoloadScannerMoveToPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadSenseCarrierPresenceOnDeckRequest {
+}
+
+message AutoloadSenseCarrierPresenceOnDeckResponse {
+  // The rightmost track of each carrier found, counted from 1, in order.
+  repeated int32 tracks = 1;
+}
+
+message AutoloadSenseCarrierPresenceOnSingleLoadingTrayTrackRequest {
+  // Which track to look at, counted from 1.
+  int32 track = 1;
+  // Whether to park the sled after reading the sensor.
+  optional bool park_after = 2;
+}
+
+message AutoloadSenseCarrierPresenceOnSingleLoadingTrayTrackResponse {
+  // True if a carrier is there.
+  bool present = 1;
+}
+
+message AutoloadSenseCarrierPresenceOnLoadingTrayRequest {
+}
+
+message AutoloadSenseCarrierPresenceOnLoadingTrayResponse {
+  // The tracks that hold a carrier, counted from 1.
+  repeated int32 tracks = 1;
+}
+
+message AutoloadRequestLatestBarcodeReadRequest {
+}
+
+message AutoloadRequestLatestBarcodeReadResponse {
+  // What it read, or unset when it read nothing.
+  optional string latest_barcode_read = 1;
+}
+
+message AutoloadSetBarcodeScannerEnabledRequest {
+  // Whether to switch it on.
+  bool enabled = 1;
+  // Which symbologies to read. Defaults to `ANY 1D`, every one it reads.
+  BarcodeSymbologyList symbologies = 2;
+  // Which 2D and stacked codes to read, on a reader that reads them. Defaults to `ANY 2D` there,
+  // and is refused on a scanner that reads only 1D.
+  Barcode2DSymbologyList symbologies_2d = 3;
+  // Which way a 2D reader looks. Sent only by a reader that takes it.
+  optional ScanDirection scan_direction = 4;
+}
+
+message AutoloadSetBarcodeScannerEnabledResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadResetBarcodeScannerRequest {
+}
+
+message AutoloadResetBarcodeScannerResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadSetBarcodeSymbologiesRequest {
+  // Which symbologies to read.
+  repeated BarcodeSymbology symbologies = 1;
+}
+
+message AutoloadSetBarcodeSymbologiesResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadLoadCarrierFromTrayAndScanCarrierBarcodeRequest {
+  // The track the carrier ends at, counted from 1.
+  int32 track = 1;
+  // Where along the carrier its barcode sits, in mm.
+  optional double barcode_position = 2;
+  // How wide a window to read it in, in mm. A carrier's own label is read in a narrow window, which
+  // is not the width the containers it carries are read in.
+  optional double barcode_reading_window_width = 3;
+  // How fast to travel while reading, in mm/s.
+  optional double reading_speed = 4;
+}
+
+message AutoloadLoadCarrierFromTrayAndScanCarrierBarcodeResponse {
+  // The barcode, or unset when nothing was read.
+  optional string barcode = 1;
+}
+
+message AutoloadUnloadCarrierAfterCarrierBarcodeScanningRequest {
+}
+
+message AutoloadUnloadCarrierAfterCarrierBarcodeScanningResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadTakeCarrierOutToAutoloadBeltRequest {
+  // The track the carrier sits at, counted from 1.
+  int32 track = 1;
+}
+
+message AutoloadTakeCarrierOutToAutoloadBeltResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadLoadCarrierFromAutoloadBeltRequest {
+  // Whether to read the containers at all. When False the scanner stays where it is and nothing is
+  // read.
+  optional bool barcode_reading = 1;
+  // Which way the scanner faces while reading: `vertical` or `horizontal`.
+  optional BarcodeReadingDirection barcode_reading_direction = 2;
+  // Where along the carrier the first container's barcode sits, in mm.
+  optional double reading_position_of_first_barcode = 3;
+  // How many containers to read.
+  optional int32 containers_per_carrier = 4;
+  // How far apart they sit, in mm.
+  optional double distance_between_containers = 5;
+  // How wide a window to read each in, in mm.
+  optional double width_of_reading_window = 6;
+  // How fast to travel while reading, in mm/s.
+  optional double reading_speed = 7;
+  // Whether to park the autoload once the carrier is in.
+  optional bool park_after = 8;
+}
+
+message AutoloadLoadCarrierFromAutoloadBeltResponse {
+  // Each container's barcode by position, counted from 0, and unset where nothing was read. Empty
+  // when `barcode_reading` is False.
+  map<int32, OptionalString> container_barcodes = 1;
+}
+
+message AutoloadUnloadCarrierRequest {
+  // The carrier to unload, as it sits on the deck.
+  pylabrobot.resources.server.v1.ResourceRef carrier = 1;
+  // Whether to use loading indicators during the unload process.
+  optional bool use_loading_indicators = 2;
+  // Whether to confirm the deck sensors see the carrier first.
+  optional bool perform_deck_presence_check = 3;
+  // Whether to confirm the loading tray is not already holding it.
+  optional bool perform_tray_presence_check = 4;
+  // Whether to park the autoload once the carrier is out.
+  optional bool park_after = 5;
+}
+
+message AutoloadUnloadCarrierResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadUnloadCarrierFinallyRequest {
+  // The track the carrier sits at, counted from 1.
+  int32 track = 1;
+  // Whether to park the autoload once the carrier is out.
+  optional bool park_after = 2;
+}
+
+message AutoloadUnloadCarrierFinallyResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message AutoloadLoadCarrierRequest {
+  // The carrier to load, as it is to sit on the deck.
+  pylabrobot.resources.server.v1.ResourceRef carrier = 1;
+  // Whether to return the carrier's own barcode. It is scanned as the carrier comes in either way.
+  optional bool carrier_barcode_reading = 2;
+  // Whether to read the barcode of each container it carries.
+  optional bool barcode_reading = 3;
+  // Which way the scanner looks while reading those.
+  optional BarcodeReadingDirection barcode_reading_direction = 4;
+  // How many container barcodes to read.
+  optional int32 containers_per_carrier = 5;
+  // Where the first container sits along the carrier, in mm.
+  optional double reading_position_of_first_barcode = 6;
+  // The spacing of the containers, in mm.
+  optional double distance_between_containers = 7;
+  // How wide a window to read each barcode in, in mm.
+  optional double width_of_reading_window = 8;
+  // How fast to travel while reading, in mm/s.
+  optional double reading_speed = 9;
+  // Whether to park the autoload once the carrier is in.
+  optional bool park_after = 10;
+}
+
+message AutoloadLoadCarrierResponse {
+  // The carrier's own barcode under "carrier_barcode", and one per container position under
+  // "container_barcodes".
+  optional string carrier_barcode = 1;
+  map<int32, OptionalString> container_barcodes = 2;
+}
+
+message AutoloadLightTracksRequest {
+  // Which tracks to light, counted from 1.
+  repeated int32 tracks = 1;
+  // Whether each of those tracks blinks rather than holding steady, one entry per track named above
+  // and in the same order. All steady when not given.
+  BoolList blinking = 2;
+}
+
+message AutoloadLightTracksResponse {
+}
+
+message AutoloadClearLoadingIndicatorsRequest {
+}
+
+message AutoloadClearLoadingIndicatorsResponse {
+}
+
+message AutoloadSetLoadingIndicatorsRequest {
+  // Whether each track's light is on, counted from track 1.
+  repeated bool lit = 1;
+  // Whether each track's light blinks rather than stays steady.
+  repeated bool blinking = 2;
+}
+
+message AutoloadSetLoadingIndicatorsResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+service AutoloadService {
+  // Request the autoload's firmware version and build date.
+  rpc RequestFirmwareVersion(AutoloadRequestFirmwareVersionRequest) returns (AutoloadRequestFirmwareVersionResponse);
+  // Request which kind of autoload is fitted.
+  rpc RequestAutoloadType(AutoloadRequestAutoloadTypeRequest) returns (AutoloadRequestAutoloadTypeResponse);
+  // Request when this autoload was adjusted, and whether it has been.
+  rpc RequestAdjustmentStatus(AutoloadRequestAdjustmentStatusRequest) returns (AutoloadRequestAdjustmentStatusResponse);
+  // Request the track the X drive initializes against.
+  rpc RequestInitSlot(AutoloadRequestInitSlotRequest) returns (AutoloadRequestInitSlotResponse);
+  // Request every adjustment value the module stores, as it writes them.
+  rpc RequestAdjustmentValues(AutoloadRequestAdjustmentValuesRequest) returns (AutoloadRequestAdjustmentValuesResponse);
+  // Request what this autoload is built with: its scanner's step size, and its indicators.
+  rpc RequestModuleConfiguration(AutoloadRequestModuleConfigurationRequest) returns (AutoloadRequestModuleConfigurationResponse);
+  // Request one of the parameters the module stores, by name.
+  rpc RequestParameter(AutoloadRequestParameterRequest) returns (AutoloadRequestParameterResponse);
+  // Request whether the autoload reports itself initialized.
+  rpc RequestInitializationStatus(AutoloadRequestInitializationStatusRequest) returns (AutoloadRequestInitializationStatusResponse);
+  // Read what autoload this is. Read-only: nothing moves.
+  rpc Discover(AutoloadDiscoverRequest) returns (AutoloadDiscoverResponse);
+  // Initialize the autoload and everything else that makes it operational. This moves it.
+  rpc Initialize(AutoloadInitializeRequest) returns (AutoloadInitializeResponse);
+  // Request the current track of the autoload's carrier handler.
+  rpc RequestTrack(AutoloadRequestTrackRequest) returns (AutoloadRequestTrackResponse);
+  // Request where along the deck the scanner is.
+  rpc RequestXPosition(AutoloadRequestXPositionRequest) returns (AutoloadRequestXPositionResponse);
+  // Record where the sled is on the resource that models it.
+  rpc UpdateLocationByReferencePoint(AutoloadUpdateLocationByReferencePointRequest) returns (AutoloadUpdateLocationByReferencePointResponse);
+  // Where the model has the carrier-handling wheel along the deck, in mm.
+  rpc GetReferencePointX(AutoloadGetReferencePointXRequest) returns (AutoloadGetReferencePointXResponse);
+  // Move the autoload to a specific track position, raising the wheel first.
+  rpc MoveToTrack(AutoloadMoveToTrackRequest) returns (AutoloadMoveToTrackResponse);
+  // Move the sled along the deck to a position, raising the wheel first.
+  rpc MoveToXPosition(AutoloadMoveToXPositionRequest) returns (AutoloadMoveToXPositionResponse);
+  // Move the sled by a distance from where it is now.
+  rpc MoveXRelative(AutoloadMoveXRelativeRequest) returns (AutoloadMoveXRelativeResponse);
+  // Park the autoload at the last track this device has. Raises:   RuntimeError: If setup has not
+  // run, so the deck size is not known.
+  rpc Park(AutoloadParkRequest) returns (AutoloadParkResponse);
+  // Request how high the carrier-handling wheel is.
+  rpc WheelRequestZPosition(AutoloadWheelRequestZPositionRequest) returns (AutoloadWheelRequestZPositionResponse);
+  // Request whether the carrier-handling wheel is at its safe Z, the start of its Z travel.
+  rpc WheelIsAtSafeZ(AutoloadWheelIsAtSafeZRequest) returns (AutoloadWheelIsAtSafeZResponse);
+  // Move the carrier-handling wheel to its safe Z, and read where that put it.
+  rpc WheelMoveToSafeZ(AutoloadWheelMoveToSafeZRequest) returns (AutoloadWheelMoveToSafeZResponse);
+  // Move the carrier-handling wheel to a Z position.
+  rpc WheelMoveToZPosition(AutoloadWheelMoveToZPositionRequest) returns (AutoloadWheelMoveToZPositionResponse);
+  // Request how far in or out the carrier drive is.
+  rpc WheelRequestYPosition(AutoloadWheelRequestYPositionRequest) returns (AutoloadWheelRequestYPositionResponse);
+  // Move the carrier drive to a Y position, pulling a carrier in or pushing it out.
+  rpc WheelMoveToYPosition(AutoloadWheelMoveToYPositionRequest) returns (AutoloadWheelMoveToYPositionResponse);
+  // Request which way the scanner faces.
+  rpc ScannerRequestRotation(AutoloadScannerRequestRotationRequest) returns (AutoloadScannerRequestRotationResponse);
+  // Rotate the scanner to face one way or the other.
+  rpc ScannerMoveToPosition(AutoloadScannerMoveToPositionRequest) returns (AutoloadScannerMoveToPositionResponse);
+  // Read the rear deck sensors and return where carriers are detected.
+  rpc SenseCarrierPresenceOnDeck(AutoloadSenseCarrierPresenceOnDeckRequest) returns (AutoloadSenseCarrierPresenceOnDeckResponse);
+  // Check whether a specific loading-tray track contains a carrier.
+  rpc SenseCarrierPresenceOnSingleLoadingTrayTrack(AutoloadSenseCarrierPresenceOnSingleLoadingTrayTrackRequest) returns (AutoloadSenseCarrierPresenceOnSingleLoadingTrayTrackResponse);
+  // Move the autoload sled across the loading tray and read its front-facing sensors.
+  rpc SenseCarrierPresenceOnLoadingTray(AutoloadSenseCarrierPresenceOnLoadingTrayRequest) returns (AutoloadSenseCarrierPresenceOnLoadingTrayResponse);
+  // Request the barcode the scanner last read.
+  rpc RequestLatestBarcodeRead(AutoloadRequestLatestBarcodeReadRequest) returns (AutoloadRequestLatestBarcodeReadResponse);
+  // Switch the barcode scanner on or off. Switching it on is what reads a barcode.
+  rpc SetBarcodeScannerEnabled(AutoloadSetBarcodeScannerEnabledRequest) returns (AutoloadSetBarcodeScannerEnabledResponse);
+  // Reset the barcode scanner.
+  rpc ResetBarcodeScanner(AutoloadResetBarcodeScannerRequest) returns (AutoloadResetBarcodeScannerResponse);
+  // Set the barcode symbologies for autoload barcode reading.
+  rpc SetBarcodeSymbologies(AutoloadSetBarcodeSymbologiesRequest) returns (AutoloadSetBarcodeSymbologiesResponse);
+  // Load a carrier from the loading tray and scan its barcode.
+  rpc LoadCarrierFromTrayAndScanCarrierBarcode(AutoloadLoadCarrierFromTrayAndScanCarrierBarcodeRequest) returns (AutoloadLoadCarrierFromTrayAndScanCarrierBarcodeResponse);
+  // Unload the carrier currently engaged with the autoload sled, back to the loading tray.
+  rpc UnloadCarrierAfterCarrierBarcodeScanning(AutoloadUnloadCarrierAfterCarrierBarcodeScanningRequest) returns (AutoloadUnloadCarrierAfterCarrierBarcodeScanningResponse);
+  // Take a carrier out to the identification position for barcode reading.
+  rpc TakeCarrierOutToAutoloadBelt(AutoloadTakeCarrierOutToAutoloadBeltRequest) returns (AutoloadTakeCarrierOutToAutoloadBeltResponse);
+  // Finish loading the carrier currently engaged with the autoload sled.
+  rpc LoadCarrierFromAutoloadBelt(AutoloadLoadCarrierFromAutoloadBeltRequest) returns (AutoloadLoadCarrierFromAutoloadBeltResponse);
+  // Use the autoload to unload a carrier from the deck.
+  rpc UnloadCarrier(AutoloadUnloadCarrierRequest) returns (AutoloadUnloadCarrierResponse);
+  // Unload the carrier at a track, from where it cannot be loaded again.
+  rpc UnloadCarrierFinally(AutoloadUnloadCarrierFinallyRequest) returns (AutoloadUnloadCarrierFinallyResponse);
+  // Load a carrier from the loading tray onto the deck, reading what it carries on the way.
+  rpc LoadCarrier(AutoloadLoadCarrierRequest) returns (AutoloadLoadCarrierResponse);
+  // Light the indicators over the tracks named, and leave every other one dark.
+  rpc LightTracks(AutoloadLightTracksRequest) returns (AutoloadLightTracksResponse);
+  // Put every indicator out.
+  rpc ClearLoadingIndicators(AutoloadClearLoadingIndicatorsRequest) returns (AutoloadClearLoadingIndicatorsResponse);
+  // Set the loading indicators (LEDs), one per track.
+  rpc SetLoadingIndicators(AutoloadSetLoadingIndicatorsRequest) returns (AutoloadSetLoadingIndicatorsResponse);
+}
