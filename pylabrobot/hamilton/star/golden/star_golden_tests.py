@@ -479,19 +479,22 @@ class AutoloadTests(_Scenario):
     await r.step("move_to_track(10)", autoload.move_to_track(10))
     await r.step("load_carrier(carrier), the tray sensing none", autoload.load_carrier(carrier))
 
-    # The simulated tray is always empty: this one senses the carrier, after asking as usual.
-    sense = autoload.sense_carrier_presence_on_single_loading_tray_track
+    # The simulated tray is always empty: this one senses the carrier, after asking as usual. The
+    # simulator's own autoload, which is the device's unless the device is served elsewhere.
+    simulated = r.driver.autoload
+    assert simulated is not None
+    sense = simulated.sense_carrier_presence_on_single_loading_tray_track
 
     async def on_the_tray(track: int, park_after: bool = True) -> bool:
       await sense(track, park_after=park_after)
       return True
 
-    autoload.sense_carrier_presence_on_single_loading_tray_track = on_the_tray  # type: ignore[method-assign]
+    simulated.sense_carrier_presence_on_single_loading_tray_track = on_the_tray  # type: ignore[method-assign]
     await r.step(
       "load_carrier(carrier, barcode_reading=True), the tray sensing it",
       autoload.load_carrier(carrier, barcode_reading=True),
     )
-    autoload.sense_carrier_presence_on_single_loading_tray_track = sense  # type: ignore[method-assign]
+    simulated.sense_carrier_presence_on_single_loading_tray_track = sense  # type: ignore[method-assign]
     await r.step("unload_carrier(carrier)", autoload.unload_carrier(carrier))
     await r.step("park()", autoload.park())
     await r.step("stop()", star.stop())

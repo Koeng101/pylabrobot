@@ -212,8 +212,18 @@ def read_configuration(path: str) -> Dict[str, Any]:
     Names this driver does not know are left out.
   """
   with open(path, encoding="utf-8") as f:
-    saved = json.load(f)
+    return parse_configuration(json.load(f))
 
+
+def parse_configuration(saved: Dict[str, Any]) -> Dict[str, Any]:
+  """A saved configuration, as JSON loads it, back in the dataclasses it was written from.
+
+  Args:
+    saved: what `STARDriver.save_configuration` wrote, loaded.
+
+  Returns:
+    As `read_configuration` returns it.
+  """
   read: Dict[str, Any] = {}
   if "device" in saved:
     read["device"] = _restore(DeviceConfiguration, saved["device"])
