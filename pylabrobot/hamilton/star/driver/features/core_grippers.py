@@ -158,8 +158,7 @@ class CoreGrippers:
 
   # -- state ---------------------------------------------------------------------------------------
 
-  @property
-  def tools_mounted(self) -> bool:
+  async def get_tools_mounted(self) -> bool:
     """Whether the tools are on the channels."""
     return self._tools_mounted
 

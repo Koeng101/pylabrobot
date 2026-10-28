@@ -100,7 +100,7 @@ class TestState(unittest.IsolatedAsyncioTestCase):
     star = STAR(simulation=True)
     await star.setup()
     assert star.core_grippers is not None
-    self.assertFalse(star.core_grippers.tools_mounted)
+    self.assertFalse(await star.core_grippers.get_tools_mounted())
     with self.assertRaises(RuntimeError):
       star.core_grippers._require_mounted()
 
@@ -193,7 +193,7 @@ class TestPickUpAndDropTools(unittest.IsolatedAsyncioTestCase):
       self.grippers._require_mounted()
     await self.grippers.pick_up_tools_at_location(1337.5, 225.0, 107.0, 125.0)
     self.assertEqual(self.grippers._require_mounted(), (6, 7))
-    self.assertFalse(self.grippers.tools_mounted)
+    self.assertFalse(await self.grippers.get_tools_mounted())
 
   async def test_a_named_pair(self):
     await self.grippers.pick_up_tools_at_location(1337.5, 225.0, 107.0, 125.0, front_channel=5)
@@ -695,7 +695,7 @@ class TestMounting(unittest.IsolatedAsyncioTestCase):
     await self.grippers.pick_up_tools()
     self.assertEqual(self.sent, ["C0ZTxs13375xd0ya1250yb1070pa07pb08tp2350tz2250th2800tt14"])
     self.assertTrue((await self.on(6)).endswith("_back") and (await self.on(7)).endswith("_front"))
-    self.assertTrue(self.grippers.tools_mounted)
+    self.assertTrue(await self.grippers.get_tools_mounted())
     self.assertEqual(await _children(self.holder), [])
     self.grippers._require_mounted()
 
@@ -710,7 +710,7 @@ class TestMounting(unittest.IsolatedAsyncioTestCase):
     await self.grippers.return_tools()
     self.assertEqual(self.sent, ["C0ZSxs13375xd0ya1250yb1070tp2150tz2050th2800te2800"])
     self.assertEqual(await self.held(), self.parked)
-    self.assertFalse(self.grippers.tools_mounted)
+    self.assertFalse(await self.grippers.get_tools_mounted())
     await self.grippers.return_tools()
     self.assertEqual(len(self.sent), 1)
 
@@ -718,7 +718,7 @@ class TestMounting(unittest.IsolatedAsyncioTestCase):
     with self.assertRaises(RuntimeError):
       async with self.grippers.mounted():
         raise RuntimeError("the block")
-    self.assertFalse(self.grippers.tools_mounted)
+    self.assertFalse(await self.grippers.get_tools_mounted())
     self.assertEqual(await self.held(), self.parked)
 
   async def test_an_empty_holder_is_refused(self):
@@ -735,7 +735,7 @@ class TestMounting(unittest.IsolatedAsyncioTestCase):
     self.grippers._pipettes.sense_tip_presence = nothing  # type: ignore[method-assign]
     with self.assertRaises(RuntimeError):
       await self.grippers.pick_up_tools()
-    self.assertFalse(self.grippers.tools_mounted)
+    self.assertFalse(await self.grippers.get_tools_mounted())
     self.assertEqual(await self.held(), self.parked)
 
 

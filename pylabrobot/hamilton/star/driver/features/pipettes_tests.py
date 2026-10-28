@@ -1118,19 +1118,19 @@ class TestLiquidProbingInSimulation(unittest.IsolatedAsyncioTestCase):
 
   async def test_the_pistons_stand_where_the_simulator_has_them(self):
     # Initialization read them once already.
-    self.assertEqual(self.pipettes.piston_positions, [0.0] * 8)
+    self.assertEqual(await self.pipettes.get_piston_positions(), [0.0] * 8)
     self.assertEqual(await self.pipettes.dispensing_drives_request_uL_positions(), [0.0] * 8)
     self.driver.dispensing_drive_uL[0] = 50.0
     self.driver.dispensing_drive_uL[1] = 20.0
     self.assertEqual(await self.pipettes.dispensing_drive_request_uL_position(0), 50.0)
-    self.assertEqual(self.pipettes.piston_positions[0], 50.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 50.0)
     # Asking for some channels answers None for the others and leaves their record alone.
-    self.pipettes.piston_positions[0] = 99.0
+    self.pipettes._piston_positions[0] = 99.0
     self.assertEqual(
       await self.pipettes.dispensing_drives_request_uL_positions([1, 3]),
       [None, 20.0, None, 0.0, None, None, None, None],
     )
-    self.assertEqual(self.pipettes.piston_positions[:2], [99.0, 20.0])
+    self.assertEqual((await self.pipettes.get_piston_positions())[:2], [99.0, 20.0])
 
   async def _surface(self, well: handles.Well) -> float:
     """Where the water stands in `well`, in mm on the deck, by the well's own model."""
@@ -3348,12 +3348,12 @@ class TestBlowOutAirDraw(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self.sent, ["P1DCdh0640de100dv05303dr073dw5"])
 
   async def test_the_checked_draw_converts_and_moves_the_piston_model(self):
-    self.pipettes.piston_positions = [0.0] * self.pipettes.num_channels
+    self.pipettes._piston_positions = [0.0] * self.pipettes.num_channels
     drawn = await self.pipettes._aspirate_blow_out_air(1, 30.0)
     # 30 uL is 640 increments of the dispensing drive, at 14.5 mm/s and the drive's defaults.
     self.assertEqual(self.sent, ["P2DCdh0640de100dv05303dr073dw5"])
     self.assertEqual(drawn, 30.0)
-    self.assertEqual(self.pipettes.piston_positions[1], 30.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[1], 30.0)
 
   async def test_more_than_one_draw_takes_is_refused_before_anything_is_sent(self):
     with self.assertRaises(ValueError):
@@ -3413,7 +3413,7 @@ class TestEmptyTip(unittest.IsolatedAsyncioTestCase):
   async def test_an_empty_returns_the_piston_to_rest_by_default(self):
     await self.pipettes.empty_tip(0)
     self.assertEqual([s[:4] for s in self.sent], ["P1RD", "P1DS", "P1RD", "P1RD", "P1DS", "P1RD"])
-    self.assertEqual(self.pipettes.piston_positions[0], 0.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 0.0)
     self.assertEqual(self.driver.dispensing_drive_uL[0], 0.0)
 
   async def test_without_the_reset_the_piston_stays_at_the_bottom(self):
@@ -3421,7 +3421,7 @@ class TestEmptyTip(unittest.IsolatedAsyncioTestCase):
     await self.pipettes.empty_tip(0, reset_dispensing_drive_after=False)
     # From 100 uL down to -45 uL is 145 uL, 3093 increments.
     self.assertIn("P1DSds03093dt1dv04267dr064dw5", self.sent)
-    self.assertEqual(self.pipettes.piston_positions[0], -45.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], -45.0)
     self.assertEqual(self.driver.dispensing_drive_uL[0], -45.0)
     self.assertEqual(await self.pipettes.dispensing_drive_request_uL_position(0), -45.0)
 
@@ -3454,7 +3454,7 @@ class TestEmptyTip(unittest.IsolatedAsyncioTestCase):
     await self.pipettes.dispensing_drive_move_to_uL_position(0, 47.0)
     self.assertEqual(self.pipettes._held_transport_air, {0: 2.0})
     self.assertEqual(self.driver.transport_air_uL, {0: 2.0})
-    self.assertEqual(self.pipettes.piston_positions[0], 47.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 47.0)
 
   async def test_the_channels_empty_in_parallel(self):
     for channel in (0, 3):
@@ -3464,7 +3464,9 @@ class TestEmptyTip(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(sorted(moves), ["P1DS", "P4DS"])
     # Both channels read before either moves: the two run together.
     self.assertEqual([s[:4] for s in self.sent[:2]], ["P1RD", "P4RD"])
-    self.assertEqual([self.pipettes.piston_positions[c] for c in (0, 3)], [-45.0, -45.0])
+    self.assertEqual(
+      [(await self.pipettes.get_piston_positions())[c] for c in (0, 3)], [-45.0, -45.0]
+    )
 
 
 def _get_fields(command: str, name: str) -> List[int]:
@@ -3583,23 +3585,23 @@ class TestAspirateInSimulation(_SimulatedPlateWithWater):
 
   async def test_the_pistons_stand_at_what_they_drew(self):
     # Initialization read them once already.
-    self.assertEqual(self.pipettes.piston_positions, [0.0] * 8)
+    self.assertEqual(await self.pipettes.get_piston_positions(), [0.0] * 8)
     self.assertEqual(await self.pipettes.dispensing_drives_request_uL_positions(), [0.0] * 8)
     await self.pipettes.aspirate(self.wells[:2], piston_volumes=[50.0, 20.0])
     # Read once at the start, then moved on by what each command drew, without a read.
-    self.assertEqual(self.pipettes.piston_positions, [50.0, 20.0] + [0.0] * 6)
+    self.assertEqual(await self.pipettes.get_piston_positions(), [50.0, 20.0] + [0.0] * 6)
     positions = await self.pipettes.dispensing_drives_request_uL_positions()
     self.assertEqual(positions[:2], [50.0, 20.0])
     self.assertEqual(positions[2:], [0.0] * 6)
     self.assertEqual(await self.pipettes.dispensing_drive_request_uL_position(0), 50.0)
-    self.assertEqual(self.pipettes.piston_positions, positions)
+    self.assertEqual(await self.pipettes.get_piston_positions(), positions)
     # Asking for some channels answers None for the others and leaves their record alone.
-    self.pipettes.piston_positions[0] = 99.0
+    self.pipettes._piston_positions[0] = 99.0
     self.assertEqual(
       await self.pipettes.dispensing_drives_request_uL_positions([1, 3]),
       [None, 20.0, None, 0.0, None, None, None, None],
     )
-    self.assertEqual(self.pipettes.piston_positions[:2], [99.0, 20.0])
+    self.assertEqual((await self.pipettes.get_piston_positions())[:2], [99.0, 20.0])
 
   async def test_a_piston_without_room_is_refused_before_anything_moves(self):
     sent = self._record_aspirations()
@@ -4127,7 +4129,7 @@ class TestEmptyTipsInSimulation(_SimulatedPlateWithWater):
       assert tip is not None
       tips.append(tip)
     await self.pipettes.empty_tips([0, 1], reset_dispensing_drive_after=False)
-    self.assertEqual(self.pipettes.piston_positions[:2], [-45.0, -45.0])
+    self.assertEqual((await self.pipettes.get_piston_positions())[:2], [-45.0, -45.0])
     self.assertEqual(self.pipettes._held_transport_air, {})
     self.assertEqual(self.driver.transport_air_uL, {})
     for tip in tips:
@@ -4136,7 +4138,7 @@ class TestEmptyTipsInSimulation(_SimulatedPlateWithWater):
     await self.pipettes.empty_tips(use_channels=[0, 1])
     read = await self.pipettes.dispensing_drives_request_uL_positions([0, 1])
     self.assertEqual(read[:2], [0.0, 0.0])
-    self.assertEqual(self.pipettes.piston_positions[:2], [0.0, 0.0])
+    self.assertEqual((await self.pipettes.get_piston_positions())[:2], [0.0, 0.0])
 
   async def test_with_no_channels_named_the_ones_carrying_tips_are_emptied(self):
     await self.pipettes.empty_tips()
@@ -4197,9 +4199,9 @@ class TestBlowOutAirBeforeTheSearch(_SimulatedPlateWithWater):
       + jet.aspiration_air_transport_volume,
       1,
     )
-    self.assertAlmostEqual(self.pipettes.piston_positions[0], expected, delta=0.1)
+    self.assertAlmostEqual((await self.pipettes.get_piston_positions())[0], expected, delta=0.1)
     read = await self.pipettes.dispensing_drives_request_uL_positions()
-    self.assertEqual(read[0], self.pipettes.piston_positions[0])
+    self.assertEqual(read[0], (await self.pipettes.get_piston_positions())[0])
 
   async def test_in_a_mixed_batch_only_the_searched_channel_draws_beforehand(self):
     jet = await self._jet_class()
@@ -4215,7 +4217,7 @@ class TestBlowOutAirBeforeTheSearch(_SimulatedPlateWithWater):
     air = round(jet.aspiration_blow_out_volume * 10)
     self.assertIn(f"ba{air:04} 0000", sent[-1])
     read = await self.pipettes.dispensing_drives_request_uL_positions()
-    self.assertEqual(read[:2], self.pipettes.piston_positions[:2])
+    self.assertEqual(read[:2], (await self.pipettes.get_piston_positions())[:2])
 
   async def test_a_touched_aspiration_draws_its_air_beforehand_too(self):
     await self._jet_class()
@@ -4244,7 +4246,7 @@ class TestBlowOutAirBeforeTheSearch(_SimulatedPlateWithWater):
     self.assertEqual(sent, [])
     self.assertEqual(await self.wells[0].get_volume(), 150.0)
     read = await self.pipettes.dispensing_drives_request_uL_positions()
-    self.assertEqual(read[0], self.pipettes.piston_positions[0])
+    self.assertEqual(read[0], (await self.pipettes.get_piston_positions())[0])
     discs = await self.pipettes.request_stop_disc_z_positions()
     self.assertAlmostEqual(discs[0], self.pipettes.configuration.z_range[1], delta=0.5)
 
@@ -4472,7 +4474,7 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
     self.assertEqual(await self._volumes(self.wells), [100.0, 80.0, 100.0, 20.0])
     tips = [await self._tip(channel) for channel in (0, 1)]
     self.assertEqual([await tip.get_volume() for tip in tips], [0.0, 0.0])
-    self.assertEqual(self.pipettes.piston_positions[:2], [0.0, 0.0])
+    self.assertEqual((await self.pipettes.get_piston_positions())[:2], [0.0, 0.0])
     self.assertEqual((await self.pipettes.dispensing_drives_request_uL_positions())[:2], [0.0, 0.0])
 
   async def test_auto_surface_following_follows_what_each_dispense_adds(self):
@@ -4571,7 +4573,7 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
     # Drawn with the aspiration class's air, pushed out with the dispense class's: the read is
     # the authority on what is left, and the model agrees with it.
     read = await self.pipettes.dispensing_drives_request_uL_positions()
-    self.assertEqual(self.pipettes.piston_positions[0], read[0])
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], read[0])
 
   async def test_a_capacitive_dispense_searches_first_and_dispenses_at_the_surface(self):
     await self.pipettes.aspirate(self.wells[:1], piston_volumes=[20.0])
@@ -4663,7 +4665,7 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
     self.assertIn("from a tip holding 5.0 uL; the rest is air", logs.output[0])
     self.assertEqual(await self.wells[3].get_volume(), 5.0)
     self.assertEqual(await tip.get_volume(), 0.0)
-    self.assertEqual(self.pipettes.piston_positions[0], 10.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 10.0)
 
   async def test_an_empty_takes_the_piston_to_rest_and_books_what_the_tip_held(self):
     await self.pipettes.aspirate(self.wells[:1], piston_volumes=[50.0])
@@ -4671,7 +4673,7 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
     await self.pipettes.dispense(self.wells[3:4], piston_volumes=[20.0], empty=[True])
     self.assertIn("dm4", sent[0])
     self.assertIn("dv00200", sent[0])
-    self.assertEqual(self.pipettes.piston_positions[0], 0.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 0.0)
     self.assertEqual((await self.pipettes.dispensing_drives_request_uL_positions())[0], 0.0)
     # The tip is emptied whatever was asked: the well takes the 50 the tip held.
     self.assertEqual(await self.wells[3].get_volume(), 50.0)
@@ -4683,7 +4685,7 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
     sent = self._record()
     await self.pipettes.dispense(self.wells[3:4], piston_volumes=[30.0], stop_back_volumes=[5.0])
     self.assertIn("rv050", sent[0])
-    self.assertEqual(self.pipettes.piston_positions[0], 20.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 20.0)
     self.assertEqual((await self.pipettes.dispensing_drives_request_uL_positions())[0], 20.0)
 
   async def test_an_empty_draws_its_transport_air_and_the_next_dispense_pushes_it(self):
@@ -4692,11 +4694,11 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
     await self.pipettes.dispense(
       self.wells[3:4], piston_volumes=[20.0], empty=[True], transport_air_volumes=[5.0]
     )
-    self.assertEqual(self.pipettes.piston_positions[0], 5.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 5.0)
     self.assertEqual((await self.pipettes.dispensing_drives_request_uL_positions())[0], 5.0)
     await self.pipettes.aspirate(self.wells[:1], piston_volumes=[20.0])
     await self.pipettes.dispense(self.wells[3:4], piston_volumes=[10.0])
-    self.assertEqual(self.pipettes.piston_positions[0], 10.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 10.0)
     self.assertEqual((await self.pipettes.dispensing_drives_request_uL_positions())[0], 10.0)
 
   async def test_the_transport_air_a_tip_holds_goes_out_ahead_of_the_next_dispense(self):
@@ -4704,12 +4706,12 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
     # pushes it out ahead of its liquid, then draws its own `ta`, which the next one pushes out.
     await self.pipettes.aspirate(self.wells[:1], piston_volumes=[50.0], transport_air_volumes=[5.0])
     await self.pipettes.aspirate(self.wells[:1], piston_volumes=[10.0])
-    self.assertEqual(self.pipettes.piston_positions[0], 65.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 65.0)
     for volume, air, standing in ((20.0, 0.0, 40.0), (10.0, 5.0, 35.0), (10.0, 0.0, 20.0)):
       await self.pipettes.dispense(
         self.wells[3:4], piston_volumes=[volume], transport_air_volumes=[air]
       )
-      self.assertEqual(self.pipettes.piston_positions[0], standing)
+      self.assertEqual((await self.pipettes.get_piston_positions())[0], standing)
       self.assertEqual((await self.pipettes.dispensing_drives_request_uL_positions())[0], standing)
 
   async def test_a_piston_without_the_travel_for_the_air_it_holds_is_refused(self):
@@ -4723,12 +4725,12 @@ class TestDispenseInSimulation(_SimulatedPlateWithWater):
     # A drop leaves each piston 10 uL up, a pick-up takes it to 0; the old tip's air goes with it.
     await self.pipettes.aspirate(self.wells[:1], piston_volumes=[20.0], transport_air_volumes=[5.0])
     await self.pipettes.drop_tips([self.rack.get_tip_spot("A1")], use_channels=[0])
-    self.assertEqual(self.pipettes.piston_positions[0], 35.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 35.0)
     await self.pipettes.pick_up_tips([self.rack.get_tip_spot("A2")], use_channels=[0])
-    self.assertEqual(self.pipettes.piston_positions[0], 0.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 0.0)
     await self.pipettes.aspirate(self.wells[:1], piston_volumes=[20.0])
     await self.pipettes.dispense(self.wells[3:4], piston_volumes=[20.0])
-    self.assertEqual(self.pipettes.piston_positions[0], 0.0)
+    self.assertEqual((await self.pipettes.get_piston_positions())[0], 0.0)
 
   async def test_a_failed_command_books_what_the_pistons_gave(self):
     await self.pipettes.aspirate(self.wells[:2], piston_volumes=[50.0, 20.0])
