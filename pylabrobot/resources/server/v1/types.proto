@@ -440,6 +440,13 @@ message ResourceState {
   // drive last reported it. Kept in the drive's own terms; the parts it turns carry the same fact
   // as their rotations, rendered for the deck.
   map<string, double> drive_angles = 5;
+  // Pipette channels and heads: where the dispensing drive's piston stands, as the volume it has
+  // drawn, in uL; 0 at rest, air and liquid alike. As the device last reported or was sent it;
+  // unset is at rest.
+  optional double piston_volume = 6;
+  // Mechanical grippers: whether the gripper last sensed something between its jaws. Unset until
+  // it has been asked. What the device says, beside what the tree says it holds.
+  optional bool gripped = 7;
 }
 
 // One resource as it is now. A spot's tip, a holder's resource, a plate's lid and a shaft's tool

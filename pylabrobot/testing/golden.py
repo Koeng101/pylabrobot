@@ -98,6 +98,10 @@ def _entry(
       entry["pending_volume"] = state.volume.pending_volume
   if state is not None and state.HasField("jaw_width"):
     entry["jaw_width"] = state.jaw_width
+  if state is not None and state.HasField("piston_volume"):
+    entry["piston_volume"] = state.piston_volume
+  if state is not None and state.HasField("gripped"):
+    entry["gripped"] = state.gripped
   return entry
 
 

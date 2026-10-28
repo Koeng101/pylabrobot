@@ -364,7 +364,7 @@ class FindResourcesAtResponse(_message.Message):
     def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ...) -> None: ...
 
 class DevicePosition(_message.Message):
-    __slots__ = ("resource", "frame", "location", "reference_point", "rotation", "jaw_width", "drive_angles")
+    __slots__ = ("resource", "frame", "location", "reference_point", "rotation", "jaw_width", "drive_angles", "piston_volume")
     class DriveAnglesEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -379,6 +379,7 @@ class DevicePosition(_message.Message):
     ROTATION_FIELD_NUMBER: _ClassVar[int]
     JAW_WIDTH_FIELD_NUMBER: _ClassVar[int]
     DRIVE_ANGLES_FIELD_NUMBER: _ClassVar[int]
+    PISTON_VOLUME_FIELD_NUMBER: _ClassVar[int]
     resource: _types_pb2.ResourceRef
     frame: _types_pb2.ResourceRef
     location: _types_pb2.PartialVec3
@@ -386,7 +387,8 @@ class DevicePosition(_message.Message):
     rotation: _types_pb2.RotationChange
     jaw_width: float
     drive_angles: _containers.ScalarMap[str, float]
-    def __init__(self, resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., frame: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., location: _Optional[_Union[_types_pb2.PartialVec3, _Mapping]] = ..., reference_point: _Optional[_Union[_types_pb2.Vec3, _Mapping]] = ..., rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., jaw_width: _Optional[float] = ..., drive_angles: _Optional[_Mapping[str, float]] = ...) -> None: ...
+    piston_volume: float
+    def __init__(self, resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., frame: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ..., location: _Optional[_Union[_types_pb2.PartialVec3, _Mapping]] = ..., reference_point: _Optional[_Union[_types_pb2.Vec3, _Mapping]] = ..., rotation: _Optional[_Union[_types_pb2.RotationChange, _Mapping]] = ..., jaw_width: _Optional[float] = ..., drive_angles: _Optional[_Mapping[str, float]] = ..., piston_volume: _Optional[float] = ...) -> None: ...
 
 class RecordDevicePositionsRequest(_message.Message):
     __slots__ = ("positions",)
@@ -403,18 +405,20 @@ class RecordDevicePositionsResponse(_message.Message):
     def __init__(self, nodes: _Optional[_Iterable[_Union[_types_pb2.ResourceNode, _Mapping]]] = ..., revision: _Optional[int] = ...) -> None: ...
 
 class Measurement(_message.Message):
-    __slots__ = ("volume", "liquid_height", "tool_present", "barcode", "resource")
+    __slots__ = ("volume", "liquid_height", "tool_present", "barcode", "gripped", "resource")
     VOLUME_FIELD_NUMBER: _ClassVar[int]
     LIQUID_HEIGHT_FIELD_NUMBER: _ClassVar[int]
     TOOL_PRESENT_FIELD_NUMBER: _ClassVar[int]
     BARCODE_FIELD_NUMBER: _ClassVar[int]
+    GRIPPED_FIELD_NUMBER: _ClassVar[int]
     RESOURCE_FIELD_NUMBER: _ClassVar[int]
     volume: float
     liquid_height: float
     tool_present: bool
     barcode: _types_pb2.Barcode
+    gripped: bool
     resource: _types_pb2.ResourceRef
-    def __init__(self, volume: _Optional[float] = ..., liquid_height: _Optional[float] = ..., tool_present: _Optional[bool] = ..., barcode: _Optional[_Union[_types_pb2.Barcode, _Mapping]] = ..., resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ...) -> None: ...
+    def __init__(self, volume: _Optional[float] = ..., liquid_height: _Optional[float] = ..., tool_present: _Optional[bool] = ..., barcode: _Optional[_Union[_types_pb2.Barcode, _Mapping]] = ..., gripped: _Optional[bool] = ..., resource: _Optional[_Union[_types_pb2.ResourceRef, _Mapping]] = ...) -> None: ...
 
 class MeasurementResult(_message.Message):
     __slots__ = ("previous_volume", "volume", "issue")

@@ -633,7 +633,7 @@ class VolumeState(_message.Message):
     def __init__(self, volume: _Optional[float] = ..., pending_volume: _Optional[float] = ..., tracking_enabled: _Optional[bool] = ...) -> None: ...
 
 class ResourceState(_message.Message):
-    __slots__ = ("volume", "tip_tracking_enabled", "jaw_width", "tips_made", "drive_angles")
+    __slots__ = ("volume", "tip_tracking_enabled", "jaw_width", "tips_made", "drive_angles", "piston_volume", "gripped")
     class DriveAnglesEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -646,12 +646,16 @@ class ResourceState(_message.Message):
     JAW_WIDTH_FIELD_NUMBER: _ClassVar[int]
     TIPS_MADE_FIELD_NUMBER: _ClassVar[int]
     DRIVE_ANGLES_FIELD_NUMBER: _ClassVar[int]
+    PISTON_VOLUME_FIELD_NUMBER: _ClassVar[int]
+    GRIPPED_FIELD_NUMBER: _ClassVar[int]
     volume: VolumeState
     tip_tracking_enabled: bool
     jaw_width: float
     tips_made: int
     drive_angles: _containers.ScalarMap[str, float]
-    def __init__(self, volume: _Optional[_Union[VolumeState, _Mapping]] = ..., tip_tracking_enabled: _Optional[bool] = ..., jaw_width: _Optional[float] = ..., tips_made: _Optional[int] = ..., drive_angles: _Optional[_Mapping[str, float]] = ...) -> None: ...
+    piston_volume: float
+    gripped: bool
+    def __init__(self, volume: _Optional[_Union[VolumeState, _Mapping]] = ..., tip_tracking_enabled: _Optional[bool] = ..., jaw_width: _Optional[float] = ..., tips_made: _Optional[int] = ..., drive_angles: _Optional[_Mapping[str, float]] = ..., piston_volume: _Optional[float] = ..., gripped: _Optional[bool] = ...) -> None: ...
 
 class ResourceNode(_message.Message):
     __slots__ = ("id", "parent_id", "root_id", "index", "attributes", "state", "child_ids", "pending_operation_ids", "revision")
