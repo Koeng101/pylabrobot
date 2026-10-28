@@ -117,6 +117,9 @@ extend-exclude = [
   "pylabrobot/resources/server/v1/*_pb2.py",
   "pylabrobot/resources/server/v1/*_pb2.pyi",
   "pylabrobot/resources/server/v1/*_connect.py",
+  "pylabrobot/hamilton/star/server/v1/*_pb2.py",
+  "pylabrobot/hamilton/star/server/v1/*_pb2.pyi",
+  "pylabrobot/hamilton/star/server/v1/*_connect.py",
 ]
 
 [tool.ruff.lint.per-file-ignores]

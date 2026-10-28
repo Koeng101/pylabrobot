@@ -1,0 +1,210 @@
+syntax = "proto3";
+
+// The CoRe gripper tools, carried on two channels, and what they move.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+// The CoRe grippers' facts.
+message CoreGrippersConfiguration {
+  Int32Range grip_strength_range = 1;
+}
+
+message CoreGrippersGetToolsMountedRequest {
+}
+
+message CoreGrippersGetToolsMountedResponse {
+  bool tools_mounted = 1;
+}
+
+message CoreGrippersRequestToolAttachedRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message CoreGrippersRequestToolAttachedResponse {
+  bool attached = 1;
+}
+
+message CoreGrippersPickUpToolsAtLocationRequest {
+  // The tools' x, in mm.
+  double tool_position_x = 1;
+  // Where the pick-up ends, in mm.
+  double tool_position_z = 2;
+  // Y of the front channel's tool, in mm.
+  double front_channel_position_y = 3;
+  // Y of the back channel's tool, in mm.
+  double rear_channel_position_y = 4;
+  // Where the pick-up begins, in mm. `tool_position_z + 10` when unset.
+  optional double tool_seek = 5;
+  // How high the channels travel first, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_start = 6;
+  // 0-indexed; the back tool goes on `front_channel - 1`. The front-most when unset.
+  optional int32 front_channel = 7;
+}
+
+message CoreGrippersPickUpToolsAtLocationResponse {
+}
+
+message CoreGrippersDropToolsRequest {
+  // Raise to `default_minimum_traverse_height` before travelling; False travels at the height the
+  // channels stand.
+  optional bool move_to_safe_z_first = 1;
+  // Where to leave the channels, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_end = 2;
+}
+
+message CoreGrippersDropToolsResponse {
+}
+
+message CoreGrippersPickUpToolsRequest {
+  // As `pick_up_tools_at_location` takes it.
+  optional int32 front_channel = 1;
+}
+
+message CoreGrippersPickUpToolsResponse {
+}
+
+message CoreGrippersReturnToolsRequest {
+}
+
+message CoreGrippersReturnToolsResponse {
+}
+
+message CoreGrippersPickUpResourceRequest {
+  // What to grip.
+  pylabrobot.resources.server.v1.ResourceRef resource = 1;
+  // Added to the grip point, in mm.
+  pylabrobot.resources.server.v1.Vec3 offset = 2;
+  // How far below its top the fingers close, in mm, at most `_MAX_PICKUP_DISTANCE_FROM_TOP`.
+  // Exactly one of the two is given.
+  optional double pickup_distance_from_top = 3;
+  // How far above its bottom the fingers close, in mm. Exactly one of the two is given.
+  optional double pickup_distance_from_bottom = 4;
+  // The height to travel to it at, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_start = 5;
+  // Its size in y, the width the fingers grip, in mm, centred on the grip point. Unset reads it from
+  // the resource.
+  optional double resource_size_y = 6;
+  // How far each finger stands from the resource as it comes down, in mm.
+  optional double y_clearance = 7;
+  // How fast the fingers close, in mm/s.
+  optional double grip_speed_y = 8;
+  // How far past its walls each finger closes, in mm.
+  optional double squeeze_mm = 9;
+  // 0 (low) to 99 (high). `default_grip_strength` when unset.
+  optional int32 grip_strength = 10;
+  // How fast the channels move in Z, in mm/s. `default_z_speed_with_resource_held` when unset.
+  optional double z_speed = 11;
+  // The Z drives' acceleration for the command, in mm/s2, then the pipettes' default.
+  // `default_z_acceleration_with_resource_held` when unset.
+  optional double z_acceleration = 12;
+  // The height to leave it at once gripped, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_end = 13;
+}
+
+message CoreGrippersPickUpResourceResponse {
+}
+
+message CoreGrippersPlaceResourceRequest {
+  // Where it goes: the resource it goes into, e.g. a plate carrier site, or a `Coordinate`, the
+  // deck position its centre-centre-bottom goes to, where it joins the deck.
+  oneof to {
+    pylabrobot.resources.server.v1.ResourceRef to_resource = 1;
+    pylabrobot.resources.server.v1.Vec3 to_location = 2;
+  }
+  // Added to where it is let go, in mm.
+  pylabrobot.resources.server.v1.Vec3 offset = 3;
+  // The height to carry it at, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_start = 4;
+  // 1 to 5. Not sent when unset.
+  optional int32 x_acceleration_level = 5;
+  // How fast the channels move in Z, in mm/s. `default_z_speed_with_resource_held` when unset.
+  optional double z_speed = 6;
+  // The Z drives' acceleration for the command, in mm/s2, then the pipettes' default.
+  // `default_z_acceleration_with_resource_held` when unset.
+  optional double z_acceleration = 7;
+  // How far past where it is let go to press it down, 0 to 99.9 mm.
+  optional double press_on_distance = 8;
+  // How far each finger opens past the resource's walls to let go, in mm.
+  optional double y_clearance = 9;
+  // Where to leave the channels, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_end = 10;
+}
+
+message CoreGrippersPlaceResourceResponse {
+}
+
+message CoreGrippersReturnResourceRequest {
+  // As :meth:`place_resource` takes it, and every other argument too.
+  pylabrobot.resources.server.v1.Vec3 offset = 1;
+  optional double minimum_traverse_height_start = 2;
+  optional int32 x_acceleration_level = 3;
+  optional double z_speed = 4;
+  optional double z_acceleration = 5;
+  optional double press_on_distance = 6;
+  optional double y_clearance = 7;
+  optional double minimum_traverse_height_end = 8;
+}
+
+message CoreGrippersReturnResourceResponse {
+}
+
+message CoreGrippersProbeResourceExistsUsingZtouchRequest {
+  // Where the resource's left-front-bottom is, in deck coordinates.
+  pylabrobot.resources.server.v1.Vec3 location = 1;
+  // The resource to check for.
+  pylabrobot.resources.server.v1.ResourceRef resource = 2;
+  // How far inside each of its front and back walls the jaws come down, in mm.
+  optional double gripper_y_margin = 3;
+  // Added to its centre, in mm.
+  pylabrobot.resources.server.v1.Vec3 offset = 4;
+  // How high the channels travel first, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_start = 5;
+  // Where to leave the channels, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_end = 6;
+  // Ask on the console whether to check again when it is not found.
+  optional bool enable_recovery = 7;
+}
+
+message CoreGrippersProbeResourceExistsUsingZtouchResponse {
+  // True if found.
+  bool exists = 1;
+}
+
+// The defaults CoreGrippers uses where a call names none. A STAR server takes them from its
+// settings file; unset fields keep the defaults in the code.
+message CoreGrippersSettings {
+  // Grip strength index, 0 (low) to 99 (high).
+  optional int32 default_grip_strength = 1;
+  // Z speed while a resource is held, in mm/s.
+  optional double default_z_speed_with_resource_held = 2;
+  // Z acceleration while a resource is held, in mm/s2; 800 jolts a plate.
+  optional double default_z_acceleration_with_resource_held = 3;
+  // Height the channels travel at and are left at around a tool command, in mm.
+  optional double default_minimum_traverse_height = 4;
+}
+
+service CoreGrippersService {
+  // Whether the tools are on the channels.
+  rpc GetToolsMounted(CoreGrippersGetToolsMountedRequest) returns (CoreGrippersGetToolsMountedResponse);
+  // Whether the device senses something on `channel` (`C0 RT`).
+  rpc RequestToolAttached(CoreGrippersRequestToolAttachedRequest) returns (CoreGrippersRequestToolAttachedResponse);
+  // Pick up the tools (`C0 ZT`) as tip type 14; to safe Z only if it fails.
+  rpc PickUpToolsAtLocation(CoreGrippersPickUpToolsAtLocationRequest) returns (CoreGrippersPickUpToolsAtLocationResponse);
+  // Put the tools back where `pick_up_tools_at_location` took them (`C0 ZS`), then safe Z.
+  rpc DropTools(CoreGrippersDropToolsRequest) returns (CoreGrippersDropToolsResponse);
+  // Take the tools out of the deck's holder and onto two channels.
+  rpc PickUpTools(CoreGrippersPickUpToolsRequest) returns (CoreGrippersPickUpToolsResponse);
+  // Put the tools back in their holder, if mounted.
+  rpc ReturnTools(CoreGrippersReturnToolsRequest) returns (CoreGrippersReturnToolsResponse);
+  // Grip a resource where the tree has it, and hold it on the front tool in the model (`C0 ZP`).
+  rpc PickUpResource(CoreGrippersPickUpResourceRequest) returns (CoreGrippersPickUpResourceResponse);
+  // Place the held resource, and the tree follows once it is let go (`C0 ZR`).
+  rpc PlaceResource(CoreGrippersPlaceResourceRequest) returns (CoreGrippersPlaceResourceResponse);
+  // Put the held resource back where :meth:`pick_up_resource` took it from.
+  rpc ReturnResource(CoreGrippersReturnResourceRequest) returns (CoreGrippersReturnResourceResponse);
+  // Push the open jaws down onto `resource`'s centre: stalling on it is finding it (`C0 ZP`).
+  rpc ProbeResourceExistsUsingZtouch(CoreGrippersProbeResourceExistsUsingZtouchRequest) returns (CoreGrippersProbeResourceExistsUsingZtouchResponse);
+}

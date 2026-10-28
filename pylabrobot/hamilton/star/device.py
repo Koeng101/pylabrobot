@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from pylabrobot.hamilton.star import resource_model
 from pylabrobot.hamilton.star.driver import model
@@ -21,6 +21,9 @@ from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.server import handles
 from pylabrobot.resources.server.client import ResourceServer
 from pylabrobot.resources.server.v1 import server_pb2 as spb
+
+if TYPE_CHECKING:
+  from pylabrobot.hamilton.star.server.client import STARServer
 
 # The deck each frame is built on, by model name.
 STAR_DECK_MODEL = "STARDeck"
@@ -474,6 +477,41 @@ def _driver_for(
   return STARDriver(deck=deck, declared_configuration_json=declared_configuration_json)
 
 
+def _served(
+  star_server: Union[str, "STARServer"],
+  resource_server: Union[str, ResourceServer, None],
+  model: str,
+  deck: Optional[handles.Deck],
+  simulation: bool,
+  declared_configuration_json: Optional[str],
+  driver: Optional[STARDriver],
+) -> STARDevice:
+  """A device a STAR server serves, for a factory given one.
+
+  Raises:
+    ValueError: If the factory was also given what the server decides: a deck, a driver,
+      simulation, or a declared configuration.
+  """
+  decided = [
+    name
+    for name, value in (
+      ("deck", deck),
+      ("simulation", simulation),
+      ("declared_configuration_json", declared_configuration_json),
+      ("driver", driver),
+    )
+    if value
+  ]
+  if decided:
+    raise ValueError(
+      f"a served STAR is what its server makes it: {', '.join(decided)} cannot be given with "
+      "star_server"
+    )
+  from pylabrobot.hamilton.star.server.client import remote_device
+
+  return remote_device(star_server, resource_server, model)
+
+
 def STAR(
   deck: Optional[handles.Deck] = None,
   simulation: bool = False,
@@ -486,12 +524,27 @@ def STAR(
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
   resource_server: Union[str, ResourceServer, None] = None,
+  star_server: Union[str, "STARServer", None] = None,
 ) -> STARDevice:
   """A full-size STAR, on a full-size STAR deck.
 
   The default deck and built-in components take their names from `name`. A supplied deck keeps
   its existing resource names.
+
+  Given `star_server`, a server or its URL, it is the device that server serves instead, driven as
+  this one would be: the server decides what it is, and `resource_server` is where its resources
+  are, the STAR server's URL when not given.
   """
+  if star_server is not None:
+    return _served(
+      star_server,
+      resource_server,
+      STAR.__name__,
+      deck,
+      simulation,
+      declared_configuration_json,
+      driver,
+    )
   return STARDevice(
     deck=deck,
     driver=_driver_for(deck, simulation, declared_configuration_json, driver, RECORDING_STAR),
@@ -520,12 +573,27 @@ def STARlet(
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
   resource_server: Union[str, ResourceServer, None] = None,
+  star_server: Union[str, "STARServer", None] = None,
 ) -> STARDevice:
   """A STARlet, on a STARlet deck.
 
   The default deck and built-in components take their names from `name`. A supplied deck keeps
   its existing resource names.
+
+  Given `star_server`, a server or its URL, it is the device that server serves instead, driven as
+  this one would be: the server decides what it is, and `resource_server` is where its resources
+  are, the STAR server's URL when not given.
   """
+  if star_server is not None:
+    return _served(
+      star_server,
+      resource_server,
+      STARlet.__name__,
+      deck,
+      simulation,
+      declared_configuration_json,
+      driver,
+    )
   return STARDevice(
     deck=deck,
     driver=_driver_for(deck, simulation, declared_configuration_json, driver, RECORDING_STARLET),
@@ -554,6 +622,7 @@ def STARPlus(
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
   resource_server: Union[str, ResourceServer, None] = None,
+  star_server: Union[str, "STARServer", None] = None,
 ) -> STARDevice:
   """A STARplus, on a STARplus deck.
 
@@ -564,9 +633,23 @@ def STARPlus(
   derived, as `STARPlusDeck` works through, because there is no
   STARplus here to read one from, so its 78 rails should be confirmed against a real device.
 
+  Given `star_server`, a server or its URL, it is the device that server serves instead, driven as
+  this one would be: the server decides what it is, and `resource_server` is where its resources
+  are, the STAR server's URL when not given.
+
   Returns:
     The device, on a STARplus deck.
   """
+  if star_server is not None:
+    return _served(
+      star_server,
+      resource_server,
+      STARPlus.__name__,
+      deck,
+      simulation,
+      declared_configuration_json,
+      driver,
+    )
   return STARDevice(
     deck=deck,
     driver=_driver_for(deck, simulation, declared_configuration_json, driver, RECORDING_STARPLUS),

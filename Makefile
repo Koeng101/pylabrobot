@@ -64,6 +64,9 @@ generate-rpc:
 		--connectrpc_out=. --connectrpc_opt=protobuf=google \
 		pylabrobot/resources/server/v1/types.proto pylabrobot/resources/server/v1/server.proto \
 		pylabrobot/resources/server/v1/primitives.proto
+	$(BIN)python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. \
+		--connectrpc_out=. --connectrpc_opt=protobuf=google \
+		pylabrobot/hamilton/star/server/v1/*.proto
 
 clear-pyc:
 	find . -name "*.pyc" | xargs rm
