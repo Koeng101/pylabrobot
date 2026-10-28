@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, Union
 
 from pylabrobot.hamilton.star import resource_model
 from pylabrobot.hamilton.star.driver import model
@@ -166,7 +166,7 @@ class STARDevice:
     left_side_panel_installed: bool = False,
     deck_location: Optional[Coordinate] = None,
     model: Optional[str] = None,
-    server: Optional[ResourceServer] = None,
+    resource_server: Union[str, ResourceServer, None] = None,
     deck_model: str = STAR_DECK_MODEL,
   ):
     """
@@ -193,14 +193,14 @@ class STARDevice:
       deck_location: where the deck sits inside it, BEFORE any extension housing. Defaults to the
         device's own origin.
       model: which device this is. Defaults to the class name, which says only that it is a STAR.
-      server: the server the device's resources are in. Defaults to the deck's, or else a new one
-        held in this process.
+      resource_server: the resource server the device's resources are in, or its URL. Defaults to
+        the deck's, or else a new one held in this process.
       deck_model: the deck to make when none is given, by model name.
 
     Raises:
       ValueError: If neither a driver nor simulation is given, since there is then nothing to
         drive, if both the extension housing and the left side panel are declared, or if the deck
-        is in another server than the one given.
+        is in another resource server than the one given.
     """
     if driver is None and not simulation:
       raise ValueError("pass a driver, or `simulation=True` to build a simulated one")
@@ -209,16 +209,20 @@ class STARDevice:
         "an device has the left extension housing or the left side panel, not both: the "
         "housing stands where the panel would be"
       )
-    if deck is not None and server is not None and deck.server is not server:
-      raise ValueError("the deck is in another server than the one given")
+    if isinstance(resource_server, str):
+      resource_server = ResourceServer.connect(resource_server)
+    if deck is not None and resource_server is not None and deck.server is not resource_server:
+      raise ValueError("the deck is in another resource server than the one given")
     if driver is not None and simulation:
       logger.warning("both a driver and simulation given; driving the driver")
 
     self.name = name
     self.model = model if model is not None else self.__class__.__name__
     if deck is not None:
-      server = deck.server
-    self.server: ResourceServer = server if server is not None else ResourceServer.local()
+      resource_server = deck.server
+    self.resource_server: ResourceServer = (
+      resource_server if resource_server is not None else ResourceServer.local()
+    )
     self._size = (size_x, size_y, size_z)
     self._deck_location = deck_location if deck_location is not None else Coordinate(0, 0, 0)
     self._deck_model = deck_model
@@ -266,7 +270,7 @@ class STARDevice:
         than the one given.
     """
     if self.body is None:
-      found = await self.server.find_resources(
+      found = await self.resource_server.find_resources(
         spb.ResourceFilter(names=[self.name], categories=["device"])
       )
       if found:
@@ -290,7 +294,7 @@ class STARDevice:
       raise ValueError(f"the server holds '{self.name}' with no deck in it")
     if self.deck is not None and self.deck != deck:
       raise ValueError(f"the server holds '{self.name}' on another deck than the one given")
-    nodes = {node.id: node for node in await model.get_nodes(self.server, children)}
+    nodes = {node.id: node for node in await model.get_nodes(self.resource_server, children)}
     for child in children:
       category = nodes[child.id].attributes.category
       if category == "left_side_panel":
@@ -303,7 +307,7 @@ class STARDevice:
     """Make the body, put the deck in it, and bolt on what the device is declared to have."""
     deck = self.deck
     if deck is None:
-      made = await self.server.get_or_create(self._deck_model, name=f"{self.name}_deck")
+      made = await self.resource_server.get_or_create(self._deck_model, name=f"{self.name}_deck")
       if not isinstance(made, handles.Deck):
         raise ValueError(f"'{self._deck_model}' is not a deck")
       deck = made
@@ -338,7 +342,7 @@ class STARDevice:
           "left_extension_housing",
         )
       )
-    made_body = await self.server.create(body, name=self.name)
+    made_body = await self.resource_server.create(body, name=self.name)
     sides = await made_body.get_children()
     # The deck goes first, ahead of the parts bolted to the side.
     await made_body.assign_child_resource(deck, location=self._deck_location, index=0)
@@ -481,7 +485,7 @@ def STAR(
   size_z: float = SIZE_Z,
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
-  server: Optional[ResourceServer] = None,
+  resource_server: Union[str, ResourceServer, None] = None,
 ) -> STARDevice:
   """A full-size STAR, on a full-size STAR deck.
 
@@ -499,7 +503,7 @@ def STAR(
     left_side_panel_installed=left_side_panel_installed,
     deck_location=STAR_DECK_LOCATION,
     model=STAR.__name__,
-    server=server,
+    resource_server=resource_server,
     deck_model=STAR_DECK_MODEL,
   )
 
@@ -515,7 +519,7 @@ def STARlet(
   size_z: float = SIZE_Z,
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
-  server: Optional[ResourceServer] = None,
+  resource_server: Union[str, ResourceServer, None] = None,
 ) -> STARDevice:
   """A STARlet, on a STARlet deck.
 
@@ -533,7 +537,7 @@ def STARlet(
     left_side_panel_installed=left_side_panel_installed,
     deck_location=STARLET_DECK_LOCATION,
     model=STARlet.__name__,
-    server=server,
+    resource_server=resource_server,
     deck_model=STARLET_DECK_MODEL,
   )
 
@@ -549,7 +553,7 @@ def STARPlus(
   size_z: float = SIZE_Z,
   extension_housing: bool = True,
   left_side_panel_installed: bool = False,
-  server: Optional[ResourceServer] = None,
+  resource_server: Union[str, ResourceServer, None] = None,
 ) -> STARDevice:
   """A STARplus, on a STARplus deck.
 
@@ -574,6 +578,6 @@ def STARPlus(
     left_side_panel_installed=left_side_panel_installed,
     deck_location=STAR_DECK_LOCATION,
     model=STARPlus.__name__,
-    server=server,
+    resource_server=resource_server,
     deck_model=STARPLUS_DECK_MODEL,
   )

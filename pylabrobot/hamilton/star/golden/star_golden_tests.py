@@ -83,7 +83,7 @@ class SetupTests(_Scenario):
     device = STARlet(
       simulation=True, name="turned", extension_housing=False, left_side_panel_installed=True
     )
-    room = await device.server.create(
+    room = await device.resource_server.create(
       build.resource("room", Coordinate(9000, 9000, 3000)), name="room"
     )
     await device.create_resources()
@@ -106,7 +106,7 @@ class PipettesTests(_Scenario):
     ten tips or a plate on track 7 with 200 uL in every well."""
     self.star = STARlet(simulation=True)
     await self.star.create_resources()
-    server = self.star.server
+    server = self.star.resource_server
     tip_carrier = cast(
       handles.Carrier,
       await server.create(
@@ -265,7 +265,7 @@ class Head96Tests(_Scenario):
   async def test_a_protocol_and_its_failures(self):
     star = STARlet(simulation=True)
     await star.create_resources()
-    server = star.server
+    server = star.resource_server
     tip_carrier = cast(
       handles.Carrier,
       await server.create("hamilton_tip_carrier_L5", name="tip_carrier", parent=star.deck, track=1),
@@ -350,11 +350,11 @@ class CoreGrippersTests(_Scenario):
   async def test_a_plate_moved_and_returned(self):
     star = STAR(simulation=True)
     await star.create_resources()
-    carrier = await star.server.create(
+    carrier = await star.resource_server.create(
       "hamilton_plate_carrier_L5_ac", name="plate_carrier", parent=star.deck, track=30
     )
     assert isinstance(carrier, handles.Carrier)
-    plate = await star.server.create(
+    plate = await star.resource_server.create(
       "azenta_96_wellplate_200uL_Vb_4titudeframestar", name="plate", parent=carrier[0]
     )
     r = await self.built(star, "STAR with plate on plate_carrier[0], track 30")
@@ -469,7 +469,7 @@ class AutoloadTests(_Scenario):
   async def test_load_and_unload(self):
     star = STAR(simulation=True)
     await star.create_resources()
-    carrier = await star.server.create(
+    carrier = await star.resource_server.create(
       "hamilton_plate_carrier_L5_ac", name="carrier", parent=star.deck, track=20
     )
     r = await self.built(star, "STAR with carrier on track 20")

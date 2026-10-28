@@ -33,18 +33,18 @@ PLATE = "azenta_96_wellplate_200uL_Vb_4titudeframestar"
 
 async def _on_the_deck(star: STARDevice, resource: Resource, **where: Any) -> handles.Resource:
   """A resource built with PLR's classes, made in the device's server on its deck."""
-  return await star.server.create(
+  return await star.resource_server.create(
     definition_from_resource(resource), name=resource.name, parent=star.deck, **where
   )
 
 
 async def _plate_carrier_with_a_plate(star: STARDevice) -> handles.Carrier:
   """A plate carrier on track 30 with a plate on its first site."""
-  carrier = await star.server.create(
+  carrier = await star.resource_server.create(
     "hamilton_plate_carrier_L5_ac", name="plate_carrier", parent=star.deck, track=30
   )
   assert isinstance(carrier, handles.Carrier)
-  await star.server.create(PLATE, name="plate", parent=carrier[0])
+  await star.resource_server.create(PLATE, name="plate", parent=carrier[0])
   return carrier
 
 
@@ -212,7 +212,7 @@ class TestPickUpAndDropTools(unittest.IsolatedAsyncioTestCase):
   async def test_a_channel_carrying_something_is_refused(self):
     shaft = self.grippers._pipettes.shaft(7)
     assert shaft is not None
-    await self.star.server.create("hamilton_tip_300uL", name="on_channel_7", parent=shaft)
+    await self.star.resource_server.create("hamilton_tip_300uL", name="on_channel_7", parent=shaft)
     with self.assertRaises(HasTipError):
       await self.grippers.pick_up_tools_at_location(1337.5, 225.0, 107.0, 125.0)
     self.assertEqual(self.tool_commands(), [])
@@ -396,7 +396,7 @@ class TestResourceByResource(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self.grippers._held_resource, self.plate)
 
   async def test_an_occupied_site_is_refused_before_anything_is_sent(self):
-    await self.star.server.create(PLATE, name="other", parent=self.carrier[2])
+    await self.star.resource_server.create(PLATE, name="other", parent=self.carrier[2])
     await self.grippers.pick_up_tools()
     await self.grippers.pick_up_resource(self.plate, pickup_distance_from_top=5)
     with self.assertRaises(RuntimeError):
@@ -427,7 +427,7 @@ class TestResourceByResource(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(len(self.sent), 1)
 
   async def test_gripped_more_than_20_mm_below_its_top_is_refused(self):
-    deep = await self.star.server.create(
+    deep = await self.star.resource_server.create(
       "cor_96_wellplate_2mL_Vb", name="deep", parent=self.carrier[1]
     )
     await self.grippers.pick_up_tools()
@@ -508,7 +508,7 @@ class TestPlaceOntoAPlateAdapter(unittest.IsolatedAsyncioTestCase):
       self.star, hamilton_mfx_carrier_L5_base("source_carrier", modules={0: source}), track=10
     )
     site = await self.star.deck.get_resource("source_site")
-    self.plate = await self.star.server.create(PLATE, name="plate", parent=site)
+    self.plate = await self.star.resource_server.create(PLATE, name="plate", parent=site)
     magnet_site = hamilton_mfx_plateholder_DWP_flat("magnet_site")
     self.magnet_model = alpaqua_96_plateadapter_magnum_flx(name="magnet")
     self.magnet_model.plate_z_offset = 0.62
@@ -559,7 +559,7 @@ class TestPlaceByDestinationType(unittest.IsolatedAsyncioTestCase):
       track=10,
     )
     self.source = await self.deck.get_resource("source_site")
-    self.plate = await self.star.server.create(PLATE, name="plate", parent=self.source)
+    self.plate = await self.star.resource_server.create(PLATE, name="plate", parent=self.source)
     assert self.star.core_grippers is not None
     self.grippers = self.star.core_grippers
     self.sent: List[str] = []
@@ -575,7 +575,7 @@ class TestPlaceByDestinationType(unittest.IsolatedAsyncioTestCase):
     await self.grippers.pick_up_tools(front_channel=4)
 
   async def test_a_rotated_holder_takes_it_turned_as_it_was(self):
-    turned = await self.star.server.create(
+    turned = await self.star.resource_server.create(
       build.resource(
         "turned",
         Coordinate(127.76, 85.48, 5),
@@ -606,7 +606,7 @@ class TestPlaceByDestinationType(unittest.IsolatedAsyncioTestCase):
 
   async def test_a_lid_goes_onto_a_plate(self):
     size = await self.plate.get_size()
-    lid = await self.star.server.create(
+    lid = await self.star.resource_server.create(
       definition_from_resource(
         Lid("lid", size_x=size.x, size_y=size.y, size_z=8, nesting_z_height=3)
       ),
@@ -620,7 +620,7 @@ class TestPlaceByDestinationType(unittest.IsolatedAsyncioTestCase):
       ),
       track=18,
     )
-    other = await self.star.server.create(
+    other = await self.star.resource_server.create(
       PLATE, name="other", parent=await self.deck.get_resource("dest_site")
     )
     assert isinstance(other, handles.Plate) and isinstance(self.plate, handles.Plate)
