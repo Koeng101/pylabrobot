@@ -5360,7 +5360,8 @@
             218.51,
             363.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_2",
@@ -5380,7 +5381,8 @@
             218.51,
             291.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_4",
@@ -5400,7 +5402,8 @@
             218.51,
             273.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_6",
@@ -5484,7 +5487,8 @@
             218.51,
             276.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_1",
@@ -5494,7 +5498,8 @@
             218.51,
             267.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_2",
@@ -5514,7 +5519,8 @@
             218.51,
             249.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_4",
@@ -5534,7 +5540,8 @@
             218.51,
             231.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_6",
@@ -5796,7 +5803,8 @@
             218.51,
             222.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_1",
@@ -5806,7 +5814,8 @@
             218.51,
             213.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_2",
@@ -5826,7 +5835,8 @@
             218.51,
             195.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_4",
@@ -5846,7 +5856,8 @@
             218.51,
             177.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_6",
@@ -5946,7 +5957,8 @@
             218.51,
             222.81,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_1",
@@ -5956,7 +5968,8 @@
             218.51,
             213.81,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_3",
@@ -5966,7 +5979,8 @@
             218.51,
             195.81,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_5",
@@ -5976,7 +5990,25 @@
             218.51,
             177.81,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
+        },
+        {
+          "name": "STARlet_iswap_gripper",
+          "parent": "STARlet_iswap_link_1",
+          "kind": "RESOURCE_KIND_MECHANICAL_GRIPPER",
+          "location": [
+            105.5,
+            25.75,
+            -20.3
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "jaw_width": 72.618,
+          "gripped": false
         }
       ]
     }
@@ -9426,7 +9458,8 @@
         218.51,
         222.81,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_0_tip_mounting_shaft",
@@ -9446,7 +9479,8 @@
         218.51,
         213.81,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_1_tip_mounting_shaft",
@@ -9486,7 +9520,8 @@
         218.51,
         195.81,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_3_tip_mounting_shaft",
@@ -9526,7 +9561,8 @@
         218.51,
         177.81,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_5_tip_mounting_shaft",
@@ -10597,7 +10633,8 @@
         0.0,
         270.0
       ],
-      "jaw_width": 72.618
+      "jaw_width": 72.618,
+      "gripped": false
     },
     {
       "name": "STARlet_iswap_gripper_body",

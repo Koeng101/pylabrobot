@@ -419,7 +419,7 @@ class TestSetupSequence(unittest.IsolatedAsyncioTestCase):
     self.assertNotIn("DI channels", moves)
     pipettes = star.pipettes
     assert pipettes is not None
-    self.assertEqual(pipettes.piston_positions, [0.0] * pipettes.num_channels)
+    self.assertEqual(await pipettes.get_piston_positions(), [0.0] * pipettes.num_channels)
 
   async def test_a_head_told_nowhere_to_eject_ejects_at_the_decks_trash(self):
     """A STAR deck carries a trash for the 96-head, and a head with no eject location of its own is

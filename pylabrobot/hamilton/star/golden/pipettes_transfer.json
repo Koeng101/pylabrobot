@@ -5119,7 +5119,8 @@
             218.51,
             276.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_A1#0",
@@ -5140,7 +5141,8 @@
             218.51,
             267.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_B1#0",
@@ -5161,7 +5163,8 @@
             218.51,
             258.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_C1#0",
@@ -5182,7 +5185,8 @@
             218.51,
             249.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_D1#0",
@@ -5203,7 +5207,8 @@
             218.51,
             240.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_E1#0",
@@ -5224,7 +5229,8 @@
             218.51,
             231.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_F1#0",
@@ -5245,7 +5251,8 @@
             218.51,
             222.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_G1#0",
@@ -5266,7 +5273,8 @@
             218.51,
             213.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_H1#0",
@@ -5483,7 +5491,8 @@
             218.51,
             180.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 55.1
         },
         {
           "name": "tips_tipspot_A1#0",
@@ -5504,7 +5513,8 @@
             218.51,
             171.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 55.1
         },
         {
           "name": "tips_tipspot_B1#0",
@@ -5525,7 +5535,8 @@
             218.51,
             162.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 55.1
         },
         {
           "name": "tips_tipspot_C1#0",
@@ -5546,7 +5557,8 @@
             218.51,
             153.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 55.1
         },
         {
           "name": "tips_tipspot_D1#0",
@@ -5567,7 +5579,8 @@
             218.51,
             144.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 55.1
         },
         {
           "name": "tips_tipspot_E1#0",
@@ -5588,7 +5601,8 @@
             218.51,
             135.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 55.1
         },
         {
           "name": "tips_tipspot_F1#0",
@@ -5609,7 +5623,8 @@
             218.51,
             126.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 55.1
         },
         {
           "name": "tips_tipspot_G1#0",
@@ -5630,7 +5645,8 @@
             218.51,
             117.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 55.1
         },
         {
           "name": "tips_tipspot_H1#0",
@@ -5840,6 +5856,17 @@
           ]
         },
         {
+          "name": "STARlet_pipette_channel_0",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            180.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
+        },
+        {
           "name": "tips_tipspot_A1#0",
           "parent": "STARlet_pipette_channel_0_tip_mounting_shaft",
           "kind": "RESOURCE_KIND_TIP",
@@ -5849,6 +5876,17 @@
             -51.9
           ],
           "volume": 0.0
+        },
+        {
+          "name": "STARlet_pipette_channel_1",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            171.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
         },
         {
           "name": "tips_tipspot_B1#0",
@@ -5862,6 +5900,17 @@
           "volume": 0.0
         },
         {
+          "name": "STARlet_pipette_channel_2",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            162.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
+        },
+        {
           "name": "tips_tipspot_C1#0",
           "parent": "STARlet_pipette_channel_2_tip_mounting_shaft",
           "kind": "RESOURCE_KIND_TIP",
@@ -5871,6 +5920,17 @@
             -51.9
           ],
           "volume": 0.0
+        },
+        {
+          "name": "STARlet_pipette_channel_3",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            153.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
         },
         {
           "name": "tips_tipspot_D1#0",
@@ -5884,6 +5944,17 @@
           "volume": 0.0
         },
         {
+          "name": "STARlet_pipette_channel_4",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            144.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
+        },
+        {
           "name": "tips_tipspot_E1#0",
           "parent": "STARlet_pipette_channel_4_tip_mounting_shaft",
           "kind": "RESOURCE_KIND_TIP",
@@ -5893,6 +5964,17 @@
             -51.9
           ],
           "volume": 0.0
+        },
+        {
+          "name": "STARlet_pipette_channel_5",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            135.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
         },
         {
           "name": "tips_tipspot_F1#0",
@@ -5906,6 +5988,17 @@
           "volume": 0.0
         },
         {
+          "name": "STARlet_pipette_channel_6",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            126.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
+        },
+        {
           "name": "tips_tipspot_G1#0",
           "parent": "STARlet_pipette_channel_6_tip_mounting_shaft",
           "kind": "RESOURCE_KIND_TIP",
@@ -5915,6 +6008,17 @@
             -51.9
           ],
           "volume": 0.0
+        },
+        {
+          "name": "STARlet_pipette_channel_7",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            117.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
         },
         {
           "name": "tips_tipspot_H1#0",
@@ -6104,7 +6208,8 @@
             218.51,
             276.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_1",
@@ -6114,7 +6219,8 @@
             218.51,
             267.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_2",
@@ -6124,7 +6230,8 @@
             218.51,
             258.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_3",
@@ -6134,7 +6241,8 @@
             218.51,
             249.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_4",
@@ -6144,7 +6252,8 @@
             218.51,
             240.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_5",
@@ -6154,7 +6263,8 @@
             218.51,
             231.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_6",
@@ -6164,7 +6274,8 @@
             218.51,
             222.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_7",
@@ -6174,7 +6285,8 @@
             218.51,
             213.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         }
       ]
     },
@@ -6265,7 +6377,8 @@
             218.51,
             276.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_A2#0",
@@ -6286,7 +6399,8 @@
             218.51,
             267.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_B2#0",
@@ -6307,7 +6421,8 @@
             218.51,
             258.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_C2#0",
@@ -6328,7 +6443,8 @@
             218.51,
             249.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_D2#0",
@@ -6349,7 +6465,8 @@
             218.51,
             240.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_E2#0",
@@ -6370,7 +6487,8 @@
             218.51,
             231.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_F2#0",
@@ -6391,7 +6509,8 @@
             218.51,
             222.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_G2#0",
@@ -6412,7 +6531,8 @@
             218.51,
             213.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_H2#0",
@@ -6528,7 +6648,8 @@
             218.51,
             180.71,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "STARlet_pipette_channel_1",
@@ -6538,7 +6659,8 @@
             218.51,
             171.71,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "STARlet_pipette_channel_2",
@@ -6548,7 +6670,8 @@
             218.51,
             162.71,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "STARlet_pipette_channel_3",
@@ -6558,7 +6681,8 @@
             218.51,
             153.71,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "STARlet_pipette_channel_4",
@@ -6568,7 +6692,8 @@
             218.51,
             144.71,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "STARlet_pipette_channel_5",
@@ -6578,7 +6703,8 @@
             218.51,
             135.71,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "STARlet_pipette_channel_6",
@@ -6588,7 +6714,8 @@
             218.51,
             126.71,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "STARlet_pipette_channel_7",
@@ -6598,7 +6725,8 @@
             218.51,
             117.71,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         }
       ]
     },
@@ -6872,7 +7000,8 @@
             218.51,
             180.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 23.2
         },
         {
           "name": "tips_tipspot_A2#0",
@@ -6893,7 +7022,8 @@
             218.51,
             171.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 23.2
         },
         {
           "name": "tips_tipspot_B2#0",
@@ -6914,7 +7044,8 @@
             218.51,
             162.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 23.2
         },
         {
           "name": "tips_tipspot_C2#0",
@@ -6935,7 +7066,8 @@
             218.51,
             153.71,
             -29.8
-          ]
+          ],
+          "piston_volume": 23.2
         },
         {
           "name": "tips_tipspot_D2#0",
@@ -7069,6 +7201,17 @@
           ]
         },
         {
+          "name": "STARlet_pipette_channel_0",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            180.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
+        },
+        {
           "name": "tips_tipspot_A2#0",
           "parent": "STARlet_pipette_channel_0_tip_mounting_shaft",
           "kind": "RESOURCE_KIND_TIP",
@@ -7078,6 +7221,17 @@
             -51.9
           ],
           "volume": 0.0
+        },
+        {
+          "name": "STARlet_pipette_channel_1",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            171.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
         },
         {
           "name": "tips_tipspot_B2#0",
@@ -7091,6 +7245,17 @@
           "volume": 0.0
         },
         {
+          "name": "STARlet_pipette_channel_2",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            162.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
+        },
+        {
           "name": "tips_tipspot_C2#0",
           "parent": "STARlet_pipette_channel_2_tip_mounting_shaft",
           "kind": "RESOURCE_KIND_TIP",
@@ -7100,6 +7265,17 @@
             -51.9
           ],
           "volume": 0.0
+        },
+        {
+          "name": "STARlet_pipette_channel_3",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            153.71,
+            -29.8
+          ],
+          "piston_volume": 5.0
         },
         {
           "name": "tips_tipspot_D2#0",
@@ -7124,7 +7300,20 @@
         "P1DSds00960dt0dv04267dr064dw5",
         "P1RD"
       ],
-      "result": null
+      "result": null,
+      "resources": [
+        {
+          "name": "STARlet_pipette_channel_0",
+          "parent": "STARlet_left_x_arm",
+          "kind": "RESOURCE_KIND_RESOURCE",
+          "location": [
+            218.51,
+            180.71,
+            -29.8
+          ],
+          "piston_volume": 0.0
+        }
+      ]
     },
     {
       "call": "return_tips()",
@@ -7301,7 +7490,8 @@
             218.51,
             276.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_1",
@@ -7311,7 +7501,8 @@
             218.51,
             267.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_2",
@@ -7321,7 +7512,8 @@
             218.51,
             258.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_3",
@@ -7331,7 +7523,8 @@
             218.51,
             249.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_4",
@@ -7341,7 +7534,8 @@
             218.51,
             240.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_5",
@@ -7351,7 +7545,8 @@
             218.51,
             231.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_6",
@@ -7361,7 +7556,8 @@
             218.51,
             222.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_7",
@@ -7371,7 +7567,8 @@
             218.51,
             213.81,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         }
       ]
     },
@@ -7426,7 +7623,8 @@
             218.51,
             276.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_A3#0",
@@ -7447,7 +7645,8 @@
             218.51,
             267.81,
             8.0
-          ]
+          ],
+          "piston_volume": 0.0
         },
         {
           "name": "tips_tipspot_B3#0",
@@ -7540,7 +7739,8 @@
             218.51,
             350.71,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_1",
@@ -7550,7 +7750,8 @@
             218.51,
             341.71,
             -43.9
-          ]
+          ],
+          "piston_volume": 10.0
         }
       ]
     },
@@ -7630,7 +7831,8 @@
             218.51,
             350.71,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_1",
@@ -7640,7 +7842,8 @@
             218.51,
             341.71,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_2",
@@ -7650,7 +7853,8 @@
             218.51,
             258.81,
             8.0
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_3",
@@ -7660,7 +7864,8 @@
             218.51,
             249.81,
             8.0
-          ]
+          ],
+          "piston_volume": 15.0
         },
         {
           "name": "STARlet_pipette_channel_4",
@@ -7670,7 +7875,8 @@
             218.51,
             240.81,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_5",
@@ -7680,7 +7886,8 @@
             218.51,
             231.81,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_6",
@@ -7690,7 +7897,8 @@
             218.51,
             222.81,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
         },
         {
           "name": "STARlet_pipette_channel_7",
@@ -7700,7 +7908,25 @@
             218.51,
             213.81,
             8.0
-          ]
+          ],
+          "piston_volume": 10.0
+        },
+        {
+          "name": "STARlet_iswap_gripper",
+          "parent": "STARlet_iswap_link_1",
+          "kind": "RESOURCE_KIND_MECHANICAL_GRIPPER",
+          "location": [
+            105.5,
+            25.75,
+            -20.3
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "jaw_width": 72.618,
+          "gripped": false
         }
       ]
     }
@@ -11196,7 +11422,8 @@
         218.51,
         350.71,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_0_tip_mounting_shaft",
@@ -11216,7 +11443,8 @@
         218.51,
         341.71,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_1_tip_mounting_shaft",
@@ -11236,7 +11464,8 @@
         218.51,
         258.81,
         8.0
-      ]
+      ],
+      "piston_volume": 15.0
     },
     {
       "name": "STARlet_pipette_channel_2_tip_mounting_shaft",
@@ -11256,7 +11485,8 @@
         218.51,
         249.81,
         8.0
-      ]
+      ],
+      "piston_volume": 15.0
     },
     {
       "name": "STARlet_pipette_channel_3_tip_mounting_shaft",
@@ -11276,7 +11506,8 @@
         218.51,
         240.81,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_4_tip_mounting_shaft",
@@ -11296,7 +11527,8 @@
         218.51,
         231.81,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_5_tip_mounting_shaft",
@@ -11316,7 +11548,8 @@
         218.51,
         222.81,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_6_tip_mounting_shaft",
@@ -11336,7 +11569,8 @@
         218.51,
         213.81,
         8.0
-      ]
+      ],
+      "piston_volume": 10.0
     },
     {
       "name": "STARlet_pipette_channel_7_tip_mounting_shaft",
@@ -12367,7 +12601,8 @@
         0.0,
         270.0
       ],
-      "jaw_width": 72.618
+      "jaw_width": 72.618,
+      "gripped": false
     },
     {
       "name": "STARlet_iswap_gripper_body",

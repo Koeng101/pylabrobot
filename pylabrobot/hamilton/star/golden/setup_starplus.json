@@ -1823,7 +1823,26 @@
         "R0RT",
         "R0RG"
       ],
-      "result": null
+      "result": null,
+      "resources": [
+        {
+          "name": "STARplus_iswap_gripper",
+          "parent": "STARplus_iswap_link_1",
+          "kind": "RESOURCE_KIND_MECHANICAL_GRIPPER",
+          "location": [
+            105.5,
+            25.75,
+            -20.3
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "jaw_width": 72.618,
+          "gripped": false
+        }
+      ]
     }
   ],
   "resources": [
@@ -3276,7 +3295,8 @@
         0.0,
         270.0
       ],
-      "jaw_width": 72.618
+      "jaw_width": 72.618,
+      "gripped": false
     },
     {
       "name": "STARplus_iswap_gripper_body",

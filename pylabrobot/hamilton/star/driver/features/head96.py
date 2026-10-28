@@ -552,7 +552,7 @@ class Head96(Head):
     """
     resp = await super().initialize(tip_discard_location, minimum_traverse_height_end, read_timeout)
     # Initialization homes the piston; the first read of where it stands comes here.
-    self.piston_position = 0.0
+    await self._set_piston_position(0.0)
     await self._record_piston_position()
     return resp
 
@@ -1618,7 +1618,7 @@ class Head96(Head):
   ) -> None:
     """Draw on every channel in place, every field checked; Z and piston move together.
 
-    Moves `piston_position` by the draw; after a failed command, reads it back.
+    Moves the piston by the draw; after a failed command, reads it back.
 
     Args:
       volume: per channel, in uL.
@@ -1654,7 +1654,7 @@ class Head96(Head):
       raise
     else:
       drawn = c.dispensing_drive_increments_to_uL(increments)
-      self.piston_position = round(self.piston_position + drawn, 2)
+      await self._set_piston_position(round(self._piston_position + drawn, 2))
     finally:
       await self._record_where_it_stopped("z")
 
@@ -1669,7 +1669,7 @@ class Head96(Head):
   ) -> None:
     """Expel on every channel in place, every field checked; Z and piston move together.
 
-    Moves `piston_position` by the expel and the stop-back; after a failed command, reads it back.
+    Moves the piston by the expel and the stop-back; after a failed command, reads it back.
 
     Args:
       volume: per channel, in uL.
@@ -1712,9 +1712,9 @@ class Head96(Head):
       await self._record_piston_position()
       raise
     else:
-      left = max(self.piston_position - c.dispensing_drive_increments_to_uL(increments), 0.0)
+      left = max(self._piston_position - c.dispensing_drive_increments_to_uL(increments), 0.0)
       drawn_back = c.dispensing_drive_increments_to_uL(back_increments)
-      self.piston_position = round(left + drawn_back, 2)
+      await self._set_piston_position(round(left + drawn_back, 2))
     finally:
       await self._record_where_it_stopped("z")
 
@@ -2017,7 +2017,7 @@ class Head96(Head):
         logger.warning(moved_before_failure_message, travel)
       raise
     await _resolve_all(server, staged.operation, succeeded=True)
-    self.piston_position = round(piston_after, 1)
+    await self._set_piston_position(round(piston_after, 1))
 
   # -- aspirating ----------------------------------------------------------------------------------
 
@@ -2498,7 +2498,7 @@ class Head96(Head):
         if air_beforehand:
           await self._aspirate_in_place(air_beforehand, flow_rate, minimum_height=bottom)
           standing = round(standing + air_beforehand, 1)
-          self.piston_position = standing
+          await self._set_piston_position(standing)
         found = await self._search_surface(bottom, top, lld_sensor, search_speed, approach_speed)
         if found is None:
           raise RuntimeError(f"no liquid found in {anchor.name} down to its cavity bottom")

@@ -1928,7 +1928,26 @@
         "R0RG",
         "C0CPcl00000000000000cb00000000000000"
       ],
-      "result": null
+      "result": null,
+      "resources": [
+        {
+          "name": "STAR_iswap_gripper",
+          "parent": "STAR_iswap_link_1",
+          "kind": "RESOURCE_KIND_MECHANICAL_GRIPPER",
+          "location": [
+            105.5,
+            25.75,
+            -20.3
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "jaw_width": 72.618,
+          "gripped": false
+        }
+      ]
     }
   ],
   "resources": [
@@ -3381,7 +3400,8 @@
         0.0,
         270.0
       ],
-      "jaw_width": 72.618
+      "jaw_width": 72.618,
+      "gripped": false
     },
     {
       "name": "STAR_iswap_gripper_body",
