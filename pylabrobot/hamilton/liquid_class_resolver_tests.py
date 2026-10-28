@@ -14,7 +14,6 @@ from pylabrobot.hamilton.liquid_class_resolver import (
   get_volumes_and_classes,
 )
 from pylabrobot.hamilton.liquid_classes import HamiltonLiquidClass
-from pylabrobot.resources.container import Container
 from pylabrobot.resources.hamilton import HamiltonTip, TipPickupMethod, TipSize
 from pylabrobot.resources.liquid import Liquid
 
@@ -87,19 +86,18 @@ def test_get_volumes_and_classes_looks_up_corrects_and_rounds():
     keys.append(kwargs)
     return hlc
 
-  well = Container(name="w", size_x=1, size_y=1, size_z=1)
   liquid, piston, classes = get_volumes_and_classes(
-    [well], [0], [_tip()], [100.0], None, None, [True], [False], lookup=lookup
+    ["w"], [0], [_tip()], [100.0], None, None, [True], [False], lookup=lookup
   )
   assert (liquid, piston, classes) == ([100.0], [100.12], [hlc])
   assert keys[0]["jet"] is True and keys[0]["blow_out"] is False
   assert keys[0]["liquid"] == Liquid.WATER and keys[0]["tip_volume"] == 300.0
-  assert get_volumes_and_classes([well], [0], [_tip()], None, [5.0], None, [False], [False]) == (
+  assert get_volumes_and_classes(["w"], [0], [_tip()], None, [5.0], None, [False], [False]) == (
     [5.0],
     [5.0],
     None,
   )
   with pytest.raises(ValueError, match="no liquid class is known for channel 1's tip on w"):
     get_volumes_and_classes(
-      [well], [1], [_tip()], [1.0], None, None, [False], [False], lookup=lambda **kw: None
+      ["w"], [1], [_tip()], [1.0], None, None, [False], [False], lookup=lambda **kw: None
     )

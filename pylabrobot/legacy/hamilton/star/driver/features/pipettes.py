@@ -6156,7 +6156,7 @@ class Pipettes:
     jets = per_container("jet", jet, n) or [False] * n
     blow_outs = per_container("blow_out", blow_out, n) or [False] * n
     liquid, drawn, classes = get_volumes_and_classes(
-      containers,
+      [c.name for c in containers],
       channel_of,
       tips,
       volumes,
@@ -6983,7 +6983,7 @@ class Pipettes:
       self._get_dispensing_mode(jets[job], blow_outs[job], empties[job]) for job in range(n)
     ]
     liquid, pushed, classes = get_volumes_and_classes(
-      containers,
+      [c.name for c in containers],
       channel_of,
       tips,
       volumes,

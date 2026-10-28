@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from typing import Any, List, Optional, cast
 
 from pylabrobot.hamilton.protocol.text.framing import assemble_command
-from pylabrobot.hamilton.star.conftest import BARE_X_ARM
+from pylabrobot.hamilton.star.conftest import BARE_X_ARM, make_deck
 from pylabrobot.hamilton.star.device import RECORDING_STAR
 from pylabrobot.hamilton.star.driver.configuration import (
   DeviceConfiguration,
@@ -16,8 +16,7 @@ from pylabrobot.hamilton.star.driver.configuration import (
 from pylabrobot.hamilton.star.driver.features.x_arm import XArm, XArmConfiguration
 from pylabrobot.hamilton.star.driver.simulator import STARSimulationDriver
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.hamilton import STARDeck
-from pylabrobot.resources.hamilton.hamilton_decks import HamiltonDeck
+from pylabrobot.resources.server import handles
 from pylabrobot.serializer import serialize
 
 # What each read answers, keyed by the command that asks: the arm at 362.9 mm, in tenths of a
@@ -53,7 +52,7 @@ async def _both_arms() -> STARSimulationDriver:
     right_arm=BARE_X_ARM,
   )
   driver = STARSimulationDriver(
-    deck=STARDeck(),
+    deck=await make_deck(),
     declared_configuration_json=declaring(device=both),
   )
   await driver.setup()
@@ -120,7 +119,7 @@ class TestPerDriveCommands(unittest.IsolatedAsyncioTestCase):
     )
     device = dataclasses.replace(RECORDED_DEVICE, left_arm=left)
     driver = STARSimulationDriver(
-      deck=STARDeck(), declared_configuration_json=declaring(device=device)
+      deck=await make_deck(), declared_configuration_json=declaring(device=device)
     )
     await driver.setup()
     arm = cast(XArm, driver.left_x_arm)
@@ -177,9 +176,8 @@ class TestModelFollowsTheArm(unittest.IsolatedAsyncioTestCase):
   async def test_setup_does_not_duplicate_the_arm(self):
     driver = await _both_arms()
     await driver.setup()
-    arms = [
-      child.name for child in cast(HamiltonDeck, driver.deck).children if child.category == "x_arm"
-    ]
+    deck = cast(handles.Deck, driver.deck)
+    arms = [child.name for child in await deck.find_resources(categories=["x_arm"])]
     self.assertEqual(sorted(arms), ["left_x_arm", "right_x_arm"])
 
   async def test_a_rejected_move_records_where_the_arm_stopped(self):
@@ -187,7 +185,7 @@ class TestModelFollowsTheArm(unittest.IsolatedAsyncioTestCase):
     is asked where it ended up. Driven against a stub rather than the simulator, whose reads answer
     from the model and so cannot report a stop the model does not know about."""
     driver = await _both_arms()
-    resource = cast(HamiltonDeck, driver.deck).get_resource("left_x_arm")
+    resource = await cast(handles.Deck, driver.deck).get_resource("left_x_arm")
 
     async def refuse(module: str, command: str, fmt=None, **kwargs):
       if command == "XP":
@@ -203,7 +201,7 @@ class TestModelFollowsTheArm(unittest.IsolatedAsyncioTestCase):
     arm.resource = resource
     with self.assertRaises(RuntimeError):
       await arm.move_to_x_position(900.0)
-    seated = cast(Coordinate, resource.location)
+    seated = cast(Coordinate, await resource.get_location())
     self.assertEqual(seated.x + arm.configuration.reference_point_from_left, 640.0)
 
   async def test_a_failed_recovery_leaves_the_moves_own_error(self):
@@ -240,7 +238,7 @@ class TestModelFollowsTheArm(unittest.IsolatedAsyncioTestCase):
     """The reply comes before the arm has stopped, so the move reads until two reads in a row find
     it at the target. Driven against a stub, since a simulated read answers from the model."""
     driver = await _both_arms()
-    resource = cast(HamiltonDeck, driver.deck).get_resource("left_x_arm")
+    resource = await cast(handles.Deck, driver.deck).get_resource("left_x_arm")
     approach = iter(
       [
         "rx +0004985 +0000049850",  # still arriving
@@ -266,7 +264,7 @@ class TestModelFollowsTheArm(unittest.IsolatedAsyncioTestCase):
     arm.resource = resource
     await arm.move_to_x_position(500.0)
     self.assertEqual(sent.count("X0RX"), 4)
-    seated = cast(Coordinate, resource.location)
+    seated = cast(Coordinate, await resource.get_location())
     self.assertEqual(seated.x + arm.configuration.reference_point_from_left, 500.0)
 
   async def test_an_arm_reversing_is_not_mistaken_for_one_at_the_target(self):
@@ -297,10 +295,10 @@ class TestModelFollowsTheArm(unittest.IsolatedAsyncioTestCase):
       ),  # type: ignore[arg-type]
       side="left",
     )
-    arm.resource = cast(HamiltonDeck, driver.deck).get_resource("left_x_arm")
+    arm.resource = await cast(handles.Deck, driver.deck).get_resource("left_x_arm")
     await arm.move_to_x_position(500.0)
     self.assertEqual(reads, 5)
-    seated = cast(Coordinate, arm.resource.location)
+    seated = cast(Coordinate, await arm.resource.get_location())
     self.assertEqual(seated.x + arm.configuration.reference_point_from_left, 500.0)
 
   async def test_an_arm_that_never_arrives_gives_up_and_keeps_what_it_read(self):
@@ -320,11 +318,11 @@ class TestModelFollowsTheArm(unittest.IsolatedAsyncioTestCase):
       ),  # type: ignore[arg-type]
       side="left",
     )
-    arm.resource = cast(HamiltonDeck, driver.deck).get_resource("left_x_arm")
+    arm.resource = await cast(handles.Deck, driver.deck).get_resource("left_x_arm")
     with self.assertLogs("pylabrobot.hamilton.star.driver.features.x_arm", level="WARNING"):
       await arm.move_to_x_position(500.0, settle_reads=3)
     self.assertEqual(reads, 3)
-    seated = cast(Coordinate, arm.resource.location)
+    seated = cast(Coordinate, await arm.resource.get_location())
     self.assertEqual(seated.x + arm.configuration.reference_point_from_left, 498.0)
 
 
@@ -358,7 +356,9 @@ class TestConfiguringAnArm(unittest.IsolatedAsyncioTestCase):
   async def test_it_refuses_before_the_device_has_been_read(self):
     """There is nowhere to put it: the field it writes to belongs to a configuration that is only
     built once the device has answered."""
-    driver = STARSimulationDriver(deck=STARDeck(), declared_configuration_json=RECORDING_STAR)
+    driver = STARSimulationDriver(
+      deck=await make_deck(), declared_configuration_json=RECORDING_STAR
+    )
     with self.assertRaises(RuntimeError):
       XArm(driver, side="left", configuration=BARE_X_ARM)
 

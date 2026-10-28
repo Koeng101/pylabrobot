@@ -7,11 +7,10 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_date
+from pylabrobot.hamilton.star.driver import model
 from pylabrobot.resources.barcode import Barcode1DSymbology, Barcode2DSymbology
-from pylabrobot.resources.carrier import Carrier
-from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.hamilton.hamilton_decks import track_for_x_coordinate
-from pylabrobot.resources.resource import Resource
+from pylabrobot.resources.server import handles
+from pylabrobot.resources.server.errors import ServerError
 
 if TYPE_CHECKING:
   from pylabrobot.hamilton.star.driver.master import STARDriver
@@ -247,7 +246,7 @@ class Autoload:
     self._driver = driver
     # The sled on the deck, when the driver was given one. Setup puts it there; moves keep it in
     # step. Without a deck it stays None and nothing is modelled.
-    self.resource: Optional[Resource] = None
+    self.resource: Optional[handles.Resource] = None
     self.configuration = configuration or AutoloadConfiguration()
 
   @property
@@ -507,10 +506,10 @@ class Autoload:
     x = c.to_deck_frame(
       c.x_drive_increments_to_mm(await self._request_drive_position("RX", digits=5))
     )
-    self.update_location_by_reference_point(x)
+    await self.update_location_by_reference_point(x)
     return x
 
-  def update_location_by_reference_point(self, x: float) -> None:
+  async def update_location_by_reference_point(self, x: float) -> None:
     """Record where the sled is on the resource that models it.
 
     What the drive reports is where the carrier-handling wheel stands. The sled is placed around
@@ -519,14 +518,29 @@ class Autoload:
     Args:
       x: where the wheel is along the deck, in mm.
     """
-    if self.resource is None or self.resource.location is None:
+    if self.resource is None:
       return
     c = self.configuration
-    self.resource.location = Coordinate(
-      x - c.reference_point_from_sled_left_edge,
-      self.resource.location.y,
-      self.resource.location.z,
+    await model.record_positions(
+      self.resource.server,
+      [model.position(self.resource, x=x - c.reference_point_from_sled_left_edge)],
     )
+
+  async def get_reference_point_x(self) -> Optional[float]:
+    """Where the model has the carrier-handling wheel along the deck, in mm.
+
+    The inverse of `update_location_by_reference_point`.
+
+    Returns:
+      Where the model has it, or None when nothing models the sled yet.
+    """
+    if self.resource is None:
+      return None
+    (node,) = await model.get_nodes(self.resource.server, [self.resource])
+    location = model.location_of(node)
+    if location is None:
+      return None
+    return location.x + self.configuration.reference_point_from_sled_left_edge
 
   async def _request_drive_position(self, command: str, digits: int) -> int:
     """Where one of the three drives is, in the steps it counts in.
@@ -1090,8 +1104,8 @@ class Autoload:
     One track per carrier: the one its right rail sits over, which is the track every command here
     addresses it by. PyLabRobot places a carrier by its front-left, so the two differ by the
     carrier's width - a six-track carrier placed at track 15 is reported, and addressed, at 20.
-    `HamiltonDeck.compute_right_track_of_carrier` converts, since it takes the resource model to
-    know how wide a carrier is.
+    The deck handle's `tracks_of` converts, since it takes the resource model to know how wide a
+    carrier is.
 
     Returns:
       The rightmost track of each carrier found, counted from 1, in order.
@@ -1466,7 +1480,7 @@ class Autoload:
 
   async def unload_carrier(
     self,
-    carrier: Carrier,
+    carrier: handles.Resource,
     use_loading_indicators: bool = True,
     perform_deck_presence_check: bool = True,
     perform_tray_presence_check: bool = True,
@@ -1481,8 +1495,8 @@ class Autoload:
       perform_tray_presence_check: whether to confirm the loading tray is not already holding it.
       park_after: whether to park the autoload once the carrier is out.
     Raises:
-      ValueError: If the carrier ends outside the tracks this device has, if the deck sensors do
-        not see it, or if it is already on the loading tray.
+      ValueError: If the carrier is not on the deck, ends outside the tracks this device has, the
+        deck sensors do not see it, or it is already on the loading tray.
       RuntimeError: If setup has not run, or the driver was given no deck, so a carrier has no
         track to unload from.
     """
@@ -1491,14 +1505,14 @@ class Autoload:
       raise RuntimeError("this driver has no deck, so a carrier has no track to unload from")
 
     # The autoload addresses a carrier by its rightmost track, which is the one the deck sensors
-    # report it at too.
-    track = deck.compute_right_track_of_carrier(carrier)
+    # report it at too. The tracks the carrier covers run from the leftmost it sits over to that.
+    try:
+      left_track, track = await deck.tracks_of(carrier)
+    except ServerError as error:
+      raise model.placement_error(error) from error
     tracks = self.track_range
     if track not in tracks:
       raise ValueError(f"track must be between {tracks[0]} and {tracks[-1]}, is {track}")
-
-    # The tracks the carrier covers, from the leftmost it sits over to the rightmost.
-    left_track = track_for_x_coordinate(carrier.get_location_wrt(deck).x)
     covered_tracks = range(left_track, track + 1)
 
     if use_loading_indicators:
@@ -1577,7 +1591,7 @@ class Autoload:
 
   async def load_carrier(
     self,
-    carrier: Carrier,
+    carrier: handles.Resource,
     carrier_barcode_reading: bool = True,
     barcode_reading: bool = False,
     barcode_reading_direction: BarcodeReadingDirection = "horizontal",
@@ -1611,8 +1625,8 @@ class Autoload:
       "container_barcodes".
 
     Raises:
-      ValueError: If the carrier ends outside the tracks this device has, or the loading tray
-        holds no carrier at its track.
+      ValueError: If the carrier is not on the deck, ends outside the tracks this device has, or
+        the loading tray holds no carrier at its track.
       RuntimeError: If setup has not run, or the driver was given no deck, so a carrier has no
         track to load to.
     """
@@ -1621,7 +1635,10 @@ class Autoload:
       raise RuntimeError("this driver has no deck, so a carrier has no track to load to")
 
     # The autoload addresses a carrier by its rightmost track, which is where it ends on the deck.
-    track = deck.compute_right_track_of_carrier(carrier)
+    try:
+      _, track = await deck.tracks_of(carrier)
+    except ServerError as error:
+      raise model.placement_error(error) from error
     tracks = self.track_range
     if track not in tracks:
       raise ValueError(f"track must be between {tracks[0]} and {tracks[-1]}, is {track}")

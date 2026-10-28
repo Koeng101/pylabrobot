@@ -25,8 +25,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, cast
 
 from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_date
+from pylabrobot.hamilton.star.driver import model
+from pylabrobot.lib.liquid_handling.head_alignment import HeadLayout
 from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.n_channel_pipettes import NChannelPipette
+from pylabrobot.resources.server import handles
+from pylabrobot.resources.server.tree import to_coordinate
+from pylabrobot.resources.server.v1 import server_pb2 as spb
+from pylabrobot.resources.server.v1 import types_pb2 as pb
 
 if TYPE_CHECKING:
   from pylabrobot.hamilton.star.driver.features.x_arm import XArm
@@ -438,7 +443,13 @@ class Head:
     self._driver = driver
     # The head on the deck, when the driver was given one. Setup puts it there, as a child of the
     # arm it rides; moves keep it in step. Without a deck it stays None and nothing is modelled.
-    self.resource: Optional[NChannelPipette] = None
+    self.resource: Optional[handles.NChannelPipette] = None
+    # Its mounting shafts by channel, "A1" first and on down each column, once it is modelled.
+    self.shafts: Dict[str, handles.TipMountingShaft] = {}
+    # Where channel A1's axis ends, from the head's corner: the point the drives report.
+    self._reference_point: Optional[Coordinate] = None
+    # Its channels' rows, columns and pitch, once it is modelled.
+    self._layout: Optional[HeadLayout] = None
     self.configuration = configuration
     # Where the piston stands, in uL, as last read or moved; 0.0 at rest.
     self.piston_position: float = 0.0
@@ -760,7 +771,72 @@ class Head:
 
   # -- where the head is ---------------------------------------------------------------------------
 
-  def update_location_by_reference_point(
+  async def _take_resource(self, resource: handles.NChannelPipette) -> None:
+    """Model this head on `resource`: find its shafts, and the point on it the drives report.
+
+    Args:
+      resource: the head, as setup put it on the arm.
+    """
+    server = resource.server
+    response = await server.commands.get_resources(
+      spb.GetResourcesRequest(resources=[resource.ref], depth=1)
+    )
+    shafts: Dict[str, handles.TipMountingShaft] = {}
+    corners: Dict[str, pb.Vec3] = {}
+    for node in response.nodes[1:]:
+      handle = server.handle_from_node(node, ())
+      if node.parent_id == resource.id and isinstance(handle, handles.TipMountingShaft):
+        shafts[node.attributes.identifier] = handle
+        corners[node.attributes.identifier] = node.attributes.location
+    grid = response.nodes[0].attributes.itemized
+    self._layout = HeadLayout(grid.num_items_x, grid.num_items_y, corners["A2"].x - corners["A1"].x)
+    # The drives report channel A1's axis: the shaft's centre, not the corner it is placed by.
+    (a1,) = await model.resolve_geometry(
+      server,
+      [model.query(shafts[HEAD_REFERENCE_SHAFT], resource, [handles.anchor("c", "c", "b")])],
+    )
+    self.resource, self.shafts = resource, shafts
+    self._reference_point = to_coordinate(a1.locations[0])
+
+  async def _get_tools(
+    self, channels: Optional[List[str]] = None
+  ) -> Dict[str, Optional[pb.ResourceNode]]:
+    """What the model has on the head's shafts, by channel, in one read.
+
+    Args:
+      channels: the channels to read, a few of them; every channel when None.
+
+    Returns:
+      Per channel, "A1" first and on down each column, the tip or tool on it; None where bare.
+    """
+    tools: Dict[str, Optional[pb.ResourceNode]] = {
+      name: None for name in (self.shafts if channels is None else channels)
+    }
+    if self.resource is None or not self.shafts:
+      return tools
+    channel_of = {self.shafts[name].id: name for name in tools}
+    if channels is not None:
+      shafts = [self.shafts[name] for name in channels]
+      for node in await model.get_nodes(self.resource.server, shafts, depth=1):
+        name = channel_of.get(node.parent_id)
+        kind = node.attributes.kind
+        if name is not None and kind in (pb.RESOURCE_KIND_TIP, pb.RESOURCE_KIND_HEAD_TOOL):
+          tools[name] = tools[name] or node
+      return tools
+    # Only what the shafts carry is read: a bare head answers with nothing at all.
+    response = await self.resource.server.commands.find_resources(
+      spb.FindResourcesRequest(
+        scope=self.resource.ref,
+        filter=spb.ResourceFilter(kinds=[pb.RESOURCE_KIND_TIP, pb.RESOURCE_KIND_HEAD_TOOL]),
+      )
+    )
+    for node in response.nodes:
+      name = channel_of.get(node.parent_id)
+      if name is not None and tools[name] is None:
+        tools[name] = node
+    return tools
+
+  async def update_location_by_reference_point(
     self, y: Optional[float] = None, z: Optional[float] = None
   ) -> None:
     """Record where the head is on the resource that models it.
@@ -771,30 +847,35 @@ class Head:
     shaft sits inside the head - which is a measurement of the head, not its array's edge.
 
     Both drives answer in the deck's frame, and a resource's location is measured from its parent -
-    which for the head is the arm, not the deck. The two differ by wherever the arm sits, so the
-    arm's own position is taken out before either value is recorded. Does nothing when the driver
-    was given no deck, and so has nothing to model.
+    which for the head is the arm, not the deck. The server takes the arm's own position out before
+    either value is recorded. Does nothing when the driver was given no deck, and so has nothing to
+    model.
 
     Args:
       y: where channel A1 is now, in mm on the deck. Left as it was when None.
       z: where the head's lowest fixed feature is now, in mm on the deck. Left as it was when None.
     """
     deck = self._driver.deck
-    if self.resource is None or self.resource.location is None or deck is None:
+    if self.resource is None or deck is None or (y is None and z is None):
       return
-    arm = self.resource.parent
-    if arm is None:
-      return
-    # The drives report channel A1's axis: the shaft's centre, not the corner it is placed by.
-    shaft = self.resource.get_item(HEAD_REFERENCE_SHAFT).get_location_wrt(
-      self.resource, "c", "c", "b"
+    await model.record_positions(
+      deck.server,
+      [model.position(self.resource, y=y, z=z, frame=deck, reference_point=self._reference_point)],
     )
-    here, on_the_arm = self.resource.location, arm.get_location_wrt(deck)
-    self.resource.location = Coordinate(
-      here.x,
-      here.y if y is None else y - on_the_arm.y - shaft.y,
-      here.z if z is None else z - on_the_arm.z - shaft.z,
-    )
+
+  async def get_reference_point_location(self) -> Optional[Coordinate]:
+    """Where the model has channel A1's axis end, in mm on the deck.
+
+    The inverse of `update_location_by_reference_point`, X included: the head's X follows the arm.
+
+    Returns:
+      Where the model has it, or None when nothing models the head yet.
+    """
+    deck = self._driver.deck
+    if self.resource is None or deck is None:
+      return None
+    (point,) = await model.locations_in([self.shafts[HEAD_REFERENCE_SHAFT]], deck, "c", "c", "b")
+    return point
 
   # ----------------------------------------
   # Movement
@@ -898,7 +979,7 @@ class Head:
     )
     increments = cast(List[int], resp["ry"])[1]
     y = self.configuration.y_drive_increments_to_mm(increments)
-    self.update_location_by_reference_point(y=y)
+    await self.update_location_by_reference_point(y=y)
     return y
 
   async def request_z_position(self) -> float:
@@ -914,7 +995,7 @@ class Head:
     )
     increments = cast(List[int], resp["rz"])[1]  # [0] = firmware counter, [1] = hardware counter
     z = self.configuration.z_drive_increments_to_mm(increments)
-    self.update_location_by_reference_point(z=z)
+    await self.update_location_by_reference_point(z=z)
     return z
 
   async def request_location(self) -> Coordinate:

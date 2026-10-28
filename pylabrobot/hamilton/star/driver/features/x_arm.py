@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Tuple, cast
 
 from pylabrobot.hamilton.protocol.text.framing import parse_firmware_version_date
-from pylabrobot.resources.coordinate import Coordinate
-from pylabrobot.resources.resource import Resource
+from pylabrobot.hamilton.star.driver import model
+from pylabrobot.resources.server import handles
 
 if TYPE_CHECKING:
   from pylabrobot.hamilton.star.driver.features.core_grippers import CoreGrippers
@@ -230,7 +230,7 @@ class XArm:
     self._driver = driver
     # The arm on the deck, when the driver was given one. Setup puts it there; moves keep it in
     # step. Without a deck it stays None and nothing is modelled.
-    self.resource: Optional[Resource] = None
+    self.resource: Optional[handles.Resource] = None
     # What this arm carries. The firmware requires the feature bits of the two drives to be
     # disjoint, so a feature is on one arm or the other and never on both. Setup builds each
     # from this arm's own bits.
@@ -406,7 +406,7 @@ class XArm:
     dual-rail arm, the right edge of a single-rail one."""
     return "c" if self.configuration.reference_point == "center" else "r"
 
-  def update_location_by_reference_point(self, x: float) -> None:
+  async def update_location_by_reference_point(self, x: float) -> None:
     """Record where this arm is on the resource that models it.
 
     The device positions the arm by its reference point - the middle of the width it reports for a
@@ -419,13 +419,28 @@ class XArm:
     Args:
       x: where the reference point is now, in mm.
     """
-    if self.resource is None or self.resource.location is None:
+    if self.resource is None:
       return
-    self.resource.location = Coordinate(
-      x - self.configuration.reference_point_from_left,
-      self.resource.location.y,
-      self.resource.location.z,
+    await model.record_positions(
+      self.resource.server,
+      [model.position(self.resource, x=x - self.configuration.reference_point_from_left)],
     )
+
+  async def get_reference_point_x(self) -> Optional[float]:
+    """Where the model has this arm's reference point along X, in mm on the deck it stands on.
+
+    The inverse of `update_location_by_reference_point`.
+
+    Returns:
+      Where the model has it, or None when nothing models it yet.
+    """
+    if self.resource is None:
+      return None
+    (node,) = await model.get_nodes(self.resource.server, [self.resource])
+    location = model.location_of(node)
+    if location is None:
+      return None
+    return location.x + self.configuration.reference_point_from_left
 
   # -- x motion --------------------------------------------------------------
 
@@ -450,7 +465,7 @@ class XArm:
     if not read:
       raise ValueError(f"no position in the reply: {resp!r}")
     x = self.configuration.x_increments_to_mm(int(read[0]))
-    self.update_location_by_reference_point(x)
+    await self.update_location_by_reference_point(x)
     return x
 
   # TODO: on a device with two arms, check the other arm's position before moving. They share one
@@ -533,7 +548,7 @@ class XArm:
 
     # The reply arrives when the move ends, not when the arm stops. Two reads in a row at the
     # target say it has: the extremes of a swing never are. Each read records where the arm is.
-    self.update_location_by_reference_point(x)
+    await self.update_location_by_reference_point(x)
     at_target = 0
     for _ in range(settle_reads):
       reached = await self.request_position()
