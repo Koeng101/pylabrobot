@@ -1,0 +1,772 @@
+syntax = "proto3";
+
+// The iSWAP: its arm's joints, its gripper, and where it parks.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+// The gripper drive's predefined widths, in increments.
+message ISwapGripperPositions {
+  int32 home = 1;
+  int32 extra_1 = 2;
+  int32 closed = 3;
+  int32 plate_type_1 = 4;
+  int32 plate_type_2 = 5;
+  int32 plate_type_3 = 6;
+  int32 plate_type_4 = 7;
+  int32 plate_type_5 = 8;
+  int32 plate_type_6 = 9;
+  int32 plate_type_7 = 10;
+}
+
+// The elbow's predefined Z positions, in increments.
+message ISwapZPositions {
+  int32 home = 1;
+  int32 parking = 2;
+  int32 extra_1 = 3;
+  int32 extra_2 = 4;
+  int32 extra_3 = 5;
+  int32 extra_4 = 6;
+  int32 extra_5 = 7;
+  int32 extra_6 = 8;
+  int32 extra_7 = 9;
+  int32 extra_8 = 10;
+}
+
+// The elbow's predefined Y positions, in increments.
+message ISwapYPositions {
+  int32 home = 1;
+  int32 lower_limit = 2;
+  int32 upper_limit = 3;
+  int32 parking = 4;
+  int32 pre_parking = 5;
+  int32 extra_1 = 6;
+  int32 extra_2 = 7;
+  int32 extra_3 = 8;
+  int32 extra_4 = 9;
+  int32 extra_5 = 10;
+}
+
+// The iSWAP's facts: its links, its drives, and their predefined positions.
+message ISwapConfiguration {
+  string module = 1;
+  optional string firmware_version = 2;
+  Date firmware_date = 3;
+  optional double link_1_length = 4;
+  optional double tool_length = 5;
+  optional double elbow_x_offset = 6;
+  ISwapYPositions elbow_predefined_y_positions_increments = 7;
+  ISwapZPositions elbow_predefined_z_positions_increments = 8;
+  ISwapElbowPositions elbow_drive_predefined_increments = 9;
+  ISwapWristPositions wrist_drive_predefined_increments = 10;
+  ISwapGripperPositions gripper_drive_predefined_increments = 11;
+  Int32Range y_range_increments = 12;
+  double y_mm_per_increment = 13;
+  Int32Range y_speed_range_increments = 14;
+  int32 y_speed_default_increments = 15;
+  int32 y_current_limit_default = 16;
+  int32 y_acceleration_level_default = 17;
+  double elbow_drive_diameter = 18;
+  double elbow_drive_safety_radius = 19;
+  double elbow_y_min = 20;
+  double elbow_drive_size_z = 21;
+  Int32Range z_range_increments = 22;
+  double z_mm_per_increment = 23;
+  Int32Range z_speed_range_increments = 24;
+  Int32Range z_acceleration_range_increments = 25;
+  int32 z_speed_default_increments = 26;
+  int32 z_acceleration_default_increments = 27;
+  int32 z_current_limit_default = 28;
+  double elbow_z_offset_above_finger = 29;
+  Int32Range elbow_range_increments = 30;
+  double elbow_deg_per_increment = 31;
+  Int32Range elbow_speed_range_increments = 32;
+  Int32Range elbow_acceleration_range_increments = 33;
+  int32 elbow_speed_default_increments = 34;
+  int32 elbow_acceleration_default_increments = 35;
+  int32 elbow_current_limit_default = 36;
+  Int32Range wrist_range_increments = 37;
+  double wrist_deg_per_increment = 38;
+  Int32Range wrist_speed_range_increments = 39;
+  Int32Range wrist_acceleration_range_increments = 40;
+  int32 wrist_speed_default_increments = 41;
+  int32 wrist_acceleration_default_increments = 42;
+  int32 wrist_current_limit_default = 43;
+  Int32Range gripper_range_increments = 44;
+  double gripper_mm_per_increment = 45;
+  Int32Range gripper_speed_range_increments = 46;
+  Int32Range gripper_acceleration_range_increments = 47;
+  Int32Range gripper_current_limit_range = 48;
+  int32 gripper_speed_default_increments = 49;
+  int32 gripper_acceleration_default_increments = 50;
+  int32 gripper_current_limit_default = 51;
+  int32 gripper_close_speed_default_increments = 52;
+  int32 gripper_nudge_speed_default_increments = 53;
+  int32 gripper_stop_trigger_default = 54;
+  bool gripper_low_pass_filter_default = 55;
+  Int32Range gripper_stop_band_range_increments = 56;
+  int32 gripper_counter_drift_increments = 57;
+}
+
+// Where the iSWAP's joints and gripper are, on the deck.
+message ISwapPose {
+  pylabrobot.resources.server.v1.Vec3 elbow_joint_location = 1;
+  pylabrobot.resources.server.v1.Vec3 wrist_joint_location = 2;
+  pylabrobot.resources.server.v1.Vec3 gripper_center_location = 3;
+  pylabrobot.resources.server.v1.Rotation gripper_deck_orientation = 4;
+  repeated ISwapJoint joints = 5;
+}
+
+// The wrist drive's predefined positions, in increments.
+message ISwapWristPositions {
+  int32 home = 1;
+  int32 right = 2;
+  int32 straight = 3;
+  int32 left = 4;
+  int32 reverse = 5;
+  int32 parking = 6;
+  int32 extra_1 = 7;
+  int32 extra_2 = 8;
+  int32 extra_3 = 9;
+}
+
+// The elbow drive's predefined positions, in increments.
+message ISwapElbowPositions {
+  int32 home = 1;
+  int32 left = 2;
+  int32 front = 3;
+  int32 right = 4;
+  int32 parking = 5;
+  int32 extra_1 = 6;
+  int32 extra_2 = 7;
+  int32 extra_3 = 8;
+  int32 extra_4 = 9;
+}
+
+message ISwapRequestFirmwareVersionRequest {
+}
+
+message ISwapRequestFirmwareVersionResponse {
+  // The version string as reported, and the date in it.
+  string version = 1;
+  Date date = 2;
+}
+
+message ISwapElbowRequestXOffsetRequest {
+}
+
+message ISwapElbowRequestXOffsetResponse {
+  // The offset in mm.
+  double x_offset = 1;
+}
+
+message ISwapElbowDriveRequestPositionsRequest {
+}
+
+message ISwapElbowDriveRequestPositionsResponse {
+  // Each named stop's motor increments.
+  ISwapElbowPositions positions = 1;
+}
+
+message ISwapWristDriveRequestPositionsRequest {
+}
+
+message ISwapWristDriveRequestPositionsResponse {
+  // Each named stop's motor increments.
+  ISwapWristPositions positions = 1;
+}
+
+message ISwapElbowRequestYStopsRequest {
+}
+
+message ISwapElbowRequestYStopsResponse {
+  // Each named stop in mm.
+  map<string, double> y_stops = 1;
+}
+
+message ISwapRequestLink1LengthRequest {
+}
+
+message ISwapRequestLink1LengthResponse {
+  // Length in mm.
+  double link_1_length = 1;
+}
+
+message ISwapRequestToolCenterPointXyLengthRequest {
+}
+
+message ISwapRequestToolCenterPointXyLengthResponse {
+  // Length in mm.
+  double tool_center_point_xy_length = 1;
+}
+
+message ISwapElbowRequestPredefinedZPositionsRequest {
+}
+
+message ISwapElbowRequestPredefinedZPositionsResponse {
+  // Each stop in mm, keyed by the position-table field names.
+  map<string, double> predefined_z_positions = 1;
+}
+
+message ISwapGripperDriveRequestWidthsRequest {
+}
+
+message ISwapGripperDriveRequestWidthsResponse {
+  // Each width in mm, keyed by the position-table field names.
+  map<string, double> widths = 1;
+}
+
+message ISwapDiscoverRequest {
+}
+
+message ISwapDiscoverResponse {
+}
+
+message ISwapDeclareFrontLimitRequest {
+}
+
+message ISwapDeclareFrontLimitResponse {
+}
+
+message ISwapInitializeRequest {
+}
+
+message ISwapInitializeResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapElbowDriveUpdateAngleRequest {
+  // The elbow drive's angle, in degrees, as it reports it.
+  double angle = 1;
+}
+
+message ISwapElbowDriveUpdateAngleResponse {
+}
+
+message ISwapElbowGetReferencePointLocationRequest {
+}
+
+message ISwapElbowGetReferencePointLocationResponse {
+  // Where the model has it, or unset when there is nothing modelling it yet.
+  pylabrobot.resources.server.v1.Vec3 reference_point_location = 1;
+}
+
+message ISwapWristDriveGetAngleRequest {
+}
+
+message ISwapWristDriveGetAngleResponse {
+  // The angle in degrees, or unset while nothing has read it yet.
+  optional double angle = 1;
+}
+
+message ISwapElbowDriveGetAngleRequest {
+}
+
+message ISwapElbowDriveGetAngleResponse {
+  // The angle in degrees, or unset while nothing has read it yet.
+  optional double angle = 1;
+}
+
+message ISwapWristDriveUpdateAngleRequest {
+  // The wrist drive's angle, in degrees, as it reports it.
+  double angle = 1;
+}
+
+message ISwapWristDriveUpdateAngleResponse {
+}
+
+message ISwapGripperUpdateWidthRequest {
+  // How far apart the jaws stand, in mm, as the drive reports it.
+  double width = 1;
+}
+
+message ISwapGripperUpdateWidthResponse {
+}
+
+message ISwapUpdateLocationByReferencePointRequest {
+  // Where the drive is now, in mm on the deck. Left as it was when unset.
+  optional double y = 1;
+  // Where its bottom is now, in mm on the deck. Left as it was when unset.
+  optional double z = 2;
+}
+
+message ISwapUpdateLocationByReferencePointResponse {
+}
+
+message ISwapElbowRequestXPositionRequest {
+}
+
+message ISwapElbowRequestXPositionResponse {
+  // The elbow's X in mm.
+  double x_position = 1;
+}
+
+message ISwapElbowMoveToXPositionRequest {
+  // Where to put the elbow, in deck mm.
+  double x = 1;
+  // How hard to accelerate. Defaults to the X-arm that holds the iSWAP.
+  optional int32 acceleration_level = 2;
+  // The motor current limit. Defaults to the X-arm that holds the iSWAP.
+  optional int32 current_limit = 3;
+  // How many reads to take before calling the arm stopped.
+  optional int32 settle_reads = 4;
+}
+
+message ISwapElbowMoveToXPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapElbowRequestYPositionRequest {
+}
+
+message ISwapElbowRequestYPositionResponse {
+  // The elbow's Y in mm.
+  double y_position = 1;
+}
+
+message ISwapElbowMoveToYPositionRequest {
+  // Where to put the elbow, in mm.
+  double y = 1;
+  // Whether the channels may be moved aside when the backmost is where the drive needs to be. Off
+  // by default; making space raises them to Z safety first.
+  optional bool make_space = 2;
+  // How fast, in mm/s.
+  optional double speed = 3;
+  // How hard to accelerate, 1 or 2.
+  optional int32 acceleration_level = 4;
+  // The motor current limit, 0 to 7.
+  optional int32 current_limit = 5;
+}
+
+message ISwapElbowMoveToYPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapMakeSpaceRequest {
+}
+
+message ISwapMakeSpaceResponse {
+}
+
+message ISwapElbowRequestZPositionRequest {
+}
+
+message ISwapElbowRequestZPositionResponse {
+  // The elbow's bottom Z in mm.
+  double z_position = 1;
+}
+
+message ISwapElbowMoveToZPositionRequest {
+  // Where to put the elbow's bottom, in mm.
+  double z = 1;
+  // How fast, in mm/s.
+  optional double speed = 2;
+  // How hard, in mm/s2.
+  optional double acceleration = 3;
+  // The motor current limit, 0 to 7.
+  optional int32 current_limit = 4;
+}
+
+message ISwapElbowMoveToZPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapElbowMoveToSafeZHeightRequest {
+  // How fast, in mm/s.
+  optional double speed = 1;
+  // How hard, in mm/s2.
+  optional double acceleration = 2;
+  // The motor current limit, 0 to 7.
+  optional int32 current_limit = 3;
+}
+
+message ISwapElbowMoveToSafeZHeightResponse {
+  // The elbow's bottom Z once there, in mm.
+  double z_position = 1;
+}
+
+message ISwapRotateToAnglesRequest {
+  // Where the elbow drive is to sit - `left`, `front` or `right` - or degrees signed from its front
+  // stop. Mutually exclusive with `elbow_absolute_angle`.
+  oneof elbow_relative_angle {
+    string elbow_relative_angle_name = 1;
+    double elbow_relative_angle_value = 2;
+  }
+  // Where link 1 is to point on the deck - `left`, `front` or `right` - or degrees on the deck.
+  // Mutually exclusive with `elbow_relative_angle`.
+  oneof elbow_absolute_angle {
+    string elbow_absolute_angle_name = 3;
+    double elbow_absolute_angle_value = 4;
+  }
+  // Where the wrist drive is to sit - `right`, `straight`, `left` or `reverse` - or degrees from
+  // its own zero. Mutually exclusive with `gripper_absolute_angle`.
+  oneof gripper_relative_angle {
+    string gripper_relative_angle_name = 5;
+    double gripper_relative_angle_value = 6;
+  }
+  // Where the gripper is to point on the deck - `right`, `front`, `left` or `back` - or degrees on
+  // the deck. Mutually exclusive with `gripper_relative_angle`.
+  oneof gripper_absolute_angle {
+    string gripper_absolute_angle_name = 7;
+    double gripper_absolute_angle_value = 8;
+  }
+  // Whether to raise the channels and any head to safe Z before rotating. On by default, since the
+  // arm sweeps over whatever they are standing in.
+  optional bool raise_features = 9;
+  // Whether to clear the deck volume of the pose being commanded. Not built yet, so passing True
+  // refuses rather than rotating without the clearance it promises. `make_space` is the blanket
+  // clearance in the meantime. `configuration.elbow_speed_range_increments` accepts.
+  // `configuration.wrist_speed_range_increments` accepts.
+  // `configuration.elbow_acceleration_range_increments` accepts.
+  // `configuration.wrist_acceleration_range_increments` accepts.
+  optional bool make_space = 10;
+  optional double elbow_speed = 11;
+  optional double wrist_speed = 12;
+  optional double elbow_acceleration = 13;
+  optional double wrist_acceleration = 14;
+  // Motor current protection limiter, 0..7.
+  optional int32 elbow_current_limit = 15;
+  // Motor current protection limiter, 0..7.
+  optional int32 wrist_current_limit = 16;
+}
+
+message ISwapRotateToAnglesResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapElbowDriveRequestAngleRequest {
+}
+
+message ISwapElbowDriveRequestAngleResponse {
+  // The angle in degrees.
+  double angle = 1;
+}
+
+message ISwapElbowDriveRotateToAngleRequest {
+  // A named stop, or degrees signed from the calibrated front stop.
+  oneof angle {
+    string angle_name = 1;
+    double angle_value = 2;
+  }
+  optional double speed = 3;
+  optional double acceleration = 4;
+  // Motor current protection limiter, 0..7.
+  optional int32 current_limit = 5;
+}
+
+message ISwapElbowDriveRotateToAngleResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapWristDriveRequestAngleRequest {
+}
+
+message ISwapWristDriveRequestAngleResponse {
+  // The angle in degrees.
+  double angle = 1;
+}
+
+message ISwapWristDriveRotateToAngleRequest {
+  // One of the named wrist stops - `straight`, `left`, `right`, `reverse`, `parking` - which goes
+  // to the increment this arm stores for it, or degrees signed from the drive's own zero.
+  oneof angle {
+    string angle_name = 1;
+    double angle_value = 2;
+  }
+  optional double speed = 3;
+  optional double acceleration = 4;
+  // Motor current protection limiter, 0..7.
+  optional int32 current_limit = 5;
+}
+
+message ISwapWristDriveRotateToAngleResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapGripperRequestCountersRequest {
+}
+
+message ISwapGripperRequestCountersResponse {
+  // The counter the firmware keeps and the one the encoder reads, in that order.
+  int32 firmware_counter = 1;
+  int32 encoder_counter = 2;
+}
+
+message ISwapGripperRequestLatestForceAppliedRequest {
+}
+
+message ISwapGripperRequestLatestForceAppliedResponse {
+  // The peak drive current and peak force during the last movement, the sensor's idle offset, its
+  // last reading, all in the sensor's own counts, and that last reading in millinewtons.
+  map<string, int32> latest_force_applied = 1;
+}
+
+message ISwapGripperRequestWidthRequest {
+}
+
+message ISwapGripperRequestWidthResponse {
+  // The jaw width in mm.
+  double width = 1;
+}
+
+message ISwapRequestPlateGrippedRequest {
+}
+
+message ISwapRequestPlateGrippedResponse {
+  // True while it holds something.
+  bool gripped = 1;
+}
+
+message ISwapGetGrippedRequest {
+}
+
+message ISwapGetGrippedResponse {
+  // Whether it held something when last asked; Unset until anything has asked.
+  optional bool gripped = 1;
+}
+
+message ISwapGripperMoveToJawPositionRequest {
+  // How far apart to stand the jaws, in mm.
+  double width = 1;
+  // How fast to drive them, in mm/s. `configuration.gripper_speed_default_increments` when unset,
+  // halved for a close.
+  optional double speed = 2;
+  // How hard to accelerate, in mm/s2. `configuration.gripper_acceleration_default_increments` when
+  // unset.
+  optional double acceleration = 3;
+  // The motor current limit, 0 the weakest and 15 the strongest.
+  // `configuration.gripper_current_limit_default` when unset.
+  optional int32 current_limit = 4;
+}
+
+message ISwapGripperMoveToJawPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapGripperOpenRequest {
+}
+
+message ISwapGripperOpenResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapGripperCloseRequest {
+}
+
+message ISwapGripperCloseResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapGripperCloseWithForceSensedWidthWindowRequest {
+  // How wide the thing between the jaws is said to be, in mm.
+  double width = 1;
+  // How hard to hold, 0 the weakest and 9 the strongest.
+  optional int32 grip_strength = 2;
+  // How far off that width the thing may be, in mm. Something met inside that window is gripped; a
+  // close that runs past it reports finding nothing.
+  optional double width_tolerance = 3;
+}
+
+message ISwapGripperCloseWithForceSensedWidthWindowResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapGripperProbeForObjectRequest {
+  // Roughly how wide the thing between the jaws is, in mm.
+  double expected_width = 1;
+  // How far either side of that to accept, in mm.
+  optional double band = 2;
+  // How hard a push counts as meeting something, in the sensor's own counts.
+  optional int32 stop_trigger = 3;
+  // The motor current limit, 0 to 15.
+  optional int32 current_limit = 4;
+}
+
+message ISwapGripperProbeForObjectResponse {
+  // How far apart the jaws stopped, in mm, or unset when they reached the width given without
+  // meeting anything within the band. A width is where the fingers stopped pushing, not how wide
+  // what they met is: this stops on a lighter push than a grip does and so stops nearer the object,
+  // but it still stops inside it. A plate 85.5 mm across was found at 82.1 mm by this and held at
+  // 80.3 mm by a grip. Unset is not a promise that the jaws are empty: something far enough outside
+  // the band is met without being reported, and the arm has answered "plate not found" with its
+  // force sensor reading twenty times its idle value.
+  optional double width = 1;
+}
+
+message ISwapInitializeGripperDriveRequest {
+  // The motor current limit, 0 to 15.
+  optional int32 current_limit = 1;
+}
+
+message ISwapInitializeGripperDriveResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message ISwapRecoverGripperDriveRequest {
+  // How many times to nudge and retry the initialize.
+  optional int32 attempts = 1;
+  // How far to open the jaws on each nudge, in mm.
+  optional double nudge = 2;
+  // The motor current limit, 0 to 15.
+  optional int32 current_limit = 3;
+}
+
+message ISwapRecoverGripperDriveResponse {
+  // True when the drive initialized, False when it is still stuck and needs freeing by hand.
+  bool recovered = 1;
+}
+
+message ISwapRequestJointStateRequest {
+}
+
+message ISwapRequestJointStateResponse {
+  // Each axis's position, in that axis's own units.
+  repeated ISwapJoint joint_state = 1;
+}
+
+message ISwapRequestPoseRequest {
+}
+
+message ISwapRequestPoseResponse {
+  // Every joint of the arm and where its tool ends up, in one answer: what a caller needs to say
+  // whether the arm clears something is where its middle joint is as much as where its end is.
+  ISwapPose pose = 1;
+}
+
+message ISwapRequestIsParkedRequest {
+  // How far a drive may be from its stop and still count as parked, in that drive's increments.
+  optional int32 tolerance_increments = 1;
+}
+
+message ISwapRequestIsParkedResponse {
+  // True if every checked drive is at its parking position.
+  bool parked = 1;
+}
+
+message ISwapParkRequest {
+  // How high to lift to before travelling, in mm. `default_minimum_traverse_height` when unset.
+  optional double traverse_height = 1;
+}
+
+message ISwapParkResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+// The defaults iSWAP uses where a call names none. A STAR server takes them from its
+// settings file; unset fields keep the defaults in the code.
+message ISwapSettings {
+  optional double default_minimum_traverse_height = 1;
+}
+
+service ISwapService {
+  // Request the iSWAP's firmware version and build date.
+  rpc RequestFirmwareVersion(ISwapRequestFirmwareVersionRequest) returns (ISwapRequestFirmwareVersionResponse);
+  // Request the X distance from the X-arm carriage centre to the elbow.
+  rpc ElbowRequestXOffset(ISwapElbowRequestXOffsetRequest) returns (ISwapElbowRequestXOffsetResponse);
+  // Request the elbow drive's stored position table.
+  rpc ElbowDriveRequestPositions(ISwapElbowDriveRequestPositionsRequest) returns (ISwapElbowDriveRequestPositionsResponse);
+  // Request the wrist twist drive's stored position table.
+  rpc WristDriveRequestPositions(ISwapWristDriveRequestPositionsRequest) returns (ISwapWristDriveRequestPositionsResponse);
+  // Request the stored Y stops the carriage is calibrated against.
+  rpc ElbowRequestYStops(ISwapElbowRequestYStopsRequest) returns (ISwapElbowRequestYStopsResponse);
+  // Request the distance from the elbow joint to the wrist joint.
+  rpc RequestLink1Length(ISwapRequestLink1LengthRequest) returns (ISwapRequestLink1LengthResponse);
+  // Request the distance from the wrist joint to the gripper finger centre in the x-y plane.
+  rpc RequestToolCenterPointXyLength(ISwapRequestToolCenterPointXyLengthRequest) returns (ISwapRequestToolCenterPointXyLengthResponse);
+  // Read the Z stops the elbow is calibrated against, in mm on the deck.
+  rpc ElbowRequestPredefinedZPositions(ISwapElbowRequestPredefinedZPositionsRequest) returns (ISwapElbowRequestPredefinedZPositionsResponse);
+  // Read the jaw widths the gripper drive is calibrated against, in mm.
+  rpc GripperDriveRequestWidths(ISwapGripperDriveRequestWidthsRequest) returns (ISwapGripperDriveRequestWidthsResponse);
+  // Read this iSWAP's calibration. Read-only: nothing moves.
+  rpc Discover(ISwapDiscoverRequest) returns (ISwapDiscoverResponse);
+  // Work out how far forward the elbow can be brought, and record it.
+  rpc DeclareFrontLimit(ISwapDeclareFrontLimitRequest) returns (ISwapDeclareFrontLimitResponse);
+  // Initialize the iSWAP. This moves it.
+  rpc Initialize(ISwapInitializeRequest) returns (ISwapInitializeResponse);
+  // Record which way the arm points on the resource that models it.
+  rpc ElbowDriveUpdateAngle(ISwapElbowDriveUpdateAngleRequest) returns (ISwapElbowDriveUpdateAngleResponse);
+  // Where the model has the elbow's reference point, in mm on the deck.
+  rpc ElbowGetReferencePointLocation(ISwapElbowGetReferencePointLocationRequest) returns (ISwapElbowGetReferencePointLocationResponse);
+  // Which way the model has the wrist turned, as its drive reports it.
+  rpc WristDriveGetAngle(ISwapWristDriveGetAngleRequest) returns (ISwapWristDriveGetAngleResponse);
+  // Which way the model has the arm pointing, as the elbow drive reports it.
+  rpc ElbowDriveGetAngle(ISwapElbowDriveGetAngleRequest) returns (ISwapElbowDriveGetAngleResponse);
+  // Record which way the wrist is turned on the resource that models it.
+  rpc WristDriveUpdateAngle(ISwapWristDriveUpdateAngleRequest) returns (ISwapWristDriveUpdateAngleResponse);
+  // Record how far apart the jaws stand on the resource that models them.
+  rpc GripperUpdateWidth(ISwapGripperUpdateWidthRequest) returns (ISwapGripperUpdateWidthResponse);
+  // Record where the elbow is on the resource that models it.
+  rpc UpdateLocationByReferencePoint(ISwapUpdateLocationByReferencePointRequest) returns (ISwapUpdateLocationByReferencePointResponse);
+  // Read where the elbow is along X, in deck mm.
+  rpc ElbowRequestXPosition(ISwapElbowRequestXPositionRequest) returns (ISwapElbowRequestXPositionResponse);
+  // Move the elbow along X. The whole arm travels, with everything else it carries.
+  rpc ElbowMoveToXPosition(ISwapElbowMoveToXPositionRequest) returns (ISwapElbowMoveToXPositionResponse);
+  // Read where the elbow is along Y, in deck mm.
+  rpc ElbowRequestYPosition(ISwapElbowRequestYPositionRequest) returns (ISwapElbowRequestYPositionResponse);
+  // Move the elbow along Y. This moves it.
+  rpc ElbowMoveToYPosition(ISwapElbowMoveToYPositionRequest) returns (ISwapElbowMoveToYPositionResponse);
+  // Clear the deck volume for the iSWAP. This moves the channels and any head.
+  rpc MakeSpace(ISwapMakeSpaceRequest) returns (ISwapMakeSpaceResponse);
+  // Read where the elbow's lowest point is along Z.
+  rpc ElbowRequestZPosition(ISwapElbowRequestZPositionRequest) returns (ISwapElbowRequestZPositionResponse);
+  // Move the elbow's lowest point to a Z position. This moves it.
+  rpc ElbowMoveToZPosition(ISwapElbowMoveToZPositionRequest) returns (ISwapElbowMoveToZPositionResponse);
+  // Move the iSWAP up to the top of its Z travel, and read where that put it. This moves it.
+  rpc ElbowMoveToSafeZHeight(ISwapElbowMoveToSafeZHeightRequest) returns (ISwapElbowMoveToSafeZHeightResponse);
+  // Rotate one or both iSWAP joints to absolute angles in a single motion. This moves the arm.
+  rpc RotateToAngles(ISwapRotateToAnglesRequest) returns (ISwapRotateToAnglesResponse);
+  // Read the elbow drive's angle, signed from the calibrated front stop.
+  rpc ElbowDriveRequestAngle(ISwapElbowDriveRequestAngleRequest) returns (ISwapElbowDriveRequestAngleResponse);
+  // Turn the elbow drive to an angle, holding the wrist where it is. This moves the arm.
+  rpc ElbowDriveRotateToAngle(ISwapElbowDriveRotateToAngleRequest) returns (ISwapElbowDriveRotateToAngleResponse);
+  // Read the wrist drive's angle, signed from the motor's own zero.
+  rpc WristDriveRequestAngle(ISwapWristDriveRequestAngleRequest) returns (ISwapWristDriveRequestAngleResponse);
+  // Turn the wrist to an angle, holding the elbow drive where it is. This moves the arm.
+  rpc WristDriveRotateToAngle(ISwapWristDriveRotateToAngleRequest) returns (ISwapWristDriveRotateToAngleResponse);
+  // Read both counters the gripper drive keeps, in its own increments.
+  rpc GripperRequestCounters(ISwapGripperRequestCountersRequest) returns (ISwapGripperRequestCountersResponse);
+  // Read what the gripper's force sensor and motor current did during the last movement.
+  rpc GripperRequestLatestForceApplied(ISwapGripperRequestLatestForceAppliedRequest) returns (ISwapGripperRequestLatestForceAppliedResponse);
+  // Read how far the gripper jaws are open.
+  rpc GripperRequestWidth(ISwapGripperRequestWidthRequest) returns (ISwapGripperRequestWidthResponse);
+  // Read whether the arm is holding something between its fingers.
+  rpc RequestPlateGripped(ISwapRequestPlateGrippedRequest) returns (ISwapRequestPlateGrippedResponse);
+  // Whether the arm is holding something, as it last reported.
+  rpc GetGripped(ISwapGetGrippedRequest) returns (ISwapGetGrippedResponse);
+  // Open the jaws to a width. This moves them.
+  rpc GripperMoveToJawPosition(ISwapGripperMoveToJawPositionRequest) returns (ISwapGripperMoveToJawPositionResponse);
+  // Open the jaws all the way. This moves them.
+  rpc GripperOpen(ISwapGripperOpenRequest) returns (ISwapGripperOpenResponse);
+  // Close the jaws all the way. This moves them.
+  rpc GripperClose(ISwapGripperCloseRequest) returns (ISwapGripperCloseResponse);
+  // Close the jaws onto whatever is between them and hold it. This moves them.
+  rpc GripperCloseWithForceSensedWidthWindow(ISwapGripperCloseWithForceSensedWidthWindowRequest) returns (ISwapGripperCloseWithForceSensedWidthWindowResponse);
+  // Close the jaws toward a width and report what they met on the way. This moves them.
+  rpc GripperProbeForObject(ISwapGripperProbeForObjectRequest) returns (ISwapGripperProbeForObjectResponse);
+  // Bring the gripper drive back to its own reference. This moves the jaws.
+  rpc InitializeGripperDrive(ISwapInitializeGripperDriveRequest) returns (ISwapInitializeGripperDriveResponse);
+  // Get a stuck gripper drive moving again, and back onto its own reference. This moves it.
+  rpc RecoverGripperDrive(ISwapRecoverGripperDriveRequest) returns (ISwapRecoverGripperDriveResponse);
+  // Read every axis, one after another, as the joint state the kinematics run on.
+  rpc RequestJointState(ISwapRequestJointStateRequest) returns (ISwapRequestJointStateResponse);
+  // Where the gripper is, worked out from the joint state.
+  rpc RequestPose(ISwapRequestPoseRequest) returns (ISwapRequestPoseResponse);
+  // Whether the arm is parked, judged from where its drives are.
+  rpc RequestIsParked(ISwapRequestIsParkedRequest) returns (ISwapRequestIsParkedResponse);
+  // Close the gripper and park the arm. This moves it.
+  rpc Park(ISwapParkRequest) returns (ISwapParkResponse);
+}

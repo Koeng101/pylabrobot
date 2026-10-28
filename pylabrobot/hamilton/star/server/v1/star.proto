@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+// The device: making its resources, bringing it up and down, and describing it to a client.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/description.proto";
+
+message STARCreateResourcesRequest {
+}
+
+message STARCreateResourcesResponse {
+}
+
+message STARSetupRequest {
+  // As `STARDriver.setup` takes it.
+  optional bool skip_device_initialization = 1;
+  // As `STARDriver.setup` takes it.
+  optional bool skip_pipettes = 2;
+  // As `STARDriver.setup` takes it.
+  optional bool skip_iswap = 3;
+  // As `STARDriver.setup` takes it.
+  optional bool skip_head96 = 4;
+  // As `STARDriver.setup` takes it.
+  optional bool skip_head384 = 5;
+  // As `STARDriver.setup` takes it.
+  optional bool skip_autoload = 6;
+}
+
+message STARSetupResponse {
+}
+
+message STARStopRequest {
+}
+
+message STARStopResponse {
+}
+
+service STARService {
+  // What the client keeps of the device: its features' configurations, and its resources.
+  rpc Describe(DescribeRequest) returns (Description);
+  // Make the device's body, its deck and the parts bolted to its side in the server, or find them
+  // there under the device's name.
+  rpc CreateResources(STARCreateResourcesRequest) returns (STARCreateResourcesResponse);
+  // Bring the device up, making its resources first when they are not there yet.
+  rpc Setup(STARSetupRequest) returns (STARSetupResponse);
+  // Put the device down.
+  rpc Stop(STARStopRequest) returns (STARStopResponse);
+}

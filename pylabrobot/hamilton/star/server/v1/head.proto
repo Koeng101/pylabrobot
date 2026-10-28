@@ -1,0 +1,323 @@
+syntax = "proto3";
+
+// What the 96- and 384-heads share: their drives, their position, and their discovery.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+message HeadRequestDriveParameterRequest {
+  // The parameter to read - `yv` and `yr` for Y-drive speed and acceleration, `zv` and `zr` for the
+  // Z drive.
+  string parameter = 1;
+}
+
+message HeadRequestDriveParameterResponse {
+  // The value in mm/s or mm/s2, converted from the increments the drive counts in.
+  double value = 1;
+}
+
+message HeadSetDriveParameterRequest {
+  // The parameter to write, named as `request_drive_parameter` names it.
+  string parameter = 1;
+  // The value in mm/s or mm/s2, converted to the increments the drive counts in.
+  double value = 2;
+}
+
+message HeadSetDriveParameterResponse {
+}
+
+message HeadRequestFirmwareVersionRequest {
+}
+
+message HeadRequestFirmwareVersionResponse {
+  // The version string and its build date.
+  string version = 1;
+  Date date = 2;
+}
+
+message HeadRequestHardwareRequest {
+}
+
+message HeadRequestHardwareResponse {
+  // The positional tokens, as reported.
+  repeated string hardware = 1;
+}
+
+message HeadRequestHeadTypeRequest {
+}
+
+message HeadRequestHeadTypeResponse {
+  // The head type, or "unknown" for a code this driver does not know.
+  string head_type = 1;
+}
+
+message HeadRequestXOffsetRequest {
+}
+
+message HeadRequestXOffsetResponse {
+  // The offset in mm.
+  double x_offset = 1;
+}
+
+message HeadRequestPredefinedYPositionsRequest {
+}
+
+message HeadRequestPredefinedYPositionsResponse {
+  // The ten stored positions in mm, the first being home.
+  repeated double predefined_y_positions = 1;
+}
+
+message HeadRequestPredefinedZPositionsRequest {
+}
+
+message HeadRequestPredefinedZPositionsResponse {
+  // The ten stored positions in mm, the first being home.
+  repeated double predefined_z_positions = 1;
+}
+
+message HeadRequestTipPresenceRequest {
+}
+
+message HeadRequestTipPresenceResponse {
+  // Whether the firmware holds that tips are mounted.
+  bool present = 1;
+}
+
+message HeadUpdateLocationByReferencePointRequest {
+  // Where channel A1 is now, in mm on the deck. Left as it was when unset.
+  optional double y = 1;
+  // Where the head's lowest fixed feature is now, in mm on the deck. Left as it was when unset.
+  optional double z = 2;
+}
+
+message HeadUpdateLocationByReferencePointResponse {
+}
+
+message HeadGetReferencePointLocationRequest {
+}
+
+message HeadGetReferencePointLocationResponse {
+  // Where the model has it, or unset when nothing models the head yet.
+  pylabrobot.resources.server.v1.Vec3 reference_point_location = 1;
+}
+
+message HeadRequestYPositionRequest {
+}
+
+message HeadRequestYPositionResponse {
+  // The position in mm.
+  double y_position = 1;
+}
+
+message HeadRequestZPositionRequest {
+}
+
+message HeadRequestZPositionResponse {
+  // The position in mm.
+  double z_position = 1;
+}
+
+message HeadRequestLocationRequest {
+}
+
+message HeadRequestLocationResponse {
+  // Where channel A1 is, in deck mm, at the bottom of whatever is mounted.
+  pylabrobot.resources.server.v1.Vec3 location = 1;
+}
+
+message HeadRequestTipOverhangRequest {
+}
+
+message HeadRequestTipOverhangResponse {
+  // The overhang in mm, to 0.1 mm.
+  double tip_overhang = 1;
+}
+
+message HeadRequestXPositionRequest {
+}
+
+message HeadRequestXPositionResponse {
+  // The position in mm.
+  double x_position = 1;
+}
+
+message HeadMoveToXPositionRequest {
+  // Where to put channel A1, in mm.
+  double x = 1;
+  // How hard to accelerate. Defaults to the X-arm that holds the head.
+  optional int32 acceleration_level = 2;
+  // The motor current limit. Defaults to the X-arm that holds the head.
+  optional int32 current_limit = 3;
+  // How many reads to take before calling the arm stopped.
+  optional int32 settle_reads = 4;
+}
+
+message HeadMoveToXPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message HeadMoveToYPositionRequest {
+  // Where to move to, in mm.
+  double y = 1;
+  // How fast, in mm/s. Defaults to `configuration.y_drive_speed_default`.
+  optional double speed = 2;
+  // How hard, in mm/s2. Defaults to `configuration.y_drive_acceleration_default`.
+  optional double acceleration = 3;
+  // The motor current limit. Defaults to `configuration.y_drive_current_limit_default`.
+  optional int32 current_limit = 4;
+  optional int32 read_timeout = 5;
+}
+
+message HeadMoveToYPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message HeadMoveToXyPositionRequest {
+  // Where head channel A1 goes, in deck mm.
+  double x = 1;
+  // Where head channel A1 goes, in deck mm.
+  double y = 2;
+  // The height to raise the head's lowest point to first, in mm: the tip bottom with tips on, the
+  // stop disc without. The head's safe Z when unset.
+  optional double minimum_traverse_height_start = 3;
+  // The X acceleration curve, 1 to 4. 2 at a Y of 200 mm or less, where the head stands furthest
+  // out from the X drive, else 3, when unset.
+  optional int32 x_acceleration_level = 4;
+  // The X motor current limit, 1 to 7.
+  optional int32 x_current_limit = 5;
+  // In mm/s. `configuration.y_drive_speed_default` when unset.
+  optional double y_speed = 6;
+  // In mm/s2. `configuration.y_drive_acceleration_default` when unset.
+  optional double y_acceleration = 7;
+  // `configuration.y_drive_current_limit_default` when unset.
+  optional int32 y_current_limit = 8;
+  // How fast the head goes up, in mm/s. The drive's default when unset.
+  optional double z_speed = 9;
+  // In mm/s2. The drive's default when unset.
+  optional double z_acceleration = 10;
+}
+
+message HeadMoveToXyPositionResponse {
+}
+
+message HeadProbeZMaxRequest {
+  // How long to wait for the retract, in seconds.
+  optional int32 read_timeout = 1;
+}
+
+message HeadProbeZMaxResponse {
+  // Float: The z-position of the head's stop disc, in mm.
+  double z_max = 1;
+}
+
+message HeadMoveStopDiscToZPositionRequest {
+  // Where to move the head's lowest fixed feature to, in mm.
+  double z = 1;
+  // How fast, in mm/s. Defaults to `configuration.z_drive_speed_default`.
+  optional double speed = 2;
+  // How hard, in mm/s2. Defaults to `configuration.z_drive_acceleration_default`.
+  optional double acceleration = 3;
+  // The motor current limit. Defaults to `configuration.z_drive_current_limit_default`.
+  optional int32 current_limit = 4;
+  optional int32 read_timeout = 5;
+}
+
+message HeadMoveStopDiscToZPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message HeadMoveToolBottomToZPositionRequest {
+  // Where to move the bottom of the mounted tips to, in deck mm.
+  double z = 1;
+  // How fast, in mm/s. Defaults to `configuration.z_drive_speed_default`.
+  optional double speed = 2;
+  // How hard, in mm/s2. Defaults to `configuration.z_drive_acceleration_default`.
+  optional double acceleration = 3;
+  // The motor current limit. Defaults to `configuration.z_drive_current_limit_default`.
+  optional int32 current_limit = 4;
+  // How long to wait for the move, in seconds.
+  optional int32 read_timeout = 5;
+}
+
+message HeadMoveToolBottomToZPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message HeadMoveToSafeZRequest {
+  // How fast, in mm/s. Defaults to `configuration.z_drive_speed_default`.
+  optional double speed = 1;
+  // How hard, in mm/s2. Defaults to `configuration.z_drive_acceleration_default`.
+  optional double acceleration = 2;
+}
+
+message HeadMoveToSafeZResponse {
+  // The Z position at the safety height, in mm.
+  double z_position = 1;
+}
+
+message HeadDispensingDriveRequestULPositionRequest {
+}
+
+message HeadDispensingDriveRequestULPositionResponse {
+  // The piston's position in uL, 0.0 at rest; air and liquid alike. `get_piston_position` reads it.
+  double position = 1;
+}
+
+message HeadGetPistonPositionRequest {
+}
+
+message HeadGetPistonPositionResponse {
+  // The piston's position, as the volume it has drawn, in uL; 0.0 at rest, air and liquid alike.
+  double piston_position = 1;
+}
+
+message HeadMoveDispensingDriveToPositionRequest {
+  // Where to send the piston, as the volume it would hold, in uL.
+  double volume = 1;
+  // How fast, in uL/s. Defaults to `default_dispensing_drive_speed`.
+  optional double speed = 2;
+  // What to slow to at the end, in uL/s.
+  optional double stop_speed = 3;
+  // How hard, in uL/s2. Defaults to `default_dispensing_drive_acceleration`.
+  optional double acceleration = 4;
+  // The motor current limit.
+  optional int32 current_limit = 5;
+  // How long to wait for the device to answer, in seconds.
+  optional int32 read_timeout = 6;
+}
+
+message HeadMoveDispensingDriveToPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message HeadParkRequest {
+  // How fast to travel in Y, in mm/s. Defaults to the drive's own.
+  optional double speed = 1;
+  // How hard, in mm/s2. Defaults to the drive's own.
+  optional double acceleration = 2;
+}
+
+message HeadParkResponse {
+  // Where it parked, in mm.
+  double z_position = 1;
+}
+
+message HeadInitializeRequest {
+  // Where to eject, in deck mm, at head channel A1. Defaults to
+  // `configuration.tip_discard_location`.
+  pylabrobot.resources.server.v1.Vec3 tip_discard_location = 1;
+  // Z to leave the head at, in mm. Defaults to `configuration.traversal_z_position`.
+  optional double minimum_traverse_height_end = 2;
+  optional int32 read_timeout = 3;
+}
+
+message HeadInitializeResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
