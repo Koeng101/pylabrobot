@@ -246,6 +246,11 @@ class MicroSpinDriver:
     # to read it, and a latch set at the front panel is not seen here.
     self._abort_latched = False
 
+  @property
+  def abort_latched(self) -> bool:
+    """Whether this driver set the abort latch and has not released it."""
+    return self._abort_latched
+
   def _make_transport(self, name: str) -> Transport:
     """What one connection runs over."""
     return Socket(

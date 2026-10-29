@@ -1,3 +1,4 @@
+from .device import MicroSpin
 from .driver import Bucket, CommandStatus, MicroSpinDriver, MicroSpinStatus
 from .errors import (
   AmplifierDisabledError,
@@ -18,6 +19,7 @@ __all__ = [
   "CommandStatus",
   "DoorLockPinError",
   "ErrorEntry",
+  "MicroSpin",
   "MicroSpinAbortedError",
   "MicroSpinDriver",
   "MicroSpinError",
