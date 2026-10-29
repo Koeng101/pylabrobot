@@ -20,7 +20,7 @@ from pylabrobot.resources.server.v1 import server_pb2 as spb
 from pylabrobot.resources.server.v1 import types_pb2 as pb
 
 from .driver import Bucket, CommandStatus, MicroSpinDriver, MicroSpinStatus
-from .errors import ErrorEntry
+from .errors import ErrorEntry, MicroSpinTimeoutError
 from .simulator import MicroSpinSimulator
 
 if TYPE_CHECKING:
@@ -209,6 +209,19 @@ class MicroSpin:
       return
     await self._record(await self.driver.request_status())
 
+  async def _after_failed_move(self, error: BaseException) -> None:
+    """Record where a move that raised `error` left the device, without hiding `error`.
+
+    A move that timed out is still going on the device, and `status` would wait behind it, so
+    nothing is recorded; the next move records.
+    """
+    if isinstance(error, MicroSpinTimeoutError):
+      return
+    try:
+      await self._record_where_it_stopped()
+    except Exception as recording:
+      logger.warning("[microspin] could not record where the device stopped: %s", recording)
+
   # -- lifecycle ---------------------------------------------------------------------------------
 
   async def setup(self) -> None:
@@ -290,15 +303,19 @@ class MicroSpin:
     """Home the door and spindle, and record where they are."""
     try:
       await self.driver.home()
-    finally:
-      await self._record_where_it_stopped()
+    except BaseException as error:
+      await self._after_failed_move(error)
+      raise
+    await self._record_where_it_stopped()
 
   async def present_bucket(self, bucket: Bucket) -> None:
     """Open the door with `bucket` at it, and record the rotor and door."""
     try:
       await self.driver.present_bucket(bucket)
-    finally:
-      await self._record_where_it_stopped()
+    except BaseException as error:
+      await self._after_failed_move(error)
+      raise
+    await self._record_where_it_stopped()
 
   async def spin(
     self,
@@ -318,8 +335,10 @@ class MicroSpin:
       await self.driver.spin(
         g, duration, acceleration=acceleration, deceleration=deceleration, timeout=timeout
       )
-    finally:
-      await self._record_where_it_stopped()
+    except BaseException as error:
+      await self._after_failed_move(error)
+      raise
+    await self._record_where_it_stopped()
 
   async def abort(self) -> None:
     """Stop whatever is moving; see `MicroSpinDriver.abort`."""

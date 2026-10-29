@@ -5,6 +5,7 @@ from pylabrobot.high_res.microspin import (
   MicroSpin,
   MicroSpinAbortedError,
   MicroSpinSimulator,
+  MicroSpinTimeoutError,
   SimulatedMicroSpin,
 )
 from pylabrobot.resources.server import ResourceServer
@@ -89,6 +90,17 @@ class MicroSpinTests(unittest.IsolatedAsyncioTestCase):
       await spin
     self.assertEqual(await self.microspin.get_door(), "closed")
     self.assertIsNone(await self.microspin.get_bucket_at_door())
+
+  async def test_a_spin_that_times_out_raises_its_own_timeout_at_once(self):
+    await self.microspin.home()
+    self.device.seconds_per_second = 0.01
+    self.microspin.driver.default_timeout = 0.2
+    loop = asyncio.get_running_loop()
+    started = loop.time()
+    with self.assertRaises(MicroSpinTimeoutError):
+      await self.microspin.spin(g=500, duration=600, timeout=0.05)
+    self.assertLess(loop.time() - started, 0.15)
+    await self.microspin.reset(timeout=10)
 
   async def test_a_microspin_needs_a_host_a_simulation_or_a_driver(self):
     with self.assertRaisesRegex(ValueError, "host"):
