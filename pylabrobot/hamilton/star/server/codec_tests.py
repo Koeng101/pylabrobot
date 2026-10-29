@@ -6,7 +6,7 @@ import enum
 import inspect
 import typing
 import unittest
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List
 from unittest import mock
 
 from pylabrobot.hamilton.liquid_classes.base import HamiltonLiquidClass
@@ -117,20 +117,16 @@ class RoundTripTests(unittest.IsolatedAsyncioTestCase):
     deck = star.deck
     assert deck is not None
     server = star.resource_server
-    tip_carrier = cast(
-      handles.Carrier,
-      await deck.assign_child_resource(hamilton_tip_carrier_L5(name="tc"), track=1),
-    )
+    tip_carrier = await deck.assign_child_resource(hamilton_tip_carrier_L5(name="tc"), track=1)
     tips = await tip_carrier[0].assign_child_resource(hamilton_96_tiprack_300uL_filter(name="tips"))
-    plate_carrier = cast(
-      handles.Carrier,
-      await deck.assign_child_resource(hamilton_plate_carrier_L5_ac(name="pc"), track=7),
+    plate_carrier = await deck.assign_child_resource(
+      hamilton_plate_carrier_L5_ac(name="pc"), track=7
     )
     plate = await plate_carrier[0].assign_child_resource(
       azenta_96_wellplate_200uL_Vb_4titudeframestar(name="plate")
     )
     assert isinstance(tips, handles.TipRack) and isinstance(plate, handles.Plate)
-    trash = next(h for h in await deck.get_children() if isinstance(h, handles.Trash))
+    trash = (await deck.get_children(handles.Trash))[0]
     self.server = server
     self.samples = _Samples(
       [tips.get_item("A1"), tips, plate.get_well("A1"), plate, trash, plate_carrier]

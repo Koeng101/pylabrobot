@@ -5141,7 +5141,7 @@ class Pipettes:
         node.parent_id: node for node in nodes if node.attributes.kind == pb.RESOURCE_KIND_TIP
       }
       for rack in tip_racks:
-        spots = [cast(handles.TipSpot, spot) for spot in rack.items]
+        spots = rack.items
         racks.append(
           RackTips(
             name=rack.name,

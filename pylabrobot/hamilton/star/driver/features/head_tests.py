@@ -5,7 +5,7 @@ import pathlib
 import random
 import tempfile
 import unittest
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, cast
 from unittest.mock import DEFAULT, AsyncMock, patch
 
 from pylabrobot.hamilton.protocol.text.framing import assemble_command
@@ -72,9 +72,16 @@ async def make_driver(
   )
 
 
-async def make(server: ResourceServer, model: str, name: str, parent: handles.Resource, **kw: Any):
-  """A resource of a model, in `parent`."""
-  return await server.create(model, name=name, parent=parent, **kw)
+async def make(
+  server: ResourceServer,
+  model: str,
+  name: str,
+  parent: handles.Resource,
+  kind: Type[handles.H],
+  track: Optional[int] = None,
+) -> handles.H:
+  """A resource of a model, in `parent`, as the kind it is."""
+  return await server.create(model, name=name, parent=parent, track=track, kind=kind)
 
 
 async def frameless_rack(
@@ -257,13 +264,20 @@ class TestHead96Tips(unittest.IsolatedAsyncioTestCase):
     self.server = self.deck.server
     await self.driver.setup()
     self.head = cast(Head96, self.driver.head96)
-    self.tip_car = tip_car = cast(
-      handles.Carrier,
-      await make(self.server, "hamilton_tip_carrier_L5", "tip carrier", self.deck, track=1),
+    self.tip_car = tip_car = await make(
+      self.server,
+      "hamilton_tip_carrier_L5",
+      "tip carrier",
+      self.deck,
+      track=1,
+      kind=handles.Carrier,
     )
-    self.tip_rack = cast(
-      handles.TipRack,
-      await make(self.server, "hamilton_96_tiprack_300uL_filter", "tip_rack_01", tip_car[1]),
+    self.tip_rack = await make(
+      self.server,
+      "hamilton_96_tiprack_300uL_filter",
+      "tip_rack_01",
+      tip_car[1],
+      kind=handles.TipRack,
     )
     # A rack without a frame, which the head may be placed past the edge of.
     self.frameless_tip_rack = await frameless_rack(self.server, "frameless_tip_rack", tip_car[3])
@@ -567,9 +581,12 @@ class TestHead96Tips(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(self.sent, [])
 
   async def test_return_tips_refuses_tips_from_two_racks(self):
-    other_rack = cast(
-      handles.TipRack,
-      await make(self.server, "hamilton_96_tiprack_300uL_filter", "tip_rack_02", self.tip_car[2]),
+    other_rack = await make(
+      self.server,
+      "hamilton_96_tiprack_300uL_filter",
+      "tip_rack_02",
+      self.tip_car[2],
+      kind=handles.TipRack,
     )
     await self.head.pick_up_tips(self.tip_rack)
     # Channel F1 lets its tip go and takes the one in the other rack's spot F1 instead.
@@ -658,25 +675,23 @@ async def _head_with_tips(
   server = deck.server
   await driver.setup()
   head = cast(Head96, driver.head96)
-  tip_car = cast(
-    handles.Carrier, await make(server, "hamilton_tip_carrier_L5", "tip carrier", deck, track=1)
+  tip_car = await make(
+    server, "hamilton_tip_carrier_L5", "tip carrier", deck, track=1, kind=handles.Carrier
   )
-  tip_rack = cast(
-    handles.TipRack,
-    await make(server, "hamilton_96_tiprack_300uL_filter", "tip_rack_01", tip_car[1]),
+  tip_rack = await make(
+    server, "hamilton_96_tiprack_300uL_filter", "tip_rack_01", tip_car[1], kind=handles.TipRack
   )
-  plate_car = cast(
-    handles.Carrier,
-    await make(server, "hamilton_plate_carrier_L5_ac", "plate carrier", deck, track=7),
+  plate_car = await make(
+    server, "hamilton_plate_carrier_L5_ac", "plate carrier", deck, track=7, kind=handles.Carrier
   )
   plates: Dict[str, handles.Plate] = {}
   if plate:
-    plates["plate"] = cast(
-      handles.Plate, await make(server, "cor_96_wellplate_360uL_Fb", "plate", plate_car[1])
+    plates["plate"] = await make(
+      server, "cor_96_wellplate_360uL_Fb", "plate", plate_car[1], kind=handles.Plate
     )
   if trough:
-    plates["trough"] = cast(
-      handles.Plate, await make(server, "agenbio_1_troughplate_190mL_Fl", "trough", plate_car[3])
+    plates["trough"] = await make(
+      server, "agenbio_1_troughplate_190mL_Fl", "trough", plate_car[3], kind=handles.Plate
     )
   await head.pick_up_tips(tip_rack)
   return driver, deck, head, plates
@@ -788,12 +803,16 @@ class TestMix(unittest.IsolatedAsyncioTestCase):
 
   async def test_a_one_well_plate_gets_the_array_centred_over_it(self):
     server = self.deck.server
-    carrier = cast(
-      handles.Carrier,
-      await make(server, "hamilton_plate_carrier_L5_ac", "trough carrier", self.deck, track=13),
+    carrier = await make(
+      server,
+      "hamilton_plate_carrier_L5_ac",
+      "trough carrier",
+      self.deck,
+      track=13,
+      kind=handles.Carrier,
     )
-    trough_plate = cast(
-      handles.Plate, await make(server, "agenbio_1_troughplate_190mL_Fl", "trough", carrier[0])
+    trough_plate = await make(
+      server, "agenbio_1_troughplate_190mL_Fl", "trough", carrier[0], kind=handles.Plate
     )
     trough = trough_plate.get_well(0)
     centre = await trough.get_location_wrt(self.deck, "c", "c", "b")

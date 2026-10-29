@@ -2092,7 +2092,7 @@ class TestTipHandling(unittest.IsolatedAsyncioTestCase):
     """
     pipettes, rack, sent = await channels_over_a_rack()
     await rack.set_tip_state([index >= 86 for index in range(96)])
-    spots = [cast(handles.TipSpot, spot) for spot in rack.items]
+    spots = rack.items
     tips = [await spot.get_tip() for spot in spots[86:]]
     await pipettes.consolidate_tip_inventory([rack], use_channels=[1, 3, 5])
     self.assertEqual([await spot.has_tip() for spot in spots], [True] * 10 + [False] * 86)
@@ -4121,20 +4121,19 @@ class TestEmptyTipsInSimulation(_SimulatedPlateWithWater):
       self.wells[:2], [50.0, 20.0], use_channels=[0, 1], transport_air_volumes=[5.0, 5.0]
     )
     self.assertEqual(self.pipettes._held_transport_air, {0: 5.0, 1: 5.0})
-    tips: List[handles.Resource] = []
+    tips: List[handles.Tip] = []
     for channel in (0, 1):
       shaft = self.pipettes.shaft(channel)
       assert shaft is not None
       tip = await shaft.get_tool()
-      assert tip is not None
+      assert isinstance(tip, handles.Tip)
       tips.append(tip)
     await self.pipettes.empty_tips([0, 1], reset_dispensing_drive_after=False)
     self.assertEqual((await self.pipettes.get_piston_positions())[:2], [-45.0, -45.0])
     self.assertEqual(self.pipettes._held_transport_air, {})
     self.assertEqual(self.driver.transport_air_uL, {})
-    for tip in tips:
-      assert isinstance(tip, handles.Tip)
-      self.assertEqual(await tip.get_volume(), 0.0)
+    for each in tips:
+      self.assertEqual(await each.get_volume(), 0.0)
     await self.pipettes.empty_tips(use_channels=[0, 1])
     read = await self.pipettes.dispensing_drives_request_uL_positions([0, 1])
     self.assertEqual(read[:2], [0.0, 0.0])

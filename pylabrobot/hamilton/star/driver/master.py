@@ -1926,8 +1926,13 @@ class STARDriver:
     if c.link_1_length is None or c.tool_length is None:
       logger.warning("the iSWAP reported no link lengths, so its arm is not modelled")
       return None, None
+    # A gripper is a link body too; link 1 is the one that is not.
     link_1 = next(
-      (child for child in await resource.get_children() if isinstance(child, handles.LinkBody)),
+      (
+        child
+        for child in await resource.get_children(handles.LinkBody)
+        if not isinstance(child, handles.MechanicalGripper)
+      ),
       None,
     )
     if link_1 is None:

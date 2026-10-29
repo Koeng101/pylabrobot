@@ -1570,7 +1570,7 @@ class SimulatedAutoload(_Simulated, Autoload):
     deck = self.device.deck
     if deck is None:
       return []
-    carriers = [child for child in await deck.get_children() if isinstance(child, handles.Carrier)]
+    carriers = await deck.get_children(handles.Carrier)
     return sorted([(await deck.tracks_of(carrier))[1] for carrier in carriers])
 
   async def sense_carrier_presence_on_deck(self) -> List[int]:

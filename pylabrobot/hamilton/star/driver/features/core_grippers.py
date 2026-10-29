@@ -609,7 +609,7 @@ class CoreGrippers:
     if self._tools_mounted:
       raise RuntimeError("the CoRe gripper tools are already mounted")
     holder, holder_node = await self._holder()
-    tools = [child for child in await holder.get_children() if isinstance(child, handles.HeadTool)]
+    tools = await holder.get_children(handles.HeadTool)
     if not tools:
       raise TypeError("the holder carries no CO-RE grip tools to pick up")
 
