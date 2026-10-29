@@ -12,15 +12,19 @@ positions; a robot reaches a bucket at a position taught for it.
 """
 
 import logging
-from typing import Dict, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 from pylabrobot.resources.coordinate import Coordinate
 from pylabrobot.resources.server import PlateHolder, Resource, ResourceServer, build
 from pylabrobot.resources.server.v1 import server_pb2 as spb
 from pylabrobot.resources.server.v1 import types_pb2 as pb
 
-from .driver import Bucket, MicroSpinDriver, MicroSpinStatus
+from .driver import Bucket, CommandStatus, MicroSpinDriver, MicroSpinStatus
+from .errors import ErrorEntry
 from .simulator import MicroSpinSimulator
+
+if TYPE_CHECKING:
+  from .server.client import MicroSpinServer
 
 logger = logging.getLogger(__name__)
 
@@ -89,14 +93,23 @@ def body_definition(name: str) -> pb.ResourceDefinition:
 class MicroSpin:
   """A HighRes Biosolutions MicroSpin: the driver, and the device's resources on a server.
 
+  Given `microspin_server`, a MicroSpin server or its URL, it is the device that server serves
+  instead, driven over the network with the same methods; see `ServedMicroSpin`.
+
   Attributes:
     name: what its body is called on the server; its rotor and buckets are named after it.
-    driver: what talks to the device.
     resource_server: where its resources are.
     body: its body, once `setup` or `create_resources` has run.
     rotor: its rotor.
     buckets: its buckets, by number.
   """
+
+  def __new__(cls, *args: Any, microspin_server: Any = None, **kwargs: Any) -> "MicroSpin":
+    if microspin_server is not None and cls is MicroSpin:
+      from .server.client import ServedMicroSpin
+
+      return super().__new__(ServedMicroSpin)
+    return super().__new__(cls)
 
   def __init__(
     self,
@@ -106,6 +119,7 @@ class MicroSpin:
     simulation: bool = False,
     resource_server: Optional[Union[str, ResourceServer]] = None,
     driver: Optional[MicroSpinDriver] = None,
+    microspin_server: Union[str, "MicroSpinServer", None] = None,
   ) -> None:
     """
     Args:
@@ -116,6 +130,8 @@ class MicroSpin:
       resource_server: the server to keep its resources on, or its URL; one held in this process
         when not given.
       driver: the driver to use, in place of one made from the arguments above.
+      microspin_server: the MicroSpin server to drive the device through, or its URL; see
+        `ServedMicroSpin`.
     """
     if driver is None:
       if simulation:
@@ -127,11 +143,16 @@ class MicroSpin:
     if isinstance(resource_server, str):
       resource_server = ResourceServer.connect(resource_server)
     self.name = name
-    self.driver = driver
+    self._driver = driver
     self.resource_server = resource_server or ResourceServer.local()
     self.body: Optional[Resource] = None
     self.rotor: Optional[Resource] = None
     self.buckets: Dict[int, PlateHolder] = {}
+
+  @property
+  def driver(self) -> MicroSpinDriver:
+    """What talks to the device."""
+    return self._driver
 
   # -- the device's resources -------------------------------------------------------------------
 
@@ -200,6 +221,38 @@ class MicroSpin:
   async def stop(self) -> None:
     """Close the connections to the device. Its resources stay on the server."""
     await self.driver.stop()
+
+  # -- what the device reports ---------------------------------------------------------------------
+
+  async def request_version(self) -> Dict[str, str]:
+    """See `MicroSpinDriver.request_version`."""
+    return await self.driver.request_version()
+
+  async def request_homed(self) -> bool:
+    """See `MicroSpinDriver.request_homed`."""
+    return await self.driver.request_homed()
+
+  async def request_status(self, timeout: Optional[float] = None) -> MicroSpinStatus:
+    """See `MicroSpinDriver.request_status`."""
+    return await self.driver.request_status(timeout=timeout)
+
+  async def request_errors(self, count: int = 10) -> List[ErrorEntry]:
+    """See `MicroSpinDriver.request_errors`."""
+    return await self.driver.request_errors(count)
+
+  async def request_command_status(self, command_id: int) -> CommandStatus:
+    """See `MicroSpinDriver.request_command_status`."""
+    return await self.driver.request_command_status(command_id)
+
+  async def request_spindle_velocity(self) -> float:
+    """See `MicroSpinDriver.request_spindle_velocity`."""
+    return await self.driver.request_spindle_velocity()
+
+  async def wait_for_spindle_stopped(
+    self, timeout: Optional[float] = None, poll_interval: Optional[float] = None
+  ) -> None:
+    """See `MicroSpinDriver.wait_for_spindle_stopped`."""
+    await self.driver.wait_for_spindle_stopped(timeout=timeout, poll_interval=poll_interval)
 
   # -- what the model says -------------------------------------------------------------------------
 
@@ -271,6 +324,10 @@ class MicroSpin:
   async def abort(self) -> None:
     """Stop whatever is moving; see `MicroSpinDriver.abort`."""
     await self.driver.abort()
+
+  async def clear_abort(self) -> None:
+    """Release the abort latch; see `MicroSpinDriver.clear_abort`."""
+    await self.driver.clear_abort()
 
   async def reset(self, timeout: Optional[float] = None) -> MicroSpinStatus:
     """Abort, wait for the rotor to stop, release the latch, and record where it is."""
