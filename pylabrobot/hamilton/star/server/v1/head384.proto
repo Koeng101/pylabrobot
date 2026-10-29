@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+// The 384-head.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/head.proto";
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+// The 384-head's facts: its module, its drives, and what discovery read.
+message Head384Configuration {
+  string module = 1;
+  string retract_command = 2;
+  string initialize_command = 3;
+  string tip_presence_command = 4;
+  string position_command = 5;
+  string y_parameter = 6;
+  string z_parameter = 7;
+  string z_end_parameter = 8;
+  string x_offset_parameter = 9;
+  map<int32, string> head_types = 10;
+  map<string, int32> drive_parameters = 11;
+  int32 first_documented_firmware_year = 12;
+  optional string firmware_version = 13;
+  Date firmware_date = 14;
+  optional double x_offset = 15;
+  double channel_pitch = 16;
+  int32 channel_columns = 17;
+  int32 channel_rows = 18;
+  double body_size_z = 19;
+  double min_x_clear_of_left_side_panel = 20;
+  double min_tool_bottom_z = 21;
+  optional bool supports_clot_monitoring_clld = 22;
+  optional string head_type = 23;
+  pylabrobot.resources.server.v1.Vec3 tip_discard_location = 24;
+  DoubleRange z_range = 25;
+  double z_drive_mm_per_increment = 26;
+  double y_drive_mm_per_increment = 27;
+  double y_drive_acceleration_mm_per_increment = 28;
+  double z_drive_acceleration_mm_per_increment = 29;
+  double dispensing_drive_mm_per_increment = 30;
+  int32 dispensing_drive_speed_increments_per_unit = 31;
+  int32 dispensing_drive_acceleration_increments_per_unit = 32;
+  Int32Range z_speed_range_increments = 33;
+  Int32Range z_acceleration_range_increments = 34;
+  int32 predefined_y_position_origin = 35;
+  int32 predefined_z_position_origin = 36;
+  repeated string predefined_y_slots = 37;
+  StringInt32Map predefined_y_positions_increments = 38;
+  repeated string predefined_z_slots = 39;
+  StringInt32Map predefined_z_positions_increments = 40;
+  double traversal_z_position = 41;
+  int32 y_drive_current_limit_default = 42;
+  int32 z_drive_current_limit_default = 43;
+  Int32Range current_limit_range = 44;
+  Int32Range dispensing_drive_current_limit_range = 45;
+  int32 y_speed_default_increments = 46;
+  int32 y_acceleration_default_increments = 47;
+  int32 z_speed_default_increments = 48;
+  int32 z_acceleration_default_increments = 49;
+  optional double y_drive_speed_firmware_reported = 50;
+  optional double y_drive_acceleration_firmware_reported = 51;
+  optional double z_drive_speed_firmware_reported = 52;
+  optional double z_drive_acceleration_firmware_reported = 53;
+  optional bool supports_lld_absolute_threshold_check = 54;
+  Int32Range y_range_increments = 55;
+  Int32Range y_speed_range_increments = 56;
+  Int32Range y_acceleration_range_increments = 57;
+  Int32Range z_range_increments = 58;
+}
+
+message Head384DiscoverRequest {
+}
+
+message Head384DiscoverResponse {
+}
+
+// The defaults Head384 uses where a call names none. A STAR server takes them from its
+// settings file; unset fields keep the defaults in the code.
+message Head384Settings {
+  // In uL/s: how fast the dispensing drive moves when a move names no speed.
+  optional double default_dispensing_drive_speed = 1;
+  // In uL/s2: how hard the dispensing drive accelerates when a move names no acceleration.
+  optional double default_dispensing_drive_acceleration = 2;
+}
+
+service Head384Service {
+  // Read what head this is, then start its dispensing drive defaults from its type.
+  rpc Discover(Head384DiscoverRequest) returns (Head384DiscoverResponse);
+  // Request one of the head's stored drive parameters.
+  rpc RequestDriveParameter(HeadRequestDriveParameterRequest) returns (HeadRequestDriveParameterResponse);
+  // Write one of the head's stored drive parameters.
+  rpc SetDriveParameter(HeadSetDriveParameterRequest) returns (HeadSetDriveParameterResponse);
+  // Request the head's firmware version and build date.
+  rpc RequestFirmwareVersion(HeadRequestFirmwareVersionRequest) returns (HeadRequestFirmwareVersionResponse);
+  // Request the head's configuration, undecoded.
+  rpc RequestHardware(HeadRequestHardwareRequest) returns (HeadRequestHardwareResponse);
+  // Request which head is fitted.
+  rpc RequestHeadType(HeadRequestHeadTypeRequest) returns (HeadRequestHeadTypeResponse);
+  // Request the X distance from the X-arm carriage center to head channel A1.
+  rpc RequestXOffset(HeadRequestXOffsetRequest) returns (HeadRequestXOffsetResponse);
+  // Request the Y positions the head has stored, in mm.
+  rpc RequestPredefinedYPositions(HeadRequestPredefinedYPositionsRequest) returns (HeadRequestPredefinedYPositionsResponse);
+  // Request the Z positions the head has stored, in mm.
+  rpc RequestPredefinedZPositions(HeadRequestPredefinedZPositionsRequest) returns (HeadRequestPredefinedZPositionsResponse);
+  // Request what the firmware holds about the head carrying tips.
+  rpc RequestTipPresence(HeadRequestTipPresenceRequest) returns (HeadRequestTipPresenceResponse);
+  // Record where the head is on the resource that models it.
+  rpc UpdateLocationByReferencePoint(HeadUpdateLocationByReferencePointRequest) returns (HeadUpdateLocationByReferencePointResponse);
+  // Where the model has channel A1's axis end, in mm on the deck.
+  rpc GetReferencePointLocation(HeadGetReferencePointLocationRequest) returns (HeadGetReferencePointLocationResponse);
+  // Request where along Y the head is.
+  rpc RequestYPosition(HeadRequestYPositionRequest) returns (HeadRequestYPositionResponse);
+  // Request the head's Z-drive position, at its lowest fixed feature.
+  rpc RequestZPosition(HeadRequestZPositionRequest) returns (HeadRequestZPositionResponse);
+  // Measure where head channel A1 is, with whatever it carries taken into account.
+  rpc RequestLocation(HeadRequestLocationRequest) returns (HeadRequestLocationResponse);
+  // Measure how far the tips the head carries stand below its own reference point.
+  rpc RequestTipOverhang(HeadRequestTipOverhangRequest) returns (HeadRequestTipOverhangResponse);
+  // Request where along X channel A1 is, in deck mm.
+  rpc RequestXPosition(HeadRequestXPositionRequest) returns (HeadRequestXPositionResponse);
+  // Move channel A1 along X. The whole arm travels, with everything else it carries.
+  rpc MoveToXPosition(HeadMoveToXPositionRequest) returns (HeadMoveToXPositionResponse);
+  // Move the head along Y. This moves it, and nothing else on the arm.
+  rpc MoveToYPosition(HeadMoveToYPositionRequest) returns (HeadMoveToYPositionResponse);
+  // Move head channel A1 over (x, y): the head up first, then X and Y together.
+  rpc MoveToXyPosition(HeadMoveToXyPositionRequest) returns (HeadMoveToXyPositionResponse);
+  // Retracts the head with the firmware's own retract and reads its stop disc z-position.
+  rpc ProbeZMax(HeadProbeZMaxRequest) returns (HeadProbeZMaxResponse);
+  // Move the head's stop disc along Z. This moves it, and nothing else on the arm.
+  rpc MoveStopDiscToZPosition(HeadMoveStopDiscToZPositionRequest) returns (HeadMoveStopDiscToZPositionResponse);
+  // Move the bottom of what the head carries along Z. This moves it, and nothing else on the arm.
+  rpc MoveToolBottomToZPosition(HeadMoveToolBottomToZPositionRequest) returns (HeadMoveToolBottomToZPositionResponse);
+  // Move the head up to its safe Z: the top of the window setup probed.
+  rpc MoveToSafeZ(HeadMoveToSafeZRequest) returns (HeadMoveToSafeZResponse);
+  // Read where the head's dispensing drive stands, in uL, and record it. `RD`.
+  rpc DispensingDriveRequestULPosition(HeadDispensingDriveRequestULPositionRequest) returns (HeadDispensingDriveRequestULPositionResponse);
+  // Where the head's piston stands, as this driver last read or sent it.
+  rpc GetPistonPosition(HeadGetPistonPositionRequest) returns (HeadGetPistonPositionResponse);
+  // Move the dispensing drive to an absolute piston position, and record it. `DQ`.
+  rpc MoveDispensingDriveToPosition(HeadMoveDispensingDriveToPositionRequest) returns (HeadMoveDispensingDriveToPositionResponse);
+  // Send the head to its park position. This moves it in Z, then in Y.
+  rpc Park(HeadParkRequest) returns (HeadParkResponse);
+  // Initialize the head, discarding whatever is mounted on it.
+  rpc Initialize(HeadInitializeRequest) returns (HeadInitializeResponse);
+}

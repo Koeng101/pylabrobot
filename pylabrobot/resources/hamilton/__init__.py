@@ -6,6 +6,7 @@ from .core_grippers import (
 )
 from .hamilton_decks import HamiltonDeck
 from .hamilton_tool import HamiltonTool
+from .heater_shakers import HEATER_SHAKER_CATEGORY, hamilton_heater_shaker
 from .mfx_carriers import *
 from .mfx_modules import *
 from .nimbus_decks import NimbusDeck, nimbus_core_gripper_1000ul_at_waste

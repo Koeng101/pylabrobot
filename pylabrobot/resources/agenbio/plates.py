@@ -1,10 +1,6 @@
 import warnings
 from typing import Optional
 
-from pylabrobot.resources.height_volume_functions import (
-  compute_height_from_volume_rectangle,
-  compute_volume_from_height_rectangle,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -12,6 +8,12 @@ from pylabrobot.resources.well import (
   Well,
   WellBottomType,
 )
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_agenbio_96_wellplate_Ub_2200uL_height_volume_data = {
+  0.0: 0.0,
+  38.2: 2444.8,
+}
 
 
 def agenbio_96_wellplate_Ub_2200uL(name: str, lid: Optional[Lid] = None) -> Plate:
@@ -29,16 +31,7 @@ def agenbio_96_wellplate_Ub_2200uL(name: str, lid: Optional[Lid] = None) -> Plat
     "size_z": 38.2,  # measured to bottom of well
     "bottom_type": WellBottomType.FLAT,
     "cross_section_type": CrossSectionType.RECTANGLE,
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_rectangle(
-      liquid_volume,
-      INNER_WELL_LENGTH,
-      INNER_WELL_WIDTH,
-    ),
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_rectangle(
-      liquid_height,
-      INNER_WELL_LENGTH,
-      INNER_WELL_WIDTH,
-    ),
+    "height_volume_data": _agenbio_96_wellplate_Ub_2200uL_height_volume_data,
     "material_z_thickness": 1,
   }
 
@@ -64,6 +57,13 @@ def agenbio_96_wellplate_Ub_2200uL(name: str, lid: Optional[Lid] = None) -> Plat
   )
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_agenbio_4_troughplate_75mL_Vb_height_volume_data = {
+  0.0: 0.0,
+  42.55: 79959.96,
+}
+
+
 def agenbio_4_troughplate_75mL_Vb(name: str, lid: Optional[Lid] = None) -> Plate:
   """
   AGenBio Catalog No. RES-75-4MW
@@ -80,16 +80,7 @@ def agenbio_4_troughplate_75mL_Vb(name: str, lid: Optional[Lid] = None) -> Plate
     "max_volume": 75_000,  # spec rating; box volume (~80 mL) would overstate capacity
     "bottom_type": WellBottomType.V,
     "cross_section_type": CrossSectionType.RECTANGLE,
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_rectangle(
-      liquid_volume,
-      INNER_WELL_LENGTH,
-      INNER_WELL_WIDTH,
-    ),
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_rectangle(
-      liquid_height,
-      INNER_WELL_LENGTH,
-      INNER_WELL_WIDTH,
-    ),
+    "height_volume_data": _agenbio_4_troughplate_75mL_Vb_height_volume_data,
     "material_z_thickness": 1,
   }
 
@@ -139,6 +130,13 @@ def AGenBio_1_wellplate_Fl(name: str, lid: Optional[Lid] = None) -> Plate:
   return agenbio_1_troughplate_190mL_Fl(name=name, lid=lid)
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_agenbio_1_troughplate_190mL_Fl_height_volume_data = {
+  0.0: 0.0,
+  38.32: 291250.3936,
+}
+
+
 def agenbio_1_troughplate_190mL_Fl(name: str, lid: Optional[Lid] = None) -> Plate:
   """AGenBio single-well reagent reservoir, 190 mL, flat-bottom (ANSI/SLAS footprint).
 
@@ -155,16 +153,7 @@ def agenbio_1_troughplate_190mL_Fl(name: str, lid: Optional[Lid] = None) -> Plat
     "max_volume": 190_000,  # spec rating; size_z reaches the rim so the box volume would overstate capacity
     "bottom_type": WellBottomType.FLAT,
     "cross_section_type": CrossSectionType.RECTANGLE,
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_rectangle(
-      liquid_volume,
-      INNER_WELL_HEIGHT,
-      INNER_WELL_WIDTH,
-    ),
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_rectangle(
-      liquid_height,
-      INNER_WELL_HEIGHT,
-      INNER_WELL_WIDTH,
-    ),
+    "height_volume_data": _agenbio_1_troughplate_190mL_Fl_height_volume_data,
     "material_z_thickness": 1,
   }
 
@@ -190,6 +179,13 @@ def agenbio_1_troughplate_190mL_Fl(name: str, lid: Optional[Lid] = None) -> Plat
   )
 
 
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_agenbio_1_troughplate_100mL_Fl_height_volume_data = {
+  0.0: 0.0,
+  25.52: 193964.2496,
+}
+
+
 def agenbio_1_troughplate_100mL_Fl(name: str, lid: Optional[Lid] = None) -> Plate:
   """AGenBio single-well reagent reservoir, 100 mL, flat-bottom (ANSI/SLAS footprint).
 
@@ -206,16 +202,7 @@ def agenbio_1_troughplate_100mL_Fl(name: str, lid: Optional[Lid] = None) -> Plat
     "max_volume": 100_000,  # spec rating; size_z reaches the rim so the box volume would overstate capacity
     "bottom_type": WellBottomType.FLAT,
     "cross_section_type": CrossSectionType.RECTANGLE,
-    "compute_height_from_volume": lambda liquid_volume: compute_height_from_volume_rectangle(
-      liquid_volume,
-      INNER_WELL_HEIGHT,
-      INNER_WELL_WIDTH,
-    ),
-    "compute_volume_from_height": lambda liquid_height: compute_volume_from_height_rectangle(
-      liquid_height,
-      INNER_WELL_HEIGHT,
-      INNER_WELL_WIDTH,
-    ),
+    "height_volume_data": _agenbio_1_troughplate_100mL_Fl_height_volume_data,
     "material_z_thickness": 1,
   }
 

@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+// How a call fails: what it raised, carried as a detail of the Connect error so the client raises
+// the same thing.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/resources/server/v1/types.proto";
+
+// The exception a call raised. A class not listed goes as the nearest one it derives from.
+enum ErrorKind {
+  ERROR_KIND_UNSPECIFIED = 0;  // Exception
+  ERROR_KIND_VALUE = 1;  // ValueError
+  ERROR_KIND_RUNTIME = 2;  // RuntimeError
+  ERROR_KIND_TYPE = 3;  // TypeError
+  ERROR_KIND_NOT_IMPLEMENTED = 4;  // NotImplementedError
+  ERROR_KIND_INDEX = 5;  // IndexError
+  ERROR_KIND_KEY = 6;  // KeyError
+  ERROR_KIND_ASSERTION = 7;  // AssertionError
+  ERROR_KIND_TIMEOUT = 8;  // TimeoutError
+  ERROR_KIND_CONNECTION = 9;  // ConnectionError
+  ERROR_KIND_HAS_TIP = 10;  // HasTipError
+  ERROR_KIND_NO_TIP = 11;  // NoTipError
+  ERROR_KIND_TOO_LITTLE_LIQUID = 12;  // TooLittleLiquidError
+  ERROR_KIND_TOO_LITTLE_VOLUME = 13;  // TooLittleVolumeError
+  ERROR_KIND_RESOURCE_NOT_FOUND = 14;  // ResourceNotFoundError
+  ERROR_KIND_NO_LOCATION = 15;  // NoLocationError
+  ERROR_KIND_CHANNELS_DO_NOT_FIT = 16;  // ChannelsDoNotFitError
+  // A resource server refusal: `ServerError`, with `problem` and `resource_name`.
+  ERROR_KIND_RESOURCE_SERVER = 17;
+  // The device answered with an error: `STARFirmwareError`, with `firmware_reply` and
+  // `module_errors`.
+  ERROR_KIND_FIRMWARE = 18;
+}
+
+message Error {
+  ErrorKind kind = 1;
+  // What `str()` of it says.
+  string message = 2;
+  // Firmware errors: the reply, as the device sent it.
+  string firmware_reply = 3;
+  // Firmware errors: what each module reported, by the module's name, in the reply's order.
+  repeated ModuleError module_errors = 4;
+  // Resource server refusals: why, and the resource it is about.
+  pylabrobot.resources.server.v1.Problem problem = 5;
+  string resource_name = 6;
+}
+
+// What one module of the device reported.
+message ModuleError {
+  // Its name, "Pipetting channel 1" say.
+  string module = 1;
+  ModuleErrorKind kind = 2;
+  string message = 3;
+  int32 trace_information = 4;
+  string raw_response = 5;
+  // Its two-letter id, "P1" say.
+  string raw_module = 6;
+}
+
+// Which error a module reported, as the device's error code names it.
+enum ModuleErrorKind {
+  MODULE_ERROR_KIND_UNSPECIFIED = 0;
+  MODULE_ERROR_KIND_COMMAND_SYNTAX = 1;  // CommandSyntaxError
+  MODULE_ERROR_KIND_HARDWARE = 2;  // HardwareError
+  MODULE_ERROR_KIND_COMMAND_NOT_COMPLETED = 3;  // CommandNotCompletedError
+  MODULE_ERROR_KIND_CLOT_DETECTED = 4;  // ClotDetectedError
+  MODULE_ERROR_KIND_BARCODE_UNREADABLE = 5;  // BarcodeUnreadableError
+  MODULE_ERROR_KIND_TIP_TOO_LITTLE_VOLUME = 6;  // TipTooLittleVolumeError
+  MODULE_ERROR_KIND_TIP_ALREADY_FITTED = 7;  // TipAlreadyFittedError
+  MODULE_ERROR_KIND_HAMILTON_NO_TIP = 8;  // HamiltonNoTipError
+  MODULE_ERROR_KIND_NO_CARRIER = 9;  // NoCarrierError
+  MODULE_ERROR_KIND_NOT_COMPLETED = 10;  // NotCompletedError
+  MODULE_ERROR_KIND_DISPENSE_WITH_PRESSURE_LLD = 11;  // DispenseWithPressureLLDError
+  MODULE_ERROR_KIND_NO_TEACH_IN_SIGNAL = 12;  // NoTeachInSignalError
+  MODULE_ERROR_KIND_LOADING_TRAY = 13;  // LoadingTrayError
+  MODULE_ERROR_KIND_SEQUENCED_ASPIRATION_WITH_PRESSURE_LLD = 14;  // SequencedAspirationWithPressureLLDError
+  MODULE_ERROR_KIND_NOT_ALLOWED_PARAMETER_COMBINATION = 15;  // NotAllowedParameterCombinationError
+  MODULE_ERROR_KIND_COVER_CLOSE = 16;  // CoverCloseError
+  MODULE_ERROR_KIND_ASPIRATION = 17;  // AspirationError
+  MODULE_ERROR_KIND_WASH_FLUID_OR_WASTE = 18;  // WashFluidOrWasteError
+  MODULE_ERROR_KIND_INCUBATION = 19;  // IncubationError
+  MODULE_ERROR_KIND_TADM_MEASUREMENT = 20;  // TADMMeasurementError
+  MODULE_ERROR_KIND_NO_ELEMENT = 21;  // NoElementError
+  MODULE_ERROR_KIND_ELEMENT_STILL_HOLDING = 22;  // ElementStillHoldingError
+  MODULE_ERROR_KIND_ELEMENT_LOST = 23;  // ElementLostError
+  MODULE_ERROR_KIND_ILLEGAL_TARGET_PLATE_POSITION = 24;  // IllegalTargetPlatePositionError
+  MODULE_ERROR_KIND_ILLEGAL_USER_ACCESS = 25;  // IllegalUserAccessError
+  MODULE_ERROR_KIND_POSITION_NOT_REACHABLE = 26;  // PositionNotReachableError
+  MODULE_ERROR_KIND_UNEXPECTED_LLD = 27;  // UnexpectedLLDError
+  MODULE_ERROR_KIND_AREA_ALREADY_OCCUPIED = 28;  // AreaAlreadyOccupiedError
+  MODULE_ERROR_KIND_IMPOSSIBLE_TO_OCCUPY_AREA = 29;  // ImpossibleToOccupyAreaError
+  MODULE_ERROR_KIND_ANTI_DROP_CONTROL = 30;  // AntiDropControlError
+  MODULE_ERROR_KIND_DECAPPER = 31;  // DecapperError
+  MODULE_ERROR_KIND_DECAPPER_HANDLING = 32;  // DecapperHandlingError
+  MODULE_ERROR_KIND_STOP = 33;  // StopError
+  MODULE_ERROR_KIND_SUBSYSTEM = 34;  // SubsystemError
+  MODULE_ERROR_KIND_WRONG_CARRIER = 35;  // WrongCarrierError
+  MODULE_ERROR_KIND_NO_CARRIER_BARCODE = 36;  // NoCarrierBarcodeError
+  MODULE_ERROR_KIND_LIQUID_LEVEL = 37;  // LiquidLevelError
+  MODULE_ERROR_KIND_NOT_DETECTED = 38;  // NotDetectedError
+  MODULE_ERROR_KIND_NOT_ASPIRATED = 39;  // NotAspiratedError
+  MODULE_ERROR_KIND_IMPROPER_DISPENSATION = 40;  // ImproperDispensationError
+  MODULE_ERROR_KIND_NO_LABWARE = 41;  // NoLabwareError
+  MODULE_ERROR_KIND_UNEXPECTED_LABWARE = 42;  // UnexpectedLabwareError
+  MODULE_ERROR_KIND_WRONG_LABWARE = 43;  // WrongLabwareError
+  MODULE_ERROR_KIND_BARCODE_MASK = 44;  // BarcodeMaskError
+  MODULE_ERROR_KIND_BARCODE_NOT_UNIQUE = 45;  // BarcodeNotUniqueError
+  MODULE_ERROR_KIND_BARCODE_ALREADY_USED = 46;  // BarcodeAlreadyUsedError
+  MODULE_ERROR_KIND_KIT_LOT_EXPIRED = 47;  // KitLotExpiredError
+  MODULE_ERROR_KIND_DELIMITER = 48;  // DelimiterError
+  MODULE_ERROR_KIND_UNKNOWN_HAMILTON = 49;  // UnknownHamiltonError
+}

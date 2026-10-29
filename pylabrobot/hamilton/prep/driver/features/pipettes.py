@@ -6721,7 +6721,7 @@ class Pipettes:
         "TADM is not verified on the Prep yet; give limit curve 0 and no storage level"
       )
     liquid, drawn, classes = get_volumes_and_classes(
-      containers,
+      [c.name for c in containers],
       use_channels,
       self._require_mounted_tips(use_channels),
       volumes,
@@ -7274,7 +7274,7 @@ class Pipettes:
     if any(index != 0 for index in limit_curve_indices or []):
       raise ValueError("TADM is not verified on the Prep yet; give limit curve 0")
     liquid, pushed, classes = get_volumes_and_classes(
-      containers,
+      [c.name for c in containers],
       use_channels,
       self._require_mounted_tips(use_channels),
       volumes,

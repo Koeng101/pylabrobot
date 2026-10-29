@@ -1,0 +1,1447 @@
+syntax = "proto3";
+
+// The independent pipetting channels.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/types.proto";
+import "pylabrobot/resources/server/v1/types.proto";
+
+// What every channel shares, and one entry per channel.
+message PipettesConfiguration {
+  int32 hardware_query_first_year = 1;
+  DoubleRange initialize_y_range = 2;
+  double initialize_begin_of_tip_deposit = 3;
+  double initialize_end_of_tip_deposit = 4;
+  double initialize_z_position_at_end = 5;
+  int32 initialize_tip_type = 6;
+  int32 initialize_discarding_method = 7;
+  int32 initialize_read_timeout = 8;
+  string x_reference_anchor = 9;
+  string y_reference_anchor = 10;
+  string z_reference_anchor = 11;
+  double y_drive_mm_per_increment = 12;
+  double z_drive_mm_per_increment = 13;
+  Int32Range z_range_increments = 14;
+  Int32Range y_range_increments = 15;
+  Int32Range y_drive_speed_range_increments = 16;
+  Int32Range y_drive_acceleration_level_range = 17;
+  Int32Range y_drive_current_limit_range = 18;
+  Int32Range clld_detection_edge_range = 19;
+  Int32Range clld_detection_drop_range = 20;
+  Int32Range lld_post_detection_distance_range_increments = 21;
+  Int32Range lld_max_delta_range_increments = 22;
+  Int32Range plld_detection_edge_range = 23;
+  Int32Range plld_detection_drop_range = 24;
+  Int32Range plld_foam_detection_drop_range = 25;
+  Int32Range plld_foam_detection_edge_tolerance_range = 26;
+  Int32Range plld_foam_ad_values_range = 27;
+  Int32Range plld_foam_search_speed_range_increments = 28;
+  Int32Range z_drive_speed_range_increments = 29;
+  Int32Range z_drive_acceleration_range_increments = 30;
+  Int32Range z_drive_current_limit_range = 31;
+  Int32Range z_touch_pwm_range = 32;
+  map<string, int32> drive_parameters = 33;
+  DoubleRange z_range = 34;
+  double dispensing_drive_mm_per_increment = 35;
+  double dispensing_drive_uL_per_increment = 36;
+  Int32Range dispensing_drive_speed_range_increments = 37;
+  Int32Range dispensing_drive_acceleration_range_increments = 38;
+  Int32Range dispensing_drive_current_limit_range = 39;
+  Int32Range dispensing_drive_volume_range_increments = 40;
+  Int32Range dispensing_drive_position_range_increments = 41;
+  Int32Range dispensing_drive_move_acceleration_range_increments = 42;
+  Int32Range blow_out_air_draw_range_increments = 43;
+  Int32Range mechanical_clearance_steps_range = 44;
+  Int32Range pipetting_volume_range_increments = 45;
+  Int32Range pipetting_speed_range_increments = 46;
+  Int32Range pipetting_distance_range_increments = 47;
+  Int32Range swap_speed_range_increments = 48;
+  Int32Range transport_air_volume_range_increments = 49;
+  Int32Range blow_out_air_volume_range_increments = 50;
+  Int32Range pre_wetting_volume_range_increments = 51;
+  Int32Range clot_detection_height_range_increments = 52;
+  Int32Range settling_time_range_increments = 53;
+  Int32Range mix_cycles_range = 54;
+  Int32Range mix_position_range_increments = 55;
+  Int32Range second_section_ratio_range_increments = 56;
+  Int32Range lld_sensitivity_range = 57;
+  Int32Range z_touch_off_position_range_increments = 58;
+  Int32Range dual_lld_height_difference_range_increments = 59;
+  Int32Range limit_curve_index_range = 60;
+  Int32Range stop_back_volume_range_increments = 61;
+  Int32Range side_touch_off_distance_range_increments = 62;
+  double channel_size_z = 63;
+  repeated PipetteConfiguration channels = 64;
+}
+
+// A pressure curve a channel recorded.
+message TADMCurve {
+  string measurement_id = 1;
+  TADMOperation operation = 2;
+  bool had_error = 3;
+  repeated int32 pressures = 4;
+}
+
+// One channel, as it reported itself.
+message PipetteConfiguration {
+  optional PipetteChannelType channel_type = 1;
+  optional PipetteHeadType head_type = 2;
+  optional StopDiscType stop_disc_type = 3;
+  optional PressureADC pressure_adc = 4;
+  optional string firmware_version = 5;
+  optional double width = 6;
+}
+
+message PipettesSenseTipPresenceRequest {
+}
+
+message PipettesSenseTipPresenceResponse {
+  // One value per channel, 1 where a tip is mounted, 0-indexed from the back.
+  repeated int32 presence = 1;
+}
+
+message PipettesRequestFirmwareVersionRequest {
+  // Which channel to ask, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestFirmwareVersionResponse {
+  // The version string and its build date, e.g. `("4.0S j 2022-03-16", date(2022, 3, 16))`.
+  string version = 1;
+  Date date = 2;
+}
+
+message PipettesRequestMinPipetteWidthRequest {
+  // Which channel to ask, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestMinPipetteWidthResponse {
+  // The width in mm.
+  double min_pipette_width = 1;
+}
+
+message PipettesRequestPipetteConfigurationRequest {
+  // Which channel to ask, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestPipetteConfigurationResponse {
+  // What the channel reports about itself. The fields it does not report - its firmware version and
+  // its width - are left unset, since they are separate queries.
+  PipetteConfiguration configuration = 1;
+}
+
+message PipettesDiscoverRequest {
+}
+
+message PipettesDiscoverResponse {
+}
+
+message PipettesGetReferencePointLocationsRequest {
+}
+
+message PipettesGetReferencePointLocationsResponse {
+  // Per channel, where the model has it, or unset when nothing models it yet.
+  repeated OptionalVec3 reference_point_locations = 1;
+}
+
+message PipettesGetReferencePointLocationRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesGetReferencePointLocationResponse {
+  // Where the model has it, or unset when there is nothing modelling it yet.
+  pylabrobot.resources.server.v1.Vec3 reference_point_location = 1;
+}
+
+message PipettesUpdateLocationsByReferencePointRequest {
+  // Per channel, 0-indexed from the back, where it is now along Y and where its stop disc is along
+  // Z, in mm on the deck. An axis left as it was is unset.
+  map<int32, ReferencePointYZ> positions = 1;
+}
+
+message PipettesUpdateLocationsByReferencePointResponse {
+}
+
+message PipettesUpdateLocationByReferencePointRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // Where it is now, in mm on the deck. Left as it was when unset.
+  optional double y = 2;
+  // Where its stop disc is now, in mm on the deck. Left as it was when unset.
+  optional double z = 3;
+}
+
+message PipettesUpdateLocationByReferencePointResponse {
+}
+
+message PipettesRequestYPositionsRequest {
+}
+
+message PipettesRequestYPositionsResponse {
+  // The position of each channel in mm, back to front.
+  repeated double y_positions = 1;
+}
+
+message PipettesRequestYPositionRequest {
+  // The channel to request the position of.
+  int32 channel = 1;
+}
+
+message PipettesRequestYPositionResponse {
+  // The position of the requested channel in mm.
+  double y_position = 1;
+}
+
+message PipettesRequestStopDiscZPositionRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestStopDiscZPositionResponse {
+  // Where its stop disc is, in mm on the deck.
+  double stop_disc_z_position = 1;
+}
+
+message PipettesRequestStopDiscZPositionsRequest {
+}
+
+message PipettesRequestStopDiscZPositionsResponse {
+  // Each channel's stop disc in mm, by channel, 0-indexed from the back.
+  repeated double stop_disc_z_positions = 1;
+}
+
+message PipettesRequestToolBottomZPositionsRequest {
+}
+
+message PipettesRequestToolBottomZPositionsResponse {
+  // The bottom of each channel's tip in mm, by channel, 0-indexed from the back.
+  repeated double tool_bottom_z_positions = 1;
+}
+
+message PipettesRequestToolBottomZPositionRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestToolBottomZPositionResponse {
+  // Where the bottom of its tip is, in mm on the deck.
+  double tool_bottom_z_position = 1;
+}
+
+message PipettesRequestTipOverhangRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestTipOverhangResponse {
+  // The overhang in mm, to 0.1 mm.
+  double tip_overhang = 1;
+}
+
+message PipettesRequestYSpeedRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestYSpeedResponse {
+  // The speed in mm/s.
+  double y_speed = 1;
+}
+
+message PipettesRequestYAccelerationLevelRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestYAccelerationLevelResponse {
+  // The level, 1 (gentlest) to 4.
+  int32 y_acceleration_level = 1;
+}
+
+message PipettesRequestZSpeedRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestZSpeedResponse {
+  // The speed in mm/s.
+  double z_speed = 1;
+}
+
+message PipettesRequestZAccelerationRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestZAccelerationResponse {
+  // The acceleration in mm/s2.
+  double z_acceleration = 1;
+}
+
+message PipettesRequestXPositionRequest {
+}
+
+message PipettesRequestXPositionResponse {
+  // The position in mm.
+  double x_position = 1;
+}
+
+message PipettesMoveToXPositionRequest {
+  // Where to go, in mm.
+  double x = 1;
+  // How hard to accelerate. Defaults to the X-arm that holds the pipettes.
+  optional int32 acceleration_level = 2;
+  // The motor current limit. Defaults to the X-arm that holds the pipettes.
+  optional int32 current_limit = 3;
+  // How many reads to take before calling the arm stopped.
+  optional int32 settle_reads = 4;
+}
+
+message PipettesMoveToXPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesMoveToYPositionsRequest {
+  // Where to put each named channel, in mm, keyed by channel, 0-indexed from the back.
+  map<int32, double> ys = 1;
+  // Whether the channels not named may be moved, so that every pair meets its minimum Y spacing and
+  // the channels stay in order back to front. Off by default: nothing moves that the caller did not
+  // ask to move, and a request that will not fit raises instead. It can raise either way, since the
+  // requested positions may leave no room.
+  optional bool make_space = 2;
+}
+
+message PipettesMoveToYPositionsResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesMoveToYPositionRequest {
+  // Which channel to move, 0-indexed from the back.
+  int32 channel = 1;
+  // Where to put it, in mm.
+  double y = 2;
+  // Whether the other channels may be moved to make room. Off by default. See
+  // `move_to_y_positions`.
+  optional bool make_space = 3;
+}
+
+message PipettesMoveToYPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesMakeMaxSpaceForChannelRequest {
+  // Which channel to free, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesMakeMaxSpaceForChannelResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesMoveStopDiscToZPositionRequest {
+  // Which channel to move, 0-indexed from the back.
+  int32 channel = 1;
+  // Where to put its stop disc, in mm on the deck.
+  double z = 2;
+  // How fast, in mm/s. Defaults to `default_z_speed`.
+  optional double speed = 3;
+  // How hard, in mm/s2. Defaults to `default_z_acceleration`.
+  optional double acceleration = 4;
+  // The motor current limit. Defaults to `default_z_current_limit`.
+  optional int32 current_limit = 5;
+}
+
+message PipettesMoveStopDiscToZPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesMoveStopDiscToZPositionsRequest {
+  // Where to put each named channel's stop disc, in mm, keyed by channel, 0-indexed from the back.
+  map<int32, double> zs = 1;
+  // How fast, in mm/s. Defaults to `default_z_speed`.
+  optional double speed = 2;
+  // How hard, in mm/s2. Defaults to `default_z_acceleration`.
+  optional double acceleration = 3;
+  // The motor current limit. Defaults to `default_z_current_limit`.
+  optional int32 current_limit = 4;
+}
+
+message PipettesMoveStopDiscToZPositionsResponse {
+}
+
+message PipettesMoveToolBottomToZPositionsRequest {
+  // Where to put each named channel's tip bottom, in mm, keyed by channel, 0-indexed from the back.
+  map<int32, double> zs = 1;
+}
+
+message PipettesMoveToolBottomToZPositionsResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesMoveToolBottomToZPositionRequest {
+  // Which channel to move, 0-indexed from the back.
+  int32 channel = 1;
+  // Where to put the bottom of its tip, in mm on the deck.
+  double z = 2;
+  // How fast, in mm/s. Defaults to `default_z_speed`.
+  optional double speed = 3;
+  // How hard, in mm/s2. Defaults to `default_z_acceleration`.
+  optional double acceleration = 4;
+  // The motor current limit. Defaults to `default_z_current_limit`.
+  optional int32 current_limit = 5;
+}
+
+message PipettesMoveToolBottomToZPositionResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesProbeZMaxRequest {
+}
+
+message PipettesProbeZMaxResponse {
+  // The z-positions of each channel's stop disc, in mm, by channel.
+  repeated double z_max = 1;
+}
+
+message PipettesMoveToSafeZRequest {
+  // In mm/s, held by the drives for the move. The stored speed when unset.
+  optional double speed = 1;
+  // In mm/s2, held by the drives for the move. The stored one when unset.
+  optional double acceleration = 2;
+}
+
+message PipettesMoveToSafeZResponse {
+}
+
+message PipettesDispensingDriveRequestULPositionRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesDispensingDriveRequestULPositionResponse {
+  // The piston's position in uL, 0.0 at rest; air and liquid alike. `get_piston_positions` reads
+  // it.
+  double position = 1;
+}
+
+message PipettesGetPistonPositionsRequest {
+}
+
+message PipettesGetPistonPositionsResponse {
+  // Each channel's piston position, as the volume it has drawn, in uL, by channel; 0.0 at rest, air
+  // and liquid alike. Empty until a position has been read or sent.
+  repeated double piston_positions = 1;
+}
+
+message PipettesDispensingDrivesRequestULPositionsRequest {
+  // Which channels, 0-indexed from the back. Every channel when unset.
+  Int32List use_channels = 1;
+}
+
+message PipettesDispensingDrivesRequestULPositionsResponse {
+  // One entry per channel of the device: the piston's position in uL, 0.0 at rest, air and liquid
+  // alike, for a channel asked; Unset for one not asked, whose record is left alone.
+  repeated OptionalDouble positions = 1;
+}
+
+message PipettesMoveToXyPositionsRequest {
+  // Where to send the arm, in mm. The channels share it.
+  double x = 1;
+  // Where to put each named channel, in mm, keyed by channel, 0-indexed from the back.
+  map<int32, double> ys = 2;
+  // Whether the channels not named may be moved in Y. See `move_to_y_positions`.
+  optional bool make_space = 3;
+  // The height to raise every low channel's lowest point to first, in mm.
+  // `default_minimum_traverse_height` when unset; 0 raises nothing.
+  optional double minimum_traverse_height_start = 4;
+}
+
+message PipettesMoveToXyPositionsResponse {
+}
+
+message PipettesSpreadChannelsRequest {
+}
+
+message PipettesSpreadChannelsResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesGetToolsRequest {
+}
+
+message PipettesGetToolsResponse {
+  repeated OptionalResourceNode tools = 1;
+}
+
+message PipettesGetMountedTipsRequest {
+}
+
+message PipettesGetMountedTipsResponse {
+  repeated OptionalResourceNode mounted_tips = 1;
+}
+
+message PipettesGetMountedTipRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesGetMountedTipResponse {
+  pylabrobot.resources.server.v1.ResourceNode mounted_tip = 1;
+}
+
+message PipettesDispensingDriveMoveToULPositionRequest {
+  // 0-indexed from the back.
+  int32 channel = 1;
+  // In uL, 0.0 at rest; -45.0 is the bottom limit.
+  double position = 2;
+  // In uL/s.
+  optional double flow_rate = 3;
+  // In uL/s2.
+  optional double acceleration = 4;
+  // 0 to 7.
+  optional int32 current_limit = 5;
+}
+
+message PipettesDispensingDriveMoveToULPositionResponse {
+}
+
+message PipettesEmptyTipRequest {
+  // 0-indexed from the back.
+  int32 channel = 1;
+  // Where to take the piston, in uL, at most 0.0. The bottom limit, -45.0, when unset.
+  optional double position = 2;
+  // In uL/s.
+  optional double flow_rate = 3;
+  // In uL/s2.
+  optional double acceleration = 4;
+  // 0 to 7.
+  optional int32 current_limit = 5;
+  // Whether the piston returns to 0 afterwards.
+  optional bool reset_dispensing_drive_after = 6;
+}
+
+message PipettesEmptyTipResponse {
+}
+
+message PipettesEmptyTipsRequest {
+  // 0-indexed from the back. Every channel that senses a tip when unset.
+  Int32List use_channels = 1;
+  // Where to take the pistons, in uL, at most 0.0. The bottom limit when unset.
+  optional double position = 2;
+  // In uL/s.
+  optional double flow_rate = 3;
+  // In uL/s2.
+  optional double acceleration = 4;
+  // 0 to 7.
+  optional int32 current_limit = 5;
+  // Whether the pistons return to 0 afterwards.
+  optional bool reset_dispensing_drive_after = 6;
+}
+
+message PipettesEmptyTipsResponse {
+}
+
+message PipettesInitializeRequest {
+  // X to eject at, in mm. Defaults to the device's tip waste position.
+  optional double x_position = 1;
+  // Where to put each channel in Y, in mm, back to front. Defaults to spreading them evenly across
+  // the Y band the procedure uses.
+  DoubleList y_positions = 2;
+  // Z to start the eject from, in mm.
+  optional double begin_of_tip_deposit_process = 3;
+  // Z the eject ends at, in mm.
+  optional double end_of_tip_deposit_process = 4;
+  // Z to leave the channels at, in mm.
+  optional double minimum_traverse_height_end = 5;
+  // Which channels take part. Defaults to all of them.
+  BoolList tip_pattern = 6;
+  // Tip type table index.
+  optional int32 tip_type = 7;
+  // How tips are discarded.
+  optional int32 discarding_method = 8;
+  // Deprecated, use `minimum_traverse_height_end`.
+  optional double z_position_at_end_of_a_command = 9;
+}
+
+message PipettesInitializeResponse {
+  // The device's reply: as sent, or parsed; Unset when there was none.
+  optional FirmwareReply reply = 1;
+}
+
+message PipettesProbeXUsingClldRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // "left" (decreasing x) or "right" (increasing x).
+  XProbeDirection direction = 2;
+  // Where the search ends, in mm. The end of the reach in `direction` when unset.
+  optional double search_end_position = 3;
+  // How far to back away from the surface afterwards, in mm.
+  optional double post_detection_distance = 4;
+  // The tip's bottom diameter, in mm; half of it is added to the reading.
+  optional double tip_bottom_diameter = 5;
+  // The stop disc's, in mm, for a channel probing without a tip.
+  optional double stop_disc_diameter = 6;
+  // Whether to probe without a tip, on the stop disc. False requires one.
+  optional bool allow_without_tip = 7;
+  // How long to wait for the search, in s.
+  optional int32 read_timeout = 8;
+}
+
+message PipettesProbeXUsingClldResponse {
+  // The surface's X in mm, rounded to 0.1 mm, or unset if the search found nothing.
+  optional double x_position = 1;
+}
+
+message PipettesProbeYUsingClldRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // "forward" (decreasing y) or "backward" (increasing y).
+  YProbeDirection direction = 2;
+  // Where to search from, in mm. Where the channel stands when unset.
+  optional double search_start_position = 3;
+  // Where the search ends, in mm. As far as the neighbour allows when unset.
+  optional double search_end_position = 4;
+  // In mm/s.
+  optional double search_speed = 5;
+  // 1 to 4, each `level * 5000` increments/s2.
+  optional int32 acceleration_level = 6;
+  // CLLD edge steepness, 0 to 1023.
+  optional int32 detection_edge = 7;
+  // The Y drive's current limit, 0 to 7.
+  optional int32 current_limit = 8;
+  // How far to back away from the surface afterwards, in mm; less if the neighbour is closer.
+  optional double post_detection_distance = 9;
+  // The tip's bottom diameter, in mm; half of it is added to the reading. 1.2 is the teaching
+  // needle's.
+  optional double tip_bottom_diameter = 10;
+  // The stop disc's, in mm, for a channel probing without a tip.
+  optional double stop_disc_diameter = 11;
+  // Whether to probe without a tip, on the stop disc. False requires one.
+  optional bool allow_without_tip = 12;
+}
+
+message PipettesProbeYUsingClldResponse {
+  // The surface's Y in mm, rounded to 0.1 mm, or unset if the search found nothing.
+  optional double y_position = 1;
+}
+
+message PipettesRequestLastLldZPositionsRequest {
+}
+
+message PipettesRequestLastLldZPositionsResponse {
+  // The tip bottom's Z position at detection, in mm on the deck, by channel.
+  repeated double last_lld_z_positions = 1;
+}
+
+message PipettesProbeZUsingClldRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // Tip bottom height to search from, in mm. As high as the tip goes when unset.
+  optional double search_start_position = 2;
+  // Lowest tip bottom height, in mm. The drive's floor when unset.
+  optional double search_end_position = 3;
+  // In mm/s.
+  optional double search_speed = 4;
+  // In mm/s2.
+  optional double acceleration = 5;
+  // CLLD edge steepness, 0 to 1023.
+  optional int32 detection_edge = 6;
+  // Offset after the edge, 0 to 1023.
+  optional int32 detection_drop = 7;
+  // 0 moves down after detection, 1 up.
+  optional int32 post_detection_trajectory = 8;
+  // Whether to probe without a tip, on the stop disc. False requires one.
+  optional bool allow_without_tip = 9;
+  // How far it moves after detection, in mm.
+  optional double post_detection_distance = 10;
+  // Whether to raise every channel to Z safety afterwards, instead of resting where the search left
+  // it.
+  optional bool move_to_safe_z_position_after = 11;
+}
+
+message PipettesProbeZUsingClldResponse {
+  // The height the channel detected at, in mm, or unset if the search found nothing.
+  optional double height = 1;
+}
+
+message PipettesProbeZUsingPlldRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // Tip bottom height to search from, in mm. As high as the tip goes when unset.
+  optional double search_start_position = 2;
+  // Lowest tip bottom height, in mm. The drive's floor when unset.
+  optional double search_end_position = 3;
+  // What the search stops at. The liquid when unset.
+  optional PressureLLDMode pressure_mode = 4;
+  // Whether to probe without a tip, on the stop disc. False requires one.
+  optional bool allow_without_tip = 5;
+  // How far it moves after detection, in mm.
+  optional double post_detection_distance = 6;
+  // Whether to raise every channel to Z safety afterwards, instead of resting where the search left
+  // it.
+  optional bool move_to_safe_z_position_after = 7;
+  // Passed on to `plld_search`:
+  // above the start position, in mm/s.
+  optional double approach_speed = 8;
+  // In mm/s.
+  optional double search_speed = 9;
+  // In mm/s2.
+  optional double acceleration = 10;
+  // Z drive current limit, 0 to 7. `default_z_current_limit` when unset.
+  optional int32 z_current_limit = 11;
+  // Whether the tip has a filter. What the model says of the mounted tip when unset, and no filter
+  // if the model has none.
+  optional bool tip_has_filter = 12;
+  // Of the dispensing drive during the search, in mm/s.
+  optional double dispensing_speed = 13;
+  // In mm/s2.
+  optional double dispensing_acceleration = 14;
+  // In mm/s.
+  optional double dispensing_max_speed = 15;
+  // 0 to 7.
+  optional int32 dispensing_current_limit = 16;
+  // PLLD edge steepness, 0 to 1023.
+  optional int32 detection_edge = 17;
+  // Offset after the pLLD edge, 0 to 1023.
+  optional int32 detection_drop = 18;
+  // Whether the cLLD searches alongside to verify.
+  optional bool clld_verification = 19;
+  // CLLD edge steepness, 0 to 1023.
+  optional int32 clld_detection_edge = 20;
+  // Offset after the cLLD edge, 0 to 1023.
+  optional int32 clld_detection_drop = 21;
+  // How far the two detections may differ, in mm.
+  optional double max_delta_plld_clld = 22;
+  // 0 to 1023.
+  optional int32 foam_detection_drop = 23;
+  // 0 to 1023.
+  optional int32 foam_detection_edge_tolerance = 24;
+  // 0 to 4999.
+  optional int32 foam_ad_values = 25;
+  // Through the foam, in mm/s.
+  optional double foam_search_speed = 26;
+  // Dispensed back after detection, in uL. Nothing when unset.
+  optional double dispense_back_volume = 27;
+  // 0 moves down after detection, 1 up.
+  optional int32 post_detection_trajectory = 28;
+  // How long to wait for the search, in s.
+  optional int32 read_timeout = 29;
+}
+
+message PipettesProbeZUsingPlldResponse {
+  // The tip bottom heights detected, in mm: the liquid's, or in foam mode the foam's and then the
+  // liquid's. Unset if the search found nothing.
+  DoubleList heights = 1;
+}
+
+message PipettesProbeZUsingZtouchRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // Tip bottom height the search starts from, in mm. As high as the tip goes when unset.
+  optional double search_start_position = 2;
+  // Lowest tip bottom height, in mm. The drive's floor when unset.
+  optional double search_end_position = 3;
+  // In mm/s.
+  optional double search_speed = 4;
+  // Down to the start, in mm/s.
+  optional double approach_speed = 5;
+  // In mm/s2.
+  optional double acceleration = 6;
+  // The force at which the search stops, 0 to 125.
+  optional int32 detection_limiter_pwm = 7;
+  // The push-down force once stopped, 0 to 125; 0 switches the drive off.
+  optional int32 push_force_pwm = 8;
+  // Whether to probe without a tip, on the stop disc. False requires one.
+  optional bool allow_without_tip = 9;
+  // How far the channel backs off afterwards, in mm; 0 stays.
+  optional double post_detection_distance = 10;
+  // Whether to raise every channel to Z safety afterwards, instead of resting where the search left
+  // it.
+  optional bool move_to_safe_z_position_after = 11;
+}
+
+message PipettesProbeZUsingZtouchResponse {
+  // The tip bottom height where it stopped, in mm, or unset if it reached the end.
+  optional double height = 1;
+}
+
+message PipettesProbeLiquidHeightsRequest {
+  // Any number; a whole plate is fine.
+  repeated pylabrobot.resources.server.v1.ResourceRef containers = 1;
+  // Which channels, 0-indexed from the back. The first len(containers) when unset, up to every
+  // channel.
+  Int32List use_channels = 2;
+  // Added to where each channel goes in its container, in mm. Planned when unset, spreading channels
+  // that share a container.
+  Vec3List resource_offsets = 3;
+  // How to search, one for all or one per container. Capacitive when unset.
+  oneof lld_mode {
+    LLDMode lld_mode_lldmode = 4;
+    LLDModeList lld_mode_each = 5;
+  }
+  // In mm/s.
+  optional double search_speed = 6;
+  // How many times each container is searched; the heights are averaged.
+  optional int32 n_replicates = 7;
+  // The height every low channel's lowest point is raised to before the first batch, in mm. Z
+  // safety when unset.
+  optional double minimum_traverse_height_start = 8;
+  // The same, between batches. Z safety when unset.
+  optional double minimum_traverse_height_during = 9;
+  // Where the tips used are left, in mm. Z safety when unset.
+  optional double minimum_traverse_height_end = 10;
+  // Containers within this X distance share a batch, in mm. `default_x_grouping_tolerance` when
+  // unset.
+  optional double x_grouping_tolerance = 11;
+}
+
+message PipettesProbeLiquidHeightsResponse {
+  // How high the liquid stands above each container's cavity bottom, in mm, in the order given. The
+  // bottom is known, so a container in which no liquid was met stands at 0.0.
+  repeated double heights = 1;
+}
+
+message PipettesProbeLiquidVolumesRequest {
+  repeated pylabrobot.resources.server.v1.ResourceRef containers = 1;
+  Int32List use_channels = 2;
+  Vec3List resource_offsets = 3;
+  oneof lld_mode {
+    LLDMode lld_mode_lldmode = 4;
+    LLDModeList lld_mode_each = 5;
+  }
+  optional double search_speed = 6;
+  optional int32 n_replicates = 7;
+  optional double minimum_traverse_height_start = 8;
+  optional double minimum_traverse_height_during = 9;
+  optional double minimum_traverse_height_end = 10;
+  optional double x_grouping_tolerance = 11;
+}
+
+message PipettesProbeLiquidVolumesResponse {
+  // The volume in each container, in uL, in the order given; what its function makes of a height of
+  // 0.0 where no liquid was met.
+  repeated double volumes = 1;
+}
+
+message PipettesProbeZHeightsUsingZtouchRequest {
+  // Any number; a whole plate is fine.
+  repeated pylabrobot.resources.server.v1.ResourceRef containers = 1;
+  // Which channels, 0-indexed from the back. The first len(containers) when unset, up to every
+  // channel.
+  Int32List use_channels = 2;
+  // Added to where each channel goes in its container, in mm. Planned when unset, spreading channels
+  // that share a container.
+  Vec3List resource_offsets = 3;
+  // In mm/s.
+  optional double search_speed = 4;
+  // How many times each container is touched; the heights are averaged.
+  optional int32 n_replicates = 5;
+  // Down to the search starts, in mm/s.
+  optional double approach_speed = 6;
+  // The height every low channel's lowest point is raised to before the first batch, in mm. Z
+  // safety when unset.
+  optional double minimum_traverse_height_start = 7;
+  // The same, between batches. Z safety when unset.
+  optional double minimum_traverse_height_during = 8;
+  // Where the tips used are left, in mm. Z safety when unset.
+  optional double minimum_traverse_height_end = 9;
+  // Containers within this X distance share a batch, in mm. `default_x_grouping_tolerance` when
+  // unset.
+  optional double x_grouping_tolerance = 10;
+}
+
+message PipettesProbeZHeightsUsingZtouchResponse {
+  // Where each floor was touched, above the container's modelled cavity bottom, in mm, in the order
+  // given: 0.0 is a floor where the model has it, negative is lower. Unset where nothing was touched
+  // within reach.
+  repeated OptionalDouble heights = 1;
+}
+
+message PipettesPickUpTipsRequest {
+  // Where to pick up from, one per channel.
+  repeated pylabrobot.resources.server.v1.ResourceRef tip_spots = 1;
+  // Which channels, 0-indexed from the back, ascending. The first `len(tip_spots)` when unset.
+  Int32List use_channels = 2;
+  // Added to each spot's centre, in mm. Unset for none.
+  Vec3List offsets = 3;
+  // Where the pick-up begins, in mm. The spot plus the collar height when unset.
+  optional double begin_tip_pick_up_process = 4;
+  // Where it ends, in mm. The spot when unset.
+  optional double end_tip_pick_up_process = 5;
+  // How high the channels travel first, in mm. As high as the tips allow when unset; never below
+  // 245.0.
+  optional double minimum_traverse_height_start = 6;
+  // Out of a rack or out of wash liquid. The tip's own when unset.
+  optional TipPickupMethod pickup_method = 7;
+  // How far apart in X two spots may be and still go out in one command, in mm. Unset lets any two
+  // share one, as legacy sends them: the firmware works through the columns itself. Spots in one
+  // column too close in Y for their channels are split either way.
+  optional double x_tolerance = 8;
+}
+
+message PipettesPickUpTipsResponse {
+}
+
+message PipettesDropTipsRequest {
+  // Where each channel's tip goes: a tip spot, which receives it; a trash, over whose centre it is
+  // let go; or a place on the deck in mm.
+  repeated TipDestination destinations = 1;
+  // Which channels, 0-indexed from the back, ascending. The first `len(destinations)` when unset.
+  Int32List use_channels = 2;
+  // Added to each destination, in mm. Unset for none.
+  Vec3List offsets = 3;
+  // `DROP` when every destination is a tip spot and `PLACE_SHIFT` otherwise, when unset.
+  optional TipDropMethod drop_method = 4;
+  // Where the deposit begins, in mm.
+  optional double begin_tip_deposit_process = 5;
+  // Where it ends, in mm.
+  optional double end_tip_deposit_process = 6;
+  // How high the channels travel first, in mm. As high as the tips allow when unset; never below
+  // 245.0.
+  optional double minimum_traverse_height_start = 7;
+  // Where the channels are left, in mm.
+  optional double minimum_traverse_height_end = 8;
+  // How far apart in X two spots may be and still go out in one command, in mm. Unset lets any two
+  // share one, as legacy sends them.
+  optional double x_tolerance = 9;
+}
+
+message PipettesDropTipsResponse {
+}
+
+message PipettesReturnTipsRequest {
+  // Which channels. Of these, only those carrying a tip return one. Every channel, when unset.
+  Int32List use_channels = 1;
+  // Passed on to `drop_tips`:
+  // added to each destination, in mm. Unset for none.
+  Vec3List offsets = 2;
+  // `DROP` when every destination is a tip spot and `PLACE_SHIFT` otherwise, when unset.
+  optional TipDropMethod drop_method = 3;
+  // Where the deposit begins, in mm.
+  optional double begin_tip_deposit_process = 4;
+  // Where it ends, in mm.
+  optional double end_tip_deposit_process = 5;
+  // How high the channels travel first, in mm. As high as the tips allow when unset; never below
+  // 245.0.
+  optional double minimum_traverse_height_start = 6;
+  // Where the channels are left, in mm.
+  optional double minimum_traverse_height_end = 7;
+  // How far apart in X two spots may be and still go out in one command, in mm. Unset lets any two
+  // share one, as legacy sends them.
+  optional double x_tolerance = 8;
+}
+
+message PipettesReturnTipsResponse {
+}
+
+message PipettesDiscardTipsRequest {
+  // Which channels. Every channel the model has a tip on, when unset.
+  Int32List use_channels = 1;
+  // Added to where each channel is spread to, in mm.
+  Vec3List offsets = 2;
+  // Passed on to `drop_tips`:
+  // `DROP` when every destination is a tip spot and `PLACE_SHIFT` otherwise, when unset.
+  optional TipDropMethod drop_method = 3;
+  // Where the deposit begins, in mm.
+  optional double begin_tip_deposit_process = 4;
+  // Where it ends, in mm.
+  optional double end_tip_deposit_process = 5;
+  // How high the channels travel first, in mm. As high as the tips allow when unset; never below
+  // 245.0.
+  optional double minimum_traverse_height_start = 6;
+  // Where the channels are left, in mm.
+  optional double minimum_traverse_height_end = 7;
+  // How far apart in X two spots may be and still go out in one command, in mm. Unset lets any two
+  // share one, as legacy sends them.
+  optional double x_tolerance = 8;
+}
+
+message PipettesDiscardTipsResponse {
+}
+
+message PipettesConsolidateTipInventoryRequest {
+  // The racks to consolidate.
+  repeated pylabrobot.resources.server.v1.ResourceRef tip_racks = 1;
+  // Which channels, 0-indexed from the back. Every channel when unset.
+  Int32List use_channels = 2;
+}
+
+message PipettesConsolidateTipInventoryResponse {
+}
+
+message PipettesProbeTipPresenceViaPickupRequest {
+  // The spots to probe.
+  repeated pylabrobot.resources.server.v1.ResourceRef tip_spots = 1;
+  // The channel for each spot, 0-indexed from the back. The first ones when unset.
+  Int32List use_channels = 2;
+  // The height each pick-up and each drop travels to its spots at, in mm. As high as the tips allow
+  // when unset; never below 245.0.
+  optional double minimum_traverse_height_start = 3;
+  // The height each drop leaves the channels at, in mm. As high as the tips allow when unset; never
+  // below 245.0.
+  optional double minimum_traverse_height_end = 4;
+}
+
+message PipettesProbeTipPresenceViaPickupResponse {
+  // Each spot's name, and whether it held a tip.
+  map<string, bool> present = 1;
+}
+
+message PipettesProbeTipInventoryRequest {
+  // The spots to probe, in any order; the result keeps it.
+  repeated pylabrobot.resources.server.v1.ResourceRef tip_spots = 1;
+  // The channels to probe with, 0-indexed from the back. Every channel when unset.
+  Int32List use_channels = 2;
+  // As `probe_tip_presence_via_pickup`.
+  optional double minimum_traverse_height_start = 3;
+  // As `probe_tip_presence_via_pickup`.
+  optional double minimum_traverse_height_end = 4;
+}
+
+message PipettesProbeTipInventoryResponse {
+  // Each spot's name, and whether it held a tip.
+  map<string, bool> present = 1;
+}
+
+message PipettesRequestChannelPressureRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestChannelPressureResponse {
+  // The signed pressure in Pa.
+  int32 channel_pressure = 1;
+}
+
+message PipettesAutoAdjustPressureSensorRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesAutoAdjustPressureSensorResponse {
+}
+
+message PipettesSetTadmModeRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // True for TADM mode, False for LLD mode.
+  optional bool enabled = 2;
+}
+
+message PipettesSetTadmModeResponse {
+}
+
+message PipettesRequestTadmModeRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesRequestTadmModeResponse {
+  bool enabled = 1;
+}
+
+message PipettesClearTadmFifoRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesClearTadmFifoResponse {
+}
+
+message PipettesResetTadmLimitCurvesRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesResetTadmLimitCurvesResponse {
+}
+
+message PipettesStartTadmMonitoringRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // Abort the plunger when pressure leaves the limit curve (`gj`).
+  optional bool enforce_limit_curve_control = 2;
+  // Which curves the FIFO keeps (`gk`).
+  optional TADMStorageLevel storage_level = 3;
+  // The limit curve enforced against, 0 to 999 (`gi`).
+  optional int32 limit_curve_index = 4;
+  // 4-character label stamped on each curve (`nr`). Omitted when unset.
+  optional string measurement_id = 5;
+}
+
+message PipettesStartTadmMonitoringResponse {
+}
+
+message PipettesStopTadmMonitoringRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+}
+
+message PipettesStopTadmMonitoringResponse {
+}
+
+message PipettesReadTadmCurveRequest {
+  // Which channel, 0-indexed from the back.
+  int32 channel = 1;
+  // Pressures per `QN` request, 1 to 50.
+  optional int32 points_per_read = 2;
+}
+
+message PipettesReadTadmCurveResponse {
+  // The curve, or unset when the FIFO is empty.
+  TADMCurve curve = 1;
+}
+
+message PipettesAspirateRequest {
+  // Any number.
+  repeated pylabrobot.resources.server.v1.ResourceRef containers = 1;
+  // Liquid to take from each container, corrected by a liquid class. One of this and
+  // `piston_volumes`.
+  DoubleList volumes = 2;
+  // Which channels, 0-indexed from the back. The first len(containers) when unset.
+  Int32List use_channels = 3;
+  // Offset of each channel in its container, in mm. Planned when unset. The z shifts the heights.
+  Vec3List resource_offsets = 4;
+  // Where each OFF draw goes, above the cavity bottom, in mm. The cavity bottom when unset. Refused
+  // for a container with an LLD mode, whose search finds the surface.
+  OptionalDoubleList liquid_heights = 5;
+  // How the liquid, or under ZTOUCH the floor, is found, one for all or one per container. OFF goes
+  // to the surface as given. DUAL refuses. OFF when unset; CAPACITIVE under
+  // `auto_surface_following`.
+  oneof lld_mode {
+    LLDMode lld_mode_lldmode = 6;
+    LLDModeList lld_mode_each = 7;
+  }
+  // In uL/s. The class's, else 100.0, when unset.
+  DoubleList flow_rates = 8;
+  // One per container. Looked up for the channel's tip, water, `jet` and `blow_out` when unset.
+  LiquidClassList hamilton_liquid_classes = 9;
+  // Whether the later dispense is a jet, for the lookup. False when unset.
+  BoolList jet = 10;
+  // Whether the later dispense blows out, for the lookup. False when unset.
+  BoolList blow_out = 11;
+  // What each piston draws, in uL, as given. One of this and `volumes`.
+  DoubleList piston_volumes = 12;
+  // Of the driver's own search, liquid or floor, in mm/s.
+  optional double search_speed = 13;
+  // Down to that search's start, `lp` or the top, in mm/s.
+  optional double approach_speed = 14;
+  // Air drawn before the liquid, in uL. The class's, else 0.0, when unset. Under an LLD mode drawn
+  // beforehand, at most 468.7 uL.
+  DoubleList blow_out_air_volumes = 15;
+  // How far into the liquid each tip goes, in mm; negative is out of it.
+  DoubleList immersion_depths = 16;
+  // How low each tip bottom may go, in mm on the deck. The cavity bottom plus the offset's z when
+  // unset. Below the cavity bottom is allowed: the tip then presses onto the well's floor and draws
+  // with suction, as a harvest wants.
+  DoubleList minimum_allowed_z_positions_during = 17;
+  // Drawn and returned first, in uL. The class's over-aspirate volume, else 0.0, when unset.
+  DoubleList pre_wetting_volumes = 18;
+  // A `Mix` per container, mixed before the draw, unset for no mixing. Its auto surface following
+  // needs a surface, as the call's.
+  OptionalMixList pre_mixes = 19;
+  // Mixing depth under the surface, in mm, per container. 0.0 when unset.
+  DoubleList mix_positions_from_liquid_surface = 20;
+  // How far each tip follows the sinking surface, in mm. 0.0 when unset.
+  DoubleList surface_following_distances = 21;
+  // Follow by how far each batch's draw lowers the surface found, or the one at `liquid_heights`
+  // under OFF; never below the floor, so nothing under ZTOUCH. Refused beside a distance.
+  optional bool auto_surface_following = 22;
+  // Height of each container's narrower lower section, in mm. 3.2 when unset.
+  DoubleList second_section_heights = 23;
+  // That section's bottom to top ratio, in tenths. 618.0 when unset.
+  DoubleList second_section_ratios = 24;
+  // Wait in the liquid, in s. The class's, else 0.0, when unset.
+  DoubleList settling_times = 25;
+  // Speed of leaving the liquid, in mm/s. The class's, else 100.0, when unset.
+  DoubleList swap_speeds = 26;
+  // How far a clot may hold the tip back, in mm. The class's, else 0.0, when unset.
+  DoubleList clot_detection_heights = 27;
+  // Rise before drawing transport air, in mm, per container. 10.0 when unset.
+  DoubleList pull_out_distances_transport_air = 28;
+  // Air drawn after the liquid, in uL. The class's, else 0.0, when unset.
+  DoubleList transport_air_volumes = 29;
+  // TADM limit curve, 0 for none, per container. 0 when unset.
+  Int32List limit_curve_indices = 30;
+  // Raise of every low channel before the first batch, in mm. `default_minimum_traverse_height`
+  // when unset.
+  optional double minimum_traverse_height_start = 31;
+  // The same between batches, and each batch's end height. `default_minimum_traverse_height` when
+  // unset.
+  optional double minimum_traverse_height_during = 32;
+  // Where the tips are left, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_end = 33;
+  // X distance within which containers share a batch, in mm. `default_x_grouping_tolerance` when
+  // unset.
+  optional double x_grouping_tolerance = 34;
+}
+
+message PipettesAspirateResponse {
+}
+
+message PipettesDispenseRequest {
+  // Any number.
+  repeated pylabrobot.resources.server.v1.ResourceRef containers = 1;
+  // Liquid to put into each container, corrected by a liquid class. One of this and
+  // `piston_volumes`.
+  DoubleList volumes = 2;
+  // Which channels, 0-indexed from the back. The first len(containers) when unset.
+  Int32List use_channels = 3;
+  // Offset of each channel in its container, in mm. Planned when unset. The z shifts the heights.
+  Vec3List resource_offsets = 4;
+  // Where each OFF dispense goes, above the cavity bottom, in mm. The cavity bottom when unset.
+  // Refused for a container with an LLD mode, whose search finds the surface.
+  OptionalDoubleList liquid_heights = 5;
+  // How the liquid, or under ZTOUCH the floor, is found, one for all or one per container. OFF goes
+  // to the height given. PRESSURE and DUAL refuse. OFF when unset; CAPACITIVE under
+  // `auto_surface_following`.
+  oneof lld_mode {
+    LLDMode lld_mode_lldmode = 6;
+    LLDModeList lld_mode_each = 7;
+  }
+  // In uL/s. The class's, else 120.0, when unset.
+  DoubleList flow_rates = 8;
+  // One per container. Looked up for the channel's tip, water, `jet` and `blow_out` when unset.
+  LiquidClassList hamilton_liquid_classes = 9;
+  // Whether each dispense is a jet from above the liquid. False when unset: at the surface.
+  BoolList jet = 10;
+  // Whether the blow-out air follows the liquid out. False when unset.
+  BoolList blow_out = 11;
+  // Whether the tip is emptied where it stands, air and all; the model then books what the tip
+  // holds. False when unset.
+  BoolList empty = 12;
+  // What each piston pushes out, in uL, as given. One of this and `volumes`.
+  DoubleList piston_volumes = 13;
+  // Of the driver's own search, liquid or floor, in mm/s.
+  optional double search_speed = 14;
+  // Down to that search's start, `lp` or the top, in mm/s.
+  optional double approach_speed = 15;
+  // Sideways move against the wall to shed the drop, in mm; 0 for none.
+  optional double side_touch_off_distance = 16;
+  // How far into the liquid each tip goes, in mm; negative is out of it.
+  DoubleList immersion_depths = 17;
+  // How low each tip bottom may go, in mm on the deck. The cavity bottom plus the offset's z when
+  // unset.
+  DoubleList minimum_allowed_z_positions_during = 18;
+  // Air drawn after each dispense, in uL, pushed out ahead of the next. The class's, else 0.0, when
+  // unset.
+  DoubleList transport_air_volumes = 19;
+  // The flow each dispense ends at, in uL/s. The class's, else 5.0, when unset.
+  DoubleList cut_off_speeds = 20;
+  // Drawn back after each dispense, in uL. The class's, else 0.0, when unset.
+  DoubleList stop_back_volumes = 21;
+  // How far each tip follows the rising surface, in mm. 0.0 when unset.
+  DoubleList surface_following_distances = 22;
+  // Follow by how far each batch's dispense raises the surface found, or the one at
+  // `liquid_heights` under OFF; never above the top. Refused beside a distance. An empty container
+  // has no surface to find: give OFF and `liquid_heights` there.
+  optional bool auto_surface_following = 23;
+  // Height of each container's narrower lower section, in mm. 3.2 when unset.
+  DoubleList second_section_heights = 24;
+  // That section's bottom to top ratio, in tenths. 618.0 when unset.
+  DoubleList second_section_ratios = 25;
+  // Air pushed out after the liquid in a blow-out mode, in uL. The class's, else 0.0, when unset.
+  DoubleList blow_out_air_volumes = 26;
+  // A `Mix` per container, mixed after the dispense, unset for no mixing. Its auto surface following
+  // needs a surface, as the call's.
+  OptionalMixList post_mixes = 27;
+  // Mixing depth under the surface, in mm, per container. 0.0 when unset.
+  DoubleList mix_positions_from_liquid_surface = 28;
+  // Wait after the dispense, in s. The class's, else 0.0, when unset.
+  DoubleList settling_times = 29;
+  // Speed of leaving the liquid, in mm/s. The class's, else 10.0, when unset.
+  DoubleList swap_speeds = 30;
+  // Rise before drawing transport air, in mm, per container. 10.0 when unset.
+  DoubleList pull_out_distances_transport_air = 31;
+  // TADM limit curve, 0 for none, per container. 0 when unset.
+  Int32List limit_curve_indices = 32;
+  // Raise of every low channel before the first batch, in mm. `default_minimum_traverse_height`
+  // when unset.
+  optional double minimum_traverse_height_start = 33;
+  // The same between batches, and each batch's end height. `default_minimum_traverse_height` when
+  // unset.
+  optional double minimum_traverse_height_during = 34;
+  // Where the tips are left, in mm. `default_minimum_traverse_height` when unset.
+  optional double minimum_traverse_height_end = 35;
+  // X distance within which containers share a batch, in mm. `default_x_grouping_tolerance` when
+  // unset.
+  optional double x_grouping_tolerance = 36;
+}
+
+message PipettesDispenseResponse {
+}
+
+// The defaults Pipettes uses where a call names none. A STAR server takes them from its
+// settings file; unset fields keep the defaults in the code.
+message PipettesSettings {
+  // Y speed when the caller names none, in mm/s.
+  optional double default_y_speed = 1;
+  // Y acceleration level when the caller names none, 1 (gentlest) to 4.
+  optional int32 default_y_acceleration_level = 2;
+  // Z speed when the caller names none, in mm/s.
+  optional double default_z_speed = 3;
+  // Z acceleration when the caller names none, in mm/s2.
+  optional double default_z_acceleration = 4;
+  // Z drive current limit when the caller names none.
+  optional int32 default_z_current_limit = 5;
+  // Height the channels travel at when a command names none, in mm.
+  optional double default_minimum_traverse_height = 6;
+  // Containers within this X distance are probed in one batch, in mm.
+  optional double default_x_grouping_tolerance = 7;
+}
+
+service PipettesService {
+  // Sense tip presence on every channel, from their sleeve sensors.
+  rpc SenseTipPresence(PipettesSenseTipPresenceRequest) returns (PipettesSenseTipPresenceResponse);
+  // Request one channel's firmware version and build date.
+  rpc RequestFirmwareVersion(PipettesRequestFirmwareVersionRequest) returns (PipettesRequestFirmwareVersionResponse);
+  // Request how wide a pipette is.
+  rpc RequestMinPipetteWidth(PipettesRequestMinPipetteWidthRequest) returns (PipettesRequestMinPipetteWidthResponse);
+  // Request what hardware is fitted to a pipette.
+  rpc RequestPipetteConfiguration(PipettesRequestPipetteConfigurationRequest) returns (PipettesRequestPipetteConfigurationResponse);
+  // Read what each channel is and what it can do.
+  rpc Discover(PipettesDiscoverRequest) returns (PipettesDiscoverResponse);
+  // Where the model has every channel's reference point, in mm on the deck, in one read.
+  rpc GetReferencePointLocations(PipettesGetReferencePointLocationsRequest) returns (PipettesGetReferencePointLocationsResponse);
+  // Where the model has a channel's reference point, in mm on the deck.
+  rpc GetReferencePointLocation(PipettesGetReferencePointLocationRequest) returns (PipettesGetReferencePointLocationResponse);
+  // Record where channels are on the resources that model them, all in one call.
+  rpc UpdateLocationsByReferencePoint(PipettesUpdateLocationsByReferencePointRequest) returns (PipettesUpdateLocationsByReferencePointResponse);
+  // Record where a channel is on the resource that models it. See
+  // `update_locations_by_reference_point`.
+  rpc UpdateLocationByReferencePoint(PipettesUpdateLocationByReferencePointRequest) returns (PipettesUpdateLocationByReferencePointResponse);
+  // Request where every channel is along Y, in one command.
+  rpc RequestYPositions(PipettesRequestYPositionsRequest) returns (PipettesRequestYPositionsResponse);
+  // Request where a specific channel is along Y.
+  rpc RequestYPosition(PipettesRequestYPositionRequest) returns (PipettesRequestYPositionResponse);
+  // Read where one channel's stop disc is, regardless of whether a tool (e.g. tip, core_gripper,
+  // suction_gripper, ...) is mounted.
+  rpc RequestStopDiscZPosition(PipettesRequestStopDiscZPositionRequest) returns (PipettesRequestStopDiscZPositionResponse);
+  // Read where every channel's stop disc is.
+  rpc RequestStopDiscZPositions(PipettesRequestStopDiscZPositionsRequest) returns (PipettesRequestStopDiscZPositionsResponse);
+  // Read where the bottom of the tip on every channel is.
+  rpc RequestToolBottomZPositions(PipettesRequestToolBottomZPositionsRequest) returns (PipettesRequestToolBottomZPositionsResponse);
+  // Read where the bottom of the tip on one channel is.
+  rpc RequestToolBottomZPosition(PipettesRequestToolBottomZPositionRequest) returns (PipettesRequestToolBottomZPositionResponse);
+  // Measure how far the tip on one channel stands below its stop disc.
+  rpc RequestTipOverhang(PipettesRequestTipOverhangRequest) returns (PipettesRequestTipOverhangResponse);
+  // Request the Y speed a channel's drive holds (`Px RA yv`).
+  rpc RequestYSpeed(PipettesRequestYSpeedRequest) returns (PipettesRequestYSpeedResponse);
+  // Request the Y acceleration level a channel's drive holds (`Px RA yr`).
+  rpc RequestYAccelerationLevel(PipettesRequestYAccelerationLevelRequest) returns (PipettesRequestYAccelerationLevelResponse);
+  // Request the Z speed a channel's drive holds (`Px RA zv`).
+  rpc RequestZSpeed(PipettesRequestZSpeedRequest) returns (PipettesRequestZSpeedResponse);
+  // Request the Z acceleration a channel's drive holds (`Px RA zr`).
+  rpc RequestZAcceleration(PipettesRequestZAccelerationRequest) returns (PipettesRequestZAccelerationResponse);
+  // Request where along X the channels are, in deck mm.
+  rpc RequestXPosition(PipettesRequestXPositionRequest) returns (PipettesRequestXPositionResponse);
+  // Move the channels along X. The whole arm travels, with everything else it carries.
+  rpc MoveToXPosition(PipettesMoveToXPositionRequest) returns (PipettesMoveToXPositionResponse);
+  // Move channels along Y.
+  rpc MoveToYPositions(PipettesMoveToYPositionsRequest) returns (PipettesMoveToYPositionsResponse);
+  // Move one channel along Y.
+  rpc MoveToYPosition(PipettesMoveToYPositionRequest) returns (PipettesMoveToYPositionResponse);
+  // Spread the channels to leave one of them as much free Y as the arm allows.
+  rpc MakeMaxSpaceForChannel(PipettesMakeMaxSpaceForChannelRequest) returns (PipettesMakeMaxSpaceForChannelResponse);
+  // Move one channel's stop disc along Z. The other channels stay where they are.
+  rpc MoveStopDiscToZPosition(PipettesMoveStopDiscToZPositionRequest) returns (PipettesMoveStopDiscToZPositionResponse);
+  // Move each named channel's stop disc along Z, all together (`Px ZA` per channel).
+  rpc MoveStopDiscToZPositions(PipettesMoveStopDiscToZPositionsRequest) returns (PipettesMoveStopDiscToZPositionsResponse);
+  // Move the bottom of the tip on each named channel along Z, in one command.
+  rpc MoveToolBottomToZPositions(PipettesMoveToolBottomToZPositionsRequest) returns (PipettesMoveToolBottomToZPositionsResponse);
+  // Move the bottom of the tip on one channel along Z.
+  rpc MoveToolBottomToZPosition(PipettesMoveToolBottomToZPositionRequest) returns (PipettesMoveToolBottomToZPositionResponse);
+  // Raises single-channel pipettes to Z safety and reads their stop discs z-positions.
+  rpc ProbeZMax(PipettesProbeZMaxRequest) returns (PipettesProbeZMaxResponse);
+  // Raise every channel to Z safety together (`C0 ZA`), whatever is mounted.
+  rpc MoveToSafeZ(PipettesMoveToSafeZRequest) returns (PipettesMoveToSafeZResponse);
+  // Read where one channel's dispensing drive stands, in uL, and record it. `Px RD`.
+  rpc DispensingDriveRequestULPosition(PipettesDispensingDriveRequestULPositionRequest) returns (PipettesDispensingDriveRequestULPositionResponse);
+  // Where each channel's piston stands, as this driver last read or sent it.
+  rpc GetPistonPositions(PipettesGetPistonPositionsRequest) returns (PipettesGetPistonPositionsResponse);
+  // Read where the dispensing drives stand, in uL, the channels together, and record them.
+  rpc DispensingDrivesRequestULPositions(PipettesDispensingDrivesRequestULPositionsRequest) returns (PipettesDispensingDrivesRequestULPositionsResponse);
+  // Move the channels across the deck: the low ones up first, then X and Y together.
+  rpc MoveToXyPositions(PipettesMoveToXyPositionsRequest) returns (PipettesMoveToXyPositionsResponse);
+  // Spread the channels evenly across the Y band. This moves them.
+  rpc SpreadChannels(PipettesSpreadChannelsRequest) returns (PipettesSpreadChannelsResponse);
+  // What the model has on each channel's shaft, a tip or a tool, per channel, in one read.
+  rpc GetTools(PipettesGetToolsRequest) returns (PipettesGetToolsResponse);
+  // The tip the model has on each channel, per channel, in one read; Unset where it has none.
+  rpc GetMountedTips(PipettesGetMountedTipsRequest) returns (PipettesGetMountedTipsResponse);
+  // The tip the model has on a channel, or unset if it carries none. See `get_mounted_tips`.
+  rpc GetMountedTip(PipettesGetMountedTipRequest) returns (PipettesGetMountedTipResponse);
+  // Move one channel's piston to a position where the tip stands, and read it back. `Px DS`.
+  rpc DispensingDriveMoveToULPosition(PipettesDispensingDriveMoveToULPositionRequest) returns (PipettesDispensingDriveMoveToULPositionResponse);
+  // Push everything out of one channel's tip where it stands, the piston at or below rest.
+  rpc EmptyTip(PipettesEmptyTipRequest) returns (PipettesEmptyTipResponse);
+  // Empty several channels' tips where they stand, the channels in parallel. See `empty_tip`.
+  rpc EmptyTips(PipettesEmptyTipsRequest) returns (PipettesEmptyTipsResponse);
+  // Initialize the channels, discarding whatever is mounted on them.
+  rpc Initialize(PipettesInitializeRequest) returns (PipettesInitializeResponse);
+  // Probe a conductive surface along X with a channel's cLLD, from where the arm stands.
+  rpc ProbeXUsingClld(PipettesProbeXUsingClldRequest) returns (PipettesProbeXUsingClldResponse);
+  // Probe a conductive surface along Y with a channel's cLLD, never past its neighbours.
+  rpc ProbeYUsingClld(PipettesProbeYUsingClldRequest) returns (PipettesProbeYUsingClldResponse);
+  // Request where each channel last detected liquid, by cLLD or pLLD. `C0 RL`.
+  rpc RequestLastLldZPositions(PipettesRequestLastLldZPositionsRequest) returns (PipettesRequestLastLldZPositionsResponse);
+  // Lower a channel's tip until its cLLD triggers, and read the height it detected at.
+  rpc ProbeZUsingClld(PipettesProbeZUsingClldRequest) returns (PipettesProbeZUsingClldResponse);
+  // Lower a channel's tip until the pressure says it met the liquid, and read the height.
+  rpc ProbeZUsingPlld(PipettesProbeZUsingPlldRequest) returns (PipettesProbeZUsingPlldResponse);
+  // Lower a channel's tip until it presses on something, and read the height.
+  rpc ProbeZUsingZtouch(PipettesProbeZUsingZtouchRequest) returns (PipettesProbeZUsingZtouchResponse);
+  // Find the liquid surface in each container with a channel's tip, and say how high it stands.
+  rpc ProbeLiquidHeights(PipettesProbeLiquidHeightsRequest) returns (PipettesProbeLiquidHeightsResponse);
+  // Find the liquid in each container as `probe_liquid_heights` does, and say how much there is.
+  rpc ProbeLiquidVolumes(PipettesProbeLiquidVolumesRequest) returns (PipettesProbeLiquidVolumesResponse);
+  // Touch the floor of each container with a channel's tip, and say how high it is.
+  rpc ProbeZHeightsUsingZtouch(PipettesProbeZHeightsUsingZtouchRequest) returns (PipettesProbeZHeightsUsingZtouchResponse);
+  // Pick up a tip from each spot, one channel per spot, and move each onto its channel.
+  rpc PickUpTips(PipettesPickUpTipsRequest) returns (PipettesPickUpTipsResponse);
+  // Drop each channel's tip into a tip spot, a trash, or anywhere on the deck.
+  rpc DropTips(PipettesDropTipsRequest) returns (PipettesDropTipsResponse);
+  // Put each channel's tip back in the tip spot it was picked up from, as legacy does.
+  rpc ReturnTips(PipettesReturnTipsRequest) returns (PipettesReturnTipsResponse);
+  // Discard each channel's tip into the deck's waste, spread across it as legacy spreads them.
+  rpc DiscardTips(PipettesDiscardTipsRequest) returns (PipettesDiscardTipsResponse);
+  // Move tips between partly filled racks of one tip model until they fill the fewest racks.
+  rpc ConsolidateTipInventory(PipettesConsolidateTipInventoryRequest) returns (PipettesConsolidateTipInventoryResponse);
+  // Find which spots hold a tip by picking each up and putting it back, as legacy's.
+  rpc ProbeTipPresenceViaPickup(PipettesProbeTipPresenceViaPickupRequest) returns (PipettesProbeTipPresenceViaPickupResponse);
+  // Probe any number of spots in any order, dealt a column at a time as `plan_inventory`.
+  rpc ProbeTipInventory(PipettesProbeTipInventoryRequest) returns (PipettesProbeTipInventoryResponse);
+  // Read a channel's pressure sensor now. `Px RP`.
+  rpc RequestChannelPressure(PipettesRequestChannelPressureRequest) returns (PipettesRequestChannelPressureResponse);
+  // Auto-adjust a channel's pressure sensor gain and offset. `Px AC`.
+  rpc AutoAdjustPressureSensor(PipettesAutoAdjustPressureSensorRequest) returns (PipettesAutoAdjustPressureSensorResponse);
+  // Switch a channel between TADM mode and pressure/capacitive LLD mode. `Px AF`.
+  rpc SetTadmMode(PipettesSetTadmModeRequest) returns (PipettesSetTadmModeResponse);
+  // Whether a channel is in TADM mode. `Px QF`.
+  rpc RequestTadmMode(PipettesRequestTadmModeRequest) returns (PipettesRequestTadmModeResponse);
+  // Empty a channel's TADM curve FIFO. `Px AN`.
+  rpc ClearTadmFifo(PipettesClearTadmFifoRequest) returns (PipettesClearTadmFifoResponse);
+  // Erase a channel's limit-curve bank and load the default curve at index 0. `Px AQ`.
+  rpc ResetTadmLimitCurves(PipettesResetTadmLimitCurvesRequest) returns (PipettesResetTadmLimitCurvesResponse);
+  // Record every aspirate and dispense on a channel until `stop_tadm_monitoring`. `Px BG`.
+  rpc StartTadmMonitoring(PipettesStartTadmMonitoringRequest) returns (PipettesStartTadmMonitoringResponse);
+  // End the monitoring `start_tadm_monitoring` began. `Px BH`.
+  rpc StopTadmMonitoring(PipettesStopTadmMonitoringRequest) returns (PipettesStopTadmMonitoringResponse);
+  // Read the next recorded curve from a channel's TADM FIFO.
+  rpc ReadTadmCurve(PipettesReadTadmCurveRequest) returns (PipettesReadTadmCurveResponse);
+  // Draw liquid from each container with a channel's tip.
+  rpc Aspirate(PipettesAspirateRequest) returns (PipettesAspirateResponse);
+  // Dispense liquid into each container from a channel's tip.
+  rpc Dispense(PipettesDispenseRequest) returns (PipettesDispenseResponse);
+}

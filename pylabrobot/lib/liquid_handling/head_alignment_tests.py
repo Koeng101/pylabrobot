@@ -5,7 +5,7 @@ from typing import List
 
 import pytest
 
-from pylabrobot.hamilton.star.resource_model.heads import head96
+from pylabrobot.hamilton.star import resource_model
 from pylabrobot.lib.liquid_handling.head_alignment import (
   get_items_under_channels,
   plan_drop,
@@ -26,9 +26,16 @@ from pylabrobot.resources.hamilton import (
   hamilton_tip_300uL_filter,
 )
 from pylabrobot.resources.itemized_resource import ItemizedResource
+from pylabrobot.resources.n_channel_pipettes import NChannelPipette
+from pylabrobot.resources.server.tests.scenes import pipette_from_definition
 from pylabrobot.resources.tecan.plates import DeepWell_Greiner_1536_Well
 
 HEAD, PITCH = (8, 12), 9.0
+
+
+def head96(name: str) -> NChannelPipette:
+  """The STAR's 96-head, built from its definition with PLR's classes."""
+  return pipette_from_definition(resource_model.head96(name))
 
 
 def _on_deck(grid: ItemizedResource, rotation: float = 0) -> Resource:

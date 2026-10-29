@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+// The defaults a STAR's features use where a call names none, as a STAR server is started with
+// them: a JSON file holding this message, e.g.
+//
+//   {"pipettes": {"default_minimum_traverse_height": 200.0}, "iswap": {...}}
+//
+// The server puts them on the device every time it is set up, after setup has put its own in
+// place. Anything not given keeps the default in the code. Clients read them in the device's
+// description and cannot set them.
+package pylabrobot.hamilton.star.server.v1;
+
+import "pylabrobot/hamilton/star/server/v1/core_grippers.proto";
+import "pylabrobot/hamilton/star/server/v1/head384.proto";
+import "pylabrobot/hamilton/star/server/v1/head96.proto";
+import "pylabrobot/hamilton/star/server/v1/iswap.proto";
+import "pylabrobot/hamilton/star/server/v1/pipettes.proto";
+import "pylabrobot/hamilton/star/server/v1/x_arm.proto";
+
+message Settings {
+  PipettesSettings pipettes = 1;
+  Head96Settings head96 = 2;
+  Head384Settings head384 = 3;
+  ISwapSettings iswap = 4;
+  CoreGrippersSettings core_grippers = 5;
+  XArmSettings left_x_arm = 6;
+  XArmSettings right_x_arm = 7;
+}

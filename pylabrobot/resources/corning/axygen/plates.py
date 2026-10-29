@@ -1,9 +1,6 @@
 import warnings
 from typing import Optional
 
-from pylabrobot.resources.height_volume_functions import (
-  calculate_liquid_volume_container_2segments_square_vbottom,
-)
 from pylabrobot.resources.plate import Lid, Plate
 from pylabrobot.resources.utils import create_ordered_items_2d
 from pylabrobot.resources.well import (
@@ -13,6 +10,52 @@ from pylabrobot.resources.well import (
 )
 
 # # # # # # # # # # cor_axy_24_wellplate_10mL_Vb # # # # # # # # # #
+
+
+# Height above the cavity bottom (mm) to volume (uL), linear between points.
+_cor_axy_24_wellplate_10mL_Vb_height_volume_data = {
+  0.0: 0.0,
+  0.42: 0.285486,
+  0.68: 1.211611,
+  0.9: 2.80908,
+  1.095: 5.059166,
+  1.275: 7.986696,
+  1.44: 11.505992,
+  1.595: 15.635747,
+  1.745: 20.474951,
+  1.89: 26.01489,
+  2.03: 32.234779,
+  2.165: 39.103018,
+  2.295: 46.578409,
+  2.42: 54.61132,
+  2.54: 63.14482,
+  2.66: 72.523957,
+  2.775: 82.342783,
+  2.89: 93.010099,
+  3.0: 104.04,
+  3.11: 115.909157,
+  3.22: 128.648342,
+  3.325: 141.648353,
+  3.43: 155.495899,
+  3.535: 170.217745,
+  3.635: 185.075881,
+  3.735: 200.774428,
+  3.835: 217.336508,
+  3.93: 233.891388,
+  4.025: 251.266294,
+  4.12: 269.481048,
+  4.215: 288.555473,
+  4.31: 308.509392,
+  4.4: 328.242347,
+  4.49: 348.799298,
+  4.58: 370.197101,
+  4.67: 392.452609,
+  4.76: 415.582678,
+  4.845: 438.245962,
+  4.93: 461.718565,
+  5.02: 487.446667,
+  42.0: 11174.666667,
+}
 
 
 def cor_axy_24_wellplate_10mL_Vb(name: str) -> Plate:
@@ -46,18 +89,11 @@ def cor_axy_24_wellplate_10mL_Vb(name: str) -> Plate:
       size_z=42,
       material_z_thickness=1.46,
       bottom_type=WellBottomType.V,
-      compute_volume_from_height=_compute_volume_from_height_Cor_Axy_24_wellplate_10mL_Vb,
+      height_volume_data=_cor_axy_24_wellplate_10mL_Vb_height_volume_data,
+      max_volume=11174.666666666666,
       cross_section_type=CrossSectionType.RECTANGLE,
       name_prefix=name,
     ),
-  )
-
-
-def _compute_volume_from_height_Cor_Axy_24_wellplate_10mL_Vb(h: float):
-  if h > 42.1:
-    raise ValueError(f"Height {h} is too large for Cos_96_Vb")
-  return calculate_liquid_volume_container_2segments_square_vbottom(
-    x=17, y=17, h_pyramid=5, h_cube=37, liquid_height=h
   )
 
 

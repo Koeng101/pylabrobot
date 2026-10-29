@@ -7,16 +7,18 @@ last section lists where it is not, which is what this document is for.
 ## The layers
 
 ```
-device.py           STARDevice, a Resource. Its deck is its child, so the device and everything
-                    on it is one tree. Frame factories: STAR / STARlet / STARPlus.
+device.py           STARDevice. Its body is a resource in a server, and its deck hangs from it,
+                    so the device and everything on it is one tree. Frame factories: STAR /
+                    STARlet / STARPlus.
 driver/master.py    STARDriver. Owns the link, the reply router, the subsystem lock, discovery,
                     initialization order, the saved configuration, and the resource model.
 driver/features/    One class per thing the device is fitted with: pipettes, head96, head384,
                     iswap, autoload, x_arm, cover. Each holds a driver and its own configuration.
+driver/model.py     How the driver reads and writes the resource model in its server.
 driver/simulator.py A subclass per feature that answers where the wire would.
 driver/errors.py    One exception class per error code, raised off the reply.
 driver/lock.py      Which commands may be in flight together.
-resource_model/     The resources a feature is modelled as, built by the driver at setup.
+resource_model/     The definitions the server builds a feature's resources from at setup.
 recordings/         What a real device answered, as data. See its own README.
 ```
 
@@ -102,9 +104,26 @@ drives and each subsystem has one mutex, with two wider scopes for the commands 
 Read-only `R` and `Q` commands take no lock. Locks are always taken in declaration order, so two
 callers cannot deadlock.
 
-**P12. The resource model mirrors the device; it never decides for it.** `resource_model/` builds
-the resources, the driver's `_create_*_resources` hangs them off the deck at setup, and moves keep
-them in step. A driver given no deck models nothing and still drives.
+**P12. The resource model mirrors the device; it never decides for it.** The model lives in a
+resource server, and the driver holds handles into it, never the resources themselves.
+`resource_model/` states each part as a definition, the driver's `_create_*_resources` makes them on
+the deck at setup (or finds them there), and moves keep them in step through `RecordDevicePositions`,
+all parts of one move in one call. A driver given no deck models nothing and still drives.
+
+**P12a. A command stages, sends, and resolves.** What a command will change - a tip collected or
+dropped, liquid moved, a plate picked up or placed - is staged in the server before the command is
+sent (`BeginToolPickup`, `BeginToolDrop`, `BeginLiquidTransfer`, `BeginResourcePickup`,
+`BeginResourcePlace`), and every staged item is resolved in a `finally` once the device has
+answered: committed where it did the work, rolled back where it did not. A refusal the code makes
+before sending anything is the server's `ON_TRACKING_PROBLEM_REJECT`, raised as the exception PLR
+raises for it (`model.raise_tracking_error`). Reads go in batches: one `GetResources` and one
+`ResolveGeometry` per command, never one call per channel or well.
+
+**P12b. Only each feature's own command order is fixed.** With no server given, a device makes one
+with `ResourceServer.local()`. Every server call gives way to other tasks, as a remote server's
+does, so commands sent from features brought up together (`asyncio.gather` at setup and stop)
+interleave however the server's latency has them. Each feature's own sequence is fixed, and the
+golden records hold those sections per task rather than as one stream.
 
 **P13. A configuration is data, not code.** `save_configuration` writes what a device answered;
 `declared_configuration_json` reads one back, and is the only path a configuration takes off a
