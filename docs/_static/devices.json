@@ -431,6 +431,7 @@
     "api": "pylabrobot.legacy.heating_shaking.HamiltonHeaterShakerBackend",
     "api_version": "v0",
     "code_slug": "legacy/heating_shaking",
+    "doc_slug": "hamilton/heater_shaker/hello-world",
     "manager": "https://discuss.pylabrobot.org/u/rickwierenga",
     "oem": "https://www.hamiltoncompany.com/temperature-control/hamilton-heater-shaker"
   },
