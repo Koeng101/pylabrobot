@@ -1,0 +1,198 @@
+syntax = "proto3";
+
+// A heater shaker server: the Hamilton heater shakers it holds, each called by its name. The
+// calls are `HamiltonHeaterShaker`'s methods, each argument a field named as the argument is; an
+// unset optional field is an argument not given, so its default applies.
+package pylabrobot.hamilton.heater_shaker.server.v1;
+
+import "pylabrobot/resources/server/v1/types.proto";
+
+// The exception a call raised, carried as a detail of the Connect error so the client raises the
+// same class. A class not listed goes as the nearest one it derives from.
+enum ErrorKind {
+  ERROR_KIND_UNSPECIFIED = 0;  // Exception
+  ERROR_KIND_VALUE = 1;  // ValueError
+  ERROR_KIND_RUNTIME = 2;  // RuntimeError
+  ERROR_KIND_TIMEOUT = 3;  // TimeoutError
+  ERROR_KIND_KEY = 4;  // KeyError
+  ERROR_KIND_TYPE = 5;  // TypeError
+  ERROR_KIND_NOT_IMPLEMENTED = 6;  // NotImplementedError
+  ERROR_KIND_CONNECTION = 7;  // ConnectionError
+}
+
+message Error {
+  ErrorKind kind = 1;
+  // What it was raised with.
+  string message = 2;
+  // Its class's name, for a class that went as the nearest one listed.
+  string type_name = 3;
+}
+
+// A number that may be None: the message set with no value is None.
+message OptionalDouble {
+  optional double value = 1;
+}
+
+// How far a long call has got, sent every few seconds while it runs, and once more when it is
+// done. A stream that ends without `done` is a call that did not finish.
+message Progress {
+  // Seconds since it started.
+  double elapsed = 1;
+  bool done = 2;
+}
+
+// One heater shaker the server holds.
+message HeaterShaker {
+  string name = 1;
+  // The port it is plugged into: 1 is module T1.
+  int32 index = 2;
+  // Its plate holder; unset before setup, and when it has no resource server.
+  optional pylabrobot.resources.server.v1.ResourceRef resource = 3;
+  // The temperature `SetTemperature` set, in Celsius; unset when none is.
+  optional double target_temperature = 4;
+}
+
+message DescribeRequest {
+}
+
+message DescribeResponse {
+  repeated HeaterShaker heater_shakers = 1;
+}
+
+message SetupRequest {
+  string name = 1;
+}
+
+message SetupResponse {
+}
+
+message StopRequest {
+  string name = 1;
+}
+
+message StopResponse {
+}
+
+message LockPlateRequest {
+  string name = 1;
+}
+
+message LockPlateResponse {
+}
+
+message UnlockPlateRequest {
+  string name = 1;
+}
+
+message UnlockPlateResponse {
+}
+
+message GetIsShakingRequest {
+  string name = 1;
+}
+
+message GetIsShakingResponse {
+  bool shaking = 1;
+}
+
+message ShakeRequest {
+  string name = 1;
+  // In rpm.
+  double speed = 2;
+  // In seconds; unset keeps it shaking.
+  optional double duration = 3;
+  // 0 or 1, as the firmware numbers them.
+  optional int32 direction = 4;
+  optional int32 acceleration = 5;
+  // How long to keep asking it to start, in seconds; unset is the default, and a value with none
+  // set is no limit.
+  OptionalDouble timeout = 6;
+}
+
+message StopShakingRequest {
+  string name = 1;
+}
+
+message StopShakingResponse {
+}
+
+message GetTemperatureRequest {
+  string name = 1;
+}
+
+message GetTemperatureResponse {
+  // In Celsius.
+  double temperature = 1;
+}
+
+message GetEdgeTemperatureRequest {
+  string name = 1;
+}
+
+message GetEdgeTemperatureResponse {
+  // In Celsius.
+  double temperature = 1;
+}
+
+message SetTemperatureRequest {
+  string name = 1;
+  // In Celsius.
+  double temperature = 2;
+  optional bool passive = 3;
+}
+
+message SetTemperatureResponse {
+}
+
+message WaitForTemperatureRequest {
+  string name = 1;
+  // In seconds.
+  optional double timeout = 2;
+  // In Celsius.
+  optional double tolerance = 3;
+}
+
+message HoldTemperatureRequest {
+  string name = 1;
+  // In seconds.
+  double duration = 2;
+}
+
+message DeactivateRequest {
+  string name = 1;
+}
+
+message DeactivateResponse {
+}
+
+service HeaterShakerService {
+  // The heater shakers the server holds.
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+  // Find its plate holder, then initialize the plate lock and home the shaker drive.
+  rpc Setup(SetupRequest) returns (SetupResponse);
+  // Turn the heating off and stop shaking.
+  rpc Stop(StopRequest) returns (StopResponse);
+  // Lock the plate in place.
+  rpc LockPlate(LockPlateRequest) returns (LockPlateResponse);
+  // Unlock the plate, so it can be taken off.
+  rpc UnlockPlate(UnlockPlateRequest) returns (UnlockPlateResponse);
+  // Whether it is shaking.
+  rpc GetIsShaking(GetIsShakingRequest) returns (GetIsShakingResponse);
+  // Lock the plate and shake it; for a duration, after which it stops and unlocks the plate. The
+  // server finishes it even if the client goes away.
+  rpc Shake(ShakeRequest) returns (stream Progress);
+  // Stop shaking, and wait until it has.
+  rpc StopShaking(StopShakingRequest) returns (StopShakingResponse);
+  // The temperature in the middle of it.
+  rpc GetTemperature(GetTemperatureRequest) returns (GetTemperatureResponse);
+  // The temperature at its edge.
+  rpc GetEdgeTemperature(GetEdgeTemperatureRequest) returns (GetEdgeTemperatureResponse);
+  // Heat to a temperature, and hold it there.
+  rpc SetTemperature(SetTemperatureRequest) returns (SetTemperatureResponse);
+  // Wait until it is at the temperature `SetTemperature` set.
+  rpc WaitForTemperature(WaitForTemperatureRequest) returns (stream Progress);
+  // Hold the temperature it is at for a while, without changing it.
+  rpc HoldTemperature(HoldTemperatureRequest) returns (stream Progress);
+  // Turn the heating off.
+  rpc Deactivate(DeactivateRequest) returns (DeactivateResponse);
+}
